@@ -1,0 +1,23 @@
+﻿# Node
+node_modules/
+# Next.js build
+.next/
+# Turbopack / cache
+.turbo/
+.next/cache/
+# Build output
+dist/
+# TipTap repro node_modules
+tiptap-repro/node_modules/
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# Env files
+.env
+.env.local
+.env.*.local
+# OS
+.DS_Store
+# Editor
+.vscode/

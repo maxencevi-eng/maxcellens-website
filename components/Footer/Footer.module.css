@@ -1,0 +1,169 @@
+.footer {
+  margin-top: 3rem;
+  font-family: inherit;
+}
+
+.top {
+  background: #f5f5f6;
+  border-bottom: 1px solid rgba(15,23,42,0.06);
+  padding: 2.25rem 0;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.col h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.95rem;
+}
+
+.logo {
+  font-weight: 800;
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.logo img { height: var(--site-footer-logo-height, var(--site-logo-height, 36px)); width: auto; vertical-align: middle; margin-right: 8px; }
+
+.contact p {
+  margin: 0;  
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list li {
+  margin: 0.35rem 0;
+}
+
+.list a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* add a chevron-like prefix to footer links */
+.list li a::before {
+  content: '›';
+  display: inline-block;
+  margin-right: 0.6rem;
+  color: rgba(0,0,0,0.6);
+  font-weight: 600;
+}
+
+.bottom {
+  background: #222228;
+  color: #d1d5db;
+  padding: 0.9rem 0;
+  position: relative;
+}
+
+.bottomInner {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  align-items: center;
+  /* center and limit width to match the .columns/logo area */
+  max-width: 1120px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.copy {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: var(--base-line-height);
+}
+
+.socials {
+  display: flex;
+  gap: 0; /* icons tightly packed */
+  justify-self: end;
+} 
+
+.social {
+  color: #fff;
+  opacity: 0.95;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  padding: 4px;
+  transition: background 120ms ease, transform 120ms ease;
+  position: relative;
+}
+
+
+.social svg { width: 16px; height: 16px; display: block; }
+.socialLetter { font-weight: 700; font-size: 13px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; }
+.social:hover { background: rgba(255,255,255,0.06); transform: translateY(-2px); opacity: 1; }
+
+/* Uploaded custom icon thumbnail shown next to the inline SVG */
+.customIcon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+  margin-right: 0; /* remove extra gap */
+} 
+
+@media (max-width: 900px) {
+  .bottomInner { grid-template-columns: 1fr; gap: 8px; }
+  .socials { position: static; transform: none; margin-left: 0; justify-self: start; }
+}
+
+/* Icon style variants */
+.style-outline .social, .social.style-outline {
+  background: transparent;
+  color: #fff;
+}
+.style-filled .social, .social.style-filled {
+  background: #fff;
+  color: #111;
+}
+.style-circle .social, .social.style-circle {
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+}
+.style-square .social, .social.style-square {
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+}
+.style-brand .social, .social.style-brand {
+  background: #ffffff;
+  border: none;
+  color: #111111;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+.style-brand .social svg, .social.style-brand svg {
+.style-brand .social svg, .social.style-brand svg {
+  fill: currentColor;
+}
+
+/* Ensure SVG icons follow the currentColor set on the social element */
+.social svg { fill: currentColor; stroke: none; }
+
+/* Slightly smaller inner icons for visual balance */
+.style-brand .social svg, .social.style-brand svg { width: 16px; height: 16px; }
+.style-small .social, .social.style-small {
+  width: 22px;
+  height: 22px;
+}
+.style-labeled .social, .social.style-labeled {
+  width: auto;
+  height: auto;
+  padding: 4px 8px;
+}
+

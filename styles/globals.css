@@ -1,0 +1,602 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+
+/* Global base styles (no Tailwind) */
+:root {
+  --base-line-height: 1.4;
+  --bg: #dfe4dd; /* RVB(223,228,221) */
+  --fg: #213431; /* texte sombre vert/gris */
+  --muted: #6b7280;
+  /* Navigation customization variables (defaults reflect current styles) */
+  --nav-height: 64px;
+  --nav-gap: 0.6rem;
+  --nav-font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --nav-font-size: 0.78rem;
+  --nav-font-weight: 600;
+  --nav-text-color: var(--fg);
+  --nav-hover-text-color: var(--fg);
+  --nav-bg-color: var(--bg);
+  /* Active state color (applied to active menu button) */
+  --nav-active-text-color: var(--color-primary);
+  /* Mobile active color is independent; default to normal nav text unless explicitly set */
+  --nav-mobile-active-text-color: var(--nav-text-color);
+}
+
+html, body, #__next {
+  height: 100%;
+  margin: 0;
+  overflow-x: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: var(--base-line-height);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+.container {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: 1120px;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .container { padding: 0 1.5rem; }
+}
+
+@media (min-width: 1024px) {
+  .container { padding: 0 2rem; }
+}
+
+/* Masonry item styling for column layout */
+.masonry-item {
+  break-inside: avoid;
+  margin-bottom: 1rem;
+}
+
+/* Admin sidebar layout when connected */
+:root {
+  --admin-sidebar-width: 0px;
+}
+
+body.has-admin-sidebar {
+  --admin-sidebar-width: 360px; /* slightly wider so content fits (increased to avoid horizontal scrollbar) */
+}
+
+/* push main container to the right when sidebar present */
+body.has-admin-sidebar main > .container {
+  margin-left: var(--admin-sidebar-width);
+}
+
+/* sidebar base styles */
+#admin-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--admin-sidebar-width);
+  max-width: 380px;
+  background: linear-gradient(180deg,#081018 0%, #0f1720 100%);
+  color: #fff;
+  box-shadow: 8px 0 28px rgba(2,6,23,0.55), 2px 0 6px rgba(0,0,0,0.25);
+  padding: 22px 16px;
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  box-sizing: border-box; /* ensure padding counted in width */
+  overflow-x: hidden; /* prevent horizontal scrollbar */
+}
+
+#admin-sidebar .admin-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  letter-spacing: 0.03em;
+}
+
+#admin-sidebar nav {
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+#admin-sidebar ul {
+  list-style: none;
+  padding: 0 6px 0 0; /* small right padding to avoid touching edge */
+  margin: 0;
+}
+
+/* submenu area inside sidebar (horizontal) */
+.submenu {
+  margin-top: 6px;
+  padding: 6px 6px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));
+  font-size: 0.94rem;
+}
+.submenu-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* make file input and preview fit and more compact */
+.submenu input[type="file"] { color: #fff; font-size: 0.9rem; }
+.submenu img { display: block; max-height: 48px; width: auto; border-radius: 6px; }
+
+/* submenu list item placed between menu items */
+.submenu-li {
+  list-style: none;
+  padding: 6px 6px 8px 6px;
+}
+
+/* make submenu visually separated and full width */
+.submenu-li .submenu {
+  box-shadow: 0 6px 14px rgba(2,6,23,0.14);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+/* Scoped admin sidebar submenu overrides - use site background and
+   align submenu buttons with main menu buttons for consistency */
+#admin-sidebar .submenu {
+  /* Revert to the prior white panel look (photo 1) */
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.06);
+  color: var(--fg);
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+}
+
+#admin-sidebar .submenu-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#admin-sidebar .submenu input[type="file"] { color: var(--fg); font-size: 0.92rem; }
+#admin-sidebar .submenu img { display: block; max-height: 56px; width: auto; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+
+/* Make submenu buttons match main menu buttons */
+#admin-sidebar .submenu .menu-item,
+#admin-sidebar .submenu button.menu-item {
+  /* Match main menu buttons' look */
+  background: linear-gradient(180deg, rgba(2,8,12,0.36), rgba(4,10,14,0.44));
+  box-shadow: 0 8px 22px rgba(0,0,0,0.25), inset 0 -1px 0 rgba(255,255,255,0.02);
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  white-space: normal; /* allow wrapping */
+  width: 100%;
+}
+
+/* Ensure import buttons beside preview fit the text and don't overflow */
+#admin-sidebar .submenu .upload-controls .menu-item {
+  max-width: none;
+  width: auto;
+  font-size: 13px;
+  padding: 8px 12px;
+}
+
+#admin-sidebar .submenu .upload-preview img { display:block; max-width:140px; max-height:80px; }
+
+#admin-sidebar .submenu .btn-primary { background: var(--color-primary); color: #fff; }
+
+/* Compact upload layout: preview + controls side-by-side */
+#admin-sidebar .submenu .upload-row { display:flex; gap:12px; align-items:center; }
+#admin-sidebar .submenu .upload-preview { flex:0 0 auto; }
+#admin-sidebar .submenu .upload-controls { flex:1 1 auto; display:flex; gap:8px; align-items:center; }
+#admin-sidebar .submenu .upload-controls input[type="file"] { flex:0 0 auto; }
+#admin-sidebar .submenu .upload-controls .menu-item { flex:0 0 auto; }
+@media (max-width:640px) {
+  #admin-sidebar .submenu .upload-row { flex-direction:column; align-items:stretch; }
+}
+
+/* Ensure the submenu block does not leak styles to global .submenu usage elsewhere */
+@media (min-width: 0px) {
+  /* no-op block to keep specificity contained; actual rules are above */
+}
+
+/* TipTap editor content styling: normalize spacing so list items match paragraph spacing */
+.tiptap-editor p,
+.richtext-content p {
+  margin: 0 0 0.4rem !important; /* tighter to match modal */
+  line-height: var(--base-line-height) !important;
+}
+.tiptap-editor ul,
+.tiptap-editor ol,
+.richtext-content ul,
+.richtext-content ol {
+  margin: 0; /* remove extra gap around lists */
+  padding-left: 1.25rem; /* keep bullets/numbers indented */
+}
+.tiptap-editor li,
+.richtext-content li {
+  margin: 0 !important; /* remove extra gap between list items */
+  padding-bottom: 0 !important; /* remove padding so items are tight */
+  line-height: var(--base-line-height) !important; /* ensure same line-height as paragraphs */
+}
+.tiptap-editor li p,
+.richtext-content li p {
+  margin: 0; /* avoid nested paragraph margins inside list items */
+}
+/* ensure <br> shows as line break with no extra margin */
+.tiptap-editor br,
+.richtext-content br { display: block; content: ""; line-height: var(--base-line-height); margin: 0; padding: 0; }
+
+
+#admin-sidebar li {
+  margin: 6px 0;
+}
+
+#admin-sidebar button.menu-item {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: rgba(255,255,255,0.95);
+  border: none;
+  padding: 12px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.98rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box; /* ensure padding doesn't overflow */
+  white-space: normal; /* allow wrapping if label is long */
+}
+
+/* main menu buttons: slightly darker surface so sub-sections read as lighter panels */
+#admin-sidebar button.menu-item {
+  background: linear-gradient(180deg, rgba(2,8,12,0.36), rgba(4,10,14,0.44));
+  box-shadow: 0 8px 22px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(255,255,255,0.02);
+  padding: 14px 12px;
+}
+
+#admin-sidebar button.menu-item::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  display: inline-block;
+  margin-right: 8px;
+  flex: 0 0 auto;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+/* Remove the leading dot/pulse for buttons inside submenu panels */
+#admin-sidebar .submenu button.menu-item::before,
+#admin-sidebar .submenu .menu-item::before {
+  display: none;
+  content: none;
+}
+
+#admin-sidebar button.menu-item:hover {
+  background: linear-gradient(180deg, rgba(6,12,18,0.52), rgba(4,10,14,0.6));
+  transform: translateX(6px);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(255,255,255,0.02);
+}
+
+#admin-sidebar button.menu-item:active {
+  transform: translateX(3px);
+  box-shadow: 0 3px 8px rgba(2,6,23,0.10), inset 0 -1px 0 rgba(255,255,255,0.02);
+}
+
+#admin-sidebar button.menu-item:active { transform: translateX(2px); }
+
+#admin-sidebar button.menu-item .dot {
+  width: 8px;
+  height: 8px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 50%;
+}
+
+#admin-sidebar .signout {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+#admin-sidebar button.signout-btn {
+  width: 100%;
+  padding: 12px 10px;
+  border: none;
+  background: linear-gradient(180deg,#ef4444 0%, #dc2626 100%);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(220,38,38,0.18), inset 0 -2px 0 rgba(0,0,0,0.08);
+  font-weight: 600;
+}
+
+#admin-sidebar button.signout-btn:hover { filter: brightness(0.98); }
+
+/* smooth transitions */
+#admin-sidebar, #admin-sidebar button.menu-item, #admin-sidebar button.signout-btn { transition: all 180ms ease; }
+
+/* shift page content to the right when sidebar active (avoid overlay) */
+body.has-admin-sidebar .container { margin-left: var(--admin-sidebar-width); transition: margin-left 220ms ease; }
+body.has-admin-sidebar .contentWrap { margin-left: var(--admin-sidebar-width); transition: margin-left 220ms ease; }
+
+/* toggle button shown when sidebar is hidden */
+.admin-toggle-btn {
+  position: fixed;
+  left: 40px; /* align with header content gutter */
+  top: 72px;  /* place under the logo */
+  transform: none;
+  z-index: 999999;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: linear-gradient(180deg,#0f1720,#081018);
+  color: #fff;
+  border: none;
+}
+
+/* Global button primitives used in admin modals */
+.btn-primary {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: linear-gradient(180deg,#0b5cff 0%, #0047d1 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 8px 20px rgba(11,92,255,0.14);
+  cursor: pointer;
+}
+
+.btn-secondary {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+  border: 1px solid rgba(0,0,0,0.06);
+  cursor: pointer;
+}
+
+.btn-ghost {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: transparent;
+  color: #111;
+  border: 1px solid rgba(0,0,0,0.06);
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  /* on small screens header is taller; place toggle below header area */
+  .admin-toggle-btn { left: 16px; top: 100px; }
+}
+
+/* Quill inside modal: ensure toolbar and editor are visible and accessible */
+.modal .ql-toolbar { z-index: 60; background: var(--surface); border-radius: 6px; box-shadow: 0 6px 14px rgba(0,0,0,0.06); }
+.modal .ql-container { background: var(--surface); border: 1px solid var(--border); margin-top: 8px; }
+.modal .ql-editor { min-height: 220px; color: var(--color-text); padding: 12px; }
+.modal .ql-editor p { margin: 0 0 8px; }
+
+/* ensure site logo size is driven by CSS variable */
+:root {
+  --site-logo-height: 36px;
+
+  /* Site style variables (defaults) */
+  --bg-color: #ffffff;
+  --surface: #ffffff; /* card/modal background */
+  --border: #e6e6e6; /* thin borders */
+  --color-primary: #0070f3;
+  --color-secondary: #111111;
+  --color-accent: #ff4081;
+  --color-text: #111111;
+  --base-line-height: 1.6; 
+
+  /* Typography defaults (can be overridden by Site Style editor) */
+  --font-h1-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --font-h1-size: 28px;
+  --font-h1-weight: 700;
+
+  --font-h2-family: var(--font-h1-family);
+  --font-h2-size: 22px;
+  --font-h2-weight: 600;
+
+  --font-h3-family: var(--font-h1-family);
+  --font-h3-size: 18px;
+  --font-h3-weight: 600;
+
+  --font-h4-family: var(--font-h1-family);
+  --font-h4-size: 16px;
+  --font-h4-weight: 600;
+
+  --font-h5-family: var(--font-h1-family);
+  --font-h5-size: 14px;
+  --font-h5-weight: 600;
+
+  --font-body-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --font-body-size: 16px;
+  --font-body-weight: 400;
+}
+
+/* Primary color used for links & accents */
+a { color: var(--color-primary); }
+a:hover, a:focus { color: var(--color-accent); }
+
+/* menu items should highlight using primary color on hover */
+.menu-item:hover, .menu-item:focus { color: var(--color-primary); }
+
+/* TipTap editor content should match site typography by default */
+.tiptap-editor {
+  min-height: 160px;
+  padding: 12px;
+  font-family: var(--font-body-family);
+  color: var(--color-text);
+  /* match site rendering: use site's base line-height */
+  line-height: var(--base-line-height);
+  font-size: var(--font-body-size);
+  background-color: var(--bg-color);
+}
+
+/* Support content areas rendered outside the editor (e.g. public pages) */
+.richtext-content {
+  font-family: var(--font-body-family);
+  color: var(--color-text);
+  line-height: var(--base-line-height);
+  font-size: var(--font-body-size);
+}
+
+.richtext-content h1, .richtext-content h2, .richtext-content h3, .richtext-content h4, .richtext-content h5 {
+  margin: 0;
+}
+.richtext-content h1 { font-family: var(--font-h1-family) !important; font-size: var(--font-h1-size) !important; font-weight: var(--font-h1-weight) !important; }
+.richtext-content h2 { font-family: var(--font-h2-family) !important; font-size: var(--font-h2-size) !important; font-weight: var(--font-h2-weight) !important; }
+.richtext-content h3 { font-family: var(--font-h3-family) !important; font-size: var(--font-h3-size) !important; font-weight: var(--font-h3-weight) !important; }
+.richtext-content h4 { font-family: var(--font-h4-family) !important; font-size: var(--font-h4-size) !important; font-weight: var(--font-h4-weight) !important; }
+.richtext-content h5 { font-family: var(--font-h5-family) !important; font-size: var(--font-h5-size) !important; font-weight: var(--font-h5-weight) !important; }
+.tiptap-editor h1 {
+  font-family: var(--font-h1-family) !important;
+  font-size: var(--font-h1-size) !important;
+  font-weight: var(--font-h1-weight) !important;
+  margin: 0;
+}
+.tiptap-editor h2 {
+  font-family: var(--font-h2-family) !important;
+  font-size: var(--font-h2-size) !important;
+  font-weight: var(--font-h2-weight) !important;
+  margin: 0;
+}
+.tiptap-editor h3 {
+  font-family: var(--font-h3-family) !important;
+  font-size: var(--font-h3-size) !important;
+  font-weight: var(--font-h3-weight) !important;
+  margin: 0;
+}
+.tiptap-editor h4 {
+  font-family: var(--font-h4-family) !important;
+  font-size: var(--font-h4-size) !important;
+  font-weight: var(--font-h4-weight) !important;
+  margin: 0;
+}
+.tiptap-editor h5 {
+  font-family: var(--font-h5-family) !important;
+  font-size: var(--font-h5-size) !important;
+  font-weight: var(--font-h5-weight) !important;
+  margin: 0;
+}
+.tiptap-editor h2 {
+  font-family: var(--font-h2-family);
+  font-size: var(--font-h2-size);
+  font-weight: var(--font-h2-weight);
+  margin: 0;
+}
+.tiptap-editor h3 {
+  font-family: var(--font-h3-family);
+  font-size: var(--font-h3-size);
+  font-weight: var(--font-h3-weight);
+  margin: 0;
+}
+.tiptap-editor p { margin: 0; }
+.tiptap-editor ul, .tiptap-editor ol { margin: 0 0 0 18px; }
+.tiptap-editor img { max-width: 100%; height: auto; }
+
+/* Footer edit modal preview should match actual footer typography */
+.footer-edit-preview {
+  font-size: 0.95rem;
+  color: var(--muted);
+  line-height: var(--base-line-height);
+}
+.footer-edit-preview p { margin: 0; }
+
+/* Floating "Éléments visibles" panel inside Footer edit modal */
+.footer-right-col { position: relative; }
+
+/* Anchor the visible-elements panel inside the right column so it doesn't overlap modal actions */
+.footer-right-col .footer-visible-panel {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: calc(100% - 0px);
+  background: transparent;
+  box-sizing: border-box;
+}
+.footer-visible-panel label { font-size: 0.95rem; color: var(--fg); }
+
+@media (max-width: 720px) {
+  .footer-right-col .footer-visible-panel {
+    position: static;
+    width: auto;
+    margin-top: 12px;
+  }
+}
+
+/* When the panel is rendered in-flow (not anchored), constrain width
+   so the two columns sit closer together and align with the left column. */
+.footer-visible-panel {
+  max-width: 460px;
+  margin-top: 12px;
+}
+.footer-visible-panel > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 880px) {
+  .footer-visible-panel { max-width: none; }
+  .footer-visible-panel > div { grid-template-columns: 1fr 1fr; gap: 10px; }
+}
+
+/* Footer edit modal actions anchored bottom-right */
+.footer-edit-modal { box-sizing: border-box; }
+.footer-edit-modal { padding-bottom: 76px; }
+.footer-modal-actions {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .footer-edit-modal { padding-bottom: 20px; }
+  .footer-modal-actions { position: static; margin-top: 12px; }
+}
+
+/* Font loading state: hide key content until fonts are ready to avoid FOUT/visual jumps */
+html.wf-loading .nav,
+html.wf-loading .header,
+html.wf-loading .contentWrap,
+html.wf-loading .center,
+html.wf-loading .logo,
+html.wf-loading .nav .link,
+html.wf-loading .hero,
+html.wf-loading .imageWrap,
+html.wf-loading .gallery,
+html.wf-loading .tiptap-editor,
+html.wf-loading .richtext-content,
+html.wf-loading .containerInner {
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* When fonts are ready, fade content in smoothly */
+html.wf-loaded .nav,
+html.wf-loaded .hero,
+html.wf-loaded .imageWrap,
+html.wf-loaded .gallery,
+html.wf-loaded .tiptap-editor,
+html.wf-loaded .richtext-content,
+html.wf-loaded .containerInner {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 220ms ease-in;
+}
+
+/* If font load fails, show content but mark with a class to allow different fallback styling */
+html.wf-failed .nav,
+html.wf-failed .hero,
+html.wf-failed .imageWrap,
+html.wf-failed .gallery,
+html.wf-failed .tiptap-editor,
+html.wf-failed .richtext-content,
+html.wf-failed .containerInner {
+  visibility: visible;
+  opacity: 1;
+}

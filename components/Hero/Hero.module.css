@@ -1,0 +1,42 @@
+.hero {
+  padding: 0.5rem 0 1.25rem 0; /* reduce top gap so hero sits closer under nav */
+  width: 100vw;
+  margin-left: calc((100% - 100vw) / 2);
+}
+.inner {
+  position: relative;
+  width: calc(100% - 80px); /* constrain inner to 40px gutters */
+  margin: 0 40px;
+  overflow: hidden;
+  border-radius: 6px;
+}
+.media {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #fff;
+  text-align: center;
+  padding: 2rem 1rem;
+}
+.title {
+  font-size: 3rem;
+  margin: 0;
+  text-shadow: 0 6px 24px rgba(0,0,0,0.5);
+}
+.subtitle {
+  margin-top: 0.75rem;
+  color: rgba(255,255,255,0.9);
+}
+
+@media (max-width: 768px) {
+  .title { font-size: 2rem; }
+}

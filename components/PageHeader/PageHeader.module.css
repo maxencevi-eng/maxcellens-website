@@ -1,0 +1,111 @@
+.hero {
+  position: relative;
+  background: transparent;
+  display: block;
+  padding: 0.5rem 0 2.75rem 0; /* reduced top padding to avoid large gap under header */
+}
+
+.containerInner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  text-align: center;
+}
+
+.heroBox {
+  position: relative;
+  height: 520px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  width: 100vw;
+  margin-left: calc((100% - 100vw) / 2);
+}
+
+.imageWrap {
+  /* Image constrained to viewport minus 40px gutters on each side */
+  width: calc(100% - 80px);
+  margin: 0 40px;
+  height: 100%;
+  max-width: none;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  overflow: hidden;
+}
+
+/* slideshow placeholder for simple background swap */
+.slideshow { position: absolute; inset: 0; overflow: hidden; z-index: 5; pointer-events: none; }
+
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.6) 85%);
+}
+
+.brand {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  margin-top: -30px;
+}
+
+.content {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem; /* small gutter on mobile */
+}
+
+.logo {
+  color: #ffffff;
+  font-size: 72px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin: 0;
+  text-shadow: 0 3px 28px rgba(0,0,0,0.55);
+}
+
+.subtitle {
+  margin-top: 0.75rem;
+  color: rgba(255,255,255,0.92);
+  font-size: 1.1rem;
+}
+
+@media (max-width: 1024px) {
+  .heroBox { height: 520px; }
+  .logo { font-size: 48px; }
+}
+
+@media (max-width: 768px) {
+  .heroBox { height: 360px; }
+  .logo { font-size: 34px; }
+  .subtitle { font-size: 0.98rem; }
+}
+
+@media (min-width: 1920px) {
+  .heroBox { height: 720px; }
+  .logo { font-size: 110px; }
+}
+
+/* Add larger side gutters for the hero content on wide screens */
+@media (min-width: 1200px) {
+  .content { padding: 0 40px; }
+  .imageWrap { width: calc(100% - 80px); margin: 0 40px; }
+}
+
+@media (min-width: 1600px) {
+  .content { padding: 0 40px; }
+  .imageWrap { width: calc(100% - 80px); margin: 0 40px; }
+}
+
+@media (min-width: 2400px) {
+  .content { padding: 0 40px; }
+  .imageWrap { width: calc(100% - 80px); margin: 0 40px; }
+}

@@ -1,0 +1,237 @@
+.header {
+  background: var(--nav-bg-color, var(--bg));
+  border-bottom: none;
+  min-height: var(--nav-height, 64px);
+}
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.6rem 0 0; /* increase space above links, remove bottom space */
+}
+.left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.center {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.logo {
+  font-weight: 800;
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 1.15rem;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.logo img { height: var(--site-logo-height, 36px); width: auto; display: block; }
+.nav {
+  display: flex;
+  gap: var(--nav-gap, 0.6rem);
+  align-items: center;
+}
+.link {
+  color: var(--nav-text-color, var(--fg));
+  text-decoration: none;
+  font-size: var(--nav-font-size, 0.78rem);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.9;
+  padding: 0.06rem 0.45rem; /* slightly smaller vertical padding for tighter links */
+  border-radius: 4px;
+  transition: background 150ms ease, opacity 150ms ease;
+  font-family: var(--nav-font-family, inherit);
+  font-weight: var(--nav-font-weight, 600);
+}
+.link:hover {
+  color: var(--nav-hover-text-color, var(--nav-text-color, var(--fg)));
+  opacity: 1;
+}
+/* Prevent the global a:focus rule from turning nav links the accent color on click; keep nav focus subtle and consistent */
+.link:focus, .link:active, .link:focus-visible {
+  color: var(--nav-text-color, var(--fg));
+  outline: none;
+}
+/* Active link should use the configured active color and win specificity */
+.link.active {
+  color: var(--nav-active-text-color, var(--nav-text-color, var(--fg))) !important;
+  opacity: 1;
+}
+
+.social {
+  display: flex;
+  gap: 0; /* icons tightly packed */
+  align-items: center;
+  margin-left: 0.5rem;
+}
+.socialLink {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg);
+  opacity: 0.95;
+  border-radius: 8px;
+  padding: 4px;
+  transition: background 120ms ease, transform 120ms ease;
+  position: relative;
+}
+
+.socialLink svg { width: 16px; height: 16px; display: block; }
+.socialLetter { font-weight: 700; font-size: 13px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; }
+.socialLink:hover { background: rgba(33,52,49,0.06); transform: translateY(-2px); opacity: 1; }
+
+/* Ensure SVG icons follow the currentColor set on the link */
+.socialLink svg { fill: currentColor; stroke: none; }
+
+/* Uploaded custom icon thumbnail shown next to the inline SVG */
+.customIcon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+  margin-right: 0; /* remove extra gap */
+} 
+
+/* Mobile menu button */
+.menuButton {
+  display: none;
+  background: transparent;
+  border: 0;
+  padding: 6px;
+  margin-left: 0.5rem;
+}
+.hamburger {
+  width: 26px;
+  height: 2px;
+  background: var(--fg);
+  display: block;
+  position: relative;
+}
+.hamburger::before, .hamburger::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 26px;
+  height: 2px;
+  background: var(--fg);
+}
+.hamburger::before { top: -7px; }
+.hamburger::after { top: 7px; }
+
+/* mobile drawer */
+.nav.open {
+  display: flex;
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 280px;
+  background: #fff;
+  color: var(--fg);
+  flex-direction: column;
+  padding: 3.5rem 1rem;
+  box-shadow: -6px 0 24px rgba(0,0,0,0.12);
+  z-index: 1200;
+}
+.nav.open .link { display: block; padding: 0.75rem 0; }
+
+.mobileOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 1100;
+}
+
+@media (max-width: 900px) {
+  .nav { display: none; }
+  .menuButton { display: inline-flex; }
+  .social { display: none; }
+  .center { justify-content: flex-end; }
+}
+
+/* Place the mobile menu button at the right edge on small screens */
+@media (max-width: 900px) {
+  .menuButton {
+    margin-left: auto; /* push button to the right within the flex row */
+    margin-right: 0;   /* align with contentWrap gutter */
+    order: 3; /* make it the last item so it sits at the right edge */
+  }
+  .left { order: 1; }
+  .center { order: 2; }
+}
+
+@media (max-width: 900px) {
+  .inner { padding: 0.5rem 0; }
+}
+
+/* Mobile overrides: use mobile-specific nav variables when available */
+@media (max-width: 900px) {
+  .header {
+    background: var(--nav-mobile-bg-color, var(--nav-bg-color, var(--bg)));
+    min-height: var(--nav-mobile-height, var(--nav-height, 64px));
+  }
+  .nav {
+    gap: var(--nav-mobile-gap, var(--nav-gap, 0.6rem));
+  }
+  .link {
+    color: var(--nav-mobile-text-color, var(--nav-text-color, var(--fg)));
+    font-size: var(--nav-mobile-font-size, var(--nav-font-size, 0.78rem));
+    font-family: var(--nav-mobile-font-family, var(--nav-font-family, inherit));
+    font-weight: var(--nav-mobile-font-weight, var(--nav-font-weight, 600));
+  }
+  .link:hover {
+    color: var(--nav-mobile-hover-text-color, var(--nav-hover-text-color, var(--nav-text-color, var(--fg))));
+  }
+  .link.active {
+    color: var(--nav-mobile-active-text-color, var(--nav-text-color, var(--fg))) !important;
+  }
+}
+
+/* Full-bleed header with 40px margins each side */
+.header {
+  width: 100vw;
+  margin-left: calc((100% - 100vw) / 2);
+}
+
+.contentWrap {
+  width: calc(100% - 80px);
+  margin: 0 40px;
+  box-sizing: border-box;
+  display: block;
+}
+
+/* Icon style variants (same keys as footer) */
+.style-outline .socialLink, .social.style-outline, .socialLink.style-outline { color: var(--fg); background: transparent; border: none; }
+.style-filled .socialLink, .social.style-filled, .socialLink.style-filled { color: #111; background: #fff; border: none; }
+.style-circle .socialLink, .social.style-circle, .socialLink.style-circle { border-radius: 999px; background: rgba(0,0,0,0.03); }
+.style-square .socialLink, .social.style-square, .socialLink.style-square { border-radius: 8px; background: rgba(0,0,0,0.03); }
+.style-brand .socialLink, .social.style-brand, .socialLink.style-brand { background: transparent; border: 1px solid rgba(255,255,255,0.95); color: #ffffff; }
+/* ensure brand header icons remain thin-outlined with white icon */
+.style-brand .socialLink svg, .social.style-brand svg { width: 16px; height: 16px; fill: currentColor; }
+.style-small .socialLink, .social.style-small, .socialLink.style-small { width: 26px; height: 26px; padding: 3px; }
+.style-labeled .socialLink, .social.style-labeled, .socialLink.style-labeled { padding: 4px 8px; width: auto; height: auto; }
+
+/* Match hero larger gutters on wide screens so right edges align */
+/* Keep a consistent 40px gutter at all sizes (user preference) */
+@media (min-width: 1200px) {
+  .contentWrap { width: calc(100% - 80px); margin: 0 40px; }
+}
+
+@media (min-width: 1600px) {
+  .contentWrap { width: calc(100% - 80px); margin: 0 40px; }
+}
+
+@media (min-width: 2400px) {
+  .contentWrap { width: calc(100% - 80px); margin: 0 40px; }
+}
+
+
+
