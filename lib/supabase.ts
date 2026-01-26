@@ -4,23 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const hasPublicSupabaseEnv = Boolean(supabaseUrl && supabaseAnonKey);
-
-if (!hasPublicSupabaseEnv) {
-  console.warn('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY — public supabase client will be disabled.');
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables. Copy .env.local.example to .env.local and set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY');
 }
 
-function makeNoopSupabaseClient() {
-  const noop = async () => ({ data: null, error: null });
-  return {
-    auth: {
-      getUser: async () => ({ data: { user: null }, error: null }),
-      onAuthStateChange: (_cb: any) => ({ data: { subscription: { unsubscribe: () => {} } }, error: null }),
-      signInWithPassword: async (_creds: any) => ({ data: null, error: new Error('Supabase client not configured') }),
-      signOut: async () => ({ data: null, error: null })
-    }
-  } as any;
-}
-
-export const supabase = hasPublicSupabaseEnv ? createClient(supabaseUrl as string, supabaseAnonKey as string) : makeNoopSupabaseClient();
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export default supabase;
