@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
+import { supabaseAdmin, supabaseUrl, serviceKey } from '../../../../lib/supabaseAdmin';
 
 // Simple GET/POST to read/write key/value settings in `site_settings` table.
 export async function GET(req: Request) {
@@ -10,24 +10,46 @@ export async function GET(req: Request) {
     const keys = keysParam.split(',').map(k => k.trim()).filter(Boolean);
 
     if (!keys.length) {
-      // return all settings
-      const { data, error } = await supabaseAdmin.from('site_settings').select('*');
-      if (error) return NextResponse.json({ error: error.message || error }, { status: 500 });
-      const map: Record<string, string> = {};
-      (data || []).forEach((r: any) => map[r.key] = r.value);
-      return NextResponse.json({ settings: map });
+      // return all settings via PostgREST to avoid client library issues
+      try {
+        const resp = await fetch(`${supabaseUrl.replace(/\/+$/,'')}/rest/v1/site_settings?select=key,value`, {
+          headers: {
+            apikey: String(serviceKey),
+            Authorization: `Bearer ${String(serviceKey)}`
+          }
+        });
+        if (!resp.ok) return NextResponse.json({ error: `Supabase REST error ${resp.status}` }, { status: 500 });
+        const data = await resp.json();
+        const map: Record<string, string> = {};
+        (data || []).forEach((r: any) => { if (r && typeof r.key !== 'undefined') map[r.key] = r.value; });
+        return NextResponse.json({ settings: map });
+      } catch (e) {
+        console.error('site-settings REST fetch error', e);
+        return NextResponse.json({ error: String(e) }, { status: 500 });
+      }
     }
 
     const map: Record<string, string> = {};
-    for (const key of keys) {
-      const { data, error } = await supabaseAdmin.from('site_settings').select('value').eq('key', key).limit(1).maybeSingle();
-      if (error) {
-        console.warn('site-settings GET error for', key, error);
-        continue;
+    console.log('site-settings GET keys:', keys);
+    try {
+      // Query PostgREST and filter server-side
+      const resp = await fetch(`${supabaseUrl.replace(/\/+$/,'')}/rest/v1/site_settings?select=key,value`, {
+        headers: {
+          apikey: String(serviceKey),
+          Authorization: `Bearer ${String(serviceKey)}`
+        }
+      });
+      if (!resp.ok) {
+        console.error('site-settings REST bulk fetch failed', resp.status);
+        return NextResponse.json({ error: `Supabase REST error ${resp.status}` }, { status: 500 });
       }
-      if (data && typeof data.value !== 'undefined') map[key] = data.value;
+      const data = await resp.json();
+      (data || []).forEach((r: any) => { if (r && typeof r.key !== 'undefined' && keys.includes(r.key)) map[r.key] = r.value; });
+      return NextResponse.json({ settings: map });
+    } catch (e) {
+      console.error('site-settings REST bulk exception', e);
+      return NextResponse.json({ error: String(e) }, { status: 500 });
     }
-    return NextResponse.json({ settings: map });
   } catch (err: any) {
     console.error('site-settings GET error', err);
     return NextResponse.json({ error: err?.message || String(err) }, { status: 500 });

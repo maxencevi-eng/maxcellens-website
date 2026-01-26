@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+export const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 // DEBUG: log presence of env vars (do not log secrets) to help dev troubleshooting
 console.log('SUPABASE env present?', { hasUrl: Boolean(supabaseUrl), hasAnon: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY), hasServiceKey: Boolean(serviceKey) });
