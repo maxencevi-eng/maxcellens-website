@@ -2,7 +2,8 @@ import PageHeader from '../../components/PageHeader/PageHeader';
 import PortraitGallery from '../../components/PortraitGallery/PortraitGallery';
 import EditablePortraitGallery from '../../components/PortraitGallery/EditablePortraitGallery';
 import PortraitIntroEditor from '../../components/PortraitIntroEditor/PortraitIntroEditor';
-import { portraitPhotos } from '../../data/photos/portraitPhotos';
+// NOTE: removed default demo images to avoid base images appearing on public pages
+// import { portraitPhotos } from '../../data/photos/portraitPhotos';
 
 export const metadata = { title: 'Portrait' };
 
@@ -16,7 +17,8 @@ export default function Portrait() {
       </div>
 
       <div className="container" style={{ padding: '1.5rem 0' }}>
-        <EditablePortraitGallery items={portraitPhotos} />
+        {/* No demo images here — gallery will remain empty until content is saved in Supabase */}
+        <EditablePortraitGallery items={[]} />
       </div>
     </section>
   );

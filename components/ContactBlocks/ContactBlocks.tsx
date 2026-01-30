@@ -48,7 +48,6 @@ export default function ContactBlocks() {
   }, []);
 
   // fallback content when no site-settings set
-  const fallbackImg = 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1200&q=80';
   const fallbackHtml = '<p><strong>Photographe, vidéaste</strong> et chef de projets depuis 2020.</p><p>Je suis spécialisé dans la création d\'images pour les entreprises. Des vidéos courtes pour vos réseaux sociaux, la couverture de grands évènements, et la réalisation de portraits retouchés professionnellement. Je mets tout en œuvre pour livrer des images de haute qualité adaptées à votre besoin.</p><p>N\'hésitez pas à <strong>me contacter</strong> pour échanger et parler de votre attente.</p><p><strong>Email :</strong> <a href="mailto:maxcellens@gmail.com">maxcellens@gmail.com</a></p><p><strong>Téléphone :</strong> (+33) 06 74 96 64 58</p>';
 
   return (
@@ -61,11 +60,16 @@ export default function ContactBlocks() {
 
       <div className={styles.introGrid}>
         <div>
-          <img
-            className={styles.photo}
-            alt="Portrait"
-            src={(photo && photo.url) || fallbackImg}
-          />
+          {/* Only render the photo if a custom photo is set; otherwise render an empty placeholder to avoid showing base images */}
+          {photo?.url ? (
+            <img
+              className={styles.photo}
+              alt="Portrait"
+              src={String(photo.url)}
+            />
+          ) : (
+            <div className={styles.photoPlaceholder} aria-hidden="true" />
+          )}
         </div>
         <div className={styles.card}>
           <div className={styles.cardHeader}>@maxcellens</div>
