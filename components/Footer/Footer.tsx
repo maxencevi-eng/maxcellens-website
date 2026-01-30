@@ -238,7 +238,7 @@ export default function Footer() {
         {sanitizedCol1 ? (
           <div dangerouslySetInnerHTML={{ __html: sanitizedCol1 }} />
         ) : (footerColumn1 ? (
-          footerColumn1.split('\n').map((line, i) => <p key={i} style={{ margin: 0 }}>{line}</p>)
+          footerColumn1.split('\n').map((line, i) => <p key={`${line}-${i}`} style={{ margin: 0 }}>{line}</p>)
         ) : (
           <>
             <p>Maxence Viozelange</p>
@@ -291,7 +291,7 @@ export default function Footer() {
             {sanitizedBottom ? (
               <div className={styles.copy} dangerouslySetInnerHTML={{ __html: sanitizedBottom }} />
             ) : (
-              <p className={styles.copy}>{footerBottomText || `© ${year} Maxcellens | Tous droits réservés | SIRET 889 577 250 00018 | Maxcellens@gmail.com`}</p>
+              <div className={styles.copy}><p style={{ margin: 0 }}>{footerBottomText || `© ${year} Maxcellens | Tous droits réservés | SIRET 889 577 250 00018 | Maxcellens@gmail.com`}</p></div>
             )}
             <div className={`${styles.socials} ${styles[iconStyle] || ''}`} style={isMobileFooter ? { justifyContent: 'center', margin: '0 auto', width: 'auto', display: 'flex' } : undefined}>
                 <a href={socialInstagram || 'https://instagram.com'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={styles.social} style={isMobileFooter ? { width: 48, height: 48, minWidth: 48, minHeight: 48, borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } : undefined}>

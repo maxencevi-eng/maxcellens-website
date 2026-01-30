@@ -225,6 +225,10 @@
 /* small default style for inline svg placeholders */
 .socialPlaceholder { width: 18px; height: 18px; display: block; fill: currentColor; }
 
+/* ensure copy/inner wrappers are consistent */
+.cardBodyInner { display: block; }
+.copy { display: block; }
+
 /* Match hero larger gutters on wide screens so right edges align */
 /* Keep a consistent 40px gutter at all sizes (user preference) */
 @media (min-width: 1200px) {

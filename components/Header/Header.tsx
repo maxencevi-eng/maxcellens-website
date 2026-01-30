@@ -41,6 +41,9 @@ export default function Header() {
   const [socialLoaded, setSocialLoaded] = useState(false);
   const [navLoaded, setNavLoaded] = useState(false);
   const headerReady = socialLoaded && navLoaded;
+  // show header elements only when ready; if loading stalls, reveal fallback after a short fail-safe timeout
+  const [headerVisible, setHeaderVisible] = useState(false);
+  const HEADER_GIVEUP_MS = 1800;
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -64,7 +67,9 @@ export default function Header() {
           if (s.socialIcon_youtube) setCustomIcons(prev => ({ ...prev, youtube: String(s.socialIcon_youtube) }));
           if (s.socialIcon_tiktok) setCustomIcons(prev => ({ ...prev, tiktok: String(s.socialIcon_tiktok) }));
           if (s.socialIcon_linkedin) setCustomIcons(prev => ({ ...prev, linkedin: String(s.socialIcon_linkedin) }));
-        } catch(_){}
+        } catch(_){ }
+        // mark social as processed (success)
+        try { setSocialLoaded(true); } catch(_){}
       } catch (_) {
         try {
           setSocialLinks({
@@ -75,8 +80,8 @@ export default function Header() {
             linkedin: typeof window !== 'undefined' ? localStorage.getItem('socialLinkedIn') || '' : '',
           });
           try { const v = typeof window !== 'undefined' ? localStorage.getItem('socialIconStyle') || '' : ''; if (v) setIconStyle(v); } catch(_){}
-        } catch (_) {}
-      }
+        } catch (_) {}        // mark social as processed (fallback)
+        try { setSocialLoaded(true); } catch(_){}      }
     }
     load();
     function onSettings(e?: Event) {
@@ -119,6 +124,13 @@ export default function Header() {
     window.addEventListener('site-settings-updated', onSettings as EventListener);
     return () => { mounted = false; window.removeEventListener('site-settings-updated', onSettings as EventListener); };
   }, []);
+
+  // Reveal header when both nav & social are ready, or after a short timeout to avoid permanent hiding
+  useEffect(() => {
+    if (headerReady) { try { setHeaderVisible(true); } catch(_){}; return; }
+    const t = setTimeout(() => { try { setHeaderVisible(true); } catch(_){} }, HEADER_GIVEUP_MS);
+    return () => clearTimeout(t);
+  }, [headerReady]);
 
   // prefer locally-saved custom icons immediately (localStorage) so header shows uploaded icons without waiting for server
   useEffect(() => {
@@ -274,7 +286,7 @@ export default function Header() {
               <span style={{position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden'}}>Maxcellens</span>
             </Link>
 
-            <div className={`${styles.social} ${styles[iconStyle] || ''}`} aria-hidden={false}>
+            <div className={`${styles.social} ${styles[iconStyle] || ''} ${headerVisible ? '' : styles.hiddenUntilReady}`} aria-hidden={!headerVisible}>
               <a href={socialLinks.instagram || 'https://instagram.com'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={styles.socialLink}>
                 {customIcons.instagram ? <img src={customIcons.instagram} alt="Instagram custom" className={styles.customIcon} /> : (
                   <svg className={styles.socialPlaceholder} viewBox="0 0 24 24" aria-hidden="true" role="img"><rect x="4" y="4" width="16" height="16" rx="4" ry="4"/><circle cx="12" cy="12" r="4" /></svg>
@@ -307,12 +319,12 @@ export default function Header() {
             </div>
           </div>
 
-          <button className={styles.menuButton} onClick={() => setOpen(!open)} aria-label="Menu">
+          <button className={`${styles.menuButton} ${headerVisible ? '' : styles.hiddenUntilReady}`} onClick={() => setOpen(!open)} aria-label="Menu" aria-hidden={!headerVisible}>
             <span className={styles.hamburger} aria-hidden="true" />
           </button>
 
           <div className={styles.center}>
-            <nav data-measure="nav" className={`${styles.nav} ${open ? styles.open : ''}`} aria-label="Main navigation">
+            <nav data-measure="nav" className={`${styles.nav} ${open ? styles.open : ''} ${headerVisible ? '' : styles.hiddenUntilReady}`} aria-label="Main navigation" aria-hidden={!headerVisible}>
               { ((isMobile ? navMobileVisible : navVisible).realisation ?? true) ? <Link href="/realisation" className={linkClass('/realisation')} onClick={() => setOpen(false)}>Réalisation</Link> : null }
               { ((isMobile ? navMobileVisible : navVisible).evenement ?? true) ? <Link href="/evenement" className={linkClass('/evenement')} onClick={() => setOpen(false)}>Évènement</Link> : null }
               { ((isMobile ? navMobileVisible : navVisible).corporate ?? true) ? <Link href="/corporate" className={linkClass('/corporate')} onClick={() => setOpen(false)}>Corporate</Link> : null }

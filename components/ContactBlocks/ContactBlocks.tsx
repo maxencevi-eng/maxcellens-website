@@ -73,7 +73,9 @@ export default function ContactBlocks() {
         </div>
         <div className={styles.card}>
           <div className={styles.cardHeader}>@maxcellens</div>
-          <div className={styles.cardBody} dangerouslySetInnerHTML={{ __html: (html || fallbackHtml) }} />
+          <div className={styles.cardBody}>
+            <div className={styles.cardBodyInner} dangerouslySetInnerHTML={{ __html: (html || fallbackHtml) }} />
+          </div>
         </div>
       </div>
 
