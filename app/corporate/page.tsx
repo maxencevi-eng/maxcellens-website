@@ -22,7 +22,6 @@ export default function Corporate() {
       </div>
       <div className="container" style={{ padding: '1.5rem 0' }}>
         <h2 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Film</h2>
-        <p style={{ color: 'var(--muted)', marginBottom: '1rem' }}>Vidéos corporate et témoignages — présentation verticale pour lecture fluide.</p>
         <EditableVideoGallery keyName="videos_corporate" initial={corporateVideos} />
       </div>
     </section>

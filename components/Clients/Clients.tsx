@@ -65,7 +65,10 @@ export default function Clients({ logos, title }: Props) {
             }
           } catch (_) {
             const arr = String(s.clients_logos || '').split(/\r?\n|,/).map(x => x.trim()).filter(Boolean);
-            if (arr.length) setItems(arr.map(u => ({ url: u })));
+            if (arr.length) {
+              setItems(arr);
+              setItemsObjects(arr.map(u => ({ url: u })));
+            }
           }
         }
         // load grid settings

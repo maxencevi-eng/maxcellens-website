@@ -14,7 +14,6 @@ export default function Production() {
       </div>
       <div className="container" style={{ padding: '1.5rem 0' }}>
         <h2 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Film</h2>
-        <p style={{ color: 'var(--muted)', marginBottom: '1rem' }}>This is a collection of videos that we have produced. The gallery below is populated by YouTube links and displayed one above the other.</p>
         <EditableVideoGallery keyName="videos_production" initial={productionVideos} />
       </div>
     </section>
