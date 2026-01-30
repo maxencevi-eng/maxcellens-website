@@ -219,6 +219,12 @@
 .style-small .socialLink, .social.style-small, .socialLink.style-small { width: 26px; height: 26px; padding: 3px; }
 .style-labeled .socialLink, .social.style-labeled, .socialLink.style-labeled { padding: 4px 8px; width: auto; height: auto; }
 
+/* Hide nav/social visually until data & font are ready, preserve layout to avoid reflow */
+.hiddenUntilReady { visibility: hidden; opacity: 0; pointer-events: none; }
+
+/* small default style for inline svg placeholders */
+.socialPlaceholder { width: 18px; height: 18px; display: block; fill: currentColor; }
+
 /* Match hero larger gutters on wide screens so right edges align */
 /* Keep a consistent 40px gutter at all sizes (user preference) */
 @media (min-width: 1200px) {

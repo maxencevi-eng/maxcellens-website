@@ -37,6 +37,10 @@ export default function Header() {
   const [socialLinks, setSocialLinks] = useState<{ instagram?: string; facebook?: string; youtube?: string; tiktok?: string; linkedin?: string }>({});
   const [iconStyle, setIconStyle] = useState<string>('style-outline');
   const [customIcons, setCustomIcons] = useState<{ [k: string]: string }>({});
+  // hide nav/social until we have applied server/local settings to avoid flicker
+  const [socialLoaded, setSocialLoaded] = useState(false);
+  const [navLoaded, setNavLoaded] = useState(false);
+  const headerReady = socialLoaded && navLoaded;
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -146,7 +150,7 @@ export default function Header() {
           } else {
             try { const v = localStorage.getItem('navGap'); if (v) document.documentElement.style.setProperty('--nav-gap', `${Number(v)/10}rem`); } catch(_){}
           }
-          if (s.navFontFamily) { try { document.documentElement.style.setProperty('--nav-font-family', String(s.navFontFamily)); } catch(_){} }
+          if (s.navFontFamily) { try { const fallback = 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'; document.documentElement.style.setProperty('--nav-font-family', `${String(s.navFontFamily)}, ${fallback}`); } catch(_){} }
           if (s.navFontSize) { try { document.documentElement.style.setProperty('--nav-font-size', `${s.navFontSize}px`); } catch(_){} }
           if (s.navFontWeight) { try { document.documentElement.style.setProperty('--nav-font-weight', String(s.navFontWeight)); } catch(_){} }
           if (s.navTextColor) { try { document.documentElement.style.setProperty('--nav-text-color', String(s.navTextColor)); } catch(_){} }
@@ -154,13 +158,17 @@ export default function Header() {
           if (s.navActiveTextColor) { try { document.documentElement.style.setProperty('--nav-active-text-color', String(s.navActiveTextColor)); } catch(_){} }
           if (s.navMobileActiveTextColor) { try { document.documentElement.style.setProperty('--nav-mobile-active-text-color', String(s.navMobileActiveTextColor)); } catch(_){} }
           if (s.navBgColor) { try { document.documentElement.style.setProperty('--nav-bg-color', String(s.navBgColor)); } catch(_){} }
+          // mark nav as ready after applying server settings
+          try { setNavLoaded(true); } catch(_){ }
         } else {
           // fallback to localStorage
-          try { const nh = localStorage.getItem('navHeight'); if (nh) document.documentElement.style.setProperty('--nav-height', `${nh}px`); } catch(_){}
-          try { const ng = localStorage.getItem('navGap'); if (ng) document.documentElement.style.setProperty('--nav-gap', `${Number(ng)/10}rem`); } catch(_){}
+          try { const nh = localStorage.getItem('navHeight'); if (nh) document.documentElement.style.setProperty('--nav-height', `${nh}px`); } catch(_){ }
+          try { const ng = localStorage.getItem('navGap'); if (ng) document.documentElement.style.setProperty('--nav-gap', `${Number(ng)/10}rem`); } catch(_){ }
+          try { setNavLoaded(true); } catch(_){ }
         }
       } catch (_) {
-        try { const nh = localStorage.getItem('navHeight'); if (nh) document.documentElement.style.setProperty('--nav-height', `${nh}px`); } catch(_){}
+        try { const nh = localStorage.getItem('navHeight'); if (nh) document.documentElement.style.setProperty('--nav-height', `${nh}px`); } catch(_){ }
+        try { setNavLoaded(true); } catch(_){ }
       }
     }
     loadNav();
@@ -268,23 +276,33 @@ export default function Header() {
 
             <div className={`${styles.social} ${styles[iconStyle] || ''}`} aria-hidden={false}>
               <a href={socialLinks.instagram || 'https://instagram.com'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={styles.socialLink}>
-                {customIcons.instagram ? <img src={customIcons.instagram} alt="Instagram custom" className={styles.customIcon} /> : <span className={styles.socialLetter} aria-hidden="true">I</span>}
+                {customIcons.instagram ? <img src={customIcons.instagram} alt="Instagram custom" className={styles.customIcon} /> : (
+                  <svg className={styles.socialPlaceholder} viewBox="0 0 24 24" aria-hidden="true" role="img"><rect x="4" y="4" width="16" height="16" rx="4" ry="4"/><circle cx="12" cy="12" r="4" /></svg>
+                )}
               </a>
 
               <a href={socialLinks.facebook || 'https://facebook.com'} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className={styles.socialLink}>
-                {customIcons.facebook ? <img src={customIcons.facebook} alt="Facebook custom" className={styles.customIcon} /> : <span className={styles.socialLetter} aria-hidden="true">F</span>}
+                {customIcons.facebook ? <img src={customIcons.facebook} alt="Facebook custom" className={styles.customIcon} /> : (
+                  <svg className={styles.socialPlaceholder} viewBox="0 0 24 24" aria-hidden="true" role="img"><circle cx="12" cy="12" r="8"/></svg>
+                )}
               </a>
 
               <a href={socialLinks.youtube || 'https://youtube.com'} target="_blank" rel="noopener noreferrer" aria-label="YouTube" className={styles.socialLink}>
-                {customIcons.youtube ? <img src={customIcons.youtube} alt="YouTube custom" className={styles.customIcon} /> : <span className={styles.socialLetter} aria-hidden="true">Y</span>}
+                {customIcons.youtube ? <img src={customIcons.youtube} alt="YouTube custom" className={styles.customIcon} /> : (
+                  <svg className={styles.socialPlaceholder} viewBox="0 0 24 24" aria-hidden="true" role="img"><polygon points="9,7 16,12 9,17"/></svg>
+                )}
               </a>
 
               <a href={socialLinks.tiktok || 'https://tiktok.com'} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className={styles.socialLink}>
-                {customIcons.tiktok ? <img src={customIcons.tiktok} alt="TikTok custom" className={styles.customIcon} /> : <span className={styles.socialLetter} aria-hidden="true">T</span>}
+                {customIcons.tiktok ? <img src={customIcons.tiktok} alt="TikTok custom" className={styles.customIcon} /> : (
+                  <svg className={styles.socialPlaceholder} viewBox="0 0 24 24" aria-hidden="true" role="img"><path d="M16 7c-1 0-2 0-2 0v6c0 3-3 3-3 3-2 0-3-1-3-3s1-3 3-3h1V7h4z"/></svg>
+                )}
               </a>
 
               <a href={socialLinks.linkedin || 'https://linkedin.com'} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className={styles.socialLink}>
-                {customIcons.linkedin ? <img src={customIcons.linkedin} alt="LinkedIn custom" className={styles.customIcon} /> : <span className={styles.socialLetter} aria-hidden="true">L</span>}
+                {customIcons.linkedin ? <img src={customIcons.linkedin} alt="LinkedIn custom" className={styles.customIcon} /> : (
+                  <svg className={styles.socialPlaceholder} viewBox="0 0 24 24" aria-hidden="true" role="img"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                )}
               </a>
             </div>
           </div>
