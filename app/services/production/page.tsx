@@ -1,3 +1,8 @@
+export const metadata = {
+  title: 'Réalisation',
+  description: 'Réalisation — Maxcellens',
+};
+
 export default function ProductionService() {
   return (
     <section style={{ padding: '3rem 0' }}>
