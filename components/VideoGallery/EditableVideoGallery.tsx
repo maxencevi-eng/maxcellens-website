@@ -147,8 +147,8 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
   return (
     <div className={className ?? ''}>
       {isAdmin ? (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
-          <button className="btn-secondary" onClick={openEditor}>Modifier la galerie</button>
+        <div style={{ position: 'relative', marginBottom: 12 }}>
+          <button onClick={openEditor} className="btn-secondary" style={{ position: 'absolute', right: 12, top: -16, zIndex: 5, background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>Modifier la galerie</button>
         </div>
       ) : null}
 

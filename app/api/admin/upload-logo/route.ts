@@ -103,7 +103,7 @@ export async function POST(req: Request) {
       const webpUrl = gp?.data?.publicUrl || '';
       const version = String(Date.now());
 
-      return NextResponse.json({ webp: webpUrl, version });
+      return NextResponse.json({ webp: webpUrl, path: webpPath, version });
     } catch (err: any) {
       console.error('image processing/upload error', err);
       return NextResponse.json({ error: err?.message || String(err) }, { status: 500 });

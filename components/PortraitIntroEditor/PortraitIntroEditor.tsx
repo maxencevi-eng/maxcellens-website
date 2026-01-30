@@ -76,11 +76,9 @@ export default function PortraitIntroEditor() {
 
   return (
     <div style={{ width: '100%', padding: '1rem', background: 'transparent' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative' }}>
         {isAdmin && (
-          <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'flex-end' }}>
-            <button onClick={() => setOpen(true)} style={{ padding: '8px 12px', borderRadius: 6, background: '#111', color: '#fff', border: 'none' }}>Modifier</button>
-          </div>
+          <button className="btn-secondary" onClick={() => setOpen(true)} style={{ position: 'absolute', right: 12, top: -16, zIndex: 5, background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>Modifier</button>
         )}
         <div className="richtext-content tiptap-editor" style={{ background: 'transparent', padding: 18, borderRadius: 8, color: 'var(--color-text)', minHeight: 120 }} dangerouslySetInnerHTML={{ __html: html || '<p style="opacity:0.7">Texte d\'introduction pour la page Portrait...</p>' }} />
       </div>

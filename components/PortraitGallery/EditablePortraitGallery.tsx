@@ -118,9 +118,9 @@ export default function EditablePortraitGallery({ items: initialItems }: { items
   // editor UI
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+      <div style={{ position: 'relative', marginBottom: 12 }}>
         {isAdmin && (
-          <button onClick={openEditor} style={{ padding: '8px 12px', borderRadius: 6, background: '#111', color: '#fff', border: 'none', cursor: 'pointer' }}>Modifier la galerie</button>
+          <button className="btn-secondary" onClick={openEditor} style={{ position: 'absolute', right: 12, top: -16, zIndex: 5, background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>Modifier la galerie</button>
         )}
       </div>
       <div>
