@@ -11,12 +11,12 @@ export default function Portrait() {
   return (
     <section>
       <PageHeader page="portrait" title="Portrait" subtitle="Séances portrait en studio et en extérieur" bgImage="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1600&q=80" />
-      <div className="container" style={{ padding: '1.5rem 0' }}>
+      <div className="container" style={{ padding: '1.5rem 0', paddingLeft: 0, paddingRight: 0 }}>
         {/* client editor: non-editable for public, admin can open richtext modal */}
         <PortraitIntroEditor />
-      </div>
+      </div> 
 
-      <div className="container" style={{ padding: '1.5rem 0' }}>
+      <div className="container" style={{ padding: '1.5rem 0', paddingLeft: 0, paddingRight: 0 }}>
         {/* No demo images here — gallery will remain empty until content is saved in Supabase */}
         <EditablePortraitGallery items={[]} />
       </div>

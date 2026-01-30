@@ -73,13 +73,13 @@ export default function VideoIntroEditor({ keyName, title, placeholder }: { keyN
   }
 
   return (
-    <div style={{ width: '100%', padding: '1rem', background: 'transparent' }}>
+    <div style={{ width: '100%', padding: '1rem 0', background: 'transparent' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative' }}>
         {isAdmin && (
           <button className="btn-secondary" onClick={() => setOpen(true)} style={{ position: 'absolute', right: 12, top: -16, zIndex: 5, background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>Modifier</button>
         )}
         {title ? <h3 style={{ textAlign: 'center', marginBottom: 12 }}>{title}</h3> : null}
-        <div className="richtext-content tiptap-editor" style={{ background: 'transparent', padding: 18, borderRadius: 8, color: 'var(--color-text)', minHeight: 80 }} dangerouslySetInnerHTML={{ __html: html || (placeholder || '<p style="opacity:0.7">Texte d\'introduction ...</p>') }} />
+        <div className="richtext-content tiptap-editor" style={{ background: 'transparent', padding: '18px 0', borderRadius: 8, color: 'var(--color-text)', minHeight: 80 }} dangerouslySetInnerHTML={{ __html: html || (placeholder || '<p style="opacity:0.7">Texte d\'introduction ...</p>') }} />
       </div>
 
       {open && (
