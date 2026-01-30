@@ -72,20 +72,20 @@
 }
 .socialLink {
   display: inline-flex;
-  width: 30px;
-  height: 30px;
+  width: 33px; /* +10% */
+  height: 33px; /* +10% */
   align-items: center;
   justify-content: center;
   color: var(--fg);
   opacity: 0.95;
   border-radius: 8px;
-  padding: 4px;
+  padding: 0.5px; /* reduced padding */
   transition: background 120ms ease, transform 120ms ease;
   position: relative;
 }
 
-.socialLink svg { width: 16px; height: 16px; display: block; }
-.socialLetter { font-weight: 700; font-size: 13px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; }
+.socialLink svg { width: 18px; height: 18px; display: block; }
+.socialLetter { font-weight: 700; font-size: 14px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; }
 .socialLink:hover { background: rgba(33,52,49,0.06); transform: translateY(-2px); opacity: 1; }
 
 /* Ensure SVG icons follow the currentColor set on the link */
@@ -93,8 +93,8 @@
 
 /* Uploaded custom icon thumbnail shown next to the inline SVG */
 .customIcon {
-  width: 18px;
-  height: 18px;
+  width: 20px; /* slightly larger to match new button sizes */
+  height: 20px;
   object-fit: contain;
   display: block;
   margin-right: 0; /* remove extra gap */

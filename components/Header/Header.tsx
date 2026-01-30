@@ -168,7 +168,8 @@ export default function Header() {
   }, []);
 
   const pathname = usePathname();
-
+  // close the mobile menu whenever route changes (robust for programmatic navigation)
+  React.useEffect(() => { setOpen(false); }, [pathname]);
   function normalizePath(p: string) {
     try { return String(p || '').replace(/\/+$|\/$/g, '').replace(/\/\//g, '/') || '/'; } catch(_) { return String(p || '').replace(/\/+$/g, '') || '/'; }
   }
@@ -226,13 +227,18 @@ export default function Header() {
     // setup isMobile matchMedia
     try {
       const mq = window.matchMedia('(max-width: 900px)');
-      const apply = () => setIsMobile(Boolean(mq.matches));
+      const apply = () => {
+        const is = Boolean(mq.matches);
+        setIsMobile(is);
+        try { document.documentElement.classList.toggle('mobile-mode', is); } catch(_) {}
+      };
       apply();
       if (mq.addEventListener) mq.addEventListener('change', apply);
       else if ((mq as any).addListener) (mq as any).addListener(apply);
       return () => {
         mounted = false;
         window.removeEventListener('site-settings-updated', onSiteSettings as EventListener);
+        try { document.documentElement.classList.remove('mobile-mode'); } catch(_) {}
         if (mq.removeEventListener) mq.removeEventListener('change', apply);
         else if ((mq as any).removeListener) (mq as any).removeListener(apply);
       };
@@ -289,13 +295,13 @@ export default function Header() {
 
           <div className={styles.center}>
             <nav data-measure="nav" className={`${styles.nav} ${open ? styles.open : ''}`} aria-label="Main navigation">
-              { ((isMobile ? navMobileVisible : navVisible).realisation ?? true) ? <Link href="/production" className={linkClass('/production')}>Réalisation</Link> : null }
-              { ((isMobile ? navMobileVisible : navVisible).evenement ?? true) ? <Link href="/evenement" className={linkClass('/evenement')}>Évènement</Link> : null }
-              { ((isMobile ? navMobileVisible : navVisible).corporate ?? true) ? <Link href="/corporate" className={linkClass('/corporate')}>Corporate</Link> : null }
-              { ((isMobile ? navMobileVisible : navVisible).portrait ?? true) ? <Link href="/portrait" className={linkClass('/portrait')}>Portrait</Link> : null }
-              { ((isMobile ? navMobileVisible : navVisible).galleries ?? true) ? <Link href="/galleries" className={linkClass('/galleries')}>Galeries</Link> : null }
-              { ((isMobile ? navMobileVisible : navVisible).contact ?? true) ? <Link href="/contact" className={linkClass('/contact')}>Contact</Link> : null }
-              { ((isMobile ? navMobileVisible : navVisible).admin ?? true) ? <Link href="/admin" className={linkClass('/admin')}>Admin</Link> : null }
+              { ((isMobile ? navMobileVisible : navVisible).realisation ?? true) ? <Link href="/production" className={linkClass('/production')} onClick={() => setOpen(false)}>Réalisation</Link> : null }
+              { ((isMobile ? navMobileVisible : navVisible).evenement ?? true) ? <Link href="/evenement" className={linkClass('/evenement')} onClick={() => setOpen(false)}>Évènement</Link> : null }
+              { ((isMobile ? navMobileVisible : navVisible).corporate ?? true) ? <Link href="/corporate" className={linkClass('/corporate')} onClick={() => setOpen(false)}>Corporate</Link> : null }
+              { ((isMobile ? navMobileVisible : navVisible).portrait ?? true) ? <Link href="/portrait" className={linkClass('/portrait')} onClick={() => setOpen(false)}>Portrait</Link> : null }
+              { ((isMobile ? navMobileVisible : navVisible).galleries ?? true) ? <Link href="/galleries" className={linkClass('/galleries')} onClick={() => setOpen(false)}>Galeries</Link> : null }
+              { ((isMobile ? navMobileVisible : navVisible).contact ?? true) ? <Link href="/contact" className={linkClass('/contact')} onClick={() => setOpen(false)}>Contact</Link> : null }
+              { ((isMobile ? navMobileVisible : navVisible).admin ?? true) ? <Link href="/admin" className={linkClass('/admin')} onClick={() => setOpen(false)}>Admin</Link> : null }
             </nav>
           </div>
         </div>

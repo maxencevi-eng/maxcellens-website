@@ -59,6 +59,7 @@ export default function Footer() {
   const [sanitizedCol1, setSanitizedCol1] = useState<string | null>(null);
   const [sanitizedBottom, setSanitizedBottom] = useState<string | null>(null);
   const [imgError, setImgError] = useState(false);
+  const [isMobileFooter, setIsMobileFooter] = useState(false);
   const [socialInstagram, setSocialInstagram] = useState<string>('#');
   const [socialFacebook, setSocialFacebook] = useState<string>('#');
   const [socialYouTube, setSocialYouTube] = useState<string>('#');
@@ -204,55 +205,82 @@ export default function Footer() {
     return () => { mounted = false; };
   }, [footerColumn1, footerBottomText]);
 
+  useEffect(() => {
+    try {
+      const mq = window.matchMedia('(max-width:900px)');
+      const apply = () => setIsMobileFooter(Boolean(mq.matches));
+      apply();
+      if (mq.addEventListener) mq.addEventListener('change', apply);
+      else if ((mq as any).addListener) (mq as any).addListener(apply);
+      return () => {
+        try {
+          if (mq.removeEventListener) mq.removeEventListener('change', apply);
+          else if ((mq as any).removeListener) (mq as any).removeListener(apply);
+        } catch (_) {}
+      };
+    } catch (_) {}
+  }, []);
+
+  // build column JSX so we can re-order on mobile reliably (avoids relying only on CSS selectors)
+  const colLogo = (
+    <div className={`${styles.col} ${styles.colLogo}`} key="colLogo">
+      <h3 className={styles.logo}>
+        <Link href="/" aria-label="Accueil">
+          {!imgError ? (
+            <img src={logoSrc} alt="Maxcellens" onError={() => setImgError(true)} onLoad={() => setImgError(false)} />
+          ) : (
+            <span style={{ fontWeight: 800, color: 'var(--fg)' }}>Maxcellens</span>
+          )}
+        </Link>
+      </h3>
+
+      <div className={styles.contact}>
+        {sanitizedCol1 ? (
+          <div dangerouslySetInnerHTML={{ __html: sanitizedCol1 }} />
+        ) : (footerColumn1 ? (
+          footerColumn1.split('\n').map((line, i) => <p key={i} style={{ margin: 0 }}>{line}</p>)
+        ) : (
+          <>
+            <p>Maxence Viozelange</p>
+            <p>📞 06.74.96.64.58</p>
+            <p>✉️ maxcellens@gmail.com</p>
+          </>
+        ))}
+      </div>
+    </div>
+  );
+
+  const colServices = (
+    <div className={`${styles.col} ${styles.colServices}`} key="colServices">
+      <h4>Services</h4>
+      <ul className={styles.list}>
+        {(!footerMenuVisible || footerMenuVisible.realisation) && <li><Link href="/production">Réalisation</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.evenement) && <li><Link href="/evenement">Évènement</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.corporate) && <li><Link href="/corporate">Corporate</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.portrait) && <li><Link href="/portrait">Portrait</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.galleries) && <li><Link href="/galleries">Galeries</Link></li>}
+      </ul>
+    </div>
+  );
+
+  
+
+  const colInfo = (
+    <div className={`${styles.col} ${styles.colInfo}`} key="colInfo">
+      <h4>Information</h4>
+      <ul className={styles.list}>
+        {(!footerMenuVisible || footerMenuVisible.contact) && <li><Link href="/contact">Contact</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.admin) && <li><Link href="/admin">Admin</Link></li>}
+      </ul>
+    </div>
+  );
+
   return (
-    <footer className={styles.footer}>
+    <footer className={`${styles.footer} ${isMobileFooter ? styles.mobile : ''}`}>
       <div className={styles.top}>
         <div className="container">
-          <div className={styles.columns}>
-            <div className={styles.col}>
-              <h3 className={styles.logo}>
-                <Link href="/" aria-label="Accueil">
-                  {!imgError ? (
-                    <img src={logoSrc} alt="Maxcellens" onError={() => setImgError(true)} onLoad={() => setImgError(false)} />
-                  ) : (
-                    <span style={{ fontWeight: 800, color: 'var(--fg)' }}>Maxcellens</span>
-                  )}
-                </Link>
-              </h3>
-
-              <div className={styles.contact}>
-                {sanitizedCol1 ? (
-                  <div dangerouslySetInnerHTML={{ __html: sanitizedCol1 }} />
-                ) : (footerColumn1 ? (
-                  footerColumn1.split('\n').map((line, i) => <p key={i} style={{ margin: 0 }}>{line}</p>)
-                ) : (
-                  <>
-                    <p>Maxence Viozelange</p>
-                    <p>📞 06.74.96.64.58</p>
-                    <p>✉️ maxcellens@gmail.com</p>
-                  </>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.col}>
-              <h4>Services</h4>
-              <ul className={styles.list}>
-                {(!footerMenuVisible || footerMenuVisible.realisation) && <li><Link href="/production">Réalisation</Link></li>}
-                {(!footerMenuVisible || footerMenuVisible.evenement) && <li><Link href="/evenement">Évènement</Link></li>}
-                {(!footerMenuVisible || footerMenuVisible.corporate) && <li><Link href="/corporate">Corporate</Link></li>}
-                {(!footerMenuVisible || footerMenuVisible.portrait) && <li><Link href="/portrait">Portrait</Link></li>}
-                {(!footerMenuVisible || footerMenuVisible.galleries) && <li><Link href="/galleries">Galeries</Link></li>}
-              </ul>
-            </div>
-
-            <div className={styles.col}>
-              <h4>Information</h4>
-              <ul className={styles.list}>
-                {(!footerMenuVisible || footerMenuVisible.contact) && <li><Link href="/contact">Contact</Link></li>}
-                {(!footerMenuVisible || footerMenuVisible.admin) && <li><Link href="/admin">Admin</Link></li>}
-              </ul>
-            </div>
+          <div className={styles.columns} style={isMobileFooter ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' } : undefined}>
+            {isMobileFooter ? ([colServices, colInfo, colLogo]) : ([colLogo, colServices, colInfo])}
           </div>
         </div>
       </div>
@@ -265,25 +293,25 @@ export default function Footer() {
             ) : (
               <p className={styles.copy}>{footerBottomText || `© ${year} Maxcellens | Tous droits réservés | SIRET 889 577 250 00018 | Maxcellens@gmail.com`}</p>
             )}
-            <div className={`${styles.socials} ${styles[iconStyle] || ''}`}>
-                <a href={socialInstagram || 'https://instagram.com'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={styles.social}>
-                {customIcons.instagram ? <img src={customIcons.instagram} alt="Instagram custom" className={styles.customIcon} /> : <span className={styles.socialLetter} aria-hidden="true">I</span>}
+            <div className={`${styles.socials} ${styles[iconStyle] || ''}`} style={isMobileFooter ? { justifyContent: 'center', margin: '0 auto', width: 'auto', display: 'flex' } : undefined}>
+                <a href={socialInstagram || 'https://instagram.com'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={styles.social} style={isMobileFooter ? { width: 48, height: 48, minWidth: 48, minHeight: 48, borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } : undefined}>
+                {customIcons.instagram ? <img src={customIcons.instagram} alt="Instagram custom" className={styles.customIcon} style={isMobileFooter ? { width: 28, height: 28 } : undefined} /> : <span className={styles.socialLetter} aria-hidden="true" style={isMobileFooter ? { fontSize: '14px' } : undefined}>I</span>}
               </a>
 
-              <a href={socialFacebook || 'https://facebook.com'} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className={styles.social}>
-                {customIcons.facebook ? <img src={customIcons.facebook} alt="Facebook custom" className={styles.customIcon} /> : <span className={styles.socialLetter} aria-hidden="true">F</span>}
+              <a href={socialFacebook || 'https://facebook.com'} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className={styles.social} style={isMobileFooter ? { width: 48, height: 48, minWidth: 48, minHeight: 48, borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } : undefined}>
+                {customIcons.facebook ? <img src={customIcons.facebook} alt="Facebook custom" className={styles.customIcon} style={isMobileFooter ? { width: 28, height: 28 } : undefined} /> : <span className={styles.socialLetter} aria-hidden="true" style={isMobileFooter ? { fontSize: '14px' } : undefined}>F</span>}
               </a>
 
-              <a href={socialYouTube || 'https://youtube.com'} target="_blank" rel="noopener noreferrer" aria-label="YouTube" className={styles.social}>
-                {customIcons.youtube ? <img src={customIcons.youtube} alt="YouTube custom" className={styles.customIcon} /> : <span className={styles.socialLetter} aria-hidden="true">Y</span>}
+              <a href={socialYouTube || 'https://youtube.com'} target="_blank" rel="noopener noreferrer" aria-label="YouTube" className={styles.social} style={isMobileFooter ? { width: 48, height: 48, minWidth: 48, minHeight: 48, borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } : undefined}>
+                {customIcons.youtube ? <img src={customIcons.youtube} alt="YouTube custom" className={styles.customIcon} style={isMobileFooter ? { width: 28, height: 28 } : undefined} /> : <span className={styles.socialLetter} aria-hidden="true" style={isMobileFooter ? { fontSize: '14px' } : undefined}>Y</span>}
               </a>
 
-              <a href={socialTikTok || 'https://tiktok.com'} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className={styles.social}>
-                {customIcons.tiktok ? <img src={customIcons.tiktok} alt="TikTok custom" className={styles.customIcon} /> : <span className={styles.socialLetter} aria-hidden="true">T</span>}
+              <a href={socialTikTok || 'https://tiktok.com'} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className={styles.social} style={isMobileFooter ? { width: 48, height: 48, minWidth: 48, minHeight: 48, borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } : undefined}>
+                {customIcons.tiktok ? <img src={customIcons.tiktok} alt="TikTok custom" className={styles.customIcon} style={isMobileFooter ? { width: 28, height: 28 } : undefined} /> : <span className={styles.socialLetter} aria-hidden="true" style={isMobileFooter ? { fontSize: '14px' } : undefined}>T</span>}
               </a>
 
-              <a href={socialLinkedIn || 'https://linkedin.com'} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className={styles.social}>
-                {customIcons.linkedin ? <img src={customIcons.linkedin} alt="LinkedIn custom" className={styles.customIcon} /> : <span className={styles.socialLetter} aria-hidden="true">L</span>}
+              <a href={socialLinkedIn || 'https://linkedin.com'} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className={styles.social} style={isMobileFooter ? { width: 48, height: 48, minWidth: 48, minHeight: 48, borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } : undefined}>
+                {customIcons.linkedin ? <img src={customIcons.linkedin} alt="LinkedIn custom" className={styles.customIcon} style={isMobileFooter ? { width: 28, height: 28 } : undefined} /> : <span className={styles.socialLetter} aria-hidden="true" style={isMobileFooter ? { fontSize: '14px' } : undefined}>L</span>}
               </a>
             </div>
           </div>

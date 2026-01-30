@@ -189,9 +189,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // inject font loader after previously generated styleTag so it runs early
   if (styleTag) styleTag = styleTag + '\n' + fontLoaderScript; else styleTag = fontLoaderScript;
 
+  // ensure a viewport meta is present so matchMedia reports expected widths on mobile devices
+  const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${styleTag}`;
+
   return (
     <html lang="fr" className="wf-loading">
-      <head suppressHydrationWarning dangerouslySetInnerHTML={{ __html: styleTag }} />
+      <head suppressHydrationWarning dangerouslySetInnerHTML={{ __html: headContent }} />
       <body>
         <SiteStyleProvider>
           <AdminSidebar />
