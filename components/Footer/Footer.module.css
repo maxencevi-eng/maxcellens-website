@@ -167,3 +167,37 @@
   padding: 4px 8px;
 }
 
+/* Mobile-specific tweaks: scale logo & text and center bottom copy on small screens */
+@media (max-width: 480px) {
+  /* scale logo and logo image fluidly on small screens */
+  .logo {
+    font-size: clamp(1rem, 7vw, 1.25rem);
+  }
+  .logo img {
+    height: clamp(24px, 9vw, 36px);
+  }
+
+  /* slightly reduce general footer text sizes for mobile */
+  .contact p,
+  .col h4,
+  .list a,
+  .copy {
+    font-size: clamp(0.8rem, 3.5vw, 0.95rem);
+  }
+
+  /* center the bottom copyright text and socials */
+  .bottomInner {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .copy {
+    text-align: center;
+    justify-self: center;
+  }
+
+  .socials {
+    justify-self: center;
+  }
+}
+
