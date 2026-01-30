@@ -26,12 +26,14 @@ export async function POST(req: Request) {
     if (folder === 'favicons') baseName = `${folder}/favicon`;
     // allow a dedicated footer logo stored under logos/footer-logo
     if (folder === 'footer') baseName = `logos/footer-logo`;
+    // store footer banner under banners/footer-banner and treat it like a 'contact' quality upload
+    if (folder === 'footer-banner') baseName = `banners/footer-banner`;
 
     // Use sharp to create a compressed WebP only and attempt to keep it under maxSize
     try {
       // Default target is tiny for logos/favicons to keep them extremely small.
-      // For the contact photo we allow up to 200 KB so it retains quality.
-      const MAX_BYTES = folder === 'contact' ? 200 * 1024 : 5 * 1024; // 200 KB or 5 KB
+      // For the contact photo and footer banner we allow up to 200 KB so they retain quality.
+      const MAX_BYTES = (folder === 'contact' || folder === 'footer-banner') ? 500 * 1024 : 5 * 1024; // 500 KB or 5 KB
 
       // helper: try different sizes and quality to get under MAX_BYTES
       async function generateWebpWithinSize(input: Buffer, maxBytes: number) {
@@ -81,6 +83,8 @@ export async function POST(req: Request) {
           removePaths.push('favicons/favicon.webp', 'favicons/favicon.png');
         } else if (folder === 'footer') {
           removePaths.push('logos/footer-logo.webp', 'logos/footer-logo.png');
+        } else if (folder === 'footer-banner') {
+          removePaths.push('banners/footer-banner.webp', 'banners/footer-banner.png');
         } else {
           removePaths.push(webpPath);
         }

@@ -67,12 +67,15 @@ export default function Footer() {
   const [socialLinkedIn, setSocialLinkedIn] = useState<string>('#');
   const [iconStyle, setIconStyle] = useState<string>('style-outline');
   const [customIcons, setCustomIcons] = useState<{ [k: string]: string }>({});
+  const [footerBanner, setFooterBanner] = useState<{ url?: string; path?: string } | null>(null);
+  const [footerBannerFocal, setFooterBannerFocal] = useState<{ x: number; y: number } | null>(null);
+  const [footerBannerHeight, setFooterBannerHeight] = useState<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=footerColumn1,footerBottomText,footerMenuVisible,socialIcon_instagram,socialIcon_facebook,socialIcon_youtube,socialIcon_tiktok,socialIcon_linkedin');
+        const resp = await fetch('/api/admin/site-settings?keys=footerColumn1,footerBottomText,footerMenuVisible,footerBanner,footerBannerFocal,footerBannerHeight,socialIcon_instagram,socialIcon_facebook,socialIcon_youtube,socialIcon_tiktok,socialIcon_linkedin');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
@@ -84,7 +87,30 @@ export default function Footer() {
         } else {
           try { const v = localStorage.getItem('footerMenuVisible'); if (v) setFooterMenuVisible(JSON.parse(v)); else setFooterMenuVisible(null); } catch(_) { setFooterMenuVisible(null); }
         }
-        try {
+        try {          if (s.footerBanner) {
+            try {
+              const parsed = JSON.parse(String(s.footerBanner));
+              if (parsed && (parsed.url || parsed.path)) setFooterBanner({ url: parsed.url, path: parsed.path });
+              else if (typeof parsed === 'string') setFooterBanner({ url: parsed });
+            } catch (_) { setFooterBanner({ url: String(s.footerBanner) }); }
+          } else {
+            try { const v = localStorage.getItem('footerBanner'); if (v) { const parsed = JSON.parse(v); if (parsed && (parsed.url || parsed.path)) setFooterBanner({ url: parsed.url, path: parsed.path }); else setFooterBanner({ url: String(v) }); } } catch(_){}
+          }
+
+          // load banner focal point (JSON {x,y})
+          if (s.footerBannerFocal) {
+            try { const f = JSON.parse(String(s.footerBannerFocal)); if (f && typeof f.x === 'number' && typeof f.y === 'number') setFooterBannerFocal({ x: Number(f.x), y: Number(f.y) }); } catch(_) {}
+          } else {
+            try { const vf = localStorage.getItem('footerBannerFocal'); if (vf) { const p = JSON.parse(vf); if (p && typeof p.x === 'number' && typeof p.y === 'number') setFooterBannerFocal({ x: Number(p.x), y: Number(p.y) }); } } catch(_) {}
+          }
+
+          // load banner height (number in px)
+          if (s.footerBannerHeight) {
+            try { setFooterBannerHeight(Number(s.footerBannerHeight)); } catch(_) {}
+          } else {
+            try { const vh = localStorage.getItem('footerBannerHeight'); if (vh) setFooterBannerHeight(Number(vh)); } catch(_) {}
+          }
+
           if (s.socialIcon_instagram) setCustomIcons(prev => ({ ...prev, instagram: String(s.socialIcon_instagram) }));
           if (s.socialIcon_facebook) setCustomIcons(prev => ({ ...prev, facebook: String(s.socialIcon_facebook) }));
           if (s.socialIcon_youtube) setCustomIcons(prev => ({ ...prev, youtube: String(s.socialIcon_youtube) }));
@@ -103,13 +129,23 @@ export default function Footer() {
     function onSettings(e?: Event) {
       try {
         const det = (e as any)?.detail;
-        if (det && det.key && det.url) {
+        if (det && det.key) {
           const key = String(det.key);
-          if (key === 'socialIcon_instagram') setCustomIcons(prev => ({ ...prev, instagram: String(det.url) }));
-          if (key === 'socialIcon_facebook') setCustomIcons(prev => ({ ...prev, facebook: String(det.url) }));
-          if (key === 'socialIcon_youtube') setCustomIcons(prev => ({ ...prev, youtube: String(det.url) }));
-          if (key === 'socialIcon_tiktok') setCustomIcons(prev => ({ ...prev, tiktok: String(det.url) }));
-          if (key === 'socialIcon_linkedin') setCustomIcons(prev => ({ ...prev, linkedin: String(det.url) }));
+          if (key === 'socialIcon_instagram' && (det as any).url) setCustomIcons(prev => ({ ...prev, instagram: String((det as any).url) }));
+          if (key === 'socialIcon_facebook' && (det as any).url) setCustomIcons(prev => ({ ...prev, facebook: String((det as any).url) }));
+          if (key === 'socialIcon_youtube' && (det as any).url) setCustomIcons(prev => ({ ...prev, youtube: String((det as any).url) }));
+          if (key === 'socialIcon_tiktok' && (det as any).url) setCustomIcons(prev => ({ ...prev, tiktok: String((det as any).url) }));
+          if (key === 'socialIcon_linkedin' && (det as any).url) setCustomIcons(prev => ({ ...prev, linkedin: String((det as any).url) }));
+          if (key === 'footerBanner' && (det as any).url) setFooterBanner({ url: String((det as any).url), path: (det as any).path || undefined });
+          if (key === 'footerBanner' && (det as any).value) {
+            try { const p = JSON.parse(String((det as any).value)); if (p && (p.url || p.path)) setFooterBanner({ url: p.url, path: p.path }); } catch(_) {}
+          }
+          if (key === 'footerBannerFocal' && (det as any).value) {
+            try { const f = JSON.parse(String((det as any).value)); if (f && typeof f.x === 'number' && typeof f.y === 'number') setFooterBannerFocal({ x: Number(f.x), y: Number(f.y) }); } catch(_) {}
+          }
+          if (key === 'footerBannerHeight' && (det as any).value) {
+            try { setFooterBannerHeight(Number((det as any).value)); } catch(_) {}
+          }
           return;
         }
       } catch(_){}      // try to refetch authoritative values from the server first
@@ -134,6 +170,7 @@ export default function Footer() {
       try { const v = localStorage.getItem('footerColumn1'); if (v) setFooterColumn1(v); } catch(_){ }
       try { const v = localStorage.getItem('footerBottomText'); if (v) setFooterBottomText(v); } catch(_){ }
       try { const v = localStorage.getItem('footerMenuVisible'); if (v) setFooterMenuVisible(JSON.parse(v)); } catch(_){ }
+      try { const v = localStorage.getItem('footerBanner'); if (v) { const parsed = JSON.parse(v); if (parsed && (parsed.url || parsed.path)) setFooterBanner({ url: parsed.url, path: parsed.path }); else setFooterBanner({ url: String(v) }); } } catch(_){ }
       try { const si = localStorage.getItem('socialIcon_instagram'); if (si) setCustomIcons(prev => ({ ...prev, instagram: si })); } catch(_){ }
       try { const sf = localStorage.getItem('socialIcon_facebook'); if (sf) setCustomIcons(prev => ({ ...prev, facebook: sf })); } catch(_){ }
       try { const sy = localStorage.getItem('socialIcon_youtube'); if (sy) setCustomIcons(prev => ({ ...prev, youtube: sy })); } catch(_){ }
@@ -277,6 +314,20 @@ export default function Footer() {
 
   return (
     <footer className={`${styles.footer} ${isMobileFooter ? styles.mobile : ''}`}>
+      {footerBanner?.url ? (
+        <div className={styles.banner} role="img" aria-label="Footer banner wrapper">
+          <div
+            className={styles.bannerInner}
+            style={{
+              backgroundImage: `url(${footerBanner.url})`,
+              backgroundPosition: footerBannerFocal ? `${footerBannerFocal.x}% ${footerBannerFocal.y}%` : 'center',
+              height: footerBannerHeight ? `${footerBannerHeight}px` : undefined
+            }}
+            role="img"
+            aria-label="Footer banner"
+          />
+        </div>
+      ) : null}
       <div className={styles.top}>
         <div className="container">
           <div className={styles.columns} style={isMobileFooter ? { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' } : undefined}>

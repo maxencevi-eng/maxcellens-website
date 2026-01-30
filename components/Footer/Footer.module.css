@@ -3,6 +3,31 @@
   font-family: inherit;
 }
 
+/* Banner image that sits directly above the footer columns — managed via Footer settings
+   Use the same layout approach as PageHeader: a full-bleed wrapper (.banner) with a centered
+   inner image area (.bannerInner) that aligns with site content gutters and handles focal/height. */
+.banner {
+  width: 100vw;
+  margin-left: calc((100% - 100vw) / 2);
+  display: block;
+  overflow: hidden;
+}
+
+/* Inner content aligned with header .contentWrap so left/right gutters match exactly */
+.bannerInner {
+  width: calc(100% - 80px);
+  margin: 0 40px;
+  height: var(--site-footer-banner-height, 160px);
+  background-size: cover;
+  background-position: center;
+  box-sizing: border-box;
+  position: relative;
+}
+
+@media (max-width: 640px) {
+  .bannerInner { width: calc(100% - 30px); margin: 0 15px; height: 110px; background-position: center top; }
+}
+
 .top {
   background: #f5f5f6;
   border-bottom: 1px solid rgba(15,23,42,0.06);
