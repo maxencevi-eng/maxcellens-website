@@ -12,7 +12,6 @@ export default function ContactPage() {
     <section>
       <PageHeader page="contact" title="Contact" subtitle="Contactez-nous pour vos projets photo & vidéo" bgImage="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1600&q=80" />
       <div className="container" style={{ padding: '1.5rem 0' }}>
-        <p style={{ color: 'var(--muted)' }}>Pour toute demande, contactez-moi à <strong>maxcellens@gmail.com</strong> ou par téléphone au <strong>06.74.96.64.58</strong>.</p>
         <ContactBlocks />
       </div>
     </section>

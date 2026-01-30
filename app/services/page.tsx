@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function ServicesIndex() {
   const services = [
-    { slug: 'production', title: 'Réalisation' },
+    { slug: 'realisation', title: 'Réalisation' },
     { slug: 'evenement', title: 'Évènement' },
     { slug: 'corporate', title: 'Corporate' },
     { slug: 'portrait', title: 'Portrait' },

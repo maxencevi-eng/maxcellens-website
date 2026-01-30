@@ -186,8 +186,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // small script to swap wf-loading -> wf-loaded once fonts are ready (or fallback after timeout)
   const fontLoaderScript = `<script>(function(){try{var timeout=1000;if(document.fonts&&document.fonts.ready){document.fonts.ready.then(function(){try{document.documentElement.classList.remove('wf-loading');document.documentElement.classList.add('wf-loaded');}catch(e){} });setTimeout(function(){try{if(document.documentElement.classList.contains('wf-loading')){document.documentElement.classList.remove('wf-loading');document.documentElement.classList.add('wf-failed');}}catch(e){}},timeout);}else{try{document.documentElement.classList.remove('wf-loading');document.documentElement.classList.add('wf-loaded');}catch(e){}}}catch(e){} })()</script>`;
 
+  // shim to avoid TrustedTypes 'createHTML' runtime error in some hosting environments
+  const trustedTypesShim = `<script>(function(){try{if(window&&window.trustedTypes&&window.trustedTypes.defaultPolicy&&typeof window.trustedTypes.defaultPolicy.createHTML!=='function'){try{Object.defineProperty(window.trustedTypes.defaultPolicy,'createHTML',{configurable:true,writable:true,value:function(s){return String(s);}});}catch(e){try{var p=window.trustedTypes.createPolicy('default-shim',{createHTML:function(s){return String(s)}});if(p&&typeof p.createHTML==='function'){try{window.trustedTypes.defaultPolicy=createProxy(p);}catch(_){/* ignore */}}}catch(_){}}}function createProxy(p){return {createHTML:function(s){return p.createHTML(s)},createScriptURL:p.createScriptURL?function(u){return p.createScriptURL(u)}:undefined};}}catch(e){} })()</script>`;
+
   // inject font loader after previously generated styleTag so it runs early
-  if (styleTag) styleTag = styleTag + '\n' + fontLoaderScript; else styleTag = fontLoaderScript;
+  if (styleTag) styleTag = styleTag + '\n' + fontLoaderScript + '\n' + trustedTypesShim; else styleTag = fontLoaderScript + '\n' + trustedTypesShim;
 
   // ensure a viewport meta is present so matchMedia reports expected widths on mobile devices
   const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${styleTag}`;

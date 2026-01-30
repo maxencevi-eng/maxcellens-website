@@ -29,12 +29,19 @@ export async function POST(req: Request) {
 
     // Use sharp to create a compressed WebP only and attempt to keep it under maxSize
     try {
-      const MAX_BYTES = 5 * 1024; // 5 KB target
+      // Default target is tiny for logos/favicons to keep them extremely small.
+      // For the contact photo we allow up to 200 KB so it retains quality.
+      const MAX_BYTES = folder === 'contact' ? 200 * 1024 : 5 * 1024; // 200 KB or 5 KB
 
       // helper: try different sizes and quality to get under MAX_BYTES
       async function generateWebpWithinSize(input: Buffer, maxBytes: number) {
-        const widthCandidates = [1600, 1200, 800, 400, 200, 100, 64, 48, 32, 24];
-        const qualityCandidates = [82, 72, 62, 52, 42, 32, 22, 12, 8];
+        // Use more generous sizes/qualities for contact photos to keep them visually good
+        const widthCandidates = folder === 'contact'
+          ? [2400, 2000, 1600, 1200, 900, 800, 600, 400, 200, 100]
+          : [1600, 1200, 800, 400, 200, 100, 64, 48, 32, 24];
+        const qualityCandidates = folder === 'contact'
+          ? [92, 86, 80, 72, 64, 56, 48, 40, 32, 24]
+          : [82, 72, 62, 52, 42, 32, 22, 12, 8];
 
         let bestBuf: Buffer | null = null;
         let bestSize = Infinity;

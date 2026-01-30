@@ -27,9 +27,10 @@
 }
 
 .imageWrap {
-  /* Image constrained to viewport minus 40px gutters on each side */
-  width: calc(100% - 80px);
-  margin: 0 40px;
+  /* Image gutters aligned with global container (1.5rem / 2rem / 4rem)
+     This ensures hero content center matches page content center. */
+  width: calc(100% - 3rem);
+  margin: 0 1.5rem;
   height: 100%;
   max-width: none;
   background-size: cover;
@@ -41,6 +42,14 @@
 
 /* slideshow placeholder for simple background swap */
 .slideshow { position: absolute; inset: 0; overflow: hidden; z-index: 5; pointer-events: none; }
+
+@media (min-width: 768px) {
+  .imageWrap { width: calc(100% - 4rem); margin: 0 2rem; }
+}
+
+@media (min-width: 1200px) {
+  .imageWrap { width: calc(100% - 8rem); margin: 0 4rem; }
+}
 
 
 .overlay {

@@ -254,11 +254,11 @@ export default function Footer() {
     <div className={`${styles.col} ${styles.colServices}`} key="colServices">
       <h4>Services</h4>
       <ul className={styles.list}>
-        {(!footerMenuVisible || footerMenuVisible.realisation) && <li><Link href="/production">Réalisation</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.realisation) && <li><Link href="/realisation">Réalisation</Link></li>}
         {(!footerMenuVisible || footerMenuVisible.evenement) && <li><Link href="/evenement">Évènement</Link></li>}
         {(!footerMenuVisible || footerMenuVisible.corporate) && <li><Link href="/corporate">Corporate</Link></li>}
         {(!footerMenuVisible || footerMenuVisible.portrait) && <li><Link href="/portrait">Portrait</Link></li>}
-        {(!footerMenuVisible || footerMenuVisible.galleries) && <li><Link href="/galleries">Galeries</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.galleries) && <li><Link href="/galeries">Galeries</Link></li>}
       </ul>
     </div>
   );
