@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     }
 
     const arr = await file.arrayBuffer();
-    let buf = Buffer.from(arr);
+    let buf: Buffer = Buffer.from(arr);
     const contentType = (file as any).type || 'image/webp';
 
     try {
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         .resize({ width: Math.min(w, 1200), withoutEnlargement: true })
         .webp({ quality: 85 })
         .toBuffer();
-      if (out.length <= MAX_BYTES) buf = out;
+      if (out.length <= MAX_BYTES) buf = Buffer.from(out);
     } catch {
       // pas de sharp ou échec: on envoie tel quel (attention à la taille)
     }
