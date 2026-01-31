@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getPageSeo, buildMetadataFromSeo } from '../lib/pageSeo';
+import { getPageSeo, buildMetadataFromSeo } from '../../lib/pageSeo';
 import JsonLdScript from '../../components/SeoCommandCenter/JsonLdScript';
 
 export async function generateMetadata(): Promise<Metadata> {
