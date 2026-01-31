@@ -6,13 +6,14 @@ type MenuVisible = {
   evenement?: boolean;
   corporate?: boolean;
   portrait?: boolean;
+  animation?: boolean;
   galleries?: boolean;
   contact?: boolean;
   admin?: boolean;
 };
 
 export default function MenuEditModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
-  const [menuVisible, setMenuVisible] = useState<MenuVisible>({ realisation: true, evenement: true, corporate: true, portrait: true, galleries: true, contact: true, admin: true });
+  const [menuVisible, setMenuVisible] = useState<MenuVisible>({ realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, admin: true });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -126,6 +127,7 @@ export default function MenuEditModal({ onClose, onSaved }: { onClose: () => voi
     { key: 'evenement', label: 'Évènement' },
     { key: 'corporate', label: 'Corporate' },
     { key: 'portrait', label: 'Portrait' },
+    { key: 'animation', label: 'Animation' },
     { key: 'galleries', label: 'Galeries' },
     { key: 'contact', label: 'Contact' },
     { key: 'admin', label: 'Admin' }
@@ -206,7 +208,7 @@ export default function MenuEditModal({ onClose, onSaved }: { onClose: () => voi
         <div style={{ marginTop: 12 }}>
           <div style={{ fontSize: 13, color: 'var(--muted)' }}>Éléments visibles</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
-            {(['realisation','evenement','corporate','portrait','galleries','contact','admin'] as (keyof MenuVisible)[]).map((k) => (
+            {(['realisation','evenement','corporate','portrait','animation','galleries','contact','admin'] as (keyof MenuVisible)[]).map((k) => (
               <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <input type="checkbox" checked={!!menuVisible?.[k]} onChange={() => toggleKey(k)} />
                 <span style={{ textTransform: 'capitalize' }}>{k}</span>

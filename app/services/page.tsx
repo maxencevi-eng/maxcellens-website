@@ -6,6 +6,7 @@ export default function ServicesIndex() {
     { slug: 'evenement', title: 'Évènement' },
     { slug: 'corporate', title: 'Corporate' },
     { slug: 'portrait', title: 'Portrait' },
+    { slug: 'animation', title: 'Animation' },
   ];
 
   return (

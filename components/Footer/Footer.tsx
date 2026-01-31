@@ -295,6 +295,7 @@ export default function Footer() {
         {(!footerMenuVisible || footerMenuVisible.evenement) && <li><Link href="/evenement">Évènement</Link></li>}
         {(!footerMenuVisible || footerMenuVisible.corporate) && <li><Link href="/corporate">Corporate</Link></li>}
         {(!footerMenuVisible || footerMenuVisible.portrait) && <li><Link href="/portrait">Portrait</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.animation) && <li><Link href="/animation">Animation</Link></li>}
         {(!footerMenuVisible || footerMenuVisible.galleries) && <li><Link href="/galeries">Galeries</Link></li>}
       </ul>
     </div>
