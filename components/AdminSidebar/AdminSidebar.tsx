@@ -8,6 +8,7 @@ const MenuEditModal = dynamic(() => import('../MenuEditModal/MenuEditModal'), { 
 const MobileMenuEditModal = dynamic(() => import('../MobileMenuEditModal/MobileMenuEditModal'), { ssr: false });
 const SocialLinksEditor = dynamic(() => import('../SocialLinksEditor/SocialLinksEditor'), { ssr: false });
 const HeaderSettings = dynamic(() => import('../HeaderSettings/HeaderSettings'), { ssr: false });
+const SeoCommandCenterModal = dynamic(() => import('../SeoCommandCenter/SeoCommandCenterModal'), { ssr: false });
 
 const PUBLIC_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
@@ -33,6 +34,7 @@ export default function AdminSidebar() {
   const [showSocialsModal, setShowSocialsModal] = useState<boolean>(false);
   const [showHeaderModal, setShowHeaderModal] = useState<boolean>(false);
   const [showSiteStyleModal, setShowSiteStyleModal] = useState<boolean>(false);
+  const [showSeoModal, setShowSeoModal] = useState<boolean>(false);
 
   const SiteStyleEditor = dynamic(() => import('../SiteStyle/SiteStyleEditor'), { ssr: false });
 
@@ -505,7 +507,7 @@ export default function AdminSidebar() {
               </div>
             </li>
           ) : null}
-          <li><button className="menu-item" onClick={() => toggleMenu('seo')}>SEO</button></li>
+          <li><button className="menu-item" onClick={() => setShowSeoModal(true)}>SEO</button></li>
           <li><button className="menu-item" onClick={() => toggleMenu('page')}>Page</button></li>
         </ul>
       </nav>
@@ -537,6 +539,10 @@ export default function AdminSidebar() {
 
       {showHeaderModal ? (
         <HeaderSettings open={true} onClose={() => setShowHeaderModal(false)} />
+      ) : null}
+
+      {showSeoModal ? (
+        <SeoCommandCenterModal onClose={() => setShowSeoModal(false)} onSaved={() => { setMessage('SEO mis à jour'); }} />
       ) : null}
 
     </aside>

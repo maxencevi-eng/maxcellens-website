@@ -46,6 +46,19 @@
   font-weight: 600;
   margin-bottom: 0.5rem;
 }
+.colBody {
+  line-height: 1.5;
+}
+.colBody p {
+  margin: 0 0 0.5rem;
+}
+.colBody p:last-child {
+  margin-bottom: 0;
+}
+.colBody a {
+  color: var(--color-primary, #2d6b5f);
+  text-decoration: underline;
+}
 .mapContainer {
   margin-top: 1rem;
   height: 360px;

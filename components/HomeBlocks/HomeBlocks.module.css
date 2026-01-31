@@ -1,0 +1,255 @@
+/* ========== Intro ========== */
+.intro {
+  padding: 3rem 0;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 100%);
+}
+
+.introTitle {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  color: var(--fg, #213431);
+  letter-spacing: -0.02em;
+}
+
+.introSubtitle {
+  font-size: 1.1rem;
+  color: var(--muted, #6b7280);
+  margin: 0 0 1.25rem;
+}
+
+.introText {
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.6;
+  color: var(--fg, #213431);
+  opacity: 0.92;
+}
+
+.introText p { margin: 0 0 0.75rem; }
+.introText p:last-child { margin-bottom: 0; }
+
+/* ========== Services teaser ========== */
+.services {
+  padding: 3.5rem 0;
+  background: var(--bg, #fafaf9);
+}
+
+.servicesTitle {
+  text-align: center;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  color: var(--fg, #213431);
+}
+
+.servicesSubtitle {
+  text-align: center;
+  max-width: 560px;
+  margin: 0 auto 2.5rem;
+  color: var(--muted, #6b7280);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.servicesGrid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 600px) {
+  .servicesGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 900px) {
+  .servicesGrid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.serviceCard {
+  display: block;
+  padding: 1.5rem 1.25rem;
+  background: #fff;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.serviceCard:hover {
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.serviceCardTitle {
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+  color: var(--fg, #213431);
+}
+
+.serviceCardDesc {
+  font-size: 0.875rem;
+  color: var(--muted, #6b7280);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* ========== Stats ========== */
+.stats {
+  padding: 3rem 0;
+  background: var(--fg, #213431);
+  color: #fff;
+}
+
+.statsGrid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(2, 1fr);
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .statsGrid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.statValue {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.03em;
+}
+
+.statLabel {
+  font-size: 0.875rem;
+  opacity: 0.88;
+  margin: 0;
+}
+
+/* ========== Section header (projects / videos) ========== */
+.sectionBlock {
+  padding: 2.5rem 0 2rem;
+}
+
+.sectionBlockAlt {
+  background: #0b0b0b;
+  color: #fff;
+  padding: 3rem 0 2rem;
+}
+
+.sectionBlockTitle {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  text-align: center;
+}
+
+.sectionBlockAlt .sectionBlockTitle { color: #fff; }
+
+.sectionBlockDesc {
+  max-width: 720px;
+  margin: 0 auto 1.75rem;
+  text-align: center;
+  color: var(--muted, #6b7280);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.sectionBlockAlt .sectionBlockDesc { color: #d5d5d5; }
+
+/* ========== Quote ========== */
+.quote {
+  padding: 4rem 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0.06) 100%);
+}
+
+.quoteInner {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.quoteText {
+  font-size: clamp(1.15rem, 2.5vw, 1.4rem);
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 0 0 1.25rem;
+  color: var(--fg, #213431);
+  font-style: italic;
+}
+
+.quoteAuthor {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin: 0;
+  color: var(--fg, #213431);
+}
+
+.quoteRole {
+  font-size: 0.85rem;
+  color: var(--muted, #6b7280);
+  margin: 0.25rem 0 0;
+}
+
+/* ========== CTA ========== */
+.cta {
+  padding: 4rem 0;
+  text-align: center;
+  background: var(--fg, #213431);
+  color: #fff;
+}
+
+.ctaTitle {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  margin: 0 0 1.5rem;
+}
+
+.ctaButton {
+  display: inline-block;
+  padding: 0.9rem 2.25rem;
+  background: #fff;
+  color: var(--fg, #213431);
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.ctaButton:hover {
+  opacity: 0.95;
+  transform: translateY(-2px);
+}
+
+.ctaButton:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+/* Edit button (admin) */
+.editWrap {
+  position: relative;
+}
+
+.editBtn {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 5;
+  background: #111;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.editBtn:hover {
+  background: #333;
+}

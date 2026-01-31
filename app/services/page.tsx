@@ -1,4 +1,14 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getPageSeo, buildMetadataFromSeo } from '../lib/pageSeo';
+import JsonLdScript from '../../components/SeoCommandCenter/JsonLdScript';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo('services');
+  const built = buildMetadataFromSeo(seo);
+  if (built) return built;
+  return { title: 'Services' };
+}
 
 export default function ServicesIndex() {
   const services = [
@@ -11,6 +21,7 @@ export default function ServicesIndex() {
 
   return (
     <section style={{ padding: '3rem 0' }}>
+      <JsonLdScript slug="services" />
       <div className="container">
         <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Services</h1>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>

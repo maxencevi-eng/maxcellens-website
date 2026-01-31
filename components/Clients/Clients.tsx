@@ -102,7 +102,16 @@ export default function Clients({ logos, title }: Props) {
   }, []);
 
   return (
-    <section className={styles.section}>
+    <section
+      className={styles.section}
+      style={{
+        ['--clients-columns' as string]: String(Math.max(1, gridSettings.columns)),
+        ['--clients-item-width' as string]: `${gridSettings.itemWidth}px`,
+        ['--clients-row-gap' as string]: `${gridSettings.rowGap}px`,
+        ['--clients-col-gap' as string]: `${gridSettings.colGap}px`,
+        ['--clients-item-height' as string]: `${Math.max(36, Math.round(gridSettings.itemWidth * (gridSettings.heightRatio || 0.5)))}px`,
+      } as React.CSSProperties}
+    >
       <div className="container">
         <div className={styles.inner}>
           <div style={{ position: 'relative', display: 'block' }}>
@@ -110,9 +119,9 @@ export default function Clients({ logos, title }: Props) {
             {isAdmin ? <button onClick={() => setEditing(true)} className="btn-secondary" style={{ position: 'absolute', right: 12, top: 8, zIndex: 5, background: '#111', color: '#fff', border: 'none' }}>Modifier</button> : null}
           </div>
 
-          <div className={styles.grid} style={{ gridTemplateColumns: `repeat(${Math.max(1, gridSettings.columns)}, ${gridSettings.itemWidth}px)`, gap: `${gridSettings.rowGap}px ${gridSettings.colGap}px`, justifyContent: 'center' }}>
+          <div className={styles.grid}>
             {(itemsObjects.length ? itemsObjects : items.map(u => ({ url: u }))).map((it, i) => (
-              <div key={i} className={styles.item} style={{ width: gridSettings.itemWidth, height: Math.max(36, Math.round(gridSettings.itemWidth / 2)), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div key={i} className={styles.item}>
                 <img
                   src={it.url}
                   alt={`client-${i}`}

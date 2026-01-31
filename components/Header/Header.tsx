@@ -37,13 +37,10 @@ export default function Header() {
   const [socialLinks, setSocialLinks] = useState<{ instagram?: string; facebook?: string; youtube?: string; tiktok?: string; linkedin?: string }>({});
   const [iconStyle, setIconStyle] = useState<string>('style-outline');
   const [customIcons, setCustomIcons] = useState<{ [k: string]: string }>({});
-  // hide nav/social until we have applied server/local settings to avoid flicker
   const [socialLoaded, setSocialLoaded] = useState(false);
   const [navLoaded, setNavLoaded] = useState(false);
-  const headerReady = socialLoaded && navLoaded;
-  // show header elements only when ready; if loading stalls, reveal fallback after a short fail-safe timeout
-  const [headerVisible, setHeaderVisible] = useState(false);
-  const HEADER_GIVEUP_MS = 1800;
+  // Affichage immédiat du menu et des icônes (pas de délai ni clignotement)
+  const [headerVisible] = useState(true);
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -125,14 +122,7 @@ export default function Header() {
     return () => { mounted = false; window.removeEventListener('site-settings-updated', onSettings as EventListener); };
   }, []);
 
-  // Reveal header when both nav & social are ready, or after a short timeout to avoid permanent hiding
-  useEffect(() => {
-    if (headerReady) { try { setHeaderVisible(true); } catch(_){}; return; }
-    const t = setTimeout(() => { try { setHeaderVisible(true); } catch(_){} }, HEADER_GIVEUP_MS);
-    return () => clearTimeout(t);
-  }, [headerReady]);
-
-  // prefer locally-saved custom icons immediately (localStorage) so header shows uploaded icons without waiting for server
+  // Icônes personnalisées depuis localStorage dès le premier rendu (évite d'attendre le serveur)
   useEffect(() => {
     try { const si = typeof window !== 'undefined' ? localStorage.getItem('socialIcon_instagram') : null; if (si) setCustomIcons(prev => ({ ...prev, instagram: si })); } catch(_){}
     try { const sf = typeof window !== 'undefined' ? localStorage.getItem('socialIcon_facebook') : null; if (sf) setCustomIcons(prev => ({ ...prev, facebook: sf })); } catch(_){}

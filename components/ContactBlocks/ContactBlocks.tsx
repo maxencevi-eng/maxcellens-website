@@ -4,14 +4,18 @@ import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { supabase } from '../../lib/supabase';
 import styles from './ContactBlocks.module.css';
+import type { ContactZonesData } from './ContactZonesEditModal';
 
 const ContactEditModal = dynamic(() => import('./ContactEditModal'), { ssr: false });
+const ContactZonesEditModal = dynamic(() => import('./ContactZonesEditModal'), { ssr: false });
 
 export default function ContactBlocks() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [open, setOpen] = useState(false);
+  const [openZones, setOpenZones] = useState(false);
   const [html, setHtml] = useState<string>('');
   const [photo, setPhoto] = useState<{ url?: string; path?: string } | null>(null);
+  const [zones, setZones] = useState<ContactZonesData | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -20,7 +24,7 @@ export default function ContactBlocks() {
 
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=contact_intro,contact_photo');
+        const resp = await fetch('/api/admin/site-settings?keys=contact_intro,contact_photo,contact_zones');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
@@ -37,6 +41,12 @@ export default function ContactBlocks() {
             if (parsed && (parsed.url || parsed.path)) setPhoto({ url: parsed.url, path: parsed.path });
             else if (typeof parsed === 'string') setPhoto({ url: parsed });
           } catch (e) { setPhoto({ url: String(s.contact_photo) }); }
+        }
+        if (s.contact_zones) {
+          try {
+            const parsed = JSON.parse(String(s.contact_zones)) as ContactZonesData;
+            if (parsed && typeof parsed === 'object') setZones(parsed);
+          } catch (_) {}
         }
       } catch (e) { /* ignore */ }
     }
@@ -79,33 +89,50 @@ export default function ContactBlocks() {
         </div>
       </div>
 
-      <div className={styles.threeCols}>
-        <div>
-          <div className={styles.colTitle}>QG</div>
-          <div>Basé à Clamart (92). Point de départ de mes missions en Île-de-France.</div>
-          <div style={{ marginTop: '0.5rem' }}>📞 06 74 96 64 58</div>
+      <div style={{ position: 'relative', marginTop: '2rem' }}>
+        {isAdmin && (
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setOpenZones(true)}
+            style={{ position: 'absolute', right: 12, top: -16, zIndex: 5, background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}
+          >
+            Modifier
+          </button>
+        )}
+        <div className={styles.threeCols}>
+          <div>
+            <div className={styles.colTitle}>{zones?.qg?.title ?? 'QG'}</div>
+            <div className={styles.colBody} dangerouslySetInnerHTML={{ __html: zones?.qg?.text ?? '<p>Basé à Clamart (92). Point de départ de mes missions en Île-de-France.</p>' }} />
+            {(zones?.qg?.phone ?? '06 74 96 64 58') && (
+              <div style={{ marginTop: '0.5rem' }}>📞 {zones?.qg?.phone ?? '06 74 96 64 58'}</div>
+            )}
+          </div>
+          <div>
+            <div className={styles.colTitle}>{zones?.paris?.title ?? 'Paris & Alentours'}</div>
+            <div className={styles.colBody} dangerouslySetInnerHTML={{ __html: zones?.paris?.text ?? '<p>Priorité aux transports en commun. Voiture possible pour la banlieue proche — frais kilométriques.</p>' }} />
+          </div>
+          <div>
+            <div className={styles.colTitle}>{zones?.france?.title ?? 'France & Monde'}</div>
+            <div className={styles.colBody} dangerouslySetInnerHTML={{ __html: zones?.france?.text ?? '<p>Déplacements réguliers en train pour des missions partout en France et parfois à l\'étranger — frais de déplacement.</p>' }} />
+          </div>
         </div>
-        <div>
-          <div className={styles.colTitle}>Paris & Alentours</div>
-          <div>Priorité aux transports en commun. Voiture possible pour la banlieue proche — frais kilométriques.</div>
-        </div>
-        <div>
-          <div className={styles.colTitle}>France & Monde</div>
-          <div>Déplacements réguliers en train pour des missions partout en France et parfois à l'étranger — frais de déplacement.</div>
-        </div>
-      </div>
 
-      <div className={styles.mapContainer}>
-        <iframe
-          className={styles.mapIframe}
-          src="https://www.google.com/maps?q=92140+Clamart&output=embed"
-          title="Clamart map"
-          loading="lazy"
-        />
+        <div className={styles.mapContainer}>
+          <iframe
+            className={styles.mapIframe}
+            src={`https://www.google.com/maps?q=${encodeURIComponent(zones?.mapQuery?.trim() || '92140 Clamart')}&output=embed`}
+            title="Carte"
+            loading="lazy"
+          />
+        </div>
       </div>
 
       {open ? (
         <ContactEditModal onClose={() => setOpen(false)} onSaved={() => setOpen(false)} />
+      ) : null}
+      {openZones ? (
+        <ContactZonesEditModal onClose={() => setOpenZones(false)} onSaved={() => setOpenZones(false)} />
       ) : null}
     </div>
   );

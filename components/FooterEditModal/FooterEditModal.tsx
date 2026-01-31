@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
+import styles from './FooterEditModal.module.css';
 
 type MenuVisible = {
   realisation?: boolean;
@@ -246,11 +247,12 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-      <div className="footer-edit-modal" style={{ position: 'relative', background: '#fff', color: '#000', padding: 24, width: 920, minWidth: 760, maxWidth: '98%', borderRadius: 8, boxSizing: 'border-box' }}>
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
         <h3 style={{ marginTop: 0 }}>Modifier le footer</h3>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          <div style={{ flex: 1, minWidth: 320 }}>
+        <div className={styles.modalBody}>
+        <div className={styles.grid}>
+          <div className={styles.colLeft}>
             <label style={{ fontSize: 13, color: 'var(--muted)' }}>Colonne 1 (texte libre)</label>
             <div style={{ marginTop: 8, border: '1px solid #e6e6e6', borderRadius: 6, minHeight: 110, padding: 8 }}>
               <div style={{ minHeight: 80 }}>
@@ -299,7 +301,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
               </div>
             </div>
           </div>
-            <div className="footer-right-col" style={{ width: 360, minWidth: 280 }}>
+            <div className={styles.colRight}>
             <label style={{ fontSize: 13, color: 'var(--muted)' }}>Texte bas de page (copyright)</label>
             <div style={{ marginTop: 8, border: '1px solid #e6e6e6', borderRadius: 6, minHeight: 80, padding: 8 }}>
               <div style={{ minHeight: 40 }}>
@@ -353,17 +355,16 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
               </div>
             </div>
 
-            {/* Elements visible moved to floating panel at bottom-right */}
           </div>
         </div>
+        </div>
 
-        <div className="footer-modal-actions">
+        <div className={styles.actions}>
           <button className="btn-secondary" onClick={onClose} disabled={saving}>Annuler</button>
           <button onClick={doSave} className="btn-primary" disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
         </div>
 
-        {/* Floating visible elements panel */}
-        <div className="footer-visible-panel">
+        <div className={styles.visiblePanel}>
           <div style={{ fontSize: 13, color: 'var(--muted)' }}>Éléments visibles</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
             {(['realisation','evenement','corporate','portrait','animation','galleries','contact','admin'] as (keyof MenuVisible)[]).map((k) => (

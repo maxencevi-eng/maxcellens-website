@@ -14,22 +14,24 @@
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 110px));
-  gap: 0.25rem 0.5rem;
+  grid-template-columns: repeat(var(--clients-columns, 5), var(--clients-item-width, 120px));
+  gap: var(--clients-row-gap, 12px) var(--clients-col-gap, 8px);
   align-items: center;
   justify-content: center;
   max-width: 1100px;
   margin: 0 auto;
 }
 .item {
-  width: 120px;
+  width: var(--clients-item-width, 120px);
+  height: var(--clients-item-height, 60px);
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .item img {
   max-width: 100%;
-  max-height: 48px;
+  max-height: 100%;
   object-fit: contain;
   filter: grayscale(100%) opacity(0.45);
   transition: filter 180ms ease, opacity 180ms ease, transform 180ms ease;
@@ -39,14 +41,36 @@
   transform: translateY(-4px);
 }
 
+/* Mobile : grille responsive pour que tous les logos soient visibles (override style inline) */
 @media (max-width: 900px) {
-  .grid { grid-template-columns: repeat(3, 1fr); }
+  .section {
+    --clients-columns: 3 !important;
+    --clients-item-width: 1fr !important;
+    --clients-item-height: 56px !important;
+  }
+  .item {
+    width: 100%;
+  }
 }
 @media (max-width: 600px) {
-  .grid { grid-template-columns: repeat(2, 1fr); }
+  .section {
+    --clients-columns: 2 !important;
+    --clients-item-width: 1fr !important;
+    --clients-item-height: 52px !important;
+  }
+  .item {
+    width: 100%;
+  }
 }
 @media (max-width: 380px) {
-  .grid { grid-template-columns: 1fr; }
-  .title { font-size: 1.1rem; }
-  .item { width: 110px; }
+  .section {
+    --clients-columns: 2 !important;
+    --clients-item-width: 1fr !important;
+  }
+  .title {
+    font-size: 1.1rem;
+  }
+  .item {
+    width: 100%;
+  }
 }

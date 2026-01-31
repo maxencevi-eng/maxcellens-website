@@ -1,10 +1,18 @@
+import type { Metadata } from 'next';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import VideoGallery from '../../components/VideoGallery/VideoGallery';
 import EditableVideoGallery from '../../components/VideoGallery/EditableVideoGallery';
 import VideoIntroEditor from '../../components/VideoIntroEditor/VideoIntroEditor';
 import { corporateVideos } from '../../data/videos/corporateVideos';
+import { getPageSeo, buildMetadataFromSeo } from '../../lib/pageSeo';
+import JsonLdScript from '../../components/SeoCommandCenter/JsonLdScript';
 
-export const metadata = { title: 'Corporate' };
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo('corporate');
+  const built = buildMetadataFromSeo(seo);
+  if (built) return built;
+  return { title: 'Corporate' };
+}
 
 export default function Corporate() {
   const videos = [
@@ -17,6 +25,7 @@ export default function Corporate() {
   ];
   return (
     <section>
+      <JsonLdScript slug="corporate" />
       <PageHeader page="corporate" title="Corporate" subtitle="Images professionnelles pour entreprises" bgImage="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1600&q=80" />
       <div className="container" style={{ padding: '1.5rem 0' }}>
         <VideoIntroEditor keyName="corporate_intro" title="" placeholder="" />
