@@ -143,7 +143,7 @@ export default function ContactBlocks() {
           <div>
             {(() => {
               const tag = (zones?.qg?.titleStyle && ['p', 'h1', 'h2', 'h3', 'h4', 'h5'].includes(zones.qg.titleStyle)) ? zones.qg.titleStyle : 'h3';
-              const Tag = tag as keyof JSX.IntrinsicElements;
+              const Tag = tag as keyof React.JSX.IntrinsicElements;
               const fs = zones?.qg?.titleFontSize != null && zones.qg.titleFontSize >= 8 && zones.qg.titleFontSize <= 72 ? zones.qg.titleFontSize : undefined;
               return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.qg?.title ?? 'QG'}</Tag>;
             })()}
@@ -155,7 +155,7 @@ export default function ContactBlocks() {
           <div>
             {(() => {
               const tag = (zones?.paris?.titleStyle && ['p', 'h1', 'h2', 'h3', 'h4', 'h5'].includes(zones.paris.titleStyle)) ? zones.paris.titleStyle : 'h3';
-              const Tag = tag as keyof JSX.IntrinsicElements;
+              const Tag = tag as keyof React.JSX.IntrinsicElements;
               const fs = zones?.paris?.titleFontSize != null && zones.paris.titleFontSize >= 8 && zones.paris.titleFontSize <= 72 ? zones.paris.titleFontSize : undefined;
               return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.paris?.title ?? 'Paris & Alentours'}</Tag>;
             })()}
@@ -164,7 +164,7 @@ export default function ContactBlocks() {
           <div>
             {(() => {
               const tag = (zones?.france?.titleStyle && ['p', 'h1', 'h2', 'h3', 'h4', 'h5'].includes(zones.france.titleStyle)) ? zones.france.titleStyle : 'h3';
-              const Tag = tag as keyof JSX.IntrinsicElements;
+              const Tag = tag as keyof React.JSX.IntrinsicElements;
               const fs = zones?.france?.titleFontSize != null && zones.france.titleFontSize >= 8 && zones.france.titleFontSize <= 72 ? zones.france.titleFontSize : undefined;
               return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.france?.title ?? 'France & Monde'}</Tag>;
             })()}

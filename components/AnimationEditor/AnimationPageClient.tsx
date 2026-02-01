@@ -277,7 +277,7 @@ export default function AnimationPageClient() {
               <div className={styles.ctaBlock}>
                 {(() => {
                   const tag = (cta as any).livrablesTitleStyle && ["p", "h1", "h2", "h3", "h4", "h5"].includes((cta as any).livrablesTitleStyle) ? (cta as any).livrablesTitleStyle : "h2";
-                  const Tag = tag as keyof JSX.IntrinsicElements;
+                  const Tag = tag as keyof React.JSX.IntrinsicElements;
                   const fs = (cta as any).livrablesTitleFontSize != null && (cta as any).livrablesTitleFontSize >= 8 && (cta as any).livrablesTitleFontSize <= 72 ? (cta as any).livrablesTitleFontSize : undefined;
                   return <Tag className={`${styles.ctaTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(cta as any).livrablesTitle ?? "Livrables"}</Tag>;
                 })()}
@@ -291,7 +291,7 @@ export default function AnimationPageClient() {
               <div className={styles.ctaBlock}>
                 {(() => {
                   const tag = (cta as any).budgetTitleStyle && ["p", "h1", "h2", "h3", "h4", "h5"].includes((cta as any).budgetTitleStyle) ? (cta as any).budgetTitleStyle : "h2";
-                  const Tag = tag as keyof JSX.IntrinsicElements;
+                  const Tag = tag as keyof React.JSX.IntrinsicElements;
                   const fs = (cta as any).budgetTitleFontSize != null && (cta as any).budgetTitleFontSize >= 8 && (cta as any).budgetTitleFontSize <= 72 ? (cta as any).budgetTitleFontSize : undefined;
                   return <Tag className={`${styles.ctaTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(cta as any).budgetTitle ?? "Durée & budget"}</Tag>;
                 })()}

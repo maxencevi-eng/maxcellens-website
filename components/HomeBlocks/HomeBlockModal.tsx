@@ -77,6 +77,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [editingHtml, setEditingHtml] = useState(false);
   const [editingCadreurHtml, setEditingCadreurHtml] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [deletingServiceIndex, setDeletingServiceIndex] = useState<number | null>(null);
 
   // Intro
   const [introTitle, setIntroTitle] = useState("");
@@ -275,6 +276,30 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setError(e?.message ?? "Erreur upload");
     } finally {
       setUploadingIndex(null);
+    }
+  }
+
+  async function removeService(index: number) {
+    const item = serviceItems[index];
+    if (!item) return;
+    if (!confirm("Supprimer ce service ? L'image associée sera supprimée du stockage.")) return;
+    setDeletingServiceIndex(index);
+    setError(null);
+    try {
+      if (item.image?.path) {
+        const resp = await fetch("/api/admin/delete-hero-media", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ page: "home", paths: [item.image.path] }),
+        });
+        const j = await resp.json();
+        if (!resp.ok) console.warn("delete-hero-media:", j?.error ?? resp.status);
+      }
+      setServiceItems((prev) => prev.filter((_, j) => j !== index));
+    } catch (e: any) {
+      setError(e?.message ?? "Erreur lors de la suppression");
+    } finally {
+      setDeletingServiceIndex(null);
     }
   }
 
@@ -490,6 +515,19 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </div>
               {serviceItems.map((item, i) => (
                 <div key={i} style={{ marginBottom: 16, padding: 12, border: "1px solid #eee", borderRadius: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>Service {i + 1}</span>
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      onClick={() => removeService(i)}
+                      disabled={deletingServiceIndex === i}
+                      style={{ fontSize: 12, color: "#dc2626" }}
+                      aria-label="Supprimer ce service"
+                    >
+                      {deletingServiceIndex === i ? "Suppression…" : "Supprimer ce service"}
+                    </button>
+                  </div>
                   <div style={{ marginBottom: 8 }}>
                     <label style={{ fontSize: 12, color: "var(--muted)" }}>Photo (optionnel)</label>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
