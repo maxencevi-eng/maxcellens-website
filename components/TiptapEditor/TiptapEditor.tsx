@@ -19,8 +19,11 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
 
   const [showEmoji, setShowEmoji] = useState(false);
   const [fontFamily, setFontFamily] = useState<string>('inherit');
+  const FONT_SIZE_MIN = 8;
+  const FONT_SIZE_MAX = 72;
+  const clampFontSize = (n: number) => Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, n));
   const [fontSize, setFontSize] = useState<number>(16);
-  const [lineHeight, setLineHeight] = useState<number>(1.4);
+  const [lineHeight, setLineHeight] = useState<number>(1.25);
   const [textColor, setTextColor] = useState<string>('#000000');
   const [bgColor, setBgColor] = useState<string>('#ffffff');
   const [format, setFormat] = useState<string>('paragraph');
@@ -90,27 +93,8 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
       Placeholder.configure({ placeholder: 'Saisir ici...' }),
       Image,
       HardBreak,
-      // Make Enter insert a hard break (like Shift+Enter) except in list items, headings and code blocks
-      Extension.create({
-        name: 'enterAsHardBreak',
-        addKeyboardShortcuts() {
-          return {
-            Enter: () => {
-              try {
-                const state = this.editor.state;
-                const { $from } = state.selection;
-                const parent = $from.parent;
-                if (!parent) return false;
-                const forbidden = ['listItem', 'codeBlock', 'heading'];
-                if (forbidden.includes(parent.type.name)) return false;
-                return this.editor.commands.setHardBreak();
-              } catch (e) {
-                return false;
-              }
-            }
-          };
-        }
-      }),
+      // Enter = nouveau paragraphe (comportement par défaut) pour que alignement / listes s'appliquent par ligne
+      // Shift+Enter = saut de ligne (<br>) dans le paragraphe
     ],
     content: initialContent || '',
     onUpdate: ({ editor }) => {
@@ -144,10 +128,9 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
           editor.on('selectionUpdate', () => {
             try {
               const sel = editor.state.selection;
-              if (!sel.empty) {
-                lastSelectionRef.current = { from: sel.from, to: sel.to };
-                setSelVer(v => v + 1);
-              }
+              // Mémoriser la sélection ou la position du curseur pour les boutons (ex. centrer) qui s'exécutent après perte de focus
+              lastSelectionRef.current = { from: sel.from, to: sel.to };
+              if (!sel.empty) setSelVer(v => v + 1);
             } catch (e) {}
           });
           // also capture current selection if editor was initialized with a selection
@@ -200,6 +183,41 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
 
   const insertEmoji = (emoji: string) => editor.chain().focus().insertContent(emoji).run();
 
+  /** Restaure la sélection depuis lastSelectionRef si la sélection actuelle est vide (après clic sur la barre d'outils). */
+  function restoreSelectionIfNeeded() {
+    const sel = editor.state.selection;
+    if (!sel.empty || !lastSelectionRef.current) return;
+    const { from, to } = lastSelectionRef.current;
+    editor.chain().focus().setTextSelection({ from, to }).run();
+  }
+
+  /** Applique l'alignement uniquement au paragraphe (ou titre) contenant le curseur / la dernière sélection, sans modifier la sélection visible. */
+  function setAlignCurrentBlock(align: 'left' | 'center' | 'right') {
+    try {
+      const { state } = editor;
+      const sel = state.selection;
+      let anchorPos = sel.from;
+      if (sel.empty && lastSelectionRef.current) {
+        anchorPos = lastSelectionRef.current.from;
+      }
+      const $pos = state.doc.resolve(anchorPos);
+      let depth = $pos.depth;
+      while (depth > 0) {
+        const node = $pos.node(depth);
+        if (node.type.name === 'paragraph' || node.type.name === 'heading') {
+          // Modifier uniquement l'attribut textAlign de ce nœud via une transaction, sans changer la sélection
+          const pos = $pos.before(depth);
+          const tr = state.tr.setNodeMarkup(pos, null, { ...node.attrs, textAlign: align });
+          (editor as any).view.dispatch(tr);
+          editor.commands.focus();
+          return;
+        }
+        depth--;
+      }
+    } catch (e) {
+      // silencieux
+    }
+  }
 
   function parseStyle(style: string) {
     const obj: Record<string,string> = {};
@@ -448,15 +466,15 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
 
         <div style={{ width: 1, height: 24, background: 'rgba(0,0,0,0.08)' }} />
 
-        {/* Alignment group */}
+        {/* Alignment group — applique l'alignement uniquement au paragraphe/ligne contenant le curseur (pas tout le texte) */}
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button title="Aligner à gauche" onClick={() => editor.chain().focus().setTextAlign('left').run()} style={{ padding: 6 }}>
+          <button type="button" title="Aligner à gauche" onMouseDown={(e) => e.preventDefault()} onClick={() => setAlignCurrentBlock('left')} style={{ padding: 6 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="14" height="2" fill="currentColor"/><rect x="3" y="8" width="14" height="2" fill="currentColor"/><rect x="3" y="12" width="10" height="2" fill="currentColor"/><rect x="3" y="16" width="14" height="2" fill="currentColor"/></svg>
           </button>
-          <button title="Centrer" onClick={() => editor.chain().focus().setTextAlign('center').run()} style={{ padding: 6 }}>
+          <button type="button" title="Centrer" onMouseDown={(e) => e.preventDefault()} onClick={() => setAlignCurrentBlock('center')} style={{ padding: 6 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="4" width="14" height="2" fill="currentColor"/><rect x="5" y="8" width="14" height="2" fill="currentColor"/><rect x="7" y="12" width="10" height="2" fill="currentColor"/><rect x="5" y="16" width="14" height="2" fill="currentColor"/></svg>
           </button>
-          <button title="Aligner à droite" onClick={() => editor.chain().focus().setTextAlign('right').run()} style={{ padding: 6 }}>
+          <button type="button" title="Aligner à droite" onMouseDown={(e) => e.preventDefault()} onClick={() => setAlignCurrentBlock('right')} style={{ padding: 6 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="4" width="14" height="2" fill="currentColor"/><rect x="7" y="8" width="14" height="2" fill="currentColor"/><rect x="11" y="12" width="10" height="2" fill="currentColor"/><rect x="7" y="16" width="14" height="2" fill="currentColor"/></svg>
           </button>
         </div>
@@ -483,10 +501,10 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
 
         <div style={{ width: 1, height: 24, background: 'rgba(0,0,0,0.08)' }} />
 
-        {/* Lists group */}
+        {/* Lists group — restaure la sélection avant d'appliquer pour n'affecter que les lignes sélectionnées */}
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <button title="Liste à puces" onClick={() => editor.chain().focus().toggleBulletList().run()} style={{ padding: 6 }}>•</button>
-          <button title="Liste numérotée" onClick={() => editor.chain().focus().toggleOrderedList().run()} style={{ padding: 6 }}>1.</button>
+          <button type="button" title="Liste à puces" onMouseDown={(e) => e.preventDefault()} onClick={() => { restoreSelectionIfNeeded(); editor.chain().focus().toggleBulletList().run(); }} style={{ padding: 6 }} className={editor.isActive('bulletList') ? 'active' : ''}>•</button>
+          <button type="button" title="Liste numérotée" onMouseDown={(e) => e.preventDefault()} onClick={() => { restoreSelectionIfNeeded(); editor.chain().focus().toggleOrderedList().run(); }} style={{ padding: 6 }} className={editor.isActive('orderedList') ? 'active' : ''}>1.</button>
         </div>
 
         <div style={{ width: 1, height: 24, background: 'rgba(0,0,0,0.08)' }} />
@@ -533,18 +551,25 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
             <option value="h5">Titre 5</option>
           </select>
 
-          <select value={fontSize} onChange={(e) => { const v = Number(e.target.value); setFontSize(v); applyStyleProps({ fontSize: v }); }} style={{ padding: '6px 8px' }}>
-            <option value={12}>12 px</option>
-            <option value={14}>14 px</option>
-            <option value={16}>16 px</option>
-            <option value={18}>18 px</option>
-            <option value={24}>24 px</option>
-            <option value={32}>32 px</option>
-          </select>
+          <input
+            type="number"
+            min={FONT_SIZE_MIN}
+            max={FONT_SIZE_MAX}
+            value={fontSize}
+            onChange={(e) => {
+              const v = e.target.value === '' ? 16 : clampFontSize(Number(e.target.value));
+              setFontSize(v);
+              applyStyleProps({ fontSize: v });
+            }}
+            title="Taille (8–72 px)"
+            style={{ width: 56, padding: '6px 8px', boxSizing: 'border-box', borderRadius: 4, border: '1px solid #e6e6e6' }}
+          />
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>px</span>
 
           <select value={lineHeight} onChange={(e) => { const v = Number(e.target.value); setLineHeight(v); applyStyleProps({ lineHeight: v }); }} style={{ padding: '6px 8px' }}>
             <option value={1.0}>1.0</option>
-            <option value={1.2}>1.2</option>
+            <option value={1.15}>1.15</option>
+            <option value={1.25}>1.25</option>
             <option value={1.4}>1.4</option>
             <option value={1.6}>1.6</option>
             <option value={2.0}>2.0</option>

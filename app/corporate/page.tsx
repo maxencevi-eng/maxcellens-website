@@ -1,11 +1,8 @@
 import type { Metadata } from 'next';
-import PageHeader from '../../components/PageHeader/PageHeader';
-import VideoGallery from '../../components/VideoGallery/VideoGallery';
-import EditableVideoGallery from '../../components/VideoGallery/EditableVideoGallery';
-import VideoIntroEditor from '../../components/VideoIntroEditor/VideoIntroEditor';
-import { corporateVideos } from '../../data/videos/corporateVideos';
 import { getPageSeo, buildMetadataFromSeo } from '../../lib/pageSeo';
 import JsonLdScript from '../../components/SeoCommandCenter/JsonLdScript';
+import PageHeader from '../../components/PageHeader/PageHeader';
+import CorporatePageClient from '../../components/CorporatePageClient/CorporatePageClient';
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo('corporate');
@@ -15,28 +12,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function Corporate() {
-  const videos = [
-    'https://www.youtube.com/watch?v=M7lc1UVf-VE',
-    'https://www.youtube.com/watch?v=YE7VzlLtp-4',
-    'https://www.youtube.com/watch?v=hY7m5jjJ9mM',
-    'https://www.youtube.com/watch?v=2Vv-BfVoq4g',
-    'https://www.youtube.com/watch?v=kXYiU_JCYtU',
-    'https://www.youtube.com/watch?v=3JZ_D3ELwOQ',
-  ];
   return (
-    <section>
+    <>
       <JsonLdScript slug="corporate" />
       <PageHeader page="corporate" title="Corporate" subtitle="Images professionnelles pour entreprises" bgImage="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1600&q=80" />
-      <div className="container" style={{ padding: '1.5rem 0' }}>
-        <VideoIntroEditor keyName="corporate_intro" title="" placeholder="" />
-      </div>
-
-      <div className="container" style={{ padding: '1.5rem 0' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Film</h2>
-        </div>
-        <EditableVideoGallery keyName="videos_corporate" initial={corporateVideos} />
-      </div>
-    </section>
+      <CorporatePageClient />
+    </>
   );
 }

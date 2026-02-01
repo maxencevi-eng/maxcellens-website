@@ -9,6 +9,7 @@ const MobileMenuEditModal = dynamic(() => import('../MobileMenuEditModal/MobileM
 const SocialLinksEditor = dynamic(() => import('../SocialLinksEditor/SocialLinksEditor'), { ssr: false });
 const HeaderSettings = dynamic(() => import('../HeaderSettings/HeaderSettings'), { ssr: false });
 const SeoCommandCenterModal = dynamic(() => import('../SeoCommandCenter/SeoCommandCenterModal'), { ssr: false });
+const PageLayoutModal = dynamic(() => import('../PageLayoutModal/PageLayoutModal'), { ssr: false });
 
 const PUBLIC_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
@@ -35,6 +36,7 @@ export default function AdminSidebar() {
   const [showHeaderModal, setShowHeaderModal] = useState<boolean>(false);
   const [showSiteStyleModal, setShowSiteStyleModal] = useState<boolean>(false);
   const [showSeoModal, setShowSeoModal] = useState<boolean>(false);
+  const [showPageLayoutModal, setShowPageLayoutModal] = useState<boolean>(false);
 
   const SiteStyleEditor = dynamic(() => import('../SiteStyle/SiteStyleEditor'), { ssr: false });
 
@@ -509,6 +511,17 @@ export default function AdminSidebar() {
           ) : null}
           <li><button className="menu-item" onClick={() => setShowSeoModal(true)}>SEO</button></li>
           <li><button className="menu-item" onClick={() => toggleMenu('page')}>Page</button></li>
+          {openMenu === 'page' ? (
+            <li className="submenu-li">
+              <div className="submenu">
+                <div className="submenu-row">
+                  <div style={{ marginTop: 8 }}>
+                    <button className="menu-item" onClick={() => setShowPageLayoutModal(true)}>Dimensions & mise en page</button>
+                  </div>
+                </div>
+              </div>
+            </li>
+          ) : null}
         </ul>
       </nav>
 
@@ -543,6 +556,10 @@ export default function AdminSidebar() {
 
       {showSeoModal ? (
         <SeoCommandCenterModal onClose={() => setShowSeoModal(false)} onSaved={() => { setMessage('SEO mis à jour'); }} />
+      ) : null}
+
+      {showPageLayoutModal ? (
+        <PageLayoutModal onClose={() => setShowPageLayoutModal(false)} onSaved={() => { setMessage('Mise en page enregistrée'); }} />
       ) : null}
 
     </aside>

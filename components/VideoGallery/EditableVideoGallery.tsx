@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import VideoGallery from './VideoGallery';
+import styles from './VideoGallery.module.css';
 
 type VideoItem = { url: string; columns?: 1 | 2 | 3 | 4 };
 type Props = {
@@ -148,15 +149,15 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
     <div className={className ?? ''}>
       {isAdmin ? (
         <div style={{ position: 'relative', marginBottom: 12 }}>
-          <button onClick={openEditor} className="btn-secondary" style={{ position: 'absolute', right: 12, top: -16, zIndex: 5, background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>Modifier la galerie</button>
+          <button onClick={openEditor} className="btn-secondary" style={{ position: 'absolute', left: 12, top: -16, zIndex: 5, background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>Modifier la galerie</button>
         </div>
       ) : null}
 
       <VideoGallery videos={videos} className={undefined} />
 
       {editing ? (
-        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', zIndex: 9999, padding: 16 }}>
-          <div style={{ background: '#fff', padding: 20, width: 820, maxWidth: '98%', maxHeight: '86vh', overflowY: 'auto', borderRadius: 12, boxShadow: '0 20px 50px rgba(0,0,0,0.35)', border: '1px solid rgba(0,0,0,0.06)' }}>
+        <div className={`modal-overlay-mobile ${styles.modalOverlay}`} style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', zIndex: 9999, padding: 16 }}>
+          <div className={styles.modalBox} style={{ background: '#fff', padding: 20, width: 820, maxWidth: '98%', maxHeight: '86vh', overflowY: 'auto', borderRadius: 12, boxShadow: '0 20px 50px rgba(0,0,0,0.35)', border: '1px solid rgba(0,0,0,0.06)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: 20 }}>Modifier la galerie — {keyName}</h3>
@@ -200,11 +201,12 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                       setDraggingIndex(null);
                     }}
                     onDragEnd={() => { setDragOverIndex(null); setDraggingIndex(null); }}
+                    className={styles.modalItemRow}
                     style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 8, borderRadius: 8, background: dragOverIndex === i ? '#e8f0ff' : 'transparent', border: '1px solid rgba(0,0,0,0.04)' }}
                   >
-                    <div style={{ width: 36, textAlign: 'center', color: '#666' }}>{i + 1}</div>
+                    <div style={{ width: 36, flexShrink: 0, textAlign: 'center', color: '#666' }}>{i + 1}</div>
                     {/* thumbnail */}
-                    <div style={{ width: 60, flex: '0 0 60px' }}>
+                    <div style={{ width: 60, flex: '0 0 60px' }} className={styles.modalItemThumb}>
                       {(() => {
                         const id = extractYouTubeId(v.url || '');
                         if (id) {
@@ -215,10 +217,10 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                       })()}
                     </div>
 
-                    <div style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div className={styles.modalItemContent} style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {editIndex === i ? (
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <input value={editValue} onChange={(e) => setEditValue(e.target.value)} style={{ flex: 1, padding: 6, borderRadius: 6, border: '1px solid #ddd' }} />
+                        <div className={styles.modalItemEditRow} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                          <input value={editValue} onChange={(e) => setEditValue(e.target.value)} style={{ flex: '1 1 200px', minWidth: 0, padding: 6, borderRadius: 6, border: '1px solid #ddd' }} />
                           <select value={editColumns} onChange={(e) => setEditColumns(Number(e.target.value) as 1 | 2 | 3 | 4)} style={{ padding: 6, borderRadius: 6 }}>
                             <option value={1}>1 colonne</option>
                             <option value={2}>2 colonnes</option>
@@ -229,13 +231,13 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                           <button className="btn-secondary" onClick={() => setEditIndex(null)} style={{ padding: '6px 8px' }}>Cancel</button>
                         </div>
                         ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, minWidth: 0 }}>
                           <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.url}</div>
-                          <div style={{ color: '#666', fontSize: 12 }}>{v.columns === 1 ? '1-col' : v.columns === 2 ? '2-col' : v.columns === 3 ? '3-col' : '4-col'}</div>
+                          <div style={{ color: '#666', fontSize: 12, flexShrink: 0 }}>{v.columns === 1 ? '1-col' : v.columns === 2 ? '2-col' : v.columns === 3 ? '3-col' : '4-col'}</div>
                         </div>
                       )}
                     </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div className={styles.modalItemActions} style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                       <button className="btn-secondary" onClick={() => { setEditIndex(i); setEditValue(v.url); setEditColumns(v.columns === 1 ? 1 : v.columns === 2 ? 2 : v.columns === 3 ? 3 : 4); }} style={{ padding: '6px 8px' }}>Éditer</button>
                       <button className="btn-secondary" onClick={() => { if (i > 0) move(i, i - 1); }} disabled={i === 0} style={{ padding: '6px 8px' }}>▲</button>
                       <button className="btn-secondary" onClick={() => { if (i < videos.length - 1) move(i, i + 1); }} disabled={i === videos.length - 1} style={{ padding: '6px 8px' }}>▼</button>

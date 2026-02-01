@@ -104,7 +104,7 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
         {(!settings.galleryType || settings.galleryType === 'masonry') && (
           <div ref={gridRef} style={{ columnCount: columns, columnGap: gap, width: '100%' }}>
             {items.map((it, i) => (
-              <div key={it.id} style={{ breakInside: 'avoid', marginBottom: 12 }}>
+              <div key={`${String(it.id)}-${i}`} style={{ breakInside: 'avoid', marginBottom: 12 }}>
                 <button onClick={() => { if (!settings.galleryType || settings.galleryType === 'masonry' || settings.galleryType === 'grid') open(i); }} aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}>
                       {aspectPaddingPercent ? (
                         <div style={{ width: '100%', borderRadius: 0, overflow: 'hidden', background: '#f6f7f8', position: 'relative', paddingBottom: `${aspectPaddingPercent}%` }}>
@@ -131,7 +131,7 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
                 if (settings.disposition === 'vertical') { const t = w; w = h; h = t; }
                 const paddingBottom = (h / w) * 100;
                 return (
-                  <div key={it.id} style={{ display: 'block' }}>
+                  <div key={`${String(it.id)}-${i}`} style={{ display: 'block' }}>
                     <button onClick={() => { if (settings.galleryType === 'grid' || !settings.galleryType || settings.galleryType === 'masonry') open(i); }} aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}>
                       <div style={{ width: '100%', borderRadius: 0, overflow: 'hidden', background: '#f6f7f8', position: 'relative', paddingBottom: `${paddingBottom}%` }}>
                         <img src={it.image_url} alt={it.title || ''} style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
@@ -141,7 +141,7 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
                 );
               }
               return (
-                <div key={it.id}>
+                <div key={`${String(it.id)}-${i}`}>
                   <button onClick={() => open(i)} aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}>
                     <div style={{ position: 'relative', width: '100%', borderRadius: 0, overflow: 'hidden', background: '#f6f7f8', height: '100%' }}>
                       <img src={it.image_url} alt={it.title || ''} style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }} />
@@ -156,7 +156,7 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
         {settings.galleryType === 'carousel' && (
           <div style={{ display: 'flex', gap, overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: 8 }}>
             {items.map((it, i) => (
-              <div key={it.id} style={{ flex: `0 0 ${Math.max(20, Math.floor(100 / Math.max(1, columns)))}%`, scrollSnapAlign: 'center' }}>
+              <div key={`${String(it.id)}-${i}`} style={{ flex: `0 0 ${Math.max(20, Math.floor(100 / Math.max(1, columns)))}%`, scrollSnapAlign: 'center' }}>
                 <div aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'default', display: 'block', width: '100%' }}>
                   <div style={{ width: '100%', borderRadius: 8, overflow: 'hidden', background: '#f6f7f8' }}>
                     <img src={it.image_url} alt={it.title || ''} style={{ objectFit: 'cover', width: '100%', display: 'block' }} />

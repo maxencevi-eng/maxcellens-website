@@ -189,7 +189,7 @@ export default function HeroEditor({ page, onClose }: Props) {
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.5)', zIndex:9999 }}>
+    <div className="modal-overlay-mobile" style={{ position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.5)', zIndex:9999 }}>
       <div style={{ background:'#fff', width:760, maxWidth:'98%', maxHeight:'80vh', overflowY:'auto', padding:20, borderRadius:8 }}>
         <h3 style={{ marginTop:0 }}>Modifier Hero — {page}</h3>
         <div style={{ display:'flex', gap:12 }}>
@@ -200,10 +200,12 @@ export default function HeroEditor({ page, onClose }: Props) {
 
         {mode === 'image' ? (
           <div style={{ marginTop:12 }}>
-            <div style={{ display:'flex', gap:12 }}>
+            <div style={{ display:'flex', gap:12, flexWrap:'wrap', alignItems:'center' }}>
               <input type="file" accept="image/*" onChange={async (e) => { const f = e.target.files?.[0] || null; await handleImageSelect(f); }} />
-              <div style={{ fontSize:13, color:'#666' }}>L'image finale doit être en .webp et ≤ 1MB</div>
             </div>
+            <p style={{ fontSize:13, color:'#666', marginTop:8, marginBottom:0, lineHeight:1.4 }}>
+              L'image finale doit être en .webp et ≤ 1 MB.
+            </p>
             {imagePreview ? (
               <div style={{ marginTop:12 }}>
                 <div style={{ position:'relative', display:'inline-block' }}>

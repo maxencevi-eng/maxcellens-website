@@ -1,6 +1,24 @@
 .wrapper {
   margin: 2rem 0;
 }
+
+/* Marge intérieure des blocs (Page > Dimensions) */
+.blockInner {
+  padding: var(--block-inner-padding-desktop, 24px);
+  box-sizing: border-box;
+}
+@media (max-width: 767px) {
+  .blockInner {
+    padding: var(--block-inner-padding-mobile, 16px);
+  }
+}
+
+/* Fond du bloc en pleine largeur (contenu reste centré) */
+.blockFullWidthBg {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
 .introGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -26,7 +44,7 @@
   padding: 2rem;
   border-radius: 36px;
   color: #223;
-  line-height: 1.4;
+  line-height: var(--base-line-height, 1.25);
 }
 .cardHeader {
   color: #2d6b5f;
@@ -47,7 +65,7 @@
   margin-bottom: 0.5rem;
 }
 .colBody {
-  line-height: 1.5;
+  line-height: var(--base-line-height, 1.25);
 }
 .colBody p {
   margin: 0 0 0.5rem;
@@ -70,6 +88,31 @@
   width: 100%;
   height: 100%;
   border: 0;
+}
+
+.kitTitle {
+  margin: 0 0 1rem;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+.kitWidget {
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  min-height: 400px;
+  height: min(100vw, 700px);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 5px 16px rgba(0,0,0,0.12);
+}
+.kitIframe {
+  display: block;
+  border: 0;
+  margin: 0 auto;
+  width: 100%;
+  height: 100%;
+  max-width: 700px;
+  max-height: 700px;
 }
 
 @media (max-width: 900px) {

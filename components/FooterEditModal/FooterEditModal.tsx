@@ -214,7 +214,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
   }
 
   return (
-    <div className={styles.overlay}>
+    <div className={`${styles.overlay} modal-overlay-mobile`}>
       <div className={styles.modal}>
         <h3 style={{ marginTop: 0 }}>Modifier le footer</h3>
         <div className={styles.modalBody}>
@@ -233,10 +233,10 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
               <label style={{ fontSize: 13, color: 'var(--muted)' }}>Bannière (au dessus du footer)</label>
               <div style={{ marginTop: 8, border: '1px solid #e6e6e6', borderRadius: 6, minHeight: 80, padding: 8 }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div className={styles.bannerFileRow}>
                   <input type="file" accept="image/*" onChange={async (e) => { const f = (e.target.files && e.target.files[0]) || null; if (f) await handleBannerSelect(f); }} />
-                  {uploadingBanner ? <div style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 8 }}>Téléchargement…</div> : null}
-                  {banner?.url ? <div style={{ marginLeft: 8 }}><button className="btn-secondary" onClick={removeBanner}>Supprimer</button></div> : null}
+                  {uploadingBanner ? <div style={{ fontSize: 13, color: 'var(--muted)' }}>Téléchargement…</div> : null}
+                  {banner?.url ? <button className="btn-secondary" onClick={removeBanner}>Supprimer</button> : null}
                 </div>
 
                 <div style={{ marginTop: 8 }}>
@@ -285,9 +285,9 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
             <div style={{ fontSize: 13, color: 'var(--muted)' }}>Import & aperçu dans la zone de gauche</div>
             <div style={{ height: 12 }} />
 
-            <label style={{ fontSize: 13, color: 'var(--muted)' }}>Hauteur bannière (px)</label>
-            <div style={{ marginTop: 8, border: '1px solid #e6e6e6', borderRadius: 6, minHeight: 80, padding: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <label className={styles.bannerHeightLabel}>Hauteur bannière (px)</label>
+            <div className={styles.bannerHeightBlock}>
+              <div className={styles.bannerHeightRow}>
                 <input
                   type="range"
                   min={MIN_BANNER_HEIGHT}
@@ -298,7 +298,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
                     const clamped = Math.max(MIN_BANNER_HEIGHT, Math.min(MAX_BANNER_HEIGHT, v));
                     setBannerHeight(clamped);
                   }}
-                  style={{ flex: 1 }}
+                  className={styles.bannerHeightSlider}
                 />
                 <input
                   type="number"
@@ -313,15 +313,27 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
                     const clamped = Math.max(MIN_BANNER_HEIGHT, Math.min(MAX_BANNER_HEIGHT, v));
                     setBannerHeight(clamped);
                   }}
-                  style={{ width: 100, padding: '6px 8px' }}
+                  className={styles.bannerHeightInput}
                 />
               </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div className={styles.bannerHeightActions}>
                 <button className="btn-ghost" onClick={() => setBannerHeight(null)}>Réinitialiser</button>
-                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Valeur appliquée: {bannerHeight ? `${bannerHeight}px` : 'par défaut'}</div>
+                <span className={styles.bannerHeightValue}>Valeur appliquée: {bannerHeight ? `${bannerHeight}px` : 'par défaut'}</span>
               </div>
             </div>
 
+          </div>
+        </div>
+
+        <div className={styles.visiblePanel}>
+          <div className={styles.visiblePanelTitle}>Éléments visibles</div>
+          <div className={styles.visiblePanelGrid}>
+            {(['realisation','evenement','corporate','portrait','animation','galleries','contact','admin'] as (keyof MenuVisible)[]).map((k) => (
+              <label key={k} className={styles.visiblePanelLabel}>
+                <input type="checkbox" checked={!!menuVisible?.[k]} onChange={() => toggleKey(k)} />
+                <span>{k}</span>
+              </label>
+            ))}
           </div>
         </div>
         </div>
@@ -329,18 +341,6 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
         <div className={styles.actions}>
           <button className="btn-secondary" onClick={onClose} disabled={saving}>Annuler</button>
           <button onClick={doSave} className="btn-primary" disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
-        </div>
-
-        <div className={styles.visiblePanel}>
-          <div style={{ fontSize: 13, color: 'var(--muted)' }}>Éléments visibles</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
-            {(['realisation','evenement','corporate','portrait','animation','galleries','contact','admin'] as (keyof MenuVisible)[]).map((k) => (
-              <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input type="checkbox" checked={!!menuVisible?.[k]} onChange={() => toggleKey(k)} />
-                <span style={{ textTransform: 'capitalize' }}>{k}</span>
-              </label>
-            ))}
-          </div>
         </div>
 
         {error ? <div style={{ marginTop: 8, color: 'red' }}>{error}</div> : null}

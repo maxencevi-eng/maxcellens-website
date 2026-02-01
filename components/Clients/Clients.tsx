@@ -30,6 +30,7 @@ const defaultLogos = [
 import React, { useEffect, useState } from 'react';
 import ClientsEditModal from './ClientsEditModal';
 import { supabase } from '../../lib/supabase';
+import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from '../BlockVisibility';
 
 export default function Clients({ logos, title }: Props) {
   const [items, setItems] = useState<string[]>(logos && logos.length ? logos : defaultLogos);
@@ -37,6 +38,9 @@ export default function Clients({ logos, title }: Props) {
   const [itemsObjects, setItemsObjects] = useState<Array<{ url: string; path?: string }>>([]);
   const [editing, setEditing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { hiddenBlocks, blockWidthModes, isAdmin: isAdminCtx } = useBlockVisibility();
+  const hide = !isAdminCtx && hiddenBlocks.includes('clients');
+  const blockWidthClass = blockWidthModes['clients'] === 'max1600' ? 'block-width-1600' : '';
 
   // grid settings (from site-settings `clients_grid`)
   const [gridSettings, setGridSettings] = useState<{ columns: number; itemWidth: number; rowGap: number; colGap: number; heightRatio: number }>(() => ({ columns: 5, itemWidth: 120, rowGap: 12, colGap: 8, heightRatio: 0.5 }));
@@ -101,6 +105,8 @@ export default function Clients({ logos, title }: Props) {
     return () => { mounted = false; try { (listener as any)?.subscription?.unsubscribe?.(); } catch (_) {} };
   }, []);
 
+  if (hide) return null;
+
   return (
     <section
       className={styles.section}
@@ -112,11 +118,18 @@ export default function Clients({ logos, title }: Props) {
         ['--clients-item-height' as string]: `${Math.max(36, Math.round(gridSettings.itemWidth * (gridSettings.heightRatio || 0.5)))}px`,
       } as React.CSSProperties}
     >
-      <div className="container">
+      <div className={`container ${blockWidthClass}`.trim()}>
         <div className={styles.inner}>
-          <div style={{ position: 'relative', display: 'block' }}>
-            <h2 className={styles.title} dangerouslySetInnerHTML={{ __html: hdr || '' }} />
-            {isAdmin ? <button onClick={() => setEditing(true)} className="btn-secondary" style={{ position: 'absolute', right: 12, top: 8, zIndex: 5, background: '#111', color: '#fff', border: 'none' }}>Modifier</button> : null}
+          <div style={{ position: 'relative', display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', marginBottom: 8 }}>
+            <h2 className={styles.title} style={{ flex: 1, margin: 0 }} dangerouslySetInnerHTML={{ __html: hdr || '' }} />
+            {isAdmin ? (
+              <>
+                <BlockVisibilityToggle blockId="clients" />
+                <BlockWidthToggle blockId="clients" />
+                <button onClick={() => setEditing(true)} className="btn-secondary" style={{ background: '#111', color: '#fff', border: 'none' }}>Modifier</button>
+                <BlockOrderButtons page="home" blockId="clients" />
+              </>
+            ) : null}
           </div>
 
           <div className={styles.grid}>

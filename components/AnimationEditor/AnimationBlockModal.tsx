@@ -4,9 +4,29 @@ import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 const RichTextModal = dynamic(() => import("../RichTextModal/RichTextModal"), { ssr: false });
 
+export type TitleStyleKey = 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5';
+
+const TITLE_STYLE_OPTIONS: { value: TitleStyleKey; label: string }[] = [
+  { value: 'p', label: 'Paragraphe' },
+  { value: 'h1', label: 'Titre 1' },
+  { value: 'h2', label: 'Titre 2' },
+  { value: 'h3', label: 'Titre 3' },
+  { value: 'h4', label: 'Titre 4' },
+  { value: 'h5', label: 'Titre 5' },
+];
+
+const TITLE_FONT_SIZE_MIN = 8;
+const TITLE_FONT_SIZE_MAX = 72;
+function clampTitleFontSize(n: number): number {
+  return Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, n));
+}
+
 export type AnimationSectionData = {
   label?: string;
   title?: string;
+  labelStyle?: TitleStyleKey;
+  titleStyle?: TitleStyleKey;
+  titleFontSize?: number;
   html?: string;
   image?: { url: string; path?: string } | null;
   bgColor?: string;
@@ -14,10 +34,17 @@ export type AnimationSectionData = {
 };
 
 export type AnimationCtaData = {
+  livrablesTitle?: string;
+  budgetTitle?: string;
+  livrablesTitleStyle?: TitleStyleKey;
+  budgetTitleStyle?: TitleStyleKey;
+  livrablesTitleFontSize?: number;
+  budgetTitleFontSize?: number;
   livrablesHtml?: string;
   budgetHtml?: string;
   buttonLabel?: string;
   buttonHref?: string;
+  buttonStyle?: '1' | '2';
   bgColor?: string;
 };
 
@@ -43,6 +70,9 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
 
   const [label, setLabel] = useState(sectionData.label ?? "");
   const [title, setTitle] = useState(sectionData.title ?? "");
+  const [labelStyle, setLabelStyle] = useState<TitleStyleKey>(sectionData.labelStyle === 'h1' || sectionData.labelStyle === 'h2' || sectionData.labelStyle === 'h3' || sectionData.labelStyle === 'h4' || sectionData.labelStyle === 'h5' || sectionData.labelStyle === 'p' ? sectionData.labelStyle : 'p');
+  const [titleStyle, setTitleStyle] = useState<TitleStyleKey>(sectionData.titleStyle === 'h1' || sectionData.titleStyle === 'h2' || sectionData.titleStyle === 'h3' || sectionData.titleStyle === 'h4' || sectionData.titleStyle === 'h5' || sectionData.titleStyle === 'p' ? sectionData.titleStyle : 'h2');
+  const [titleFontSize, setTitleFontSize] = useState<number | "">(sectionData.titleFontSize != null && sectionData.titleFontSize >= TITLE_FONT_SIZE_MIN && sectionData.titleFontSize <= TITLE_FONT_SIZE_MAX ? sectionData.titleFontSize : "");
   const [html, setHtml] = useState(sectionData.html ?? "");
   const [image, setImage] = useState<{ url: string; path?: string } | null>(sectionData.image ?? null);
   const [originalImagePath, setOriginalImagePath] = useState<string | null>(
@@ -56,10 +86,17 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
       { title: "Post-production", desc: "Montage style série, générique, sound design" },
     ]
   );
+  const [livrablesTitle, setLivrablesTitle] = useState(ctaData.livrablesTitle ?? "Livrables");
+  const [budgetTitle, setBudgetTitle] = useState(ctaData.budgetTitle ?? "Durée & budget");
+  const [livrablesTitleStyle, setLivrablesTitleStyle] = useState<TitleStyleKey>(ctaData.livrablesTitleStyle === 'h1' || ctaData.livrablesTitleStyle === 'h2' || ctaData.livrablesTitleStyle === 'h3' || ctaData.livrablesTitleStyle === 'h4' || ctaData.livrablesTitleStyle === 'h5' || ctaData.livrablesTitleStyle === 'p' ? ctaData.livrablesTitleStyle : 'h2');
+  const [budgetTitleStyle, setBudgetTitleStyle] = useState<TitleStyleKey>(ctaData.budgetTitleStyle === 'h1' || ctaData.budgetTitleStyle === 'h2' || ctaData.budgetTitleStyle === 'h3' || ctaData.budgetTitleStyle === 'h4' || ctaData.budgetTitleStyle === 'h5' || ctaData.budgetTitleStyle === 'p' ? ctaData.budgetTitleStyle : 'h2');
+  const [livrablesTitleFontSize, setLivrablesTitleFontSize] = useState<number | "">(ctaData.livrablesTitleFontSize != null && ctaData.livrablesTitleFontSize >= TITLE_FONT_SIZE_MIN && ctaData.livrablesTitleFontSize <= TITLE_FONT_SIZE_MAX ? ctaData.livrablesTitleFontSize : "");
+  const [budgetTitleFontSize, setBudgetTitleFontSize] = useState<number | "">(ctaData.budgetTitleFontSize != null && ctaData.budgetTitleFontSize >= TITLE_FONT_SIZE_MIN && ctaData.budgetTitleFontSize <= TITLE_FONT_SIZE_MAX ? ctaData.budgetTitleFontSize : "");
   const [livrablesHtml, setLivrablesHtml] = useState(ctaData.livrablesHtml ?? "");
   const [budgetHtml, setBudgetHtml] = useState(ctaData.budgetHtml ?? "");
   const [buttonLabel, setButtonLabel] = useState(ctaData.buttonLabel ?? "En discuter ensemble");
   const [buttonHref, setButtonHref] = useState(ctaData.buttonHref ?? "/contact");
+  const [buttonStyle, setButtonStyle] = useState<'1' | '2'>(ctaData.buttonStyle === '2' ? '2' : '1');
 
   const [editingHtml, setEditingHtml] = useState(false);
   const [editingLivrables, setEditingLivrables] = useState(false);
@@ -71,15 +108,25 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
   useEffect(() => {
     setLabel(sectionData.label ?? "");
     setTitle(sectionData.title ?? "");
+    setLabelStyle(sectionData.labelStyle === 'h1' || sectionData.labelStyle === 'h2' || sectionData.labelStyle === 'h3' || sectionData.labelStyle === 'h4' || sectionData.labelStyle === 'h5' || sectionData.labelStyle === 'p' ? sectionData.labelStyle : 'p');
+    setTitleStyle(sectionData.titleStyle === 'h1' || sectionData.titleStyle === 'h2' || sectionData.titleStyle === 'h3' || sectionData.titleStyle === 'h4' || sectionData.titleStyle === 'h5' || sectionData.titleStyle === 'p' ? sectionData.titleStyle : 'h2');
+    setTitleFontSize(sectionData.titleFontSize != null && sectionData.titleFontSize >= TITLE_FONT_SIZE_MIN && sectionData.titleFontSize <= TITLE_FONT_SIZE_MAX ? sectionData.titleFontSize : "");
     setHtml(sectionData.html ?? "");
     setImage(sectionData.image ?? null);
     setOriginalImagePath(sectionData.image?.path ?? null);
     setBgColor((sectionData.bgColor ?? ctaData.bgColor) ?? "");
     if (sectionData.cards?.length) setCards(sectionData.cards);
+    setLivrablesTitle(ctaData.livrablesTitle ?? "Livrables");
+    setBudgetTitle(ctaData.budgetTitle ?? "Durée & budget");
+    setLivrablesTitleStyle(ctaData.livrablesTitleStyle === 'h1' || ctaData.livrablesTitleStyle === 'h2' || ctaData.livrablesTitleStyle === 'h3' || ctaData.livrablesTitleStyle === 'h4' || ctaData.livrablesTitleStyle === 'h5' || ctaData.livrablesTitleStyle === 'p' ? ctaData.livrablesTitleStyle : 'h2');
+    setBudgetTitleStyle(ctaData.budgetTitleStyle === 'h1' || ctaData.budgetTitleStyle === 'h2' || ctaData.budgetTitleStyle === 'h3' || ctaData.budgetTitleStyle === 'h4' || ctaData.budgetTitleStyle === 'h5' || ctaData.budgetTitleStyle === 'p' ? ctaData.budgetTitleStyle : 'h2');
+    setLivrablesTitleFontSize(ctaData.livrablesTitleFontSize != null && ctaData.livrablesTitleFontSize >= TITLE_FONT_SIZE_MIN && ctaData.livrablesTitleFontSize <= TITLE_FONT_SIZE_MAX ? ctaData.livrablesTitleFontSize : "");
+    setBudgetTitleFontSize(ctaData.budgetTitleFontSize != null && ctaData.budgetTitleFontSize >= TITLE_FONT_SIZE_MIN && ctaData.budgetTitleFontSize <= TITLE_FONT_SIZE_MAX ? ctaData.budgetTitleFontSize : "");
     setLivrablesHtml(ctaData.livrablesHtml ?? "");
     setBudgetHtml(ctaData.budgetHtml ?? "");
     setButtonLabel(ctaData.buttonLabel ?? "En discuter ensemble");
     setButtonHref(ctaData.buttonHref ?? "/contact");
+    setButtonStyle(ctaData.buttonStyle === '2' ? '2' : '1');
   }, [blockKey, initialData]);
 
   async function handleFileSelect(file: File | null) {
@@ -137,16 +184,26 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
       let value: string;
       if (isCta) {
         value = JSON.stringify({
+          livrablesTitle: livrablesTitle ?? "",
+          budgetTitle: budgetTitle ?? "",
+          livrablesTitleStyle,
+          budgetTitleStyle,
+          livrablesTitleFontSize: livrablesTitleFontSize !== "" ? clampTitleFontSize(livrablesTitleFontSize as number) : undefined,
+          budgetTitleFontSize: budgetTitleFontSize !== "" ? clampTitleFontSize(budgetTitleFontSize as number) : undefined,
           livrablesHtml,
           budgetHtml,
           buttonLabel,
           buttonHref,
+          buttonStyle,
           bgColor: bgColor || undefined,
         });
       } else {
         const payload: AnimationSectionData = {
-          label: label || undefined,
-          title: title || undefined,
+          label: label ?? "",
+          title: title ?? "",
+          labelStyle: labelStyle,
+          titleStyle: titleStyle,
+          titleFontSize: titleFontSize !== "" ? clampTitleFontSize(titleFontSize as number) : undefined,
           html: html || undefined,
           image: image || undefined,
           bgColor: bgColor || undefined,
@@ -186,6 +243,7 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
 
   return (
     <div
+      className="modal-overlay-mobile"
       style={{
         position: "fixed",
         inset: 0,
@@ -224,23 +282,34 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
             <>
               <div>
                 <label style={{ fontSize: 13, color: "var(--muted)" }}>Label (petit titre)</label>
-                <input
-                  type="text"
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", marginTop: 4, borderRadius: 6, border: "1px solid #e6e6e6" }}
-                  placeholder="ex: Le concept"
-                />
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
+                  <input
+                    type="text"
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    style={{ flex: 1, padding: "8px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }}
+                    placeholder="ex: Le concept"
+                  />
+                  <select value={labelStyle} onChange={(e) => setLabelStyle(e.target.value as TitleStyleKey)} style={{ width: 120, padding: "8px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
               </div>
               <div>
                 <label style={{ fontSize: 13, color: "var(--muted)" }}>Titre</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  style={{ width: "100%", padding: "8px 10px", marginTop: 4, borderRadius: 6, border: "1px solid #e6e6e6" }}
-                  placeholder="ex: Votre entreprise en série"
-                />
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    style={{ flex: 1, minWidth: 160, padding: "8px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }}
+                    placeholder="ex: Votre entreprise en série"
+                  />
+                  <select value={titleStyle} onChange={(e) => setTitleStyle(e.target.value as TitleStyleKey)} style={{ width: 120, padding: "8px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={titleFontSize === "" ? "" : titleFontSize} onChange={(e) => setTitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ width: 64, padding: "8px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }} title="Taille titre (8–72 px)" />
+                </div>
               </div>
               <div>
                 <label style={{ fontSize: 13, color: "var(--muted)" }}>Texte (contenu)</label>
@@ -350,6 +419,38 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
           {isCta && (
             <>
               <div>
+                <label style={{ fontSize: 13, color: "var(--muted)" }}>Titre Livrables</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
+                  <input
+                    type="text"
+                    value={livrablesTitle}
+                    onChange={(e) => setLivrablesTitle(e.target.value)}
+                    style={{ flex: 1, minWidth: 120, padding: "8px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }}
+                    placeholder="ex: Livrables"
+                  />
+                  <select value={livrablesTitleStyle} onChange={(e) => setLivrablesTitleStyle(e.target.value as TitleStyleKey)} style={{ width: 120, padding: "8px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={livrablesTitleFontSize === "" ? "" : livrablesTitleFontSize} onChange={(e) => setLivrablesTitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ width: 64, padding: "8px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }} title="Taille titre (8–72 px)" />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 13, color: "var(--muted)" }}>Titre Durée & budget</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
+                  <input
+                    type="text"
+                    value={budgetTitle}
+                    onChange={(e) => setBudgetTitle(e.target.value)}
+                    style={{ flex: 1, minWidth: 120, padding: "8px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }}
+                    placeholder="ex: Durée & budget"
+                  />
+                  <select value={budgetTitleStyle} onChange={(e) => setBudgetTitleStyle(e.target.value as TitleStyleKey)} style={{ width: 120, padding: "8px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={budgetTitleFontSize === "" ? "" : budgetTitleFontSize} onChange={(e) => setBudgetTitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ width: 64, padding: "8px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }} title="Taille titre (8–72 px)" />
+                </div>
+              </div>
+              <div>
                 <label style={{ fontSize: 13, color: "var(--muted)" }}>Texte Livrables</label>
                 <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "flex-start" }}>
                   <div
@@ -394,6 +495,17 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
                     placeholder="/contact"
                   />
                 </div>
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <label style={{ fontSize: 13, color: "var(--muted)" }}>Style du bouton</label>
+                <select
+                  value={buttonStyle}
+                  onChange={(e) => setButtonStyle(e.target.value as '1' | '2')}
+                  style={{ width: "100%", padding: "8px 10px", marginTop: 4, borderRadius: 6, border: "1px solid #e6e6e6" }}
+                >
+                  <option value="1">Style 1</option>
+                  <option value="2">Style 2</option>
+                </select>
               </div>
             </>
           )}

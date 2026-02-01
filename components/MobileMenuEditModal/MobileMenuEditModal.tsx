@@ -134,8 +134,8 @@ export default function MobileMenuEditModal({ onClose, onSaved }: { onClose: () 
   ];
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-      <div style={{ background: '#fff', color: '#000', padding: 20, width: 760, maxWidth: '98%', borderRadius: 8, position: 'relative' }}>
+    <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+      <div style={{ background: '#fff', color: '#000', padding: 20, width: 760, maxWidth: '98%', maxHeight: 'calc(100vh - 24px)', overflowY: 'auto', borderRadius: 8, position: 'relative' }}>
         <h3 style={{ marginTop: 0 }}>Modifier le menu mobile</h3>
 
         <div>

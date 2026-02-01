@@ -8,9 +8,11 @@ type Props = {
   subtitle?: string;
   bgImage?: string;
   page?: string;
+  /** Point de focus pour l’image de fond (ex. header galerie) quand aucun hero n’est sauvegardé */
+  bgImageFocus?: { x: number; y: number };
 };
 
-export default async function PageHeader({ title, subtitle, bgImage, page }: Props) {
+export default async function PageHeader({ title, subtitle, bgImage, page, bgImageFocus }: Props) {
   let styleBase: React.CSSProperties = bgImage ? { backgroundImage: `url(${bgImage})` } : {};
   let mode: string | null = null;
   let settings: any = {};
@@ -65,6 +67,14 @@ export default async function PageHeader({ title, subtitle, bgImage, page }: Pro
     } catch (e) {
       // ignore and fall back to bgImage
     }
+  }
+
+  // Point de focus : hero sauvegardé ou prop (ex. header galerie)
+  const focusFromSettings = settings?.focus && typeof settings.focus.x !== 'undefined' && typeof settings.focus.y !== 'undefined';
+  const focusFromProps = bgImageFocus && typeof bgImageFocus.x === 'number' && typeof bgImageFocus.y === 'number';
+  const effectiveFocus = focusFromSettings ? settings.focus : focusFromProps ? bgImageFocus : null;
+  if (effectiveFocus && styleBase.backgroundImage) {
+    styleBase = { ...styleBase, backgroundPosition: `${Number(effectiveFocus.x)}% ${Number(effectiveFocus.y)}%` };
   }
 
   // Preload hero image (server-side) to reduce visual flash; place a link tag inside header so browser begins fetching early

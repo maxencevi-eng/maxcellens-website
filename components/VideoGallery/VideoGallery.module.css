@@ -28,3 +28,46 @@
 @media (max-width: 520px) {
   .grid { grid-template-columns: 1fr; }
 }
+
+/* Modal "Modifier la galerie" — mobile : lignes sur 2 lignes, boutons visibles */
+.modalOverlay {
+  box-sizing: border-box;
+}
+
+.modalBox {
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .modalItemRow {
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+  }
+
+  .modalItemContent {
+    min-width: 0 !important;
+    flex: 1 1 180px !important;
+  }
+
+  .modalItemActions {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    margin-top: 6px;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .modalItemActions .btn-secondary {
+    min-width: 0;
+  }
+
+  .modalItemEditRow {
+    width: 100%;
+  }
+
+  .modalItemEditRow input {
+    min-width: 0 !important;
+  }
+}

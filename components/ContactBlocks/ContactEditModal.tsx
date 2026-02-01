@@ -6,7 +6,9 @@ import { supabase } from '../../lib/supabase';
 const RichTextModal = dynamic(() => import('../RichTextModal/RichTextModal'), { ssr: false });
 
 export default function ContactEditModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
+  const [contactHandle, setContactHandle] = useState('@maxcellens');
   const [html, setHtml] = useState('');
+  const [introBackgroundColor, setIntroBackgroundColor] = useState('');
   const [photo, setPhoto] = useState<{ url?: string; path?: string } | null>(null);
   // Keep the original stored path so we can delete it if replaced on save
   const [originalPhotoPath, setOriginalPhotoPath] = useState<string | null>(null);
@@ -19,16 +21,24 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=contact_intro,contact_photo');
+        const resp = await fetch('/api/admin/site-settings?keys=contact_handle,contact_intro,contact_photo');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
         if (!mounted) return;
+        if (s.contact_handle != null) setContactHandle(String(s.contact_handle));
+        else setContactHandle('@maxcellens');
         if (s.contact_intro) {
           try {
             const parsed = JSON.parse(String(s.contact_intro));
-            setHtml(parsed || '');
-          } catch (e) { setHtml(String(s.contact_intro || '')); }
+            if (parsed && typeof parsed === 'object' && 'html' in parsed) {
+              setHtml(parsed.html ?? '');
+              setIntroBackgroundColor(parsed.backgroundColor ?? '');
+            } else {
+              setHtml(typeof parsed === 'string' ? parsed : '');
+              setIntroBackgroundColor('');
+            }
+          } catch (e) { setHtml(String(s.contact_intro || '')); setIntroBackgroundColor(''); }
         }
         if (s.contact_photo) {
           try {
@@ -93,7 +103,8 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
     setError(null);
     try {
       const tasks: Promise<Response>[] = [];
-      tasks.push(fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'contact_intro', value: JSON.stringify(html || '') }) }));
+      tasks.push(fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'contact_handle', value: String(contactHandle || '@maxcellens') }) }));
+      tasks.push(fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'contact_intro', value: JSON.stringify({ html: html || '', backgroundColor: introBackgroundColor?.trim() || undefined }) }) }));
       tasks.push(fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'contact_photo', value: JSON.stringify(photo || '') }) }));
       const res = await Promise.all(tasks);
       for (const r of res) {
@@ -105,7 +116,8 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
 
       setOriginalPhotoPath(photo?.path || null);
 
-      try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'contact_intro', value: JSON.stringify(html || '') } })); } catch (_) {}
+      try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'contact_handle', value: String(contactHandle || '') } })); } catch (_) {}
+      try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'contact_intro' } })); } catch (_) {}
       try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'contact_photo', value: JSON.stringify(photo || '') } })); } catch (_) {}
 
       if (onSaved) onSaved();
@@ -114,7 +126,7 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+    <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
       <div style={{ background: '#fff', color: '#000', padding: 20, width: 820, maxWidth: '98%', maxHeight: '86vh', overflowY: 'auto', borderRadius: 10 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0 }}>Modifier le bloc Contact</h3>
@@ -122,6 +134,10 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
         </div>
 
         <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
+          <div>
+            <label style={{ fontSize: 13, color: 'var(--muted)' }}>Texte en-tête (ex. @maxcellens)</label>
+            <input type="text" value={contactHandle} onChange={(e) => setContactHandle(e.target.value)} placeholder="@maxcellens" style={{ width: '100%', padding: '8px 12px', marginTop: 4, borderRadius: 6, border: '1px solid #e6e6e6', boxSizing: 'border-box' }} />
+          </div>
           <label style={{ fontSize: 13, color: 'var(--muted)' }}>Photo</label>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input type="file" accept="image/*" onChange={async (e) => { const f = (e.target.files && e.target.files[0]) || null; if (f) await handleFileSelect(f); }} />
@@ -139,6 +155,14 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
               <div>
                 <button className="btn-ghost" onClick={() => setEditingText(true)}>Éditer</button>
               </div>
+            </div>
+          </div>
+          <div>
+            <label style={{ fontSize: 13, color: 'var(--muted)' }}>Couleur de fond (optionnel)</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+              <input type="color" value={introBackgroundColor || '#fafaf9'} onChange={(e) => setIntroBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: '1px solid #e6e6e6', borderRadius: 6 }} />
+              <input type="text" value={introBackgroundColor} onChange={(e) => setIntroBackgroundColor(e.target.value)} placeholder="ou hex" style={{ width: 120, padding: '8px 12px', borderRadius: 6, border: '1px solid #e6e6e6', boxSizing: 'border-box' }} />
+              {introBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setIntroBackgroundColor('')}>Effacer</button> : null}
             </div>
           </div>
 

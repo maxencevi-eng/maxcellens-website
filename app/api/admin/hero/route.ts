@@ -1,6 +1,41 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin, getHeaderForPage } from '../../../../lib/supabaseAdmin'
 
+function normalizeSlug(s: string): string {
+  return (s || '')
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || '';
+}
+
+/** Synchronise le hero galeries-<slug> vers gallery_pages (image de couverture + focus). */
+async function syncHeroToGalleryPages(page: string, mode: string | undefined, settings: any): Promise<void> {
+  if (!supabaseAdmin || typeof page !== 'string' || !page.startsWith('galeries-')) return;
+  const slug = normalizeSlug(page.slice('galeries-'.length));
+  if (!slug) return;
+  try {
+    const { data: row } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'gallery_pages').maybeSingle();
+    if (!row?.value || typeof row.value !== 'string') return;
+    const parsed = JSON.parse(row.value);
+    const pages = Array.isArray(parsed?.pages) ? parsed.pages : [];
+    const idx = pages.findIndex((p: any) => normalizeSlug(String(p?.slug || '')) === slug);
+    if (idx < 0) return;
+    if (mode === 'image' && settings?.url) {
+      pages[idx] = { ...pages[idx], headerImageUrl: settings.url, headerImagePath: settings.path ?? pages[idx].headerImagePath, headerImageFocus: settings?.focus ?? pages[idx].headerImageFocus };
+    } else {
+      pages[idx] = { ...pages[idx], headerImageUrl: undefined, headerImagePath: undefined, headerImageFocus: undefined };
+    }
+    await supabaseAdmin.from('site_settings').upsert({ key: 'gallery_pages', value: JSON.stringify({ pages }) }, { onConflict: 'key' });
+  } catch (e) {
+    console.warn('syncHeroToGalleryPages failed', e);
+  }
+}
+
 export async function GET(req: Request) {
   try {
     if (!supabaseAdmin) return NextResponse.json({ error: 'Admin credentials not configured' }, { status: 503 });
@@ -122,6 +157,7 @@ export async function POST(req: Request) {
             console.error('hero upsert to site_settings failed', up.error);
             return NextResponse.json({ error: up.error?.message || String(up.error) }, { status: 500 });
           }
+          await syncHeroToGalleryPages(page, incomingMode, settings);
           return NextResponse.json({ ok: true, data: up.data, warning: 'headers table missing columns, stored hero configuration in site_settings' });
         } catch (fallbackErr: any) {
           console.error('hero upsert fallback exception', fallbackErr);
@@ -173,6 +209,8 @@ export async function POST(req: Request) {
         console.info('Removed hero fallback from site_settings', storeKey);
       }
     } catch (e) { console.warn('Error removing hero site_settings fallback', e); }
+
+    await syncHeroToGalleryPages(page, payload.mode, payload.settings);
 
     return NextResponse.json({ ok: true, data });
   } catch (err:any) {

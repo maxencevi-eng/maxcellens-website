@@ -15,7 +15,7 @@ export default function Modal({ title, onClose, children, footer }: { title?: st
   if (typeof document === 'undefined') return null;
 
   return ReactDOM.createPortal(
-    <div className={styles.overlay} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className={`${styles.overlay} modal-overlay-mobile`} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={styles.modal} role="dialog" aria-modal="true" aria-label={title || 'Modal'}>
         <div className={styles.header}>
           <div style={{ fontWeight: 700 }}>{title}</div>

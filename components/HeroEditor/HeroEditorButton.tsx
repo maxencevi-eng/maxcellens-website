@@ -21,7 +21,7 @@ export default function HeroEditorButton({ page }: { page: string }) {
   if (!isAdmin) return null;
   return (
     <>
-      <button onClick={() => setOpen(true)} style={{ position: 'absolute', right: 12, bottom: 12, padding: '8px 10px', borderRadius: 6, background: '#fff', border: '1px solid #ddd', cursor: 'pointer', zIndex: 10001 }}>Modifier Hero</button>
+      <button onClick={() => setOpen(true)} style={{ position: 'absolute', right: 12, bottom: 12, padding: '8px 10px', borderRadius: 6, background: '#fff', border: '1px solid #ddd', cursor: 'pointer', zIndex: 2 }}>Modifier Hero</button>
       {open ? <HeroEditor page={page} onClose={() => setOpen(false)} /> : null}
     </>
   );

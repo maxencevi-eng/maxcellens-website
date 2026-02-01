@@ -1,8 +1,22 @@
+/* Fonds des blocs en pleine largeur (contenu reste centré via .container) */
+.intro,
+.services,
+.portraitBlock,
+.cadreurBlock,
+.stats,
+.quote,
+.cta {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  box-sizing: border-box;
+}
+
 /* ========== Intro ========== */
 .intro {
-  padding: 3rem 0;
+  padding: var(--block-inner-padding-desktop, 24px);
   text-align: center;
-  background: linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 100%);
+  background: var(--block-bg, var(--bg, #fafaf9));
 }
 
 .introTitle {
@@ -22,7 +36,7 @@
 .introText {
   max-width: 640px;
   margin: 0 auto;
-  line-height: 1.6;
+  line-height: var(--base-line-height, 1.25);
   color: var(--fg, #213431);
   opacity: 0.92;
 }
@@ -32,8 +46,8 @@
 
 /* ========== Services teaser ========== */
 .services {
-  padding: 3.5rem 0;
-  background: var(--bg, #fafaf9);
+  padding: var(--block-inner-padding-desktop, 24px);
+  background: var(--block-bg, var(--bg, #fafaf9));
 }
 
 .servicesTitle {
@@ -121,8 +135,8 @@
 
 /* ========== Portrait block — carousel (4 slides) ========== */
 .portraitBlock {
-  padding: 3.5rem 0;
-  background: var(--bg, #fafaf9);
+  padding: var(--block-inner-padding-desktop, 24px);
+  background: var(--block-bg, var(--bg, #fafaf9));
 }
 
 .portraitBlockTitle {
@@ -135,6 +149,11 @@
 }
 
 .portraitCarousel {
+  display: block;
+}
+
+/* Wrapper : grille sans animation globale (chaque zone a la sienne) */
+.portraitSlideTransition {
   display: grid;
   gap: 2rem;
   align-items: center;
@@ -142,23 +161,124 @@
 }
 
 @media (min-width: 900px) {
-  .portraitCarousel {
-    grid-template-columns: 1fr 1fr;
+  .portraitSlideTransition {
+    grid-template-columns: 60% 40%;
     gap: 3rem;
     align-items: stretch;
   }
 }
 
-/* Image à gauche — effet bords irréguliers (torn paper) */
+/* Zone texte à droite : fondu simple */
+.portraitContentFade {
+  animation: portraitContentFade 0.4s ease-out forwards;
+}
+
+@keyframes portraitContentFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Photo 1 : slide horizontal, moins loin (12 %) */
+.portraitPhoto1FromRight {
+  animation: portraitPhoto1FromRight 0.45s ease-out forwards;
+}
+
+.portraitPhoto1FromLeft {
+  animation: portraitPhoto1FromLeft 0.45s ease-out forwards;
+}
+
+@keyframes portraitPhoto1FromRight {
+  from { opacity: 0.7; transform: translateX(12%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes portraitPhoto1FromLeft {
+  from { opacity: 0.7; transform: translateX(-12%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Photo 2 : slide du haut vers le bas (moins loin) */
+.portraitPhoto2SlideDown {
+  animation: portraitPhoto2SlideDown 0.45s ease-out forwards;
+}
+
+@keyframes portraitPhoto2SlideDown {
+  from { opacity: 0.7; transform: translateY(-12%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Zone 1 (images) : bloc contenu dans la colonne gauche, les 2 images entièrement visibles, pas de débord sur le texte */
+.portraitCarouselImageWrap {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  /* Taille de la zone photo 1 pour retrouver le rapport avec l’image 2 */
+  .portraitCarouselImageWrap {
+    width: 76%;
+    max-width: 76%;
+  }
+}
+
+/* Image à gauche — format carré forcé, effet bords irréguliers (torn paper) */
 .portraitCarouselImage {
   position: relative;
-  min-height: 280px;
+  width: 100%;
+  aspect-ratio: 3/4; /* 4:3 vertical (3 largeur, 4 hauteur) */
+  overflow: visible;
+}
+
+@media (max-width: 899px) {
+  /* Adapter la zone photo pour que les 2 images soient entièrement visibles sur mobile */
+  .portraitCarouselImage {
+    width: 78%;
+    max-width: 320px;
+  }
+  .portraitPhoto2Wrap {
+    top: 2%;
+    right: -18%;
+    width: 45%;
+  }
+}
+
+/* Wrappers pour animations séparées (photo 1 = slide L/R, photo 2 = slide haut→bas) */
+.portraitPhoto1Wrap {
+  position: absolute;
+  inset: 0;
+}
+
+.portraitPhoto2Wrap {
+  position: absolute;
+  top: 4%;
+  right: -28%;
+  width: 48%;
+  aspect-ratio: 3/4; /* 4:3 vertical (3 largeur, 4 hauteur) */
+  z-index: 1;
+}
+
+@media (min-width: 900px) {
+  /* Photo 2 dans le bloc de gauche uniquement : pas de débord vers le haut (évite toute superposition avec le titre) */
+  .portraitPhoto2Wrap {
+    top: 2%;
+    right: -20%;
+    width: 44%;
+  }
+}
+
+.portraitPhoto2Wrap .portraitImageSecondary {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .portraitImageTorn {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  min-height: 280px;
   object-fit: cover;
   display: block;
   /* Bords irréguliers façon déchiré */
@@ -170,17 +290,31 @@
   box-shadow: 0 16px 48px rgba(0,0,0,0.12);
 }
 
-@media (min-width: 900px) {
-  .portraitCarouselImage { min-height: 360px; }
-  .portraitImageTorn { min-height: 360px; clip-path: polygon(0 0, 98% 0, 100% 5%, 100% 95%, 98% 100%, 0 98%, 2% 90%, 0 60%, 4% 40%, 0 10%); }
+/* Seconde photo : chevauche la principale, décalée vers le bas/gauche (cible cadre rouge) */
+.portraitImageSecondary {
+  object-fit: cover;
+  clip-path: polygon(2% 0, 100% 0, 100% 15%, 98% 100%, 0 98%, 0 85%, 5% 50%, 0 20%);
+  border-radius: 4px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.18);
 }
 
-/* Contenu à droite : titre slide, texte, CTA, navigation */
+@media (min-width: 900px) {
+  .portraitImageTorn { clip-path: polygon(0 0, 98% 0, 100% 5%, 100% 95%, 98% 100%, 0 98%, 2% 90%, 0 60%, 4% 40%, 0 10%); }
+}
+
+/* Contenu à droite : décalé pour ne pas être caché par l’image secondaire */
 .portraitCarouselContent {
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+@media (min-width: 900px) {
+  .portraitCarouselContent {
+    padding-left: 1rem;
+  }
 }
 
 .portraitSlideTitle {
@@ -195,7 +329,7 @@
 
 .portraitSlideText {
   margin: 0 0 1.5rem;
-  line-height: 1.6;
+  line-height: var(--base-line-height, 1.25);
   color: var(--fg, #213431);
   opacity: 0.92;
 }
@@ -295,8 +429,8 @@
 
 /* ========== Cadreur block ========== */
 .cadreurBlock {
-  padding: 3.5rem 0;
-  background: rgba(0,0,0,0.03);
+  padding: var(--block-inner-padding-desktop, 24px);
+  background: var(--block-bg, var(--bg, #fafaf9));
 }
 
 .cadreurGrid {
@@ -321,7 +455,7 @@
 
 .cadreurText {
   margin: 0 0 1.25rem;
-  line-height: 1.55;
+  line-height: var(--base-line-height, 1.25);
   color: var(--fg, #213431);
   opacity: 0.92;
 }
@@ -345,7 +479,7 @@
 
 /* ========== Stats ========== */
 .stats {
-  padding: 3rem 0;
+  padding: var(--block-inner-padding-desktop, 24px);
   background: var(--fg, #213431);
   color: #fff;
 }
@@ -406,43 +540,82 @@
 
 .sectionBlockAlt .sectionBlockDesc { color: #d5d5d5; }
 
-/* ========== Quote ========== */
+/* ========== Quote (3 citations visibles + points) ========== */
 .quote {
-  padding: 4rem 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.03) 0%, rgba(0,0,0,0.06) 100%);
+  padding: var(--block-inner-padding-desktop, 24px);
+  background: var(--block-bg, var(--bg, #fafaf9));
 }
 
-.quoteInner {
-  max-width: 720px;
-  margin: 0 auto;
+.quoteCarousel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem 2rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 899px) {
+  .quoteCarousel {
+    grid-template-columns: 1fr;
+  }
+}
+
+.quoteCard {
   text-align: center;
+  padding: 1rem 0.5rem;
 }
 
 .quoteText {
-  font-size: clamp(1.15rem, 2.5vw, 1.4rem);
+  font-size: clamp(1rem, 2vw, 1.2rem);
   font-weight: 500;
   line-height: 1.5;
-  margin: 0 0 1.25rem;
+  margin: 0 0 0.75rem;
   color: var(--fg, #213431);
   font-style: italic;
 }
 
 .quoteAuthor {
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   margin: 0;
   color: var(--fg, #213431);
 }
 
 .quoteRole {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--muted, #6b7280);
   margin: 0.25rem 0 0;
 }
 
+.quoteDots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quoteDot,
+.quoteDotActive {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.quoteDot {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.quoteDotActive {
+  background: var(--fg, #213431);
+  transform: scale(1.15);
+}
+
 /* ========== CTA ========== */
 .cta {
-  padding: 4rem 0;
+  padding: var(--block-inner-padding-desktop, 24px);
   text-align: center;
   background: var(--fg, #213431);
   color: #fff;
@@ -498,4 +671,17 @@
 
 .editBtn:hover {
   background: #333;
+}
+
+/* Marge intérieure des blocs : mobile (Page > Dimensions) */
+@media (max-width: 767px) {
+  .intro,
+  .services,
+  .portraitBlock,
+  .cadreurBlock,
+  .stats,
+  .quote,
+  .cta {
+    padding: var(--block-inner-padding-mobile, 16px);
+  }
 }

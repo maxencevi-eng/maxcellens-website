@@ -8,6 +8,17 @@
   z-index: 9999;
 }
 
+@media (max-width: 768px) {
+  .seoModalOverlay.modal-overlay-mobile {
+    padding: 12px;
+    box-sizing: border-box;
+  }
+  .seoModalOverlay.modal-overlay-mobile .seoModal {
+    max-width: 100%;
+    max-height: calc(100vh - 24px);
+  }
+}
+
 .seoModal {
   background: #fff;
   color: #000;

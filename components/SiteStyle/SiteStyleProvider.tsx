@@ -1,12 +1,19 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
+type ButtonStyleSettings = { bg?: string; color?: string };
+
 type ColorSettings = {
   bgColor?: string;
+  /** Couleur de fond des blocs (zone contenu, toutes les pages) */
+  blockBgColor?: string;
   primary?: string;
   secondary?: string;
   accent?: string;
   text?: string;
+  /** Style 1 et 2 pour les boutons du site */
+  button1?: ButtonStyleSettings;
+  button2?: ButtonStyleSettings;
 };
 
 type FontMeta = { name: string; url: string; style?: string; weight?: string };
@@ -76,6 +83,8 @@ export default function SiteStyleProvider({ children }: { children: React.ReactN
           // map to legacy variable used across the site
           root.style.setProperty('--bg', c.bgColor);
         }
+        if (c.blockBgColor) root.style.setProperty('--block-bg', c.blockBgColor);
+        else root.style.setProperty('--block-bg', 'var(--bg)');
         if (c.primary) root.style.setProperty('--color-primary', c.primary);
         if (c.secondary) root.style.setProperty('--color-secondary', c.secondary);
         if (c.accent) root.style.setProperty('--color-accent', c.accent);
@@ -84,6 +93,10 @@ export default function SiteStyleProvider({ children }: { children: React.ReactN
           // map to legacy variable used across the site
           root.style.setProperty('--fg', c.text);
         }
+        if (c.button1?.bg) root.style.setProperty('--button-1-bg', c.button1.bg);
+        if (c.button1?.color) root.style.setProperty('--button-1-color', c.button1.color);
+        if (c.button2?.bg) root.style.setProperty('--button-2-bg', c.button2.bg);
+        if (c.button2?.color) root.style.setProperty('--button-2-color', c.button2.color);
 
         const t = s.typography || {};
         function quoteFamily(f: string) {

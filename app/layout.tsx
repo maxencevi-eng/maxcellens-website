@@ -5,6 +5,9 @@ import Container from '../components/Container/Container';
 import Footer from '../components/Footer/Footer';
 import AdminSidebar from '../components/AdminSidebar/AdminSidebar';
 import SiteStyleProvider from '../components/SiteStyle/SiteStyleProvider';
+import DisableImageSave from '../components/DisableImageSave/DisableImageSave';
+import PageLayoutProvider from '../components/PageLayoutModal/PageLayoutProvider';
+import { BlockVisibilityProvider } from '../components/BlockVisibility';
 import { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
@@ -65,6 +68,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           const ss = JSON.parse(map.site_style);
           if (ss.colors) {
             if (ss.colors.bgColor) cssVars += `--bg-color: ${ss.colors.bgColor}; --bg: ${ss.colors.bgColor};`;
+            if (ss.colors.blockBgColor) cssVars += `--block-bg: ${ss.colors.blockBgColor};`;
             if (ss.colors.primary) cssVars += `--color-primary: ${ss.colors.primary};`;
             if (ss.colors.secondary) cssVars += `--color-secondary: ${ss.colors.secondary};`;
             if (ss.colors.accent) cssVars += `--color-accent: ${ss.colors.accent};`;
@@ -197,18 +201,25 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${styleTag}`;
 
   return (
-    <html lang="fr" className="wf-loading">
+    <html lang="fr" className="wf-loading" suppressHydrationWarning>
       <head suppressHydrationWarning dangerouslySetInnerHTML={{ __html: headContent }} />
       <body>
         <SiteStyleProvider>
-          <AdminSidebar />
-          <Header />
-          <main>
-            <Container>
-              {children}
-            </Container>
-          </main>
-          <Footer />
+          <PageLayoutProvider>
+            <BlockVisibilityProvider>
+              <DisableImageSave />
+              <AdminSidebar />
+            <Header />
+            <main>
+              <Container>
+                <div className="content-inner">
+                  {children}
+                </div>
+              </Container>
+            </main>
+            <Footer />
+            </BlockVisibilityProvider>
+          </PageLayoutProvider>
         </SiteStyleProvider>
       </body>
     </html>

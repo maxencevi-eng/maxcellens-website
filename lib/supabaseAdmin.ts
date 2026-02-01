@@ -84,6 +84,31 @@ export async function getHeaderForPage(page: string) {
       return data;
     }
 
+    // Fallback pour sous-pages galeries : header depuis gallery_pages (image + focus)
+    if (typeof page === 'string' && page.startsWith('galeries-')) {
+      const slug = page.slice('galeries-'.length).trim().toLowerCase();
+      try {
+        const { data: gp } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'gallery_pages').maybeSingle();
+        if (gp?.value && typeof gp.value === 'string') {
+          const parsed = JSON.parse(gp.value);
+          const pages = parsed?.pages ?? [];
+          const norm = (s: string) => (s || '').toLowerCase().trim().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '') || '';
+          const gallery = pages.find((p: any) => norm(String(p?.slug || '')) === slug);
+          if (gallery) {
+            const url = gallery.headerImageUrl || (gallery.headerImagePath ? await toPublicUrl(gallery.headerImagePath) : null);
+            if (url) {
+              const focus = gallery.headerImageFocus && typeof gallery.headerImageFocus.x !== 'undefined' && typeof gallery.headerImageFocus.y !== 'undefined'
+                ? gallery.headerImageFocus
+                : undefined;
+              return { page, mode: 'image', settings: { url, focus }, public_url: url } as any;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('getHeaderForPage gallery fallback failed', e);
+      }
+    }
+
     return null;
   } catch (err) {
     console.error('getHeaderForPage unexpected error', err);

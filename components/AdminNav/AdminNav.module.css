@@ -1,0 +1,44 @@
+.nav {
+  margin-top: 1.5rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.75rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.link {
+  display: inline-block;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.9rem;
+  color: var(--fg, #213431);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.link:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--fg, #213431);
+}
+
+.link.active {
+  background: rgba(0, 0, 0, 0.08);
+  font-weight: 600;
+}

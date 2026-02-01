@@ -247,7 +247,7 @@ export default function SeoCommandCenterModal({
   }
 
   return (
-    <div className={styles.seoModalOverlay}>
+    <div className={`${styles.seoModalOverlay} modal-overlay-mobile`}>
       <div className={styles.seoModal}>
         <div className={styles.seoModalHeader}>
           <h2>SEO Command Center</h2>

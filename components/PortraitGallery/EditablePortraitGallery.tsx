@@ -6,11 +6,22 @@ import PortraitGallery from "./PortraitGallery";
 
 type ImageItem = { id: string | number; image_url: string; image_path?: string; title?: string; width?: number; height?: number };
 
-export default function EditablePortraitGallery({ items: initialItems }: { items: ImageItem[] }) {
+type EditablePortraitGalleryProps = {
+  items: ImageItem[];
+  /** Site settings key for load/save (e.g. portrait_gallery or gallery_photos_mariage) */
+  settingsKey?: string;
+  /** Page sent to upload API (e.g. portrait or galleries) */
+  uploadPage?: string;
+  /** Folder in medias bucket (e.g. Portrait/Galerie1 or Galleries/mariage) */
+  uploadFolder?: string;
+};
+
+export default function EditablePortraitGallery({ items: initialItems, settingsKey = 'portrait_gallery', uploadPage = 'portrait', uploadFolder = 'Portrait/Galerie1' }: EditablePortraitGalleryProps) {
   const [items, setItems] = useState<ImageItem[]>(() => (initialItems || []).map((it, i) => ({ id: String(it.id ?? i), image_url: it.image_url, image_path: (it as any).path || (it as any).image_path || undefined, title: it.title, width: it.width, height: it.height })));
   const [open, setOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const dragIndex = useRef<number | null>(null);
+  const hadInitialItemsRef = useRef<boolean>((initialItems || []).length > 0);
   const [galleryType, setGalleryType] = useState("masonry");
   const [columns, setColumns] = useState<number>(3);
   const [aspect, setAspect] = useState<string>("original");
@@ -23,15 +34,26 @@ export default function EditablePortraitGallery({ items: initialItems }: { items
     return () => { mounted = false; try { (listener as any)?.subscription?.unsubscribe?.(); } catch (_) {} };
   }, []);
 
-  // load persisted data (if admin and a key exists)
+  // load persisted data (if admin and a key exists) — ne jamais écraser les items serveur par un tableau vide
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch('/api/admin/site-settings?keys=portrait_gallery');
+        const res = await fetch(`/api/admin/site-settings?keys=${encodeURIComponent(settingsKey)}`);
         const json = await res.json();
-        if (json?.settings?.portrait_gallery) {
-          const parsed = JSON.parse(json.settings.portrait_gallery);
-          if (parsed?.items) setItems(parsed.items.map((it: any, i: number) => ({ id: String(it.id ?? i), image_url: it.image_url || it.src || '', title: it.title || '', width: it.width, height: it.height })));
+        const raw = json?.settings?.[settingsKey];
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.items && Array.isArray(parsed.items)) {
+            const seen = new Set<string>();
+            const newItems = parsed.items.map((it: any, i: number) => {
+              let id = String(it.id ?? i);
+              if (seen.has(id)) id = `${id}-${i}`;
+              seen.add(id);
+              return { id, image_url: it.image_url || it.src || '', image_path: it.image_path ?? it.path, title: it.title || '', width: it.width, height: it.height };
+            });
+            const hadInitial = hadInitialItemsRef.current;
+            if (newItems.length > 0 || !hadInitial) setItems(newItems);
+          }
           if (parsed?.settings) {
             setGalleryType(parsed.settings.galleryType || "masonry");
             setColumns(parsed.settings.columns || 3);
@@ -44,7 +66,7 @@ export default function EditablePortraitGallery({ items: initialItems }: { items
       }
     }
     load();
-  }, []);
+  }, [settingsKey]);
 
   function openEditor() { setOpen(true); }
   function closeEditor() { setOpen(false); }
@@ -53,7 +75,8 @@ export default function EditablePortraitGallery({ items: initialItems }: { items
     if (!urlOrObj) return;
     const url = typeof urlOrObj === 'string' ? urlOrObj : urlOrObj.url;
     const path = typeof urlOrObj === 'string' ? undefined : urlOrObj.path;
-    const next: ImageItem = { id: String(Date.now()), image_url: url, image_path: path, title: '' };
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const next: ImageItem = { id: uniqueId, image_url: url, image_path: path, title: '' };
     setItems((s) => [...s, next]);
   }
 
@@ -61,7 +84,7 @@ export default function EditablePortraitGallery({ items: initialItems }: { items
     const it = items.find((x) => x.id === id);
     setItems((s) => s.filter((i) => i.id !== id));
     if (it) {
-      const payload = { page: 'portrait', paths: it.image_path ? [it.image_path] : [it.image_url] };
+      const payload = { page: uploadPage, paths: it.image_path ? [it.image_path] : [it.image_url] };
       fetch('/api/admin/delete-hero-media', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {});
     }
   }
@@ -100,11 +123,10 @@ export default function EditablePortraitGallery({ items: initialItems }: { items
 
   async function save() {
     try {
-      const payload = { key: 'portrait_gallery', value: JSON.stringify({ items, settings: { galleryType, columns, aspect, disposition } }) };
+      const payload = { key: settingsKey, value: JSON.stringify({ items, settings: { galleryType, columns, aspect, disposition } }) };
       const resp = await fetch('/api/admin/site-settings', { method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } });
       if (!resp.ok) throw new Error('Save failed');
-      // dispatch an event so other editors can react
-      try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'portrait_gallery', value: JSON.stringify({ items, settings: { galleryType, columns, aspect, disposition } }) } })); } catch (_) {}
+      try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: settingsKey, value: payload.value } })); } catch (_) {}
       setOpen(false);
     } catch (e) {
       console.error('save error', e);
@@ -116,7 +138,7 @@ export default function EditablePortraitGallery({ items: initialItems }: { items
     <div>
       <div style={{ position: 'relative', marginBottom: 12 }}>
         {isAdmin && (
-          <button className="btn-secondary" onClick={openEditor} style={{ position: 'absolute', right: 12, top: -16, zIndex: 5, background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>Modifier la galerie</button>
+          <button className="btn-secondary" onClick={openEditor} style={{ position: 'absolute', left: 12, top: -16, zIndex: 5, background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>Modifier la galerie</button>
         )}
       </div>
       <div>
@@ -139,7 +161,7 @@ export default function EditablePortraitGallery({ items: initialItems }: { items
             </div>
 
             <div style={{ marginBottom: 12, borderBottom: '1px solid #eee', paddingBottom: 12 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, alignItems: 'start' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, alignItems: 'start' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <label style={{ display: 'block', marginBottom: 8 }}><strong>Type de galerie</strong></label>
                   <select value={galleryType} onChange={(e) => setGalleryType(e.target.value)}>
@@ -188,7 +210,7 @@ export default function EditablePortraitGallery({ items: initialItems }: { items
 
             <div>
               <div style={{ display: 'flex', gap: 12, marginBottom: 12, alignItems: 'center' }}>
-                <AddUrl onAdd={addItem} />
+                <AddUrl onAdd={addItem} uploadPage={uploadPage} uploadFolder={uploadFolder} />
                 <div style={{ color: 'var(--muted)', fontSize: 13 }}>Glisser pour réordonner • Cliquer sur une vignette pour remplacer</div>
               </div>
 
@@ -203,7 +225,7 @@ export default function EditablePortraitGallery({ items: initialItems }: { items
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                             <button onClick={() => removeItem(String(it.id))} style={{ background: 'transparent', border: '1px solid #e6e6e6', padding: '4px 6px', fontSize: 12 }}>Suppr.</button>
-                            <SmallReplace oldPath={it.image_path} onReplace={(url) => replaceItem(String(it.id), url)} />
+                            <SmallReplace oldPath={it.image_path} onReplace={(url) => replaceItem(String(it.id), url)} uploadPage={uploadPage} uploadFolder={uploadFolder} />
                           </div>
                         </div>
                       </div>
@@ -225,18 +247,16 @@ export default function EditablePortraitGallery({ items: initialItems }: { items
   );
 }
 
-function AddUrl({ onAdd }: { onAdd: (arg: any) => void }) {
-  // simplified: only allow importing files (multiple)
+function AddUrl({ onAdd, uploadPage = 'portrait', uploadFolder = 'Portrait/Galerie1' }: { onAdd: (arg: any) => void; uploadPage?: string; uploadFolder?: string }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   async function uploadFile(file: File) {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('page', 'portrait');
+      fd.append('page', uploadPage);
       fd.append('kind', 'image');
-      // store portrait gallery files under this folder in the medias bucket
-      fd.append('folder', 'Portrait/Galerie1');
+      fd.append('folder', uploadFolder);
       const res = await fetch('/api/admin/upload-hero-media', { method: 'POST', body: fd });
       const json = await res.json();
       if (json && json.url) {
@@ -260,16 +280,16 @@ function AddUrl({ onAdd }: { onAdd: (arg: any) => void }) {
   );
 }
 
-function SmallReplace({ onReplace, oldPath }: { onReplace: (arg: any) => void; oldPath?: string }) {
+function SmallReplace({ onReplace, oldPath, uploadPage = 'portrait', uploadFolder = 'Portrait/Galerie1' }: { onReplace: (arg: any) => void; oldPath?: string; uploadPage?: string; uploadFolder?: string }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   async function uploadFile(file: File) {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('page', 'portrait');
+      fd.append('page', uploadPage);
       fd.append('kind', 'image');
-      fd.append('folder', 'Portrait/Galerie1');
+      fd.append('folder', uploadFolder);
       if (oldPath) fd.append('old_path', oldPath);
       const res = await fetch('/api/admin/upload-hero-media', { method: 'POST', body: fd });
       const json = await res.json();

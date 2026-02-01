@@ -32,17 +32,17 @@
   min-height: 0;
 }
 
-/* Mobile : pas de largeur min, colonnes empilées */
+/* Mobile : pas de largeur min, colonnes empilées, Éléments visibles intégré */
 @media (max-width: 768px) {
   .overlay {
-    padding: 8px;
+    padding: 12px;
     align-items: flex-start;
   }
 
   .modal {
     width: 100%;
     min-width: 0;
-    max-height: calc(100vh - 16px);
+    max-height: calc(100vh - 24px);
     padding: 16px;
   }
 
@@ -58,13 +58,45 @@
 
   .visiblePanel {
     position: static;
-    margin-top: 16px;
+    width: 100%;
+    max-width: none;
+    margin-top: 20px;
+    padding: 16px;
     padding-top: 16px;
     border-top: 1px solid #eee;
+    border-radius: 8px;
+    background: #f7f8f9;
+    box-sizing: border-box;
+  }
+
+  .visiblePanelTitle {
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+
+  .visiblePanelGrid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .visiblePanelLabel span {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .bannerHeightRow,
+  .bannerHeightActions {
+    flex-wrap: wrap;
+  }
+
+  .bannerHeightInput {
+    min-width: 80px;
   }
 
   .actions {
-    margin-top: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 }
 
@@ -94,6 +126,89 @@
   padding: 12px;
   border-radius: 8px;
   max-width: 280px;
+}
+
+.visiblePanelTitle {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.visiblePanelGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.visiblePanelLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  color: var(--fg, #111);
+  min-width: 0;
+}
+
+.visiblePanelLabel span {
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bannerFileRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.bannerHeightLabel {
+  font-size: 13px;
+  color: var(--muted);
+  display: block;
+}
+
+.bannerHeightBlock {
+  margin-top: 8px;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  min-height: 80px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.bannerHeightRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.bannerHeightSlider {
+  flex: 1;
+  min-width: 0;
+}
+
+.bannerHeightInput {
+  width: 100px;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+.bannerHeightActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.bannerHeightValue {
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .actions {
