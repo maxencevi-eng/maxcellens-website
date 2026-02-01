@@ -262,7 +262,7 @@ export default function Footer() {
   const colLogo = (
     <div className={`${styles.col} ${styles.colLogo}`} key="colLogo">
       <h3 className={styles.logo}>
-        <Link href="/" aria-label="Accueil">
+        <Link href="/" aria-label="Accueil" data-analytics-id="Logo-pied de page">
           {!imgError ? (
             <img src={logoSrc} alt="Maxcellens" onError={() => setImgError(true)} onLoad={() => setImgError(false)} />
           ) : (

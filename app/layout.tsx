@@ -7,6 +7,7 @@ import AdminSidebar from '../components/AdminSidebar/AdminSidebar';
 import SiteStyleProvider from '../components/SiteStyle/SiteStyleProvider';
 import DisableImageSave from '../components/DisableImageSave/DisableImageSave';
 import PageLayoutProvider from '../components/PageLayoutModal/PageLayoutProvider';
+import AnalyticsCollector from '../components/Analytics/AnalyticsCollector';
 import { BlockVisibilityProvider } from '../components/BlockVisibility';
 import { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -33,9 +34,11 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  icons: {
-    icon: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/site-assets/favicons/favicon.png`,
-  },
+  icons: process.env.NEXT_PUBLIC_SUPABASE_URL
+    ? {
+        icon: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/site-assets/favicons/favicon.webp`,
+      }
+    : undefined,
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
@@ -197,8 +200,17 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // inject font loader after previously generated styleTag so it runs early
   if (styleTag) styleTag = styleTag + '\n' + fontLoaderScript + '\n' + trustedTypesShim; else styleTag = fontLoaderScript + '\n' + trustedTypesShim;
 
+  // Favicon: use Supabase-stored favicon (admin "Général") so SEO tools and browsers detect it
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const faviconUrl = supabaseUrl
+    ? `${supabaseUrl}/storage/v1/object/public/site-assets/favicons/favicon.webp`
+    : null;
+  const faviconLinks = faviconUrl
+    ? `<link rel="icon" href="${faviconUrl}" type="image/webp" sizes="32x32" />\n<link rel="shortcut icon" href="${faviconUrl}" type="image/webp" />`
+    : '<link rel="icon" href="/favicon.ico" sizes="any" />';
+
   // ensure a viewport meta is present so matchMedia reports expected widths on mobile devices
-  const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${styleTag}`;
+  const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${faviconLinks}\n${styleTag}`;
 
   return (
     <html lang="fr" className="wf-loading" suppressHydrationWarning>
@@ -208,6 +220,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <PageLayoutProvider>
             <BlockVisibilityProvider>
               <DisableImageSave />
+              <AnalyticsCollector />
               <AdminSidebar />
             <Header />
             <main>

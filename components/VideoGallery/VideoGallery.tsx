@@ -1,6 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
+import VideoLightbox, { type VideoLightboxItem } from './VideoLightbox';
+import styles from './VideoGallery.module.css';
 
 type VideoItem = { url: string; columns?: 1 | 2 | 3 | 4 };
 type Props = {
@@ -35,46 +37,82 @@ function isYouTubeShort(url: string) {
     return false;
   }
 }
+
+function getThumbnailUrl(id: string) {
+  if (!id) return '';
+  return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+}
+
 export default function VideoGallery({ videos, className }: Props) {
   const raw = videos ?? [];
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxInitialIndex, setLightboxInitialIndex] = useState(0);
+
+  const list: VideoItem[] = useMemo(() => {
+    return raw.map((it) => {
+      if (!it) return { url: '', columns: 1 };
+      if (typeof it === 'string') return { url: it, columns: 1 };
+      const obj = it as VideoItem;
+      const cols = Number(obj.columns) || 1;
+      const columns = cols >= 1 && cols <= 4 ? (cols as 1 | 2 | 3 | 4) : 1;
+      return { url: String(obj.url || ''), columns };
+    });
+  }, [raw]);
+
+  const rows: Array<VideoItem | VideoItem[]> = useMemo(() => {
+    const out: Array<VideoItem | VideoItem[]> = [];
+    for (let i = 0; i < list.length; i++) {
+      const cur = list[i];
+      const n = cur.columns || 1;
+      if (n > 1) {
+        const group: VideoItem[] = [cur];
+        let j = i + 1;
+        while (group.length < n && j < list.length) {
+          if ((list[j].columns || 1) === n) {
+            group.push(list[j]);
+          } else break;
+          j++;
+        }
+        if (group.length === n) {
+          out.push(group);
+          i += group.length - 1;
+        } else {
+          out.push(cur);
+        }
+      } else {
+        out.push(cur);
+      }
+    }
+    return out;
+  }, [list]);
+
+  const flatList: VideoLightboxItem[] = useMemo(() => {
+    const out: VideoLightboxItem[] = [];
+    for (const r of rows) {
+      if (Array.isArray(r)) {
+        for (const item of r) {
+          out.push({ url: item.url, isShort: isYouTubeShort(item.url) });
+        }
+      } else {
+        out.push({ url: (r as VideoItem).url, isShort: isYouTubeShort((r as VideoItem).url) });
+      }
+    }
+    return out;
+  }, [rows]);
+
+  const openLightbox = (index: number) => {
+    setLightboxInitialIndex(index);
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const goPrev = () => setLightboxIndex((i) => (i <= 0 ? flatList.length - 1 : i - 1));
+  const goNext = () => setLightboxIndex((i) => (i >= flatList.length - 1 ? 0 : i + 1));
 
   if (raw.length === 0) return null;
 
-  // Normalize items to objects { url, columns }
-  const list: VideoItem[] = raw.map((it) => {
-    if (!it) return { url: '', columns: 1 };
-    if (typeof it === 'string') return { url: it, columns: 1 };
-    const obj = it as VideoItem;
-    const cols = Number(obj.columns) || 1;
-    const columns = cols >= 1 && cols <= 4 ? (cols as 1 | 2 | 3 | 4) : 1;
-    return { url: String(obj.url || ''), columns };
-  });
-
-  const rows: Array<VideoItem | VideoItem[]> = [];
-  for (let i = 0; i < list.length; i++) {
-    const cur = list[i];
-    const n = cur.columns || 1;
-    if (n > 1) {
-      // try to form a row of 'n' items where each item requests the same n
-      const group: VideoItem[] = [cur];
-      let j = i + 1;
-      while (group.length < n && j < list.length) {
-        if ((list[j].columns || 1) === n) {
-          group.push(list[j]);
-        } else break;
-        j++;
-      }
-      if (group.length === n) {
-        rows.push(group);
-        i += group.length - 1; // skip grouped items
-      } else {
-        // not enough matching items — render current item alone but with fractional width
-        rows.push(cur);
-      }
-    } else {
-      rows.push(cur);
-    }
-  }
+  let globalIndex = 0;
 
   return (
     <div className={className ?? ''} style={{ padding: '1.5rem 0' }}>
@@ -88,20 +126,38 @@ export default function VideoGallery({ videos, className }: Props) {
                 const id = getYouTubeId(item.url);
                 const isShort = isYouTubeShort(item.url);
                 const paddingTop = isShort ? '177.78%' : '56.25%';
-                const src = `https://www.youtube.com/embed/${id}`;
+                const thumbUrl = getThumbnailUrl(id);
                 const widthPercent = `${100 / count}%`;
+                const myIndex = globalIndex++;
+                if (!id) return <div key={j} style={{ width: widthPercent }} />;
                 return (
                   <div key={j} style={{ width: widthPercent }}>
-                    <div style={{ position: 'relative', paddingTop }}>
-                      <iframe
-                        src={src}
-                        title={`video-${idx}-${j}`}
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
+                    <button
+                      type="button"
+                      onClick={() => openLightbox(myIndex)}
+                      className={styles.cardButton}
+                      style={{ position: 'relative', paddingTop, display: 'block', width: '100%', border: 'none', cursor: 'pointer', background: '#000', overflow: 'hidden' }}
+                    >
+                      <img
+                        src={thumbUrl}
+                        alt=""
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                       />
-                    </div>
+                      <span
+                        aria-hidden
+                        className={styles.playOverlay}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'rgba(0,0,0,0.2)',
+                        }}
+                      >
+                        <span className={styles.playIcon} />
+                      </span>
+                    </button>
                   </div>
                 );
               })}
@@ -109,49 +165,96 @@ export default function VideoGallery({ videos, className }: Props) {
           );
         }
 
-        const item = (r as VideoItem);
+        const item = r as VideoItem;
         const count = item.columns || 1;
         const id = getYouTubeId(item.url);
         const isShort = isYouTubeShort(item.url);
         const paddingTop = isShort ? '177.78%' : '56.25%';
-        const src = `https://www.youtube.com/embed/${id}`;
+        const thumbUrl = getThumbnailUrl(id);
+        const myIndex = globalIndex++;
+
+        if (!id) {
+          return <div key={idx} style={{ marginBottom: '2rem' }} />;
+        }
 
         if (count > 1) {
           const width = `${100 / count}%`;
           return (
             <div key={idx} style={{ display: 'flex', justifyContent: 'flex-start', gap: 12, marginBottom: '2rem' }}>
-              <div style={{ width }}>{
-                <div style={{ position: 'relative', paddingTop }}>
-                  <iframe
-                    src={src}
-                    title={`video-${idx}`}
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
+              <div style={{ width }}>
+                <button
+                  type="button"
+                  onClick={() => openLightbox(myIndex)}
+                  className={styles.cardButton}
+                  style={{ position: 'relative', paddingTop, display: 'block', width: '100%', border: 'none', cursor: 'pointer', background: '#000', overflow: 'hidden' }}
+                >
+                  <img
+                    src={thumbUrl}
+                    alt=""
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                   />
-                </div>
-              }</div>
+                  <span
+                    aria-hidden
+                    className={styles.playOverlay}
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(0,0,0,0.2)',
+                    }}
+                  >
+                    <span className={styles.playIcon} />
+                  </span>
+                </button>
+              </div>
             </div>
           );
         }
 
         return (
           <div key={idx} style={{ marginBottom: '2rem' }}>
-            <div style={{ position: 'relative', paddingTop }}>
-              <iframe
-                src={src}
-                title={`video-${idx}`}
-                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
+            <button
+              type="button"
+              onClick={() => openLightbox(myIndex)}
+              className={styles.cardButton}
+              style={{ position: 'relative', paddingTop, display: 'block', width: '100%', border: 'none', cursor: 'pointer', background: '#000', overflow: 'hidden' }}
+            >
+              <img
+                src={thumbUrl}
+                alt=""
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
               />
-            </div>
+              <span
+                aria-hidden
+                className={styles.playOverlay}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(0,0,0,0.2)',
+                }}
+              >
+                <span className={styles.playIcon} />
+              </span>
+            </button>
           </div>
         );
       })}
+
+      {lightboxOpen && flatList.length > 0 && (
+        <VideoLightbox
+          videos={flatList}
+          index={lightboxIndex}
+          initialIndex={lightboxInitialIndex}
+          onClose={() => setLightboxOpen(false)}
+          onPrev={goPrev}
+          onNext={goNext}
+        />
+      )}
     </div>
   );
 }
-

@@ -22,6 +22,50 @@
   border: 0;
 }
 
+.cardButton {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+.cardButton:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Icône lecture vidéo : cercle discret + petit triangle */
+.playOverlay {
+  transition: background 0.2s ease;
+}
+.cardButton:hover .playOverlay {
+  background: rgba(0, 0, 0, 0.35) !important;
+}
+
+.playIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.cardButton:hover .playIcon {
+  background: rgba(0, 0, 0, 0.7);
+  transform: scale(1.05);
+}
+
+.playIcon::before {
+  content: '';
+  width: 0;
+  height: 0;
+  margin-left: 4px;
+  border-style: solid;
+  border-width: 8px 0 8px 14px;
+  border-color: transparent transparent transparent rgba(255, 255, 255, 0.95);
+}
+
 @media (max-width: 900px) {
   .grid { grid-template-columns: 1fr 1fr; }
 }

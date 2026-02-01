@@ -10,6 +10,8 @@ const SocialLinksEditor = dynamic(() => import('../SocialLinksEditor/SocialLinks
 const HeaderSettings = dynamic(() => import('../HeaderSettings/HeaderSettings'), { ssr: false });
 const SeoCommandCenterModal = dynamic(() => import('../SeoCommandCenter/SeoCommandCenterModal'), { ssr: false });
 const PageLayoutModal = dynamic(() => import('../PageLayoutModal/PageLayoutModal'), { ssr: false });
+const StatisticsModal = dynamic(() => import('../Analytics/StatisticsModal'), { ssr: false });
+const MaintenanceModal = dynamic(() => import('../Analytics/MaintenanceModal'), { ssr: false });
 
 const PUBLIC_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
@@ -37,6 +39,8 @@ export default function AdminSidebar() {
   const [showSiteStyleModal, setShowSiteStyleModal] = useState<boolean>(false);
   const [showSeoModal, setShowSeoModal] = useState<boolean>(false);
   const [showPageLayoutModal, setShowPageLayoutModal] = useState<boolean>(false);
+  const [showStatisticsModal, setShowStatisticsModal] = useState<boolean>(false);
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState<boolean>(false);
 
   const SiteStyleEditor = dynamic(() => import('../SiteStyle/SiteStyleEditor'), { ssr: false });
 
@@ -522,6 +526,21 @@ export default function AdminSidebar() {
               </div>
             </li>
           ) : null}
+          <li><button className="menu-item" onClick={() => toggleMenu('statistiques')}>Statistiques</button></li>
+          {openMenu === 'statistiques' ? (
+            <li className="submenu-li">
+              <div className="submenu">
+                <div className="submenu-row">
+                  <div style={{ marginTop: 8 }}>
+                    <button className="menu-item" onClick={() => setShowStatisticsModal(true)}>Dashboard</button>
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <button className="menu-item" onClick={() => setShowMaintenanceModal(true)}>Maintenance</button>
+                  </div>
+                </div>
+              </div>
+            </li>
+          ) : null}
         </ul>
       </nav>
 
@@ -560,6 +579,14 @@ export default function AdminSidebar() {
 
       {showPageLayoutModal ? (
         <PageLayoutModal onClose={() => setShowPageLayoutModal(false)} onSaved={() => { setMessage('Mise en page enregistrée'); }} />
+      ) : null}
+
+      {showStatisticsModal ? (
+        <StatisticsModal onClose={() => setShowStatisticsModal(false)} />
+      ) : null}
+
+      {showMaintenanceModal ? (
+        <MaintenanceModal onClose={() => setShowMaintenanceModal(false)} />
       ) : null}
 
     </aside>

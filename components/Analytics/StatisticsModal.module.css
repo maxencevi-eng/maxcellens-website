@@ -1,0 +1,54 @@
+/* Overlay */
+.overlay {
+  padding: 16px;
+}
+
+/* Modal box: largeur par défaut */
+.modalBox {
+  /* maxWidth/width gérés en inline pour desktop */
+}
+
+/* Contenu */
+.contentPadding {
+  padding: 1rem 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .overlay {
+    padding: 12px;
+    align-items: flex-start;
+    padding-top: 24px;
+  }
+
+  /* Modal plus compact, centré, ressemble au bureau */
+  .modalBox {
+    width: 100% !important;
+    max-width: min(94%, 480px) !important;
+    margin: 0 auto;
+    max-height: 85vh;
+  }
+
+  /* KPIs en 2x2 sur mobile */
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px;
+  }
+
+  .kpiValue {
+    font-size: 22px !important;
+  }
+
+  /* Titres de section plus compacts */
+  .sectionTitle {
+    font-size: 15px !important;
+  }
+
+  .contentPadding {
+    padding: 0.75rem 1rem !important;
+  }
+
+  .geoGrid {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+}

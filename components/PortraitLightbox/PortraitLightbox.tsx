@@ -61,16 +61,113 @@ export default function PortraitLightbox({ images, index, onClose, onPrev, onNex
     onClose();
   }
 
+  const navButtonStyle = {
+    background: 'rgba(255,255,255,0.12)',
+    border: '1px solid rgba(255,255,255,0.3)',
+    color: '#fff',
+    width: 44,
+    height: 44,
+    borderRadius: '50%',
+    cursor: 'pointer' as const,
+    padding: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 20,
+  };
+
   return (
-    <div onClick={wrapperClick} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10vh 10vw', boxSizing: 'border-box' }}>
-      <button aria-label="Prev" onClick={(e) => { e.stopPropagation(); onPrev(); }} style={{ position: 'absolute', left: 24, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: '#fff', fontSize: 34, cursor: 'pointer' }}>&larr;</button>
+    <div
+      onClick={wrapperClick}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        background: 'rgba(0,0,0,0.9)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0.5rem',
+        boxSizing: 'border-box',
+      }}
+    >
+      <button
+        type="button"
+        aria-label="Fermer"
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        style={{
+          position: 'absolute',
+          right: 28,
+          top: 28,
+          background: 'transparent',
+          border: 'none',
+          color: '#fff',
+          fontSize: 26,
+          cursor: 'pointer',
+          padding: 8,
+          zIndex: 2,
+        }}
+      >
+        ✕
+      </button>
 
-      <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: 'min(60vw, 60vh)', maxHeight: 'min(60vw, 60vh)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <img src={img.src} alt={img.title || ''} style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto', objectFit: 'contain', display: 'block' }} />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          maxWidth: '100%',
+          maxHeight: '100%',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            maxHeight: '85vh',
+            overflowY: 'auto',
+          }}
+        >
+          <img
+            src={img.src}
+            alt={img.title || ''}
+            style={{
+              maxWidth: '95vw',
+              width: '95vw',
+              height: 'auto',
+              display: 'block',
+              objectFit: 'contain',
+            }}
+          />
+        </div>
+
+        {images.length > 1 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 24,
+              marginTop: 16,
+            }}
+          >
+            <button type="button" aria-label="Photo précédente" onClick={(e) => { e.stopPropagation(); onPrev(); }} style={navButtonStyle}>
+              ←
+            </button>
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14, minWidth: 48, textAlign: 'center' }}>
+              {index + 1} / {images.length}
+            </span>
+            <button type="button" aria-label="Photo suivante" onClick={(e) => { e.stopPropagation(); onNext(); }} style={navButtonStyle}>
+              →
+            </button>
+          </div>
+        )}
       </div>
-
-      <button aria-label="Next" onClick={(e) => { e.stopPropagation(); onNext(); }} style={{ position: 'absolute', right: 24, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: '#fff', fontSize: 34, cursor: 'pointer' }}>&rarr;</button>
-      <button aria-label="Close" onClick={(e) => { e.stopPropagation(); onClose(); }} style={{ position: 'absolute', right: 28, top: 28, background: 'transparent', border: 'none', color: '#fff', fontSize: 26, cursor: 'pointer' }}>✕</button>
     </div>
   );
 }
