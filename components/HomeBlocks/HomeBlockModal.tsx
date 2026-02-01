@@ -8,6 +8,7 @@ import type {
   HomeStatsData,
   HomePortraitBlockData,
   HomeCadreurBlockData,
+  HomeAnimationBlockData,
   HomeQuoteData,
   HomeCtaData,
   TitleStyleKey,
@@ -33,6 +34,7 @@ export type HomeBlockKey =
   | "home_stats"
   | "home_portrait"
   | "home_cadreur"
+  | "home_animation"
   | "home_quote"
   | "home_cta";
 
@@ -42,6 +44,7 @@ type BlockData =
   | HomeStatsData
   | HomePortraitBlockData
   | HomeCadreurBlockData
+  | HomeAnimationBlockData
   | HomeQuoteData
   | HomeCtaData;
 
@@ -58,6 +61,7 @@ const LABELS: Record<HomeBlockKey, string> = {
   home_stats: "Bloc Chiffres",
   home_portrait: "Bloc Portrait",
   home_cadreur: "Bloc Cadreur",
+  home_animation: "Bloc Animation",
   home_quote: "Citation / Témoignage",
   home_cta: "Bloc CTA",
 };
@@ -138,6 +142,17 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [ctaButtonStyle, setCtaButtonStyle] = useState<"1" | "2">("1");
   const [ctaBackgroundColor, setCtaBackgroundColor] = useState("");
 
+  // Animation block (présentation page Animation)
+  const [animationBlockTitle, setAnimationBlockTitle] = useState("");
+  const [animationBlockSubtitle, setAnimationBlockSubtitle] = useState("");
+  const [animationBlockTitleStyle, setAnimationBlockTitleStyle] = useState<TitleStyleKey>("h2");
+  const [animationBlockSubtitleStyle, setAnimationBlockSubtitleStyle] = useState<TitleStyleKey>("p");
+  const [animationBlockTitleFontSize, setAnimationBlockTitleFontSize] = useState<number | "">(22);
+  const [animationBlockSubtitleFontSize, setAnimationBlockSubtitleFontSize] = useState<number | "">(16);
+  const [animationImage, setAnimationImage] = useState<{ url: string; path?: string } | null>(null);
+  const [uploadingAnimationImage, setUploadingAnimationImage] = useState(false);
+  const [animationBackgroundColor, setAnimationBackgroundColor] = useState("");
+
   // Portrait CTA button style
   const [portraitCtaButtonStyle, setPortraitCtaButtonStyle] = useState<"1" | "2">("1");
 
@@ -214,6 +229,16 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setCadreurHtml(d.html ?? "");
       setCadreurImage(d.image ? { ...d.image, focus: (d.image as any).focus ?? { x: 50, y: 50 } } : null);
       setCadreurBackgroundColor(d.backgroundColor ?? "");
+    }
+    if (blockKey === "home_animation") {
+      setAnimationBlockTitle(d.blockTitle ?? "Animation");
+      setAnimationBlockSubtitle(d.blockSubtitle ?? "");
+      setAnimationBlockTitleStyle(d.blockTitleStyle === "h1" || d.blockTitleStyle === "h2" || d.blockTitleStyle === "h3" || d.blockTitleStyle === "h4" || d.blockTitleStyle === "h5" || d.blockTitleStyle === "p" ? d.blockTitleStyle : "h2");
+      setAnimationBlockSubtitleStyle(d.blockSubtitleStyle === "h1" || d.blockSubtitleStyle === "h2" || d.blockSubtitleStyle === "h3" || d.blockSubtitleStyle === "h4" || d.blockSubtitleStyle === "h5" || d.blockSubtitleStyle === "p" ? d.blockSubtitleStyle : "p");
+      setAnimationBlockTitleFontSize(d.blockTitleFontSize != null && d.blockTitleFontSize >= TITLE_FONT_SIZE_MIN && d.blockTitleFontSize <= TITLE_FONT_SIZE_MAX ? d.blockTitleFontSize : "");
+      setAnimationBlockSubtitleFontSize(d.blockSubtitleFontSize != null && d.blockSubtitleFontSize >= TITLE_FONT_SIZE_MIN && d.blockSubtitleFontSize <= TITLE_FONT_SIZE_MAX ? d.blockSubtitleFontSize : "");
+      setAnimationImage(d.image ?? null);
+      setAnimationBackgroundColor(d.backgroundColor ?? "");
     }
     if (blockKey === "home_quote") {
       if (Array.isArray(d.quotes) && d.quotes.length) {
@@ -300,6 +325,29 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setError(e?.message ?? "Erreur lors de la suppression");
     } finally {
       setDeletingServiceIndex(null);
+    }
+  }
+
+  async function uploadAnimationBanner(file: File) {
+    setUploadingAnimationImage(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("page", "home");
+      fd.append("kind", "image");
+      fd.append("folder", "home/animation/banner");
+      if (animationImage?.path) fd.append("old_path", animationImage.path);
+      const resp = await fetch("/api/admin/upload-hero-media", { method: "POST", body: fd });
+      const j = await resp.json();
+      if (!resp.ok) throw new Error(j?.error ?? "Erreur d'upload");
+      if (j?.url) {
+        setAnimationImage({ url: j.url, path: j.path ?? undefined });
+      } else throw new Error("Upload: pas d'URL retournée");
+    } catch (e: any) {
+      setError(e?.message ?? "Erreur upload");
+    } finally {
+      setUploadingAnimationImage(false);
     }
   }
 
@@ -390,6 +438,13 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       case "home_cadreur":
         payload = { title: cadreurTitle, titleStyle: cadreurTitleStyle, titleFontSize: cadreurTitleFontSize !== "" ? clampTitleFontSize(cadreurTitleFontSize as number) : undefined, html: cadreurHtml, image: cadreurImage, backgroundColor: cadreurBackgroundColor?.trim() || undefined };
         break;
+      case "home_animation": {
+        const rawBg = animationBackgroundColor?.trim() || "";
+        const hexMatch = rawBg.replace(/^#/, "").match(/^([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/);
+        const backgroundColor = hexMatch ? (hexMatch[1].length === 3 ? "#" + hexMatch[1].split("").map((c) => c + c).join("") : "#" + hexMatch[1]) : undefined;
+        payload = { blockTitle: animationBlockTitle, blockSubtitle: animationBlockSubtitle, blockTitleStyle: animationBlockTitleStyle, blockSubtitleStyle: animationBlockSubtitleStyle, blockTitleFontSize: animationBlockTitleFontSize !== "" ? clampTitleFontSize(animationBlockTitleFontSize as number) : undefined, blockSubtitleFontSize: animationBlockSubtitleFontSize !== "" ? clampTitleFontSize(animationBlockSubtitleFontSize as number) : undefined, image: animationImage, backgroundColor };
+        break;
+      }
       case "home_quote":
         payload = { quotes: quoteItems, carouselSpeed: quoteCarouselSpeed, backgroundColor: quoteBackgroundColor?.trim() || undefined };
         break;
@@ -780,6 +835,57 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <input type="color" value={cadreurBackgroundColor || "#fafaf9"} onChange={(e) => setCadreurBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
                   <input type="text" value={cadreurBackgroundColor} onChange={(e) => setCadreurBackgroundColor(e.target.value)} placeholder="ou hex" style={{ ...inputStyle, width: 120 }} />
                   {cadreurBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setCadreurBackgroundColor("")}>Effacer</button> : null}
+                </div>
+              </div>
+            </>
+          )}
+
+          {blockKey === "home_animation" && (
+            <>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Bannière / image d'accroche (optionnel)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
+                  {animationImage?.url ? <img src={animationImage.url} alt="" style={{ width: 200, height: 120, objectFit: "cover", borderRadius: 8 }} /> : null}
+                  <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAnimationBanner(f); }} disabled={uploadingAnimationImage} />
+                  {uploadingAnimationImage ? <span style={{ fontSize: 12, color: "var(--muted)" }}>Upload…</span> : null}
+                  {animationImage?.url ? <button type="button" className="btn-ghost" style={{ fontSize: 12, color: "#c00" }} onClick={() => setAnimationImage(null)}>Supprimer l'image</button> : null}
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre du bloc</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input type="text" value={animationBlockTitle} onChange={(e) => setAnimationBlockTitle(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} placeholder="Animation" />
+                  <select value={animationBlockTitleStyle} onChange={(e) => setAnimationBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={animationBlockTitleFontSize === "" ? "" : animationBlockTitleFontSize} onChange={(e) => setAnimationBlockTitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Sous-texte du bloc</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input type="text" value={animationBlockSubtitle} onChange={(e) => setAnimationBlockSubtitle(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} placeholder="De l'idée au rendu final…" />
+                  <select value={animationBlockSubtitleStyle} onChange={(e) => setAnimationBlockSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={animationBlockSubtitleFontSize === "" ? "" : animationBlockSubtitleFontSize} onChange={(e) => setAnimationBlockSubtitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input
+                    type="color"
+                    value={(() => {
+                      const r = animationBackgroundColor?.trim() || "";
+                      const ok = /^#?[0-9A-Fa-f]{6}$/.test(r);
+                      return ok ? (r.startsWith("#") ? r : "#" + r) : "#0f0f12";
+                    })()}
+                    onChange={(e) => setAnimationBackgroundColor(e.target.value)}
+                    style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }}
+                  />
+                  <input type="text" value={animationBackgroundColor} onChange={(e) => setAnimationBackgroundColor(e.target.value)} placeholder="hex 6 caractères (ex. #0f0f12)" style={{ ...inputStyle, width: 140 }} />
+                  {animationBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setAnimationBackgroundColor("")}>Effacer</button> : null}
                 </div>
               </div>
             </>

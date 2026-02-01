@@ -11,6 +11,7 @@ import type {
   HomeStatsData,
   HomePortraitBlockData,
   HomeCadreurBlockData,
+  HomeAnimationBlockData,
   HomeQuoteData,
   HomeQuoteItem,
   HomeCtaData,
@@ -21,6 +22,7 @@ import {
   DEFAULT_STATS,
   DEFAULT_PORTRAIT,
   DEFAULT_CADREUR,
+  DEFAULT_ANIMATION,
   DEFAULT_QUOTE,
   DEFAULT_CTA,
 } from "./homeDefaults";
@@ -29,7 +31,7 @@ import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrder
 import styles from "./HomeBlocks.module.css";
 
 const SETTINGS_KEYS =
-  "home_intro,home_services,home_stats,home_portrait,home_cadreur,home_quote,home_cta";
+  "home_intro,home_services,home_stats,home_portrait,home_cadreur,home_animation,home_quote,home_cta";
 
 function parse<T>(val: string | undefined, def: T): T {
   if (!val) return def;
@@ -68,6 +70,7 @@ export default function HomePageClient() {
   const [stats, setStats] = useState<HomeStatsData>(DEFAULT_STATS);
   const [portraitBlock, setPortraitBlock] = useState<HomePortraitBlockData>(DEFAULT_PORTRAIT);
   const [cadreurBlock, setCadreurBlock] = useState<HomeCadreurBlockData>(DEFAULT_CADREUR);
+  const [animationBlock, setAnimationBlock] = useState<HomeAnimationBlockData>(DEFAULT_ANIMATION);
   const [quote, setQuote] = useState<HomeQuoteData>(DEFAULT_QUOTE);
   const [cta, setCta] = useState<HomeCtaData>(DEFAULT_CTA);
   const [currentPortraitSlide, setCurrentPortraitSlide] = useState(0);
@@ -107,6 +110,7 @@ export default function HomePageClient() {
         setStats(parse(s.home_stats, DEFAULT_STATS));
         setPortraitBlock(parse(s.home_portrait, DEFAULT_PORTRAIT));
         setCadreurBlock(parse(s.home_cadreur, DEFAULT_CADREUR));
+        setAnimationBlock(parse(s.home_animation, DEFAULT_ANIMATION));
         setQuote(parse(s.home_quote, DEFAULT_QUOTE));
         setCta(parse(s.home_cta, DEFAULT_CTA));
       } catch (_) {
@@ -155,7 +159,7 @@ export default function HomePageClient() {
     };
   }, [quoteList.length, quoteSpeed]);
 
-  type BlockData = HomeIntroData | HomeServicesData | HomeStatsData | HomePortraitBlockData | HomeCadreurBlockData | HomeQuoteData | HomeCtaData;
+  type BlockData = HomeIntroData | HomeServicesData | HomeStatsData | HomePortraitBlockData | HomeCadreurBlockData | HomeAnimationBlockData | HomeQuoteData | HomeCtaData;
 
   const getBlockData = (key: HomeBlockKey): BlockData => {
     switch (key) {
@@ -164,6 +168,7 @@ export default function HomePageClient() {
       case "home_stats": return stats;
       case "home_portrait": return portraitBlock;
       case "home_cadreur": return cadreurBlock;
+      case "home_animation": return animationBlock;
       case "home_quote": return quote;
       case "home_cta": return cta;
       default: return {};
@@ -441,6 +446,58 @@ export default function HomePageClient() {
       </section>
   );
 
+  const animationSection = hide("home_animation") ? null : (
+      <section
+        className={styles.animationBlock}
+        style={(() => {
+          const bg = (animationBlock as any).backgroundColor?.trim();
+          const validHex = bg && /^#?[0-9A-Fa-f]{3}$|^#?[0-9A-Fa-f]{6}$/.test(bg);
+          return validHex ? { background: bg.startsWith("#") ? bg : `#${bg}` } : undefined;
+        })()}
+      >
+        <div className={`container ${blockWidthClass("home_animation")}`.trim()}>
+          <div className={styles.editWrap}>
+            {isAdmin && (
+              <div style={btnWrapStyle}>
+                <BlockVisibilityToggle blockId="home_animation" />
+                <BlockWidthToggle blockId="home_animation" />
+                <button className={styles.editBtn} style={{ background: "#fff", color: "#111", position: "static" }} onClick={() => setEditBlock("home_animation")}>
+                  Modifier
+                </button>
+                <BlockOrderButtons page="home" blockId="home_animation" />
+              </div>
+            )}
+            <div className={styles.animationBlockCard}>
+              {(animationBlock as any).image?.url ? (
+                <div className={styles.animationBlockBannerWrap}>
+                  <img src={(animationBlock as any).image.url} alt="" className={styles.animationBlockBanner} />
+                </div>
+              ) : null}
+              <div className={styles.animationBlockContent}>
+                {(animationBlock as any).blockTitle ? (() => {
+                  const Tag = (animationBlock as any).blockTitleStyle || "h2";
+                  const fs = (animationBlock as any).blockTitleFontSize;
+                  return <Tag className={`${styles.animationBlockTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(animationBlock as any).blockTitle}</Tag>;
+                })() : null}
+                {(animationBlock as any).blockSubtitle ? (() => {
+                  const Tag = (animationBlock as any).blockSubtitleStyle || "p";
+                  const fs = (animationBlock as any).blockSubtitleFontSize;
+                  return <Tag className={`${styles.animationBlockSubtitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(animationBlock as any).blockSubtitle}</Tag>;
+                })() : null}
+                <div className={styles.animationBlockButtons}>
+                  <Link href="/animation#animation_s1" className={styles.animationBlockCtaSection}>Le concept</Link>
+                  <Link href="/animation#animation_s2" className={styles.animationBlockCtaSection}>Pour qui</Link>
+                  <Link href="/animation#animation_s3" className={styles.animationBlockCtaSection}>Déroulé</Link>
+                  <Link href="/animation#animation_cta" className={styles.animationBlockCtaSection}>Livrables & contact</Link>
+                </div>
+              </div>
+              <div className={styles.animationBlockGlow} aria-hidden />
+            </div>
+          </div>
+        </div>
+      </section>
+  );
+
   const statsSection = hide("home_stats") ? null : (
       <section className={styles.stats} style={(stats as any).backgroundColor ? { backgroundColor: (stats as any).backgroundColor } : undefined}>
         <div className={`container ${blockWidthClass("home_stats")}`.trim()}>
@@ -541,6 +598,7 @@ export default function HomePageClient() {
     home_services: servicesSection,
     home_portrait: portraitSection,
     home_cadreur: cadreurSection,
+    home_animation: animationSection,
     home_stats: statsSection,
     clients: clientsSection,
     home_quote: quoteSection,

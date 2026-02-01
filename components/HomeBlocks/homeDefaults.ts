@@ -82,6 +82,21 @@ export type HomeQuoteData = { quotes: HomeQuoteItem[]; carouselSpeed?: number; b
 
 export type HomeCtaData = { title: string; titleStyle?: TitleStyleKey; titleFontSize?: number; buttonLabel: string; buttonHref: string; buttonStyle?: '1' | '2'; backgroundColor?: string };
 
+export type HomeAnimationBlockData = {
+  blockTitle?: string;
+  blockSubtitle?: string;
+  blockTitleStyle?: TitleStyleKey;
+  blockSubtitleStyle?: TitleStyleKey;
+  blockTitleFontSize?: number;
+  blockSubtitleFontSize?: number;
+  /** Bannière / image d'accroche (optionnel) */
+  image?: { url: string; path?: string } | null;
+  ctaLabel?: string;
+  ctaHref?: string;
+  ctaButtonStyle?: '1' | '2';
+  backgroundColor?: string;
+};
+
 export const DEFAULT_INTRO: HomeIntroData = {
   title: "Maxcellens",
   subtitle: "Photographe professionnel — Portrait, Événement, Corporate",
@@ -142,4 +157,14 @@ export const DEFAULT_CTA: HomeCtaData = {
   buttonLabel: "Contactez-moi",
   buttonHref: "/contact",
   buttonStyle: "1",
+};
+
+export const DEFAULT_ANIMATION: HomeAnimationBlockData = {
+  blockTitle: "Animation",
+  blockSubtitle: "De l'idée au rendu final — épisodes animés pour votre communication interne ou externe.",
+  blockTitleStyle: "h2",
+  blockSubtitleStyle: "p",
+  blockTitleFontSize: 22,
+  blockSubtitleFontSize: 16,
+  image: null,
 };

@@ -3,7 +3,7 @@ import { supabaseAdmin, supabaseUrl, serviceKey } from '../../../lib/supabaseAdm
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_ORDER_HOME = ['home_intro', 'home_services', 'home_portrait', 'home_cadreur', 'home_stats', 'clients', 'home_quote', 'home_cta'];
+const DEFAULT_ORDER_HOME = ['home_intro', 'home_services', 'home_animation', 'home_portrait', 'home_cadreur', 'home_stats', 'clients', 'home_quote', 'home_cta'];
 const DEFAULT_ORDER_CONTACT = ['contact_intro', 'contact_zones', 'contact_kit'];
 const DEFAULT_ORDER_ANIMATION = ['animation_s1', 'animation_s2', 'animation_s3', 'animation_cta'];
 const DEFAULT_ORDER_REALISATION = ['production_intro', 'production_videos'];
@@ -18,7 +18,13 @@ function parseOrder(val: unknown, defaultOrder: string[]): string[] {
     const parsed = JSON.parse(val);
     if (!Array.isArray(parsed)) return defaultOrder;
     const ids = parsed.filter((id: unknown) => typeof id === 'string');
-    return ids.length ? ids : defaultOrder;
+    if (!ids.length) return defaultOrder;
+    // Réinjecter les blocs du défaut absents du sauvegardé (ex. home_animation ajouté après)
+    const result = ids.slice();
+    for (const id of defaultOrder) {
+      if (!result.includes(id)) result.splice(defaultOrder.indexOf(id), 0, id);
+    }
+    return result;
   } catch {
     return defaultOrder;
   }

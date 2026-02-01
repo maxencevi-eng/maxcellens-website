@@ -43,7 +43,7 @@ const BlockVisibilityContext = createContext<ContextValue>({
   isLoading: true,
 });
 
-const DEFAULT_ORDER_HOME = ['home_intro', 'home_services', 'home_portrait', 'home_cadreur', 'home_stats', 'clients', 'home_quote', 'home_cta'];
+const DEFAULT_ORDER_HOME = ['home_intro', 'home_services', 'home_animation', 'home_portrait', 'home_cadreur', 'home_stats', 'clients', 'home_quote', 'home_cta'];
 const DEFAULT_ORDER_CONTACT = ['contact_intro', 'contact_zones', 'contact_kit'];
 const DEFAULT_ORDER_ANIMATION = ['animation_s1', 'animation_s2', 'animation_s3', 'animation_cta'];
 const DEFAULT_ORDER_REALISATION = ['production_intro', 'production_videos'];

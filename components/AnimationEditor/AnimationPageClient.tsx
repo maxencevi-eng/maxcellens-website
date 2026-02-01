@@ -148,7 +148,7 @@ export default function AnimationPageClient() {
   }
 
   const s1Section = hide("animation_s1") ? null : (
-      <div className={styles.section} style={sectionStyle(s1.bgColor)}>
+      <div id="animation_s1" className={styles.section} style={sectionStyle(s1.bgColor)}>
         <div className={`container ${blockWidthClass("animation_s1")}`.trim()}>
           <div style={{ position: "relative" }}>
             {isAdmin && (
@@ -182,7 +182,7 @@ export default function AnimationPageClient() {
       </div>
   );
   const s2Section = hide("animation_s2") ? null : (
-      <div className={`${styles.section} ${styles.sectionAlt}`} style={sectionStyle(s2.bgColor)}>
+      <div id="animation_s2" className={`${styles.section} ${styles.sectionAlt}`} style={sectionStyle(s2.bgColor)}>
         <div className={`container ${blockWidthClass("animation_s2")}`.trim()}>
           <div style={{ position: "relative" }}>
             {isAdmin && (
@@ -216,7 +216,7 @@ export default function AnimationPageClient() {
       </div>
   );
   const s3Section = hide("animation_s3") ? null : (
-      <div className={styles.section} style={sectionStyle(s3.bgColor)}>
+      <div id="animation_s3" className={styles.section} style={sectionStyle(s3.bgColor)}>
         <div className={`container ${blockWidthClass("animation_s3")}`.trim()}>
           <div style={{ position: "relative" }}>
             {isAdmin && (
@@ -260,7 +260,7 @@ export default function AnimationPageClient() {
       </div>
   );
   const ctaSection = hide("animation_cta") ? null : (
-      <div className={`${styles.section} ${styles.sectionCta}`} style={sectionStyle(cta.bgColor)}>
+      <div id="animation_cta" className={`${styles.section} ${styles.sectionCta}`} style={sectionStyle(cta.bgColor)}>
         <div className={`container ${blockWidthClass("animation_cta")}`.trim()}>
           <div style={{ position: "relative" }}>
             {isAdmin && (
