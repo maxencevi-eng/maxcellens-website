@@ -69,11 +69,7 @@ export default function EditablePortraitGallery({ items: initialItems }: { items
   function replaceItem(id: string, urlOrObj: string | { url: string; path?: string }) {
     const newUrl = (urlOrObj as any)?.url || (urlOrObj as string);
     const newPath = (urlOrObj as any)?.path || undefined;
-    const old = items.find((it) => it.id === id);
     setItems((s) => s.map((it) => it.id === id ? { ...it, image_url: newUrl, image_path: newPath } : it));
-    if (old?.image_path && old.image_path !== newPath) {
-      fetch('/api/admin/delete-hero-media', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: 'portrait', paths: [old.image_path] }) }).catch(() => {});
-    }
   }
 
   function moveItem(from: number, to: number) {
@@ -207,7 +203,7 @@ export default function EditablePortraitGallery({ items: initialItems }: { items
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                             <button onClick={() => removeItem(String(it.id))} style={{ background: 'transparent', border: '1px solid #e6e6e6', padding: '4px 6px', fontSize: 12 }}>Suppr.</button>
-                            <SmallReplace onReplace={(url) => replaceItem(String(it.id), url)} />
+                            <SmallReplace oldPath={it.image_path} onReplace={(url) => replaceItem(String(it.id), url)} />
                           </div>
                         </div>
                       </div>
@@ -264,7 +260,7 @@ function AddUrl({ onAdd }: { onAdd: (arg: any) => void }) {
   );
 }
 
-function SmallReplace({ onReplace }: { onReplace: (arg: any) => void }) {
+function SmallReplace({ onReplace, oldPath }: { onReplace: (arg: any) => void; oldPath?: string }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   async function uploadFile(file: File) {
@@ -274,6 +270,7 @@ function SmallReplace({ onReplace }: { onReplace: (arg: any) => void }) {
       fd.append('page', 'portrait');
       fd.append('kind', 'image');
       fd.append('folder', 'Portrait/Galerie1');
+      if (oldPath) fd.append('old_path', oldPath);
       const res = await fetch('/api/admin/upload-hero-media', { method: 'POST', body: fd });
       const json = await res.json();
       if (json && json.url) {

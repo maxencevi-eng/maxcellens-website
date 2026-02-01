@@ -8,8 +8,20 @@ export async function POST(req: Request) {
     const file = form.get('file') as File | null;
     const page = String(form.get('page') || 'unknown');
     const kind = String(form.get('kind') || 'image'); // 'image' or 'video'
+    const oldPathRaw = String(form.get('old_path') || '').trim();
 
     if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 });
+
+    function toStoragePath(p: string): string | null {
+      if (!p) return null;
+      const m = p.match(/storage\/v1\/object\/public\/medias\/(.+)$/i);
+      if (m?.[1]) return m[1];
+      const base = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '');
+      if (base && p.startsWith(base + '/storage/v1/object/public/medias/')) return p.slice((base + '/storage/v1/object/public/medias/').length);
+      if (!/^https?:\/\//i.test(p)) return p;
+      return null;
+    }
+    const oldPathToDelete = oldPathRaw ? (toStoragePath(oldPathRaw) || oldPathRaw) : null;
 
     // size checks
     const buf = Buffer.from(await (file as any).arrayBuffer());
@@ -72,6 +84,10 @@ export async function POST(req: Request) {
       const { data, error: uploadError } = await supabaseAdmin.storage.from('medias').upload(path, outBuf, { contentType: finalContentType, upsert: true });
       if (uploadError) return NextResponse.json({ error: String(uploadError) }, { status: 500 });
 
+      if (oldPathToDelete && oldPathToDelete !== path) {
+        await supabaseAdmin.storage.from('medias').remove([oldPathToDelete]).catch((e) => console.warn('upload-hero-media: remove old image failed', e));
+      }
+
       const gp = supabaseAdmin.storage.from('medias').getPublicUrl(path);
       const publicUrl = (gp && (gp as any).data && ((gp as any).data.publicUrl || (gp as any).data.publicURL)) || (gp as any).publicUrl || (gp as any).publicURL || null;
       const supabaseBase = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -93,6 +109,10 @@ export async function POST(req: Request) {
 
       const { data: uploadData, error: uploadError } = await supabaseAdmin.storage.from('medias').upload(path, buf, { contentType: (file as any).type || `video/${ext}`, upsert: true });
       if (uploadError) return NextResponse.json({ error: String(uploadError) }, { status: 500 });
+
+      if (oldPathToDelete && oldPathToDelete !== path) {
+        await supabaseAdmin.storage.from('medias').remove([oldPathToDelete]).catch((e) => console.warn('upload-hero-media: remove old video failed', e));
+      }
 
       // build public URL immediately and return it; transcode in background to avoid blocking client
       const gp = supabaseAdmin.storage.from('medias').getPublicUrl(path);

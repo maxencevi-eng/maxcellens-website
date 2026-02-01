@@ -137,43 +137,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
         }
       }
 
-      // If we replaced a stored banner, attempt to delete the previous stored file
-      if (originalBannerPath && originalBannerPath !== (banner?.path || null)) {
-        try {
-          const dresp = await fetch('/api/admin/delete-storage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: originalBannerPath }) });
-          if (!dresp.ok) {
-            const dj = await dresp.json().catch(() => ({}));
-            console.warn('Failed to delete old footer banner', dj);
-            setError(`Attention: suppression ancienne bannière a échoué (${dj?.error || dresp.status})`);
-          } else {
-            setOriginalBannerPath(banner?.path || null);
-          }
-        } catch (e) {
-          console.warn('Failed to delete old footer banner', e);
-          setError('Attention: suppression ancienne bannière a échoué');
-        }
-      } else {
-        setOriginalBannerPath(banner?.path || null);
-      }
-
-      // If we replaced a stored banner, attempt to delete the previous stored file
-      if (originalBannerPath && originalBannerPath !== (banner?.path || null)) {
-        try {
-          const dresp = await fetch('/api/admin/delete-storage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: originalBannerPath }) });
-          if (!dresp.ok) {
-            const dj = await dresp.json().catch(() => ({}));
-            console.warn('Failed to delete old footer banner', dj);
-            setError(`Attention: suppression ancienne bannière a échoué (${dj?.error || dresp.status})`);
-          } else {
-            setOriginalBannerPath(banner?.path || null);
-          }
-        } catch (e) {
-          console.warn('Failed to delete old footer banner', e);
-          setError('Attention: suppression ancienne bannière a échoué');
-        }
-      } else {
-        setOriginalBannerPath(banner?.path || null);
-      }
+      setOriginalBannerPath(banner?.path || null);
 
       // persist locally so UI updates immediately
       try { localStorage.setItem('footerColumn1', String(payloadCol1 ?? '')); } catch(_){ }
@@ -210,11 +174,14 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
       const fd = new FormData();
       fd.append('file', file);
       fd.append('category', 'footer-banner');
+      const currentPath = banner?.path || originalBannerPath;
+      if (currentPath) fd.append('old_path', currentPath);
       const resp = await fetch('/api/admin/upload-logo', { method: 'POST', body: fd });
       if (!resp.ok) throw new Error('Erreur d\u2019upload');
       const j = await resp.json();
       if (j?.webp) {
         setBanner({ url: String(j.webp), path: String(j.path || '') });
+        setOriginalBannerPath(j.path ? String(j.path) : null);
       } else {
         throw new Error('Upload: pas d\u2019URL retourn\u00e9e');
       }

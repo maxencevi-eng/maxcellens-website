@@ -3,15 +3,14 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
-import PhotoMasonry from "../PhotoMasonry/PhotoMasonry";
-import VideoGallery from "../VideoGallery/VideoGallery";
 import Clients from "../Clients/Clients";
 import HomeBlockModal from "./HomeBlockModal";
 import type {
   HomeIntroData,
   HomeServicesData,
   HomeStatsData,
-  HomeSectionData,
+  HomePortraitBlockData,
+  HomeCadreurBlockData,
   HomeQuoteData,
   HomeCtaData,
 } from "./homeDefaults";
@@ -19,17 +18,16 @@ import {
   DEFAULT_INTRO,
   DEFAULT_SERVICES,
   DEFAULT_STATS,
-  DEFAULT_PROJECTS_SECTION,
-  DEFAULT_VIDEOS_SECTION,
+  DEFAULT_PORTRAIT,
+  DEFAULT_CADREUR,
   DEFAULT_QUOTE,
   DEFAULT_CTA,
 } from "./homeDefaults";
 import type { HomeBlockKey } from "./HomeBlockModal";
-import type { Project } from "../../types";
 import styles from "./HomeBlocks.module.css";
 
 const SETTINGS_KEYS =
-  "home_intro,home_services,home_stats,home_projects_section,home_videos_section,home_quote,home_cta";
+  "home_intro,home_services,home_stats,home_portrait,home_cadreur,home_quote,home_cta";
 
 function parse<T>(val: string | undefined, def: T): T {
   if (!val) return def;
@@ -55,9 +53,7 @@ const editBtnStyle: React.CSSProperties = {
   boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
 };
 
-type Props = { projects: Project[] };
-
-export default function HomePageClient({ projects }: Props) {
+export default function HomePageClient() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [editBlock, setEditBlock] = useState<HomeBlockKey | null>(null);
@@ -65,10 +61,11 @@ export default function HomePageClient({ projects }: Props) {
   const [intro, setIntro] = useState<HomeIntroData>(DEFAULT_INTRO);
   const [services, setServices] = useState<HomeServicesData>(DEFAULT_SERVICES);
   const [stats, setStats] = useState<HomeStatsData>(DEFAULT_STATS);
-  const [projectsSection, setProjectsSection] = useState<HomeSectionData>(DEFAULT_PROJECTS_SECTION);
-  const [videosSection, setVideosSection] = useState<HomeSectionData>(DEFAULT_VIDEOS_SECTION);
+  const [portraitBlock, setPortraitBlock] = useState<HomePortraitBlockData>(DEFAULT_PORTRAIT);
+  const [cadreurBlock, setCadreurBlock] = useState<HomeCadreurBlockData>(DEFAULT_CADREUR);
   const [quote, setQuote] = useState<HomeQuoteData>(DEFAULT_QUOTE);
   const [cta, setCta] = useState<HomeCtaData>(DEFAULT_CTA);
+  const [currentPortraitSlide, setCurrentPortraitSlide] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -98,8 +95,8 @@ export default function HomePageClient({ projects }: Props) {
         setIntro(parse(s.home_intro, DEFAULT_INTRO));
         setServices(parse(s.home_services, DEFAULT_SERVICES));
         setStats(parse(s.home_stats, DEFAULT_STATS));
-        setProjectsSection(parse(s.home_projects_section, DEFAULT_PROJECTS_SECTION));
-        setVideosSection(parse(s.home_videos_section, DEFAULT_VIDEOS_SECTION));
+        setPortraitBlock(parse(s.home_portrait, DEFAULT_PORTRAIT));
+        setCadreurBlock(parse(s.home_cadreur, DEFAULT_CADREUR));
         setQuote(parse(s.home_quote, DEFAULT_QUOTE));
         setCta(parse(s.home_cta, DEFAULT_CTA));
       } catch (_) {
@@ -119,15 +116,15 @@ export default function HomePageClient({ projects }: Props) {
     };
   }, []);
 
-  type BlockData = HomeIntroData | HomeServicesData | HomeStatsData | HomeSectionData | HomeQuoteData | HomeCtaData;
+  type BlockData = HomeIntroData | HomeServicesData | HomeStatsData | HomePortraitBlockData | HomeCadreurBlockData | HomeQuoteData | HomeCtaData;
 
   const getBlockData = (key: HomeBlockKey): BlockData => {
     switch (key) {
       case "home_intro": return intro;
       case "home_services": return services;
       case "home_stats": return stats;
-      case "home_projects_section": return projectsSection;
-      case "home_videos_section": return videosSection;
+      case "home_portrait": return portraitBlock;
+      case "home_cadreur": return cadreurBlock;
       case "home_quote": return quote;
       case "home_cta": return cta;
       default: return {};
@@ -144,6 +141,18 @@ export default function HomePageClient({ projects }: Props) {
 
   const serviceItems = services.items && services.items.length ? services.items : DEFAULT_SERVICES.items;
   const statItems = stats.items && stats.items.length ? stats.items : DEFAULT_STATS.items;
+
+  // Portrait carousel: migrate old shape (title/html/image) to slides if needed
+  const portraitSlides = (() => {
+    const p = portraitBlock as any;
+    if (Array.isArray(p?.slides) && p.slides.length) return p.slides;
+    if (p?.title || p?.html || p?.image) {
+      return [{ title: p.title ?? "Portrait", text: p.html ?? "", image: p.image ?? null }];
+    }
+    return DEFAULT_PORTRAIT.slides;
+  })();
+  const portraitIndex = Math.max(0, Math.min(currentPortraitSlide, portraitSlides.length - 1));
+  const activePortraitSlide = portraitSlides[portraitIndex] || portraitSlides[0];
 
   return (
     <>
@@ -163,7 +172,7 @@ export default function HomePageClient({ projects }: Props) {
         </div>
       </section>
 
-      {/* Bloc Services (4 cartes) */}
+      {/* Bloc Services (3 cartes avec photo : Réalisation, Événement, Corporate) */}
       <section className={styles.services}>
         <div className="container">
           <div className={styles.editWrap}>
@@ -174,15 +183,111 @@ export default function HomePageClient({ projects }: Props) {
             )}
             <h2 className={styles.servicesTitle}>Services</h2>
             <p className={styles.servicesSubtitle}>
-              Portrait, événementiel, corporate et réalisation — des prestations sur mesure.
+              Réalisation, événementiel et corporate — des prestations sur mesure.
             </p>
             <div className={styles.servicesGrid}>
               {serviceItems.map((item, i) => (
                 <Link key={i} href={item.href || "#"} className={styles.serviceCard}>
-                  <span className={styles.serviceCardTitle}>{item.title || "Service"}</span>
-                  <span className={styles.serviceCardDesc}>{item.description || ""}</span>
+                  <div className={styles.serviceCardImageWrap}>
+                    {item.image?.url ? (
+                      <img src={item.image.url} alt="" className={styles.serviceCardImage} />
+                    ) : (
+                      <div className={styles.serviceCardImage} style={{ background: "rgba(0,0,0,0.06)", minHeight: "100%" }} />
+                    )}
+                  </div>
+                  <div className={styles.serviceCardContent}>
+                    <div className={styles.serviceCardTitle}>{item.title || "Service"}</div>
+                    <div className={styles.serviceCardDesc}>{item.description || ""}</div>
+                  </div>
                 </Link>
               ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Bloc Portrait — carousel (4 slides : Lifestyle, Studio, Entreprise, Couple) */}
+      <section className={styles.portraitBlock}>
+        <div className="container">
+          <div className={styles.editWrap}>
+            {isAdmin && (
+              <button className={styles.editBtn} onClick={() => setEditBlock("home_portrait")}>
+                Modifier
+              </button>
+            )}
+            {((portraitBlock as any).blockTitle ?? (portraitBlock as any).title) ? <h2 className={styles.portraitBlockTitle}>{(portraitBlock as any).blockTitle ?? (portraitBlock as any).title ?? "Portrait"}</h2> : null}
+            <div className={styles.portraitCarousel}>
+              <div className={styles.portraitCarouselImage}>
+                {activePortraitSlide?.image?.url ? (
+                  <img src={activePortraitSlide.image.url} alt="" className={styles.portraitImageTorn} />
+                ) : (
+                  <div className={styles.portraitImageTorn} style={{ background: "rgba(0,0,0,0.08)" }} />
+                )}
+              </div>
+              <div className={styles.portraitCarouselContent}>
+                {activePortraitSlide?.title ? <h3 className={styles.portraitSlideTitle}>{activePortraitSlide.title}</h3> : null}
+                {activePortraitSlide?.text ? <div className={styles.portraitSlideText} dangerouslySetInnerHTML={{ __html: activePortraitSlide.text }} /> : null}
+                <Link href={(portraitBlock as any).ctaHref || "/portrait"} className={styles.portraitCta}>
+                  {(portraitBlock as any).ctaLabel || "Découvrir le portrait"}
+                </Link>
+                <div className={styles.portraitNav}>
+                  <div className={styles.portraitDots} aria-hidden>
+                    {portraitSlides.map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className={i === portraitIndex ? styles.portraitDotActive : styles.portraitDot}
+                        onClick={() => setCurrentPortraitSlide(i)}
+                        aria-label={`Slide ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                  <div className={styles.portraitArrows}>
+                    <button
+                      type="button"
+                      className={styles.portraitArrow}
+                      onClick={() => setCurrentPortraitSlide((prev) => (prev <= 0 ? portraitSlides.length - 1 : prev - 1))}
+                      aria-label="Précédent"
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.portraitArrow}
+                      onClick={() => setCurrentPortraitSlide((prev) => (prev >= portraitSlides.length - 1 ? 0 : prev + 1))}
+                      aria-label="Suivant"
+                    >
+                      →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Bloc Cadreur */}
+      <section className={styles.cadreurBlock}>
+        <div className="container">
+          <div className={styles.editWrap}>
+            {isAdmin && (
+              <button className={styles.editBtn} onClick={() => setEditBlock("home_cadreur")}>
+                Modifier
+              </button>
+            )}
+            <div className={styles.cadreurGrid}>
+              <div className={styles.cadreurContent}>
+                {cadreurBlock.title ? <h2 className={styles.cadreurTitle}>{cadreurBlock.title}</h2> : null}
+                {cadreurBlock.html ? <div className={styles.cadreurText} dangerouslySetInnerHTML={{ __html: cadreurBlock.html }} /> : null}
+              </div>
+              <div className={styles.cadreurMedia}>
+                {cadreurBlock.image?.url ? (
+                  <img src={cadreurBlock.image.url} alt="" className={styles.cadreurImage} />
+                ) : (
+                  <div className={styles.cadreurImage} style={{ background: "rgba(0,0,0,0.06)", minHeight: 200 }} />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -206,47 +311,6 @@ export default function HomePageClient({ projects }: Props) {
               ))}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Section Projets (éditable titre + description + masonry) */}
-      <section className={styles.sectionBlock}>
-        <div className="container">
-          <div className={styles.editWrap}>
-            {isAdmin && (
-              <button className={styles.editBtn} onClick={() => setEditBlock("home_projects_section")}>
-                Modifier
-              </button>
-            )}
-            <h2 className={styles.sectionBlockTitle}>{projectsSection.title || "Sélection de projets"}</h2>
-            <p className={styles.sectionBlockDesc}>{projectsSection.description || ""}</p>
-          </div>
-          {projects.length === 0 ? (
-            <p style={{ color: "var(--muted)", textAlign: "center" }}>
-              Pas encore de projets — connectez Supabase et importez des entrées dans la table <code>projects</code>.
-            </p>
-          ) : (
-            // @ts-ignore server -> client
-            <PhotoMasonry items={projects} />
-          )}
-        </div>
-      </section>
-
-      {/* Section Réalisations vidéo (fond sombre, éditable) */}
-      <section className={styles.sectionBlockAlt}>
-        <div className="container" style={{ textAlign: "center", padding: "0 0 2rem" }}>
-          <div className={styles.editWrap}>
-            {isAdmin && (
-              <button className={styles.editBtn} style={{ background: "#fff", color: "#111" }} onClick={() => setEditBlock("home_videos_section")}>
-                Modifier
-              </button>
-            )}
-            <h2 className={styles.sectionBlockTitle}>{videosSection.title || "Nos Réalisations"}</h2>
-            <p className={styles.sectionBlockDesc}>{videosSection.description || ""}</p>
-          </div>
-        </div>
-        <div className="container">
-          <VideoGallery />
         </div>
       </section>
 

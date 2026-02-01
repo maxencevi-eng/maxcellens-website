@@ -64,18 +64,19 @@
 }
 
 @media (min-width: 900px) {
-  .servicesGrid { grid-template-columns: repeat(4, 1fr); }
+  .servicesGrid { grid-template-columns: repeat(3, 1fr); }
 }
 
 .serviceCard {
   display: block;
-  padding: 1.5rem 1.25rem;
+  padding: 0;
   background: #fff;
   border-radius: 12px;
   text-decoration: none;
   color: inherit;
   border: 1px solid rgba(0,0,0,0.06);
   transition: box-shadow 0.2s, transform 0.2s;
+  overflow: hidden;
 }
 
 .serviceCard:hover {
@@ -83,7 +84,27 @@
   transform: translateY(-2px);
 }
 
+.serviceCardImageWrap {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+
+.serviceCardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.serviceCardContent {
+  padding: 1.25rem 1.25rem 1.5rem;
+  text-align: center;
+}
+
 .serviceCardTitle {
+  display: block;
   font-weight: 600;
   font-size: 1.05rem;
   margin: 0 0 0.5rem;
@@ -91,10 +112,235 @@
 }
 
 .serviceCardDesc {
+  display: block;
   font-size: 0.875rem;
   color: var(--muted, #6b7280);
   line-height: 1.45;
   margin: 0;
+}
+
+/* ========== Portrait block — carousel (4 slides) ========== */
+.portraitBlock {
+  padding: 3.5rem 0;
+  background: var(--bg, #fafaf9);
+}
+
+.portraitBlockTitle {
+  text-align: center;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  margin: 0 0 2rem;
+  color: var(--fg, #213431);
+  letter-spacing: -0.02em;
+}
+
+.portraitCarousel {
+  display: grid;
+  gap: 2rem;
+  align-items: center;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .portraitCarousel {
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: stretch;
+  }
+}
+
+/* Image à gauche — effet bords irréguliers (torn paper) */
+.portraitCarouselImage {
+  position: relative;
+  min-height: 280px;
+}
+
+.portraitImageTorn {
+  width: 100%;
+  height: 100%;
+  min-height: 280px;
+  object-fit: cover;
+  display: block;
+  /* Bords irréguliers façon déchiré */
+  clip-path: polygon(
+    0 0, 100% 2%, 100% 98%, 0 100%,
+    2% 85%, 0 70%, 5% 50%, 0 30%, 3% 15%
+  );
+  border-radius: 4px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+}
+
+@media (min-width: 900px) {
+  .portraitCarouselImage { min-height: 360px; }
+  .portraitImageTorn { min-height: 360px; clip-path: polygon(0 0, 98% 0, 100% 5%, 100% 95%, 98% 100%, 0 98%, 2% 90%, 0 60%, 4% 40%, 0 10%); }
+}
+
+/* Contenu à droite : titre slide, texte, CTA, navigation */
+.portraitCarouselContent {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+
+.portraitSlideTitle {
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  color: var(--fg, #213431);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.portraitSlideText {
+  margin: 0 0 1.5rem;
+  line-height: 1.6;
+  color: var(--fg, #213431);
+  opacity: 0.92;
+}
+
+.portraitSlideText p { margin: 0 0 0.5rem; }
+.portraitSlideText ul { margin: 0 0 0.75rem; padding-left: 1.25rem; }
+
+.portraitCta {
+  display: inline-block;
+  padding: 0.75rem 1.75rem;
+  background: var(--fg, #213431);
+  color: var(--bg, #fff);
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: opacity 0.2s, transform 0.15s;
+  align-self: flex-start;
+}
+
+.portraitCta:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Navigation : points + flèches */
+.portraitNav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.portraitDots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.portraitDot,
+.portraitDotActive {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.portraitDot {
+  background: rgba(0,0,0,0.2);
+}
+
+.portraitDot:hover {
+  background: rgba(0,0,0,0.35);
+}
+
+.portraitDotActive {
+  background: var(--fg, #213431);
+  transform: scale(1.2);
+}
+
+.portraitArrows {
+  display: flex;
+  gap: 4px;
+}
+
+.portraitArrow {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--fg, #213431);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.portraitArrow:hover {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.2);
+}
+
+/* Legacy (kept for grid layout elsewhere if needed) */
+.portraitGrid { display: grid; gap: 2rem; grid-template-columns: 1fr; }
+.portraitContent { max-width: 540px; }
+.portraitTitle { font-size: 1.75rem; font-weight: 700; margin: 0 0 0.5rem; color: var(--fg, #213431); }
+.portraitSubtitle { font-size: 1rem; color: var(--muted, #6b7280); margin: 0 0 1rem; }
+.portraitText { margin: 0 0 1.25rem; line-height: 1.55; color: var(--fg, #213431); opacity: 0.92; }
+.portraitMedia { border-radius: 12px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
+.portraitImage { width: 100%; height: auto; object-fit: cover; aspect-ratio: 4/3; }
+
+/* ========== Cadreur block ========== */
+.cadreurBlock {
+  padding: 3.5rem 0;
+  background: rgba(0,0,0,0.03);
+}
+
+.cadreurGrid {
+  display: grid;
+  gap: 2rem;
+  align-items: center;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .cadreurGrid { grid-template-columns: 1fr 1fr; gap: 3rem; }
+}
+
+.cadreurContent { max-width: 540px; }
+
+.cadreurTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  color: var(--fg, #213431);
+}
+
+.cadreurText {
+  margin: 0 0 1.25rem;
+  line-height: 1.55;
+  color: var(--fg, #213431);
+  opacity: 0.92;
+}
+
+.cadreurText p { margin: 0 0 0.5rem; }
+.cadreurText ul { margin: 0 0 1rem; padding-left: 1.25rem; }
+
+.cadreurMedia {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+}
+
+.cadreurImage {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  aspect-ratio: 4/3;
 }
 
 /* ========== Stats ========== */

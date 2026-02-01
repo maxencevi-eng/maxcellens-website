@@ -8,13 +8,35 @@ export type HomeIntroData = {
   html?: string;
 };
 
-export type HomeServiceItem = { title: string; description: string; href: string };
+export type HomeServiceItem = {
+  title: string;
+  description: string;
+  href: string;
+  image?: { url: string; path?: string } | null;
+};
 export type HomeServicesData = { items: HomeServiceItem[] };
 
 export type HomeStatItem = { value: string; label: string };
 export type HomeStatsData = { items: HomeStatItem[] };
 
-export type HomeSectionData = { title: string; description: string };
+export type HomePortraitSlide = {
+  title: string;
+  text: string;
+  image?: { url: string; path?: string } | null;
+};
+
+export type HomePortraitBlockData = {
+  blockTitle?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  slides: HomePortraitSlide[];
+};
+
+export type HomeCadreurBlockData = {
+  title?: string;
+  html?: string;
+  image?: { url: string; path?: string } | null;
+};
 
 export type HomeQuoteData = { text: string; author: string; role?: string };
 
@@ -28,10 +50,9 @@ export const DEFAULT_INTRO: HomeIntroData = {
 
 export const DEFAULT_SERVICES: HomeServicesData = {
   items: [
-    { title: "Réalisation", description: "Reportages photo et vidéo sur mesure.", href: "/realisation" },
-    { title: "Événement", description: "Mariages, séminaires, soirées.", href: "/evenement" },
-    { title: "Corporate", description: "Portraits, équipes, communication.", href: "/corporate" },
-    { title: "Portrait", description: "Séances portrait professionnelles.", href: "/portrait" },
+    { title: "Réalisation", description: "Reportages photo et vidéo sur mesure.", href: "/realisation", image: null },
+    { title: "Événement", description: "Mariages, séminaires, soirées.", href: "/evenement", image: null },
+    { title: "Corporate", description: "Portraits, équipes, communication.", href: "/corporate", image: null },
   ],
 };
 
@@ -44,14 +65,22 @@ export const DEFAULT_STATS: HomeStatsData = {
   ],
 };
 
-export const DEFAULT_PROJECTS_SECTION: HomeSectionData = {
-  title: "Sélection de projets",
-  description: "Quelques reportages photo récents — cliquez pour découvrir.",
+export const DEFAULT_PORTRAIT: HomePortraitBlockData = {
+  blockTitle: "Portrait",
+  ctaLabel: "Découvrir le portrait",
+  ctaHref: "/portrait",
+  slides: [
+    { title: "Lifestyle", text: "Portraits en situation, en extérieur ou dans votre environnement. Une approche naturelle et spontanée.", image: null },
+    { title: "Studio", text: "Séances en studio avec lumière maîtrisée. Idéal pour les portraits professionnels et les visuels corporate.", image: null },
+    { title: "Entreprise", text: "Portraits pour vos équipes et votre communication. Headshots et reportages en entreprise.", image: null },
+    { title: "Couple", text: "Séances duo pour couples, associés ou binômes. Des images qui racontent votre complicité.", image: null },
+  ],
 };
 
-export const DEFAULT_VIDEOS_SECTION: HomeSectionData = {
-  title: "Nos Réalisations",
-  description: "Une sélection de vidéos récentes — cliquez pour lancer la lecture.",
+export const DEFAULT_CADREUR: HomeCadreurBlockData = {
+  title: "Cadreur",
+  html: "<p>Cadreur vidéo pour des sociétés de production. Je peux assurer chef opérateur, cadreur, ou filmer et laisser le montage à la boîte de prod. Je travaille en équipe et dispose de mon propre matériel : caméra, micros, lumières.</p>",
+  image: null,
 };
 
 export const DEFAULT_QUOTE: HomeQuoteData = {

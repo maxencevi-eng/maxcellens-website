@@ -9,6 +9,7 @@ export async function POST(req: Request) {
     const form = await req.formData();
     const file = form.get('file') as any;
     const category = (form.get('category') as string) || 'other';
+    const oldPath = String(form.get('old_path') || '').trim();
 
     if (!file || typeof file.arrayBuffer !== 'function') {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -108,6 +109,10 @@ export async function POST(req: Request) {
       if (upWebp.error) {
         console.error('upload webp error', upWebp.error);
         return NextResponse.json({ error: upWebp.error.message || String(upWebp.error) }, { status: 500 });
+      }
+
+      if (oldPath && oldPath !== webpPath) {
+        await supabaseAdmin.storage.from(bucket).remove([oldPath]).catch((e) => console.warn('upload-logo: remove old failed', e));
       }
 
       const gp = supabaseAdmin.storage.from(bucket).getPublicUrl(webpPath);

@@ -134,6 +134,7 @@ export default function SeoCommandCenterModal({
       fd.append("file", file);
       fd.append("slug", slug);
       fd.append("type", "og");
+      if (form.og_image_path) fd.append("old_path", form.og_image_path);
       const resp = await fetch("/api/admin/upload-seo-image", { method: "POST", body: fd });
       const json = await resp.json();
       if (!resp.ok) throw new Error(json?.error ?? "Upload échoué");
@@ -174,6 +175,7 @@ export default function SeoCommandCenterModal({
       fd.append("file", file);
       fd.append("slug", slug);
       fd.append("type", "twitter");
+      if (form.twitter_image_path) fd.append("old_path", form.twitter_image_path);
       const resp = await fetch("/api/admin/upload-seo-image", { method: "POST", body: fd });
       const json = await resp.json();
       if (!resp.ok) throw new Error(json?.error ?? "Upload échoué");

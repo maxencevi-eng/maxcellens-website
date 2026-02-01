@@ -59,13 +59,14 @@ export default function HeroEditor({ page, onClose }: Props) {
     } catch (e) {}
   }
 
-  async function uploadFile(kind: 'image'|'video'|'slide', file: File) {
+  async function uploadFile(kind: 'image'|'video'|'slide', file: File, oldPath?: string | null) {
     setError(null); setSuccess(null); setLoading(true);
     try {
       const fd = new FormData();
       fd.append('file', file);
       fd.append('page', page);
       fd.append('kind', kind === 'slide' ? 'image' : kind);
+      if (oldPath) fd.append('old_path', oldPath);
       const res = await fetch('/api/admin/upload-hero-media', { method: 'POST', body: fd });
       const j = await res.json();
       if (!res.ok) { setError(j?.error || 'Upload failed'); setLoading(false); return null; }
@@ -76,33 +77,20 @@ export default function HeroEditor({ page, onClose }: Props) {
 
   async function handleImageSelect(file: File | null) {
     if (!file) return;
-    const r = await uploadFile('image', file);
+    const prev = prevImagePathRef.current;
+    const r = await uploadFile('image', file, prev);
     if (r && r.url) { setImagePreview(r.url); setImageFocus({x:50,y:50}); }
     if (r && r.path) setImagePath(r.path);
-    try {
-      const prev = prevImagePathRef.current;
-      const newPath = r?.path || null;
-      if (prev && prev !== newPath) {
-        // best-effort delete of previous storage path
-        await fetch('/api/admin/delete-hero-media', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ page, paths: [prev] }) });
-      }
-      prevImagePathRef.current = newPath;
-    } catch (_) {}
+    prevImagePathRef.current = r?.path ?? null;
   }
 
   async function handleVideoSelect(file: File | null) {
     if (!file) return;
-    const r = await uploadFile('video', file);
+    const prev = prevVideoPathRef.current;
+    const r = await uploadFile('video', file, prev);
     if (r && r.url) setVideoUrl(r.url);
     if (r && r.path) setVideoPath(r.path);
-    try {
-      const prev = prevVideoPathRef.current;
-      const newPath = r?.path || null;
-      if (prev && prev !== newPath) {
-        await fetch('/api/admin/delete-hero-media', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ page, paths: [prev] }) });
-      }
-      prevVideoPathRef.current = newPath;
-    } catch (_) {}
+    prevVideoPathRef.current = r?.path ?? null;
   }
 
   async function handleSlideSelect(files: FileList | null) {

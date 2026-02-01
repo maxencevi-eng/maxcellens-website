@@ -55,11 +55,14 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
       const fd = new FormData();
       fd.append('file', file);
       fd.append('category', 'contact');
+      const currentPath = photo?.path || originalPhotoPath;
+      if (currentPath) fd.append('old_path', currentPath);
       const resp = await fetch('/api/admin/upload-logo', { method: 'POST', body: fd });
       if (!resp.ok) throw new Error('Erreur d\u2019upload');
       const j = await resp.json();
       if (j?.webp) {
         setPhoto({ url: String(j.webp), path: String(j.path || '') });
+        setOriginalPhotoPath(j.path ? String(j.path) : null);
       } else {
         throw new Error('Upload: pas d\u2019URL retourn\u00e9e');
       }
@@ -100,24 +103,7 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
         }
       }
 
-      // If we replaced a stored photo, attempt to delete the previous stored file
-      if (originalPhotoPath && originalPhotoPath !== (photo?.path || null)) {
-        try {
-          const dresp = await fetch('/api/admin/delete-storage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: originalPhotoPath }) });
-          if (!dresp.ok) {
-            const dj = await dresp.json().catch(() => ({}));
-            console.warn('Failed to delete old contact photo', dj);
-            setError(`Attention: suppression ancienne image a échoué (${dj?.error || dresp.status})`);
-          } else {
-            setOriginalPhotoPath(photo?.path || null);
-          }
-        } catch (e) {
-          console.warn('Failed to delete old contact photo', e);
-          setError('Attention: suppression ancienne image a échoué');
-        }
-      } else {
-        setOriginalPhotoPath(photo?.path || null);
-      }
+      setOriginalPhotoPath(photo?.path || null);
 
       try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'contact_intro', value: JSON.stringify(html || '') } })); } catch (_) {}
       try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'contact_photo', value: JSON.stringify(photo || '') } })); } catch (_) {}

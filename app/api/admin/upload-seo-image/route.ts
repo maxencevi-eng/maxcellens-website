@@ -14,6 +14,7 @@ export async function POST(req: Request) {
     const file = form.get('file') as File | null;
     const slug = String(form.get('slug') ?? '').trim();
     const type = String(form.get('type') ?? 'og').toLowerCase() === 'twitter' ? 'twitter' : 'og';
+    const oldPath = String(form.get('old_path') ?? '').trim();
 
     if (!file || typeof file.arrayBuffer !== 'function') {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -48,6 +49,10 @@ export async function POST(req: Request) {
       .upload(path, buf, { contentType: `image/${ext}`, upsert: true });
     if (uploadError) {
       return NextResponse.json({ error: uploadError.message }, { status: 500 });
+    }
+
+    if (oldPath && oldPath !== path) {
+      await supabaseAdmin.storage.from(BUCKET).remove([oldPath]).catch((e) => console.warn('upload-seo-image: remove old failed', e));
     }
 
     const base = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';

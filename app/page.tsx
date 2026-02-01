@@ -1,6 +1,4 @@
 import type { Metadata } from 'next';
-import { fetchProjects } from '../lib/helpers';
-import type { Project } from '../types';
 import PageHeader from '../components/PageHeader/PageHeader';
 import HomePageClient from '../components/HomeBlocks/HomePageClient';
 import { getPageSeo, buildMetadataFromSeo } from '../lib/pageSeo';
@@ -17,8 +15,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const projects: Project[] = await fetchProjects();
-
   return (
     <main>
       <JsonLdScript slug="home" />
@@ -28,7 +24,7 @@ export default async function HomePage() {
         subtitle="Portfolio photo & vidéo"
         bgImage="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1600&q=80"
       />
-      <HomePageClient projects={projects} />
+      <HomePageClient />
     </main>
   );
 }

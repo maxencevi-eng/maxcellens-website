@@ -92,11 +92,14 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
       fd.append("page", "animation");
       fd.append("kind", "image");
       fd.append("folder", UPLOAD_FOLDER[blockKey] ?? "animation/block-1");
+      const currentPath = image?.path ?? originalImagePath;
+      if (currentPath) fd.append("old_path", currentPath);
       const resp = await fetch("/api/admin/upload-hero-media", { method: "POST", body: fd });
       const j = await resp.json();
       if (!resp.ok) throw new Error(j?.error ?? "Erreur d'upload");
       if (j?.url) {
         setImage({ url: j.url, path: j.path ?? undefined });
+        setOriginalImagePath(j.path ?? null);
       } else throw new Error("Upload: pas d'URL retournée");
     } catch (err: any) {
       setError(err?.message ?? "Erreur");
@@ -160,19 +163,6 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
       if (!resp.ok) {
         const j = await resp.json().catch(() => ({}));
         throw new Error(j?.error ?? "Erreur sauvegarde");
-      }
-
-      if (!isCta && originalImagePath && image?.path && originalImagePath !== image.path) {
-        try {
-          await fetch("/api/admin/delete-hero-media", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ page: "animation", paths: [originalImagePath] }),
-          });
-          setOriginalImagePath(image.path);
-        } catch (_) {
-          console.warn("Failed to delete old animation image");
-        }
       }
 
       try {
