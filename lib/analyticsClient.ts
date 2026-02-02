@@ -68,6 +68,15 @@ export function sendToCollect(payload: Record<string, unknown>, useBeacon = fals
   fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'application/json' }, keepalive: true }).catch(() => {});
 }
 
+function getReferrer(): string {
+  if (typeof document === 'undefined') return '';
+  try {
+    return (document.referrer || '').trim();
+  } catch {
+    return '';
+  }
+}
+
 export function trackPageview(path: string, durationSeconds?: number, isAuthenticated?: boolean) {
   const { session_id, session } = getSessionPayload();
   const payload: Record<string, unknown> = {
@@ -76,6 +85,7 @@ export function trackPageview(path: string, durationSeconds?: number, isAuthenti
     event_type: 'pageview',
     path: path || '/',
     duration: durationSeconds ?? undefined,
+    referrer: getReferrer(),
   };
   if (typeof isAuthenticated === 'boolean') payload.is_authenticated = isAuthenticated;
   sendToCollect(payload, !!durationSeconds);
@@ -104,6 +114,7 @@ export function buildPageviewPayload(path: string, durationSeconds: number, isAu
     event_type: 'pageview',
     path: path || '/',
     duration: durationSeconds,
+    referrer: getReferrer(),
   };
   if (typeof isAuthenticated === 'boolean') payload.is_authenticated = isAuthenticated;
   return payload;

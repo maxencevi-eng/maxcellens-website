@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import VideoLightbox, { type VideoLightboxItem } from './VideoLightbox';
 import styles from './VideoGallery.module.css';
 
-type VideoItem = { url: string; columns?: 1 | 2 | 3 | 4 };
+type VideoItem = { url: string; columns?: 1 | 2 | 3 | 4; cover?: { url: string; path?: string } };
 type Props = {
   videos?: Array<string | VideoItem>;
   className?: string;
@@ -38,9 +38,21 @@ function isYouTubeShort(url: string) {
   }
 }
 
-function getThumbnailUrl(id: string) {
+const YOUTUBE_THUMB_QUALITIES = ['maxresdefault', 'sddefault', 'hqdefault'] as const;
+
+function getThumbnailUrl(id: string, quality: (typeof YOUTUBE_THUMB_QUALITIES)[number] = 'maxresdefault') {
   if (!id) return '';
-  return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  return `https://img.youtube.com/vi/${id}/${quality}.jpg`;
+}
+
+function getNextThumbnailFallback(currentSrc: string, id: string): string {
+  if (!id) return '';
+  for (let i = 0; i < YOUTUBE_THUMB_QUALITIES.length - 1; i++) {
+    if (currentSrc.includes(`/${YOUTUBE_THUMB_QUALITIES[i]}.jpg`)) {
+      return getThumbnailUrl(id, YOUTUBE_THUMB_QUALITIES[i + 1]);
+    }
+  }
+  return getThumbnailUrl(id, 'hqdefault');
 }
 
 export default function VideoGallery({ videos, className }: Props) {
@@ -56,7 +68,7 @@ export default function VideoGallery({ videos, className }: Props) {
       const obj = it as VideoItem;
       const cols = Number(obj.columns) || 1;
       const columns = cols >= 1 && cols <= 4 ? (cols as 1 | 2 | 3 | 4) : 1;
-      return { url: String(obj.url || ''), columns };
+      return { url: String(obj.url || ''), columns, cover: obj.cover };
     });
   }, [raw]);
 
@@ -126,10 +138,11 @@ export default function VideoGallery({ videos, className }: Props) {
                 const id = getYouTubeId(item.url);
                 const isShort = isYouTubeShort(item.url);
                 const paddingTop = isShort ? '177.78%' : '56.25%';
-                const thumbUrl = getThumbnailUrl(id);
+                const thumbUrl = id ? getThumbnailUrl(id) : '';
+                const coverSrc = item.cover?.url || thumbUrl;
                 const widthPercent = `${100 / count}%`;
                 const myIndex = globalIndex++;
-                if (!id) return <div key={j} style={{ width: widthPercent }} />;
+                if (!id && !item.cover?.url) return <div key={j} style={{ width: widthPercent }} />;
                 return (
                   <div key={j} style={{ width: widthPercent }}>
                     <button
@@ -139,9 +152,15 @@ export default function VideoGallery({ videos, className }: Props) {
                       style={{ position: 'relative', paddingTop, display: 'block', width: '100%', border: 'none', cursor: 'pointer', background: '#000', overflow: 'hidden' }}
                     >
                       <img
-                        src={thumbUrl}
+                        src={coverSrc}
                         alt=""
                         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                        onError={(e) => {
+                          if (!item.cover?.url && id) {
+                            const next = getNextThumbnailFallback((e.target as HTMLImageElement).src, id);
+                            if (next) (e.target as HTMLImageElement).src = next;
+                          }
+                        }}
                       />
                       <span
                         aria-hidden
@@ -170,10 +189,11 @@ export default function VideoGallery({ videos, className }: Props) {
         const id = getYouTubeId(item.url);
         const isShort = isYouTubeShort(item.url);
         const paddingTop = isShort ? '177.78%' : '56.25%';
-        const thumbUrl = getThumbnailUrl(id);
+        const thumbUrl = id ? getThumbnailUrl(id) : '';
+        const coverSrc = item.cover?.url || thumbUrl;
         const myIndex = globalIndex++;
 
-        if (!id) {
+        if (!id && !item.cover?.url) {
           return <div key={idx} style={{ marginBottom: '2rem' }} />;
         }
 
@@ -189,9 +209,15 @@ export default function VideoGallery({ videos, className }: Props) {
                   style={{ position: 'relative', paddingTop, display: 'block', width: '100%', border: 'none', cursor: 'pointer', background: '#000', overflow: 'hidden' }}
                 >
                   <img
-                    src={thumbUrl}
+                    src={coverSrc}
                     alt=""
                     style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      if (!item.cover?.url && id) {
+                        const next = getNextThumbnailFallback((e.target as HTMLImageElement).src, id);
+                        if (next) (e.target as HTMLImageElement).src = next;
+                      }
+                    }}
                   />
                   <span
                     aria-hidden
@@ -222,9 +248,15 @@ export default function VideoGallery({ videos, className }: Props) {
               style={{ position: 'relative', paddingTop, display: 'block', width: '100%', border: 'none', cursor: 'pointer', background: '#000', overflow: 'hidden' }}
             >
               <img
-                src={thumbUrl}
+                src={coverSrc}
                 alt=""
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => {
+                  if (!item.cover?.url && id) {
+                    const next = getNextThumbnailFallback((e.target as HTMLImageElement).src, id);
+                    if (next) (e.target as HTMLImageElement).src = next;
+                  }
+                }}
               />
               <span
                 aria-hidden

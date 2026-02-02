@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import VideoGallery from './VideoGallery';
 import styles from './VideoGallery.module.css';
 
-type VideoItem = { url: string; columns?: 1 | 2 | 3 | 4 };
+type VideoItem = { url: string; columns?: 1 | 2 | 3 | 4; cover?: { url: string; path?: string } };
 type Props = {
   keyName: string;
   initial?: Array<string | VideoItem>;
@@ -18,7 +18,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
     const o = it as VideoItem;
     const cols = Number(o.columns) || 1;
     const columns: 1 | 2 | 3 | 4 = (cols >= 1 && cols <= 4) ? (cols as 1 | 2 | 3 | 4) : 1;
-    return { url: String(o.url || ''), columns };
+    return { url: String(o.url || ''), columns, cover: o.cover };
   });
   const [videos, setVideos] = useState<VideoItem[]>(normalize(initial));
   const [editing, setEditing] = useState(false);
@@ -29,6 +29,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [editColumns, setEditColumns] = useState<1 | 2 | 3 | 4>(1);
+  const [uploadingCoverIndex, setUploadingCoverIndex] = useState<number | null>(null);
 
   function extractYouTubeId(url: string) {
     try {
@@ -67,7 +68,8 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
               if (el && typeof el === 'object') {
                 const cols = Number(el.columns) || 1;
                 const columns: 1 | 2 | 3 | 4 = (cols >= 1 && cols <= 4) ? (cols as 1 | 2 | 3 | 4) : 1;
-                return { url: String(el.url || ''), columns };
+                const cover = el.cover && (el.cover.url || el.cover.path) ? { url: String(el.cover.url || el.cover.path), path: el.cover.path } : undefined;
+                return { url: String(el.url || ''), columns, cover };
               }
               return { url: String(el || ''), columns: 1 as 1 | 2 | 3 | 4 };
             }).filter((x: any) => x.url) as VideoItem[];
@@ -118,10 +120,37 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
     });
   }
 
+  async function uploadCover(index: number, file: File) {
+    setUploadingCoverIndex(index);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('page', 'home');
+      fd.append('kind', 'image');
+      fd.append('folder', `videos/${keyName}/${index}`);
+      const item = videos[index];
+      if (item?.cover?.path) fd.append('old_path', item.cover.path);
+      const resp = await fetch('/api/admin/upload-hero-media', { method: 'POST', body: fd });
+      const j = await resp.json();
+      if (!resp.ok) throw new Error(j?.error ?? 'Erreur upload');
+      if (j?.url) {
+        setVideos((prev) => prev.map((v, idx) => idx === index ? { ...v, cover: { url: j.url, path: j.path ?? undefined } } : v));
+      } else throw new Error('Pas d\'URL retournée');
+    } catch (e) {
+      alert((e as Error)?.message ?? 'Erreur upload couverture');
+    } finally {
+      setUploadingCoverIndex(null);
+    }
+  }
+
+  function removeCover(index: number) {
+    setVideos((prev) => prev.map((v, idx) => idx === index ? { ...v, cover: undefined } : v));
+  }
+
   async function save() {
     setSaving(true);
     try {
-      const list = videos.map((v) => ({ url: v.url, columns: v.columns || 1 }));
+      const list = videos.map((v) => ({ url: v.url, columns: v.columns || 1, cover: v.cover || undefined }));
       const payload = { key: keyName, value: JSON.stringify(list) };
       const resp = await fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!resp.ok) throw new Error('Save failed');
@@ -209,12 +238,45 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                     <div style={{ width: 60, flex: '0 0 60px' }} className={styles.modalItemThumb}>
                       {(() => {
                         const id = extractYouTubeId(v.url || '');
+                        if (v.cover?.url) {
+                          return <img src={v.cover.url} alt="couverture" style={{ width: '100%', height: 'auto', borderRadius: 6, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.06)' }} />;
+                        }
                         if (id) {
-                          const thumb = `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
-                          return <img src={thumb} alt="miniature" style={{ width: '100%', height: 'auto', borderRadius: 6, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.06)' }} />;
+                          const thumb = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+                          const onThumbError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+                            const el = e.target as HTMLImageElement;
+                            if (el.src.includes('sddefault')) el.src = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+                            else if (el.src.includes('maxresdefault')) el.src = `https://img.youtube.com/vi/${id}/sddefault.jpg`;
+                          };
+                          return <img src={thumb} alt="miniature" style={{ width: '100%', height: 'auto', borderRadius: 6, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.06)' }} onError={onThumbError} />;
                         }
                         return <div style={{ width: '100%', height: 33, background: '#f0f0f0', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 10 }}>Aperçu</div>;
                       })()}
+                    </div>
+
+                    {/* Image de couverture */}
+                    <div style={{ flex: '0 0 140px', display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: 11, color: 'var(--muted)' }}>Couverture</span>
+                      {v.cover?.url ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <img src={v.cover.url} alt="" style={{ width: 56, height: 32, objectFit: 'cover', borderRadius: 4, border: '1px solid #eee' }} />
+                          <button type="button" className="btn-ghost" style={{ fontSize: 11, color: '#c00' }} onClick={() => removeCover(i)}>Supprimer</button>
+                        </div>
+                      ) : null}
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 12 }}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={uploadingCoverIndex === i}
+                          style={{ width: 0, opacity: 0, position: 'absolute' }}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) uploadCover(i, f);
+                            e.target.value = '';
+                          }}
+                        />
+                        <span style={{ textDecoration: 'underline', color: 'var(--fg)' }}>{uploadingCoverIndex === i ? 'Upload…' : 'Choisir une image'}</span>
+                      </label>
                     </div>
 
                     <div className={styles.modalItemContent} style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

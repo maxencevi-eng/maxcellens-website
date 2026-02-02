@@ -122,6 +122,17 @@ export default function AnimationPageClient() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!loaded) return;
+    const hash = typeof window !== "undefined" ? window.location.hash?.replace(/^#/, "") : "";
+    if (!hash) return;
+    const el = document.getElementById(hash);
+    if (el) {
+      const t = setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+      return () => clearTimeout(t);
+    }
+  }, [loaded]);
+
   const { hiddenBlocks, blockWidthModes, blockOrderAnimation, isAdmin: isAdminCtx } = useBlockVisibility();
   const hide = (id: string) => !isAdminCtx && hiddenBlocks.includes(id);
   const blockWidthClass = (id: string) => (blockWidthModes[id] === "max1600" ? "block-width-1600" : "");

@@ -63,7 +63,7 @@ export async function GET(req: Request) {
 
     let sessionsRes = await supabaseAdmin
       .from('analytics_sessions')
-      .select('id, session_id, ip_hash, country, city, created_at')
+      .select('id, session_id, ip_hash, country, city, referrer, created_at')
       .gte('created_at', sinceStr)
       .lte('created_at', untilStr)
       .or('is_authenticated.is.null,is_authenticated.eq.false');
@@ -71,11 +71,20 @@ export async function GET(req: Request) {
     if (sessionsRes.error && /does not exist|column.*is_authenticated/i.test(sessionsRes.error.message)) {
       sessionsRes = await supabaseAdmin
         .from('analytics_sessions')
+        .select('id, session_id, ip_hash, country, city, referrer, created_at')
+        .gte('created_at', sinceStr)
+        .lte('created_at', untilStr);
+    }
+    if (sessionsRes.error && /column.*referrer/i.test(sessionsRes.error.message)) {
+      sessionsRes = await supabaseAdmin
+        .from('analytics_sessions')
         .select('id, session_id, ip_hash, country, city, created_at')
-        .gte('created_at', sinceStr);
+        .gte('created_at', sinceStr)
+        .lte('created_at', untilStr)
+        .or('is_authenticated.is.null,is_authenticated.eq.false');
     }
     if (sessionsRes.error) return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
-    let sessions = (sessionsRes.data || []) as { id: string; session_id: string; ip_hash: string | null; country: string | null; city: string | null; created_at: string }[];
+    let sessions = (sessionsRes.data || []) as { id: string; session_id: string; ip_hash: string | null; country: string | null; city: string | null; referrer?: string | null; created_at: string }[];
 
     if (includeHashes?.length) sessions = sessions.filter((s) => s.ip_hash && includeHashes.includes(s.ip_hash));
     if (excludeHashes?.length) sessions = sessions.filter((s) => !s.ip_hash || !excludeHashes.includes(s.ip_hash));
@@ -172,6 +181,48 @@ export async function GET(req: Request) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 25);
 
+    function referrerToSourceLabel(ref: string | null | undefined): string {
+      const r = (ref || '').trim().toLowerCase();
+      if (!r) return 'Accès direct';
+      try {
+        const url = new URL(r);
+        const host = url.hostname || '';
+        if (/google\./i.test(host)) return 'Google';
+        if (/bing\./i.test(host)) return 'Bing';
+        if (/yahoo\./i.test(host)) return 'Yahoo';
+        if (/duckduckgo\./i.test(host)) return 'DuckDuckGo';
+        if (/ecosia\./i.test(host)) return 'Ecosia';
+        if (/facebook\./i.test(host)) return 'Facebook';
+        if (/instagram\./i.test(host)) return 'Instagram';
+        if (/linkedin\./i.test(host)) return 'LinkedIn';
+        if (/twitter\./i.test(host) || /x\.com/i.test(host)) return 'Twitter / X';
+        if (/youtube\./i.test(host)) return 'YouTube';
+        if (/tiktok\./i.test(host)) return 'TikTok';
+        if (host && host !== 'localhost' && !host.startsWith('127.')) return host.replace(/^www\./, '');
+      } catch (_) {}
+      return r ? 'Autre (lien externe)' : 'Accès direct';
+    }
+
+    const sourceCount = new Map<string, number>();
+    sessions.forEach((s) => {
+      const label = referrerToSourceLabel(s.referrer);
+      sourceCount.set(label, (sourceCount.get(label) || 0) + 1);
+    });
+    const bySource = Array.from(sourceCount.entries())
+      .map(([source, count]) => ({ source, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const uniqueVisitorsByPath = new Map<string, Set<string>>();
+    pageviews.forEach((e) => {
+      const p = e.path || '/';
+      let set = uniqueVisitorsByPath.get(p);
+      if (!set) { set = new Set(); uniqueVisitorsByPath.set(p, set); }
+      set.add(e.session_id);
+    });
+    const visitsByPage = Array.from(uniqueVisitorsByPath.entries())
+      .map(([path, set]) => ({ path, uniqueVisitors: set.size }))
+      .sort((a, b) => b.uniqueVisitors - a.uniqueVisitors);
+
     return NextResponse.json({
       kpis: {
         uniqueVisitors: uniqueVisitors,
@@ -185,6 +236,8 @@ export async function GET(req: Request) {
       byCountry,
       byCity,
       topClicks,
+      bySource,
+      visitsByPage,
       filterApplied: { include: !!includeHashes?.length, exclude: !!excludeHashes?.length },
     });
   } catch (err: any) {

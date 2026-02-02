@@ -26,6 +26,8 @@ type AnalyticsData = {
   byCountry: { country: string; count: number }[];
   byCity: { country: string; city: string; count: number }[];
   topClicks: { path: string; element_id: string; count: number }[];
+  bySource?: { source: string; count: number }[];
+  visitsByPage?: { path: string; uniqueVisitors: number }[];
   filterApplied: { include: boolean; exclude: boolean };
 };
 
@@ -61,7 +63,7 @@ export default function StatisticsModal({
   const [savingFilter, setSavingFilter] = useState(false);
   const [filterTab, setFilterTab] = useState<'include' | 'exclude'>('include');
   const [lastSavedFilter, setLastSavedFilter] = useState<IpFilter>(defaultFilter);
-  const [dataTab, setDataTab] = useState<'content' | 'geo' | 'clicks'>('content');
+  const [dataTab, setDataTab] = useState<'content' | 'geo' | 'clicks' | 'source' | 'visitsByPage'>('content');
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
@@ -395,6 +397,36 @@ export default function StatisticsModal({
                 >
                   Éléments les plus cliqués
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setDataTab('source')}
+                  style={{
+                    padding: '8px 16px',
+                    border: `2px solid ${dataTab === 'source' ? '#2563eb' : '#cbd5e1'}`,
+                    background: dataTab === 'source' ? '#eff6ff' : '#f8fafc',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    fontWeight: dataTab === 'source' ? 600 : 500,
+                    color: dataTab === 'source' ? '#1d4ed8' : '#475569',
+                  }}
+                >
+                  Source
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDataTab('visitsByPage')}
+                  style={{
+                    padding: '8px 16px',
+                    border: `2px solid ${dataTab === 'visitsByPage' ? '#2563eb' : '#cbd5e1'}`,
+                    background: dataTab === 'visitsByPage' ? '#eff6ff' : '#f8fafc',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    fontWeight: dataTab === 'visitsByPage' ? 600 : 500,
+                    color: dataTab === 'visitsByPage' ? '#1d4ed8' : '#475569',
+                  }}
+                >
+                  Visites par page
+                </button>
               </div>
 
               {dataTab === 'content' && (
@@ -488,6 +520,70 @@ export default function StatisticsModal({
                             <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.count}</td>
                           </tr>
                         ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {dataTab === 'source' && (
+                <div>
+                  <h3 className={styles.sectionTitle} style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Source des visiteurs</h3>
+                  <p style={{ fontSize: 13, color: '#475569', marginBottom: 12, lineHeight: 1.5 }}>
+                    Provenance des visites : accès direct (saisie d&apos;URL ou favori), moteur de recherche (Google, Bing…), lien depuis un autre site.
+                  </p>
+                  <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                      <thead>
+                        <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                          <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Source</th>
+                          <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Visiteurs</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(data.bySource ?? []).map((row) => (
+                          <tr key={row.source} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.source}</td>
+                            <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.count}</td>
+                          </tr>
+                        ))}
+                        {(data.bySource ?? []).length === 0 && (
+                          <tr>
+                            <td colSpan={2} style={{ padding: '16px 14px', color: '#64748b', textAlign: 'center' }}>Aucune donnée (colonne referrer peut être absente en base)</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {dataTab === 'visitsByPage' && (
+                <div>
+                  <h3 className={styles.sectionTitle} style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Visites par page</h3>
+                  <p style={{ fontSize: 13, color: '#475569', marginBottom: 12, lineHeight: 1.5 }}>
+                    Pour chaque page, nombre de visiteurs uniques ayant vu la page (sur la période et avec les filtres IP appliqués).
+                  </p>
+                  <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                      <thead>
+                        <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                          <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Page</th>
+                          <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Visiteurs uniques</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(data.visitsByPage ?? []).map((row) => (
+                          <tr key={row.path} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <td style={{ padding: '10px 14px', color: '#1e293b' }}>Page {getPageLabel(row.path || '/')}</td>
+                            <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.uniqueVisitors}</td>
+                          </tr>
+                        ))}
+                        {(data.visitsByPage ?? []).length === 0 && (
+                          <tr>
+                            <td colSpan={2} style={{ padding: '16px 14px', color: '#64748b', textAlign: 'center' }}>Aucune donnée</td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
