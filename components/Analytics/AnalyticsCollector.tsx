@@ -120,7 +120,6 @@ export default function AnalyticsCollector() {
           const url = href.startsWith('http') ? new URL(href) : new URL(href, base || 'http://localhost');
           const pathname = url.pathname?.replace(/\/+$/, '') || '/';
           const pageLabel = pathname === '/' ? 'Accueil' : pathname.slice(1).split('/')[0] || 'Lien';
-          const label = text || pageLabel;
           const inNav = link.closest?.('nav') || link.closest?.('[role="navigation"]');
           // Interne = attribut href relatif OU même site (host normalisé : www, localhost/127.0.0.1)
           const isRelativePath = !rawHref || rawHref.startsWith('#') || (rawHref.startsWith('/') && !rawHref.startsWith('//')) || rawHref.startsWith('.');
@@ -135,6 +134,20 @@ export default function AnalyticsCollector() {
             const pageHost = normalizeHost(window.location.hostname ?? '');
             isInternal = linkHost === pageHost;
           }
+          // Pour les liens externes : identifier les réseaux sociaux par domaine pour afficher Instagram, Facebook, etc.
+          const host = (url.hostname ?? '').replace(/^www\./, '').toLowerCase();
+          const socialLabel =
+            /instagram\.com/i.test(host) ? 'Instagram' :
+            /facebook\.com|fb\.com|fb\.me/i.test(host) ? 'Facebook' :
+            /youtube\.com|youtu\.be/i.test(host) ? 'YouTube' :
+            /tiktok\.com/i.test(host) ? 'TikTok' :
+            /linkedin\.com/i.test(host) ? 'LinkedIn' :
+            /twitter\.com|x\.com/i.test(host) ? 'Twitter / X' :
+            /vimeo\.com/i.test(host) ? 'Vimeo' :
+            /pinterest\.com/i.test(host) ? 'Pinterest' :
+            /snapchat\.com/i.test(host) ? 'Snapchat' :
+            null;
+          const label = socialLabel ?? text ?? pageLabel;
           const linkType = isInternal ? 'lien interne' : 'lien externe';
           const inMobileDrawer = inNav && (link as HTMLElement).closest?.('nav[data-mobile-drawer="true"]');
           return inMobileDrawer ? `menu mobile|${label}` : inNav ? `menu|${label}` : `${linkType}|${label}`;

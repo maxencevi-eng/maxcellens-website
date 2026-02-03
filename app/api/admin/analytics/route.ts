@@ -160,8 +160,12 @@ export async function GET(req: Request) {
       .sort((a, b) => b.views - a.views)
       .slice(0, 20);
 
+    const sessionById = new Map(sessions.map((s) => [s.session_id, s]));
+
     const countryCount = new Map<string, number>();
     const cityCount = new Map<string, number>();
+    const countryDuration = new Map<string, { sum: number; count: number }>();
+    const cityDuration = new Map<string, { sum: number; count: number }>();
     const countryLabel = (v: string | null | undefined) => (v && String(v).trim()) ? String(v).trim() : 'Inconnu';
     const cityLabel = (v: string | null | undefined) => (v && String(v).trim()) ? String(v).trim() : 'Inconnu';
     sessions.forEach((s) => {
@@ -171,11 +175,36 @@ export async function GET(req: Request) {
       const cityKey = `${c}|${cityVal}`;
       cityCount.set(cityKey, (cityCount.get(cityKey) || 0) + 1);
     });
-    const byCountry = Array.from(countryCount.entries()).map(([country, count]) => ({ country, count })).sort((a, b) => b.count - a.count).slice(0, 15);
+    pageviews.forEach((e) => {
+      const dur = e.duration ?? 0;
+      if (dur <= 0) return;
+      const session = sessionById.get(e.session_id);
+      if (!session) return;
+      const c = countryLabel(session.country);
+      const cityKey = `${c}|${cityLabel(session.city)}`;
+      const cd = countryDuration.get(c) || { sum: 0, count: 0 };
+      cd.sum += dur;
+      cd.count += 1;
+      countryDuration.set(c, cd);
+      const cid = cityDuration.get(cityKey) || { sum: 0, count: 0 };
+      cid.sum += dur;
+      cid.count += 1;
+      cityDuration.set(cityKey, cid);
+    });
+    const byCountry = Array.from(countryCount.entries())
+      .map(([country, count]) => ({
+        country,
+        count,
+        avgTimeSeconds: (() => { const d = countryDuration.get(country); return d?.count ? Math.round(d.sum / d.count) : 0; })(),
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15);
     const byCity = Array.from(cityCount.entries())
       .map(([key, count]) => {
         const [country, city] = key.split('|');
-        return { country, city: city || 'Inconnu', count };
+        const d = cityDuration.get(key);
+        const avgTimeSeconds = d?.count ? Math.round(d.sum / d.count) : 0;
+        return { country, city: city || 'Inconnu', count, avgTimeSeconds };
       })
       .sort((a, b) => b.count - a.count)
       .slice(0, 15);
@@ -218,6 +247,7 @@ export async function GET(req: Request) {
     }
 
     const sourceBrowserCount = new Map<string, number>();
+    const sourceBrowserDuration = new Map<string, { sum: number; count: number }>();
     const browserLabelNorm = (v: string | null | undefined) => (v && String(v).trim()) ? String(v).trim() : 'Inconnu';
     sessions.forEach((s) => {
       const sourceLabel = referrerToSourceLabel(s.referrer);
@@ -225,22 +255,49 @@ export async function GET(req: Request) {
       const key = `${sourceLabel}\t${browserLabel}`;
       sourceBrowserCount.set(key, (sourceBrowserCount.get(key) || 0) + 1);
     });
+    pageviews.forEach((e) => {
+      const dur = e.duration ?? 0;
+      if (dur <= 0) return;
+      const session = sessionById.get(e.session_id);
+      if (!session) return;
+      const sourceLabel = referrerToSourceLabel(session.referrer);
+      const browserLabel = browserLabelNorm((session as { browser?: string | null }).browser);
+      const key = `${sourceLabel}\t${browserLabel}`;
+      const d = sourceBrowserDuration.get(key) || { sum: 0, count: 0 };
+      d.sum += dur;
+      d.count += 1;
+      sourceBrowserDuration.set(key, d);
+    });
     const bySource = Array.from(sourceBrowserCount.entries())
       .map(([key, count]) => {
         const [source, browser] = key.split('\t');
-        return { source: source || 'Accès direct', browser: browser || 'Inconnu', count };
+        const d = sourceBrowserDuration.get(key);
+        const avgTimeSeconds = d?.count ? Math.round(d.sum / d.count) : 0;
+        return { source: source || 'Accès direct', browser: browser || 'Inconnu', count, avgTimeSeconds };
       })
       .sort((a, b) => b.count - a.count);
 
     const uniqueVisitorsByPath = new Map<string, Set<string>>();
+    const pathDuration = new Map<string, { sum: number; count: number }>();
     pageviews.forEach((e) => {
       const p = e.path || '/';
       let set = uniqueVisitorsByPath.get(p);
       if (!set) { set = new Set(); uniqueVisitorsByPath.set(p, set); }
       set.add(e.session_id);
+      const dur = e.duration ?? 0;
+      if (dur > 0) {
+        const d = pathDuration.get(p) || { sum: 0, count: 0 };
+        d.sum += dur;
+        d.count += 1;
+        pathDuration.set(p, d);
+      }
     });
     const visitsByPage = Array.from(uniqueVisitorsByPath.entries())
-      .map(([path, set]) => ({ path, uniqueVisitors: set.size }))
+      .map(([path, set]) => {
+        const d = pathDuration.get(path);
+        const avgTimeSeconds = d?.count ? Math.round(d.sum / d.count) : 0;
+        return { path, uniqueVisitors: set.size, avgTimeSeconds };
+      })
       .sort((a, b) => b.uniqueVisitors - a.uniqueVisitors);
 
     return NextResponse.json({

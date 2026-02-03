@@ -23,11 +23,11 @@ type AnalyticsData = {
   };
   trafficLast30Days: { date: string; views: number; visitors: number }[];
   topContent: { path: string; views: number; avgTime: number }[];
-  byCountry: { country: string; count: number }[];
-  byCity: { country: string; city: string; count: number }[];
+  byCountry: { country: string; count: number; avgTimeSeconds?: number }[];
+  byCity: { country: string; city: string; count: number; avgTimeSeconds?: number }[];
   topClicks: { path: string; element_id: string; count: number }[];
-  bySource?: { source: string; browser: string; count: number }[];
-  visitsByPage?: { path: string; uniqueVisitors: number }[];
+  bySource?: { source: string; browser: string; count: number; avgTimeSeconds?: number }[];
+  visitsByPage?: { path: string; uniqueVisitors: number; avgTimeSeconds?: number }[];
   filterApplied: { include: boolean; exclude: boolean };
 };
 
@@ -479,6 +479,7 @@ export default function StatisticsModal({
                           <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
                             <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Pays</th>
                             <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Visites</th>
+                            <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Temps moyen</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -486,6 +487,7 @@ export default function StatisticsModal({
                             <tr key={row.country} style={{ borderBottom: '1px solid #e2e8f0' }}>
                               <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.country}</td>
                               <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.count}</td>
+                              <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{formatDurationSeconds(row.avgTimeSeconds ?? 0)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -500,6 +502,7 @@ export default function StatisticsModal({
                           <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
                             <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Ville / Pays</th>
                             <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Visites</th>
+                            <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Temps moyen</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -507,6 +510,7 @@ export default function StatisticsModal({
                             <tr key={`${row.country}-${row.city}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
                               <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.city} ({row.country})</td>
                               <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.count}</td>
+                              <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{formatDurationSeconds(row.avgTimeSeconds ?? 0)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -553,6 +557,7 @@ export default function StatisticsModal({
                           <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Source</th>
                           <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Navigateur</th>
                           <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Visiteurs</th>
+                          <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Temps moyen</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -561,11 +566,12 @@ export default function StatisticsModal({
                             <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.source}</td>
                             <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.browser ?? 'Inconnu'}</td>
                             <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.count}</td>
+                            <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{formatDurationSeconds(row.avgTimeSeconds ?? 0)}</td>
                           </tr>
                         ))}
                         {(data.bySource ?? []).length === 0 && (
                           <tr>
-                            <td colSpan={3} style={{ padding: '16px 14px', color: '#64748b', textAlign: 'center' }}>Aucune donnée (colonne referrer peut être absente en base)</td>
+                            <td colSpan={4} style={{ padding: '16px 14px', color: '#64748b', textAlign: 'center' }}>Aucune donnée (colonne referrer peut être absente en base)</td>
                           </tr>
                         )}
                       </tbody>
@@ -586,6 +592,7 @@ export default function StatisticsModal({
                         <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
                           <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Page</th>
                           <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Visiteurs uniques</th>
+                          <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Temps moyen</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -593,6 +600,7 @@ export default function StatisticsModal({
                           <tr key={row.path} style={{ borderBottom: '1px solid #e2e8f0' }}>
                             <td style={{ padding: '10px 14px', color: '#1e293b' }}>Page {getPageLabel(row.path || '/')}</td>
                             <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.uniqueVisitors}</td>
+                            <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{formatDurationSeconds(row.avgTimeSeconds ?? 0)}</td>
                           </tr>
                         ))}
                         {(data.visitsByPage ?? []).length === 0 && (
