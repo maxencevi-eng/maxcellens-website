@@ -1,14 +1,10 @@
 "use client";
 import React, { useEffect } from 'react';
 
-function applySettings(page: string | undefined, settingsSite: any) {
+function applySettingsToHero(el: HTMLElement, settingsSite: any) {
   try {
-    const selector = `[data-measure="hero"][data-page="${page}"]`;
-    const el = document.querySelector(selector) as HTMLElement | null;
-    if (!el) return;
     if (settingsSite?.height) el.style.height = `${settingsSite.height.value}${settingsSite.height.unit || '%'}`;
     if (settingsSite?.width) el.style.width = `${settingsSite.width.value}${settingsSite.width.unit || '%'}`;
-    // overlay element
     const overlay = el.querySelector('[class*="overlay"]') as HTMLElement | null;
     if (overlay && settingsSite?.overlay) {
       overlay.style.backgroundColor = settingsSite.overlay.color || '#000';
@@ -17,29 +13,35 @@ function applySettings(page: string | undefined, settingsSite: any) {
   } catch (e) {}
 }
 
+function applyGlobalSettingsToAllHeroes(settingsSite: any) {
+  if (!settingsSite || typeof settingsSite !== 'object') return;
+  document.querySelectorAll('[data-measure="hero"]').forEach((el) => applySettingsToHero(el as HTMLElement, settingsSite));
+}
+
 export default function HeaderRuntime({ page }: { page?: string }) {
   useEffect(() => {
-    const p = page || (document.querySelector('[data-measure="hero"]')?.getAttribute('data-page') || undefined);
-    if (!p) return;
     let mounted = true;
 
     async function load() {
       try {
-        const resp = await fetch(`/api/admin/hero?slug=${encodeURIComponent(p)}&raw=1`);
+        const resp = await fetch('/api/admin/site-settings?keys=header_site_settings');
         if (!resp.ok) return;
         const j = await resp.json();
-        const d = j?.data || {};
-        const s = d?.settings_site || {};
+        const raw = j?.settings?.header_site_settings;
         if (!mounted) return;
-        applySettings(p, s);
+        if (raw && typeof raw === 'string') {
+          try {
+            const s = JSON.parse(raw);
+            applyGlobalSettingsToAllHeroes(s);
+          } catch (_) {}
+        }
       } catch (e) {}
     }
     load();
 
     function onUpdate(e: any) {
       const detail = e?.detail || {};
-      if (detail?.page && detail.page !== p) return;
-      if (detail?.settings_site) applySettings(p, detail.settings_site);
+      if (detail?.settings_site) applyGlobalSettingsToAllHeroes(detail.settings_site);
       else load();
     }
 

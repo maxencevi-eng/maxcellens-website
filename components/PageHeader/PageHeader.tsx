@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './PageHeader.module.css';
-import { getHeaderForPage } from '../../lib/supabaseAdmin';
+import { getHeaderForPage, getGlobalHeaderSiteSettings } from '../../lib/supabaseAdmin';
 import HeroEditorClientWrapper from '../HeroEditor/HeroEditorClientWrapper';
 
 type Props = {
@@ -16,16 +16,15 @@ export default async function PageHeader({ title, subtitle, bgImage, page, bgIma
   let styleBase: React.CSSProperties = bgImage ? { backgroundImage: `url(${bgImage})` } : {};
   let mode: string | null = null;
   let settings: any = {};
-  let settingsSite: any = {};
+  // Réglages globaux (Modifier header) : appliqués à tous les heroes du site
+  const settingsSite = (await getGlobalHeaderSiteSettings()) || {};
 
-  // if a page slug is provided, attempt to read hero settings from headers table
+  // if a page slug is provided, attempt to read hero settings from headers table (image, mode, focus)
   if (page) {
     try {
       const header = await getHeaderForPage(page);
       mode = header?.mode || null;
       settings = header?.settings || {};
-      // settings_site contains editor-controlled layout values (height, width, overlay)
-      settingsSite = header?.settings_site || {};
 
       // compute background position from saved focus, fallback to center
       const focus = settings?.focus;

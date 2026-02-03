@@ -115,3 +115,16 @@ export async function getHeaderForPage(page: string) {
     return null;
   }
 }
+
+/** Réglages header globaux (hauteur, largeur, overlay) appliqués à tous les heroes du site. */
+export async function getGlobalHeaderSiteSettings(): Promise<{ height?: { value: number; unit?: string }; width?: { value: number; unit?: string }; overlay?: { color?: string; opacity?: number } } | null> {
+  if (!supabaseAdmin) return null;
+  try {
+    const { data, error } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'header_site_settings').maybeSingle();
+    if (error || !data?.value || typeof data.value !== 'string') return null;
+    const parsed = JSON.parse(data.value);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}

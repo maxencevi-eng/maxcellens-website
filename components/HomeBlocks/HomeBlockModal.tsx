@@ -266,7 +266,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
           { text: "Des photos naturelles et des souvenirs précieux.", author: "Client", role: "Événement", authorStyle: "p", roleStyle: "p" },
         ]);
       }
-      setQuoteCarouselSpeed(typeof d.carouselSpeed === "number" && d.carouselSpeed >= 2000 ? d.carouselSpeed : 5000);
+      setQuoteCarouselSpeed(typeof d.carouselSpeed === "number" && d.carouselSpeed >= 1000 ? d.carouselSpeed : 5000);
       setQuoteBackgroundColor(d.backgroundColor ?? "");
     }
     if (blockKey === "home_cta") {
@@ -897,14 +897,14 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Vitesse de défilement</label>
                 <input
                   type="number"
-                  min={2}
-                  max={30}
+                  min={1}
+                  max={60}
                   step={1}
                   value={Math.round(quoteCarouselSpeed / 1000)}
-                  onChange={(e) => setQuoteCarouselSpeed(Math.max(2, Math.min(30, Number(e.target.value) || 5)) * 1000)}
+                  onChange={(e) => setQuoteCarouselSpeed(Math.max(1, Math.min(60, Number(e.target.value) || 5)) * 1000)}
                   style={{ ...inputStyle, width: 80 }}
                 />
-                <span style={{ fontSize: 12, color: "var(--muted)", marginLeft: 8 }}>secondes entre chaque rotation</span>
+                <span style={{ fontSize: 12, color: "var(--muted)", marginLeft: 8 }}>s (plus petit = défilement plus rapide, durée d’un cycle)</span>
               </div>
               <div style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <label style={{ fontSize: 13, color: "var(--muted)" }}>Citations (min. 3)</label>

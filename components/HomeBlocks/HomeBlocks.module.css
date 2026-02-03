@@ -623,14 +623,25 @@
 }
 
 .statsGrid {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 2rem;
-  grid-template-columns: repeat(3, 1fr);
   text-align: center;
 }
 
+.statsGrid > * {
+  min-width: 120px;
+}
+
 @media (min-width: 768px) {
-  .statsGrid { grid-template-columns: repeat(5, 1fr); }
+  .statsGrid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+  }
+  .statsGrid > * {
+    min-width: unset;
+  }
 }
 
 .statValue {
@@ -678,26 +689,41 @@
 
 .sectionBlockAlt .sectionBlockDesc { color: #d5d5d5; }
 
-/* ========== Quote (3 citations visibles + points) ========== */
+/* ========== Quote (défilement continu marquee) ========== */
 .quote {
   padding: var(--block-inner-padding-desktop, 24px);
   background: var(--block-bg, var(--bg, #fafaf9));
 }
 
-.quoteCarousel {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem 2rem;
-  margin-bottom: 1.5rem;
+.quoteMarqueeWrap {
+  overflow: hidden;
+  margin-bottom: 0;
 }
 
-@media (max-width: 899px) {
-  .quoteCarousel {
-    grid-template-columns: 1fr;
-  }
+.quoteMarqueeInner {
+  display: flex;
+  width: 200%;
+  animation: quoteMarqueeScroll linear infinite;
+}
+
+@keyframes quoteMarqueeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.quoteMarqueeGroup {
+  display: flex;
+  flex-shrink: 0;
+  width: 50%;
+  gap: 2rem 3rem;
+  padding-right: 2rem;
+  box-sizing: border-box;
 }
 
 .quoteCard {
+  flex-shrink: 0;
+  min-width: 280px;
+  max-width: 340px;
   text-align: center;
   padding: 1rem 0.5rem;
 }
@@ -724,32 +750,6 @@
   margin: 0.25rem 0 0;
 }
 
-.quoteDots {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.quoteDot,
-.quoteDotActive {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
-}
-
-.quoteDot {
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.quoteDotActive {
-  background: var(--fg, #213431);
-  transform: scale(1.15);
-}
 
 /* ========== CTA ========== */
 .cta {

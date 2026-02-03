@@ -77,8 +77,7 @@ export default function HomePageClient() {
   const [portraitSlideDirection, setPortraitSlideDirection] = useState<"next" | "prev">("next");
   const portraitTouchStartX = useRef<number | null>(null);
   const portraitIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
-  const quoteIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0); // kept for possible dots; marquee uses continuous scroll
 
   useEffect(() => {
     let mounted = true;
@@ -149,15 +148,7 @@ export default function HomePageClient() {
   const quoteList = quoteData.quotes;
   const quoteSpeed = Math.max(2000, quoteData.carouselSpeed ?? 5000);
 
-  useEffect(() => {
-    quoteIntervalRef.current = setInterval(() => {
-      setCurrentQuoteIndex((prev) => (prev + 1) % quoteList.length);
-    }, quoteSpeed);
-    return () => {
-      if (quoteIntervalRef.current) clearInterval(quoteIntervalRef.current);
-      quoteIntervalRef.current = null;
-    };
-  }, [quoteList.length, quoteSpeed]);
+  // Défilement continu : plus d’intervalle, le marquee CSS gère l’animation
 
   type BlockData = HomeIntroData | HomeServicesData | HomeStatsData | HomePortraitBlockData | HomeCadreurBlockData | HomeAnimationBlockData | HomeQuoteData | HomeCtaData;
 
@@ -213,6 +204,7 @@ export default function HomePageClient() {
 
   const safeQuoteIndex = Math.max(0, Math.min(currentQuoteIndex, quoteList.length - 1));
   const visibleQuoteIndices = [0, 1, 2].map((i) => (safeQuoteIndex + i) % quoteList.length);
+  const quoteScrollDuration = Math.max(5, Math.min(120, Math.round((quoteData.carouselSpeed ?? 5000) / 1000))); // valeur en secondes = durée d’un cycle (ex. 5 = rapide, 30 = lent)
 
   const btnWrapStyle: React.CSSProperties = { display: 'flex', gap: 8, alignItems: 'center', position: 'absolute', right: 12, top: 12, zIndex: 5 };
 
@@ -541,29 +533,20 @@ export default function HomePageClient() {
                 <BlockOrderButtons page="home" blockId="home_quote" />
               </div>
             )}
-            <div className={styles.quoteCarousel}>
-              {visibleQuoteIndices.map((idx) => {
-                const q = quoteList[idx];
-                if (!q) return null;
-                return (
-                  <div key={idx} className={styles.quoteCard}>
-                    {q.text ? <p className={styles.quoteText}>« {q.text} »</p> : null}
-                    {q.author ? (() => { const Tag = q.authorStyle || "p"; return <Tag className={`${styles.quoteAuthor} style-${Tag}`}>{q.author}</Tag>; })() : null}
-                    {q.role ? (() => { const Tag = q.roleStyle || "p"; return <Tag className={`${styles.quoteRole} style-${Tag}`}>{q.role}</Tag>; })() : null}
+            <div className={styles.quoteMarqueeWrap} aria-label="Citations défilantes">
+              <div className={styles.quoteMarqueeInner} style={{ animationDuration: `${quoteScrollDuration}s` }}>
+                {[0, 1].map((copy) => (
+                  <div key={copy} className={styles.quoteMarqueeGroup}>
+                    {quoteList.map((q, i) => (
+                      <div key={`${copy}-${i}`} className={styles.quoteCard}>
+                        {q.text ? <p className={styles.quoteText}>« {q.text} »</p> : null}
+                        {q.author ? (() => { const Tag = q.authorStyle || "p"; return <Tag className={`${styles.quoteAuthor} style-${Tag}`}>{q.author}</Tag>; })() : null}
+                        {q.role ? (() => { const Tag = q.roleStyle || "p"; return <Tag className={`${styles.quoteRole} style-${Tag}`}>{q.role}</Tag>; })() : null}
+                      </div>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-            <div className={styles.quoteDots} aria-hidden>
-              {quoteList.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className={i === safeQuoteIndex ? styles.quoteDotActive : styles.quoteDot}
-                  onClick={() => setCurrentQuoteIndex(i)}
-                  aria-label={`Citation ${i + 1}`}
-                />
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>

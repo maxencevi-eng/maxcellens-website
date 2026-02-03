@@ -11,30 +11,34 @@ type SettingsSite = {
 function clamp(n: number, a: number, b: number) { return Math.max(a, Math.min(b, n)); }
 
 export default function HeaderSettings({ open, onClose }: { open: boolean; onClose: ()=>void }) {
-  const [page, setPage] = useState<string | undefined>(undefined);
   const [settings, setSettings] = useState<SettingsSite>({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const p = document.querySelector('[data-measure="hero"]')?.getAttribute('data-page') || undefined;
-    setPage(p);
-    if (!p) return;
+    if (!open) return;
     let mounted = true;
     (async () => {
       try {
-        const resp = await fetch(`/api/admin/hero?slug=${encodeURIComponent(p)}&raw=1`);
+        const resp = await fetch('/api/admin/site-settings?keys=header_site_settings');
         if (!resp.ok) return;
         const j = await resp.json();
-        const row = j?.data || {};
+        const raw = j?.settings?.header_site_settings;
         if (!mounted) return;
-        setSettings(row.settings_site || {});
+        if (raw && typeof raw === 'string') {
+          try {
+            setSettings(JSON.parse(raw));
+          } catch (_) {
+            setSettings({});
+          }
+        } else {
+          setSettings({});
+        }
       } catch (e) {}
     })();
-    return ()=>{ mounted=false };
+    return () => { mounted = false; };
   }, [open]);
 
   async function save() {
-    if (!page) return;
     setLoading(true);
     const s: SettingsSite = {
       height: { value: clamp(Number(settings?.height?.value || 50), 10, 200), unit: settings?.height?.unit || '%' },
@@ -43,8 +47,12 @@ export default function HeaderSettings({ open, onClose }: { open: boolean; onClo
     };
 
     try {
-      await fetch('/api/admin/hero', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ page, settings_site: s }) });
-      window.dispatchEvent(new CustomEvent('header-updated', { detail: { page, settings_site: s } }));
+      await fetch('/api/admin/site-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'header_site_settings', value: JSON.stringify(s) }),
+      });
+      window.dispatchEvent(new CustomEvent('header-updated', { detail: { settings_site: s } }));
       onClose();
     } catch (e) {
       console.error(e);
@@ -57,6 +65,7 @@ export default function HeaderSettings({ open, onClose }: { open: boolean; onClo
     <div className={styles.modalBackdrop} onClick={onClose}>
       <div className={styles.modal} onClick={e=>e.stopPropagation()}>
         <h3>Modifier Header</h3>
+        <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 12px' }}>Ces réglages s&apos;appliquent à tous les headers du site.</p>
         <div className={styles.row}>
           <div className={styles.label}>Hauteur (%)</div>
           <input className={styles.input} type="number" value={settings?.height?.value ?? 50} onChange={e=>setSettings(prev=>({ ...prev, height: { ...(prev.height||{}), value: Number(e.target.value) } }))} />
