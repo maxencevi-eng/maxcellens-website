@@ -27,17 +27,29 @@ export async function POST(req: Request) {
     const ip_hash = hashIp(ip);
     const { country, city } = getGeoFromHeaders(req.headers);
 
-    let referrerValue: string | null = (referrer != null && String(referrer).trim() !== '') ? String(referrer).trim() : null;
-    if (event_type === 'pageview' && referrerValue) {
-      const { data: existing } = await supabaseAdmin.from('analytics_sessions').select('referrer').eq('session_id', session_id).maybeSingle();
-      const existingReferrer = (existing as { referrer?: string } | null)?.referrer;
-      if (existingReferrer) referrerValue = existingReferrer;
-    } else {
-      const { data: existing } = await supabaseAdmin.from('analytics_sessions').select('referrer').eq('session_id', session_id).maybeSingle();
-      referrerValue = (existing as { referrer?: string } | null)?.referrer ?? null;
+    let referrerValue: string | null = null;
+    let includeReferrerInRow = false;
+    try {
+      const refFromClient = (referrer != null && String(referrer).trim() !== '') ? String(referrer).trim() : null;
+      if (event_type === 'pageview' && refFromClient) {
+        const { data: existing, error } = await supabaseAdmin.from('analytics_sessions').select('referrer').eq('session_id', session_id).maybeSingle();
+        if (!error) {
+          const existingReferrer = (existing as { referrer?: string } | null)?.referrer;
+          referrerValue = existingReferrer ? existingReferrer : refFromClient;
+          includeReferrerInRow = true;
+        }
+      } else {
+        const { data: existing, error } = await supabaseAdmin.from('analytics_sessions').select('referrer').eq('session_id', session_id).maybeSingle();
+        if (!error) {
+          referrerValue = (existing as { referrer?: string } | null)?.referrer ?? null;
+          includeReferrerInRow = true;
+        }
+      }
+    } catch (_) {
+      // Colonne referrer absente ou autre erreur : on n'envoie pas referrer pour ne pas faire échouer l'upsert
     }
 
-    const sessionRow = {
+    const sessionRow: Record<string, unknown> = {
       session_id,
       ip_hash,
       device: sessionInfo?.device ?? null,
@@ -46,9 +58,9 @@ export async function POST(req: Request) {
       country: country ?? null,
       city: city ?? null,
       is_authenticated: is_authenticated === true,
-      referrer: referrerValue,
       updated_at: new Date().toISOString(),
     };
+    if (includeReferrerInRow) sessionRow.referrer = referrerValue;
 
     const { error: sessionError } = await supabaseAdmin
       .from('analytics_sessions')

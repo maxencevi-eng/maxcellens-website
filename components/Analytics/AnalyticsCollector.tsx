@@ -24,12 +24,20 @@ export default function AnalyticsCollector() {
       if (!mounted) return;
       isAuthenticatedRef.current = !!session?.user;
       setAuthChecked(true);
+    }).catch(() => {
+      if (!mounted) return;
+      setAuthChecked(true);
     });
+    const fallback = setTimeout(() => {
+      if (!mounted) return;
+      setAuthChecked((prev) => prev || true);
+    }, 2000);
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       isAuthenticatedRef.current = !!session?.user;
     });
     return () => {
       mounted = false;
+      clearTimeout(fallback);
       try { (sub as any)?.subscription?.unsubscribe?.(); } catch (_) {}
     };
   }, []);
