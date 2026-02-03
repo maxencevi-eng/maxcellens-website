@@ -46,6 +46,13 @@ export default function AnalyticsCollector() {
     if (typeof window === 'undefined' || !authChecked) return;
     if (isAuthenticatedRef.current) return; // Ne pas envoyer de pageview si connecté
     const path = pathname || window.location.pathname || '/';
+    // En navigation in-app : envoyer le "leave" de la page précédente avec la durée avant de changer de page
+    const prevPath = pathRef.current;
+    if (prevPath != null && prevPath !== path) {
+      const duration = getTimeOnPageSeconds();
+      const payload = buildPageviewPayload(prevPath, duration, false);
+      sendToCollect(payload, true);
+    }
     setPageEnterTime();
     pathRef.current = path;
     trackPageview(path, undefined, false);

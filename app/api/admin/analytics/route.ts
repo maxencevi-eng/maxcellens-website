@@ -113,7 +113,10 @@ export async function GET(req: Request) {
     const totalViews = pageviews.length;
     const uniqueVisitors = new Set(sessions.map((s) => s.session_id)).size;
     const totalDuration = pageviews.reduce((acc, e) => acc + (e.duration ?? 0), 0);
-    const avgTimePerPage = totalViews ? Math.round(totalDuration / totalViews) : 0;
+    const pageviewsWithDuration = pageviews.filter((e) => e.duration != null && e.duration > 0);
+    const avgTimePerPage = pageviewsWithDuration.length
+      ? Math.round(totalDuration / pageviewsWithDuration.length)
+      : 0;
     const singlePageSessions = new Set<string>();
     const pvBySession = new Map<string, number>();
     pageviews.forEach((e) => pvBySession.set(e.session_id, (pvBySession.get(e.session_id) || 0) + 1));
