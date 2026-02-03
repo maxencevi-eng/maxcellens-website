@@ -315,7 +315,7 @@ export default function AnimationPageClient() {
               </div>
             </div>
             <div className={styles.ctaButtonWrap}>
-              <Link href={cta.buttonHref || "/contact"} className={`${styles.ctaButton} btn-site-${cta.buttonStyle || "1"}`}>
+              <Link href={cta.buttonHref || "/contact"} className={`${styles.ctaButton} btn-site-${cta.buttonStyle || "1"}`} data-analytics-id="Animation|CTA Contact">
                 {cta.buttonLabel || "En discuter ensemble"}
               </Link>
             </div>

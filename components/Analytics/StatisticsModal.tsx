@@ -28,20 +28,24 @@ type AnalyticsData = {
   topClicks: { path: string; element_id: string; count: number }[];
   bySource?: { source: string; browser: string; count: number; avgTimeSeconds?: number }[];
   visitsByPage?: { path: string; uniqueVisitors: number; avgTimeSeconds?: number }[];
+  visitors?: { ip: string | null; ip_hash: string | null; country: string; city: string; sessionCount: number }[];
   filterApplied: { include: boolean; exclude: boolean };
 };
 
-type IpFilter = { include: string[]; exclude: string[] };
+const PAGE_SIZE = 20;
 
-const defaultFilter: IpFilter = { include: [], exclude: [] };
+type IpFilter = { include: string[]; exclude: string[]; excludeHashes?: string[] };
+
+const defaultFilter: IpFilter = { include: [], exclude: [], excludeHashes: [] };
 
 function parseFilter(val: unknown): IpFilter {
   if (!val || typeof val !== 'string') return defaultFilter;
   try {
-    const p = JSON.parse(val) as { include?: string[]; exclude?: string[] };
+    const p = JSON.parse(val) as { include?: string[]; exclude?: string[]; excludeHashes?: string[] };
     return {
       include: Array.isArray(p.include) ? p.include : [],
       exclude: Array.isArray(p.exclude) ? p.exclude : [],
+      excludeHashes: Array.isArray(p.excludeHashes) ? p.excludeHashes : [],
     };
   } catch {
     return defaultFilter;
@@ -63,8 +67,19 @@ export default function StatisticsModal({
   const [savingFilter, setSavingFilter] = useState(false);
   const [filterTab, setFilterTab] = useState<'include' | 'exclude'>('include');
   const [lastSavedFilter, setLastSavedFilter] = useState<IpFilter>(defaultFilter);
-  const [dataTab, setDataTab] = useState<'content' | 'geo' | 'clicks' | 'source' | 'visitsByPage'>('content');
+  const [dataTab, setDataTab] = useState<'content' | 'geo' | 'clicks' | 'source' | 'visitsByPage' | 'visitors'>('content');
   const [myIp, setMyIp] = useState<string | null>(null);
+  const [selectedVisitorHashes, setSelectedVisitorHashes] = useState<Set<string>>(new Set());
+  const [hashAddedFeedback, setHashAddedFeedback] = useState<string | null>(null);
+  const [purgingHashes, setPurgingHashes] = useState(false);
+  const [purgeHashResult, setPurgeHashResult] = useState<string | null>(null);
+  const [pageContent, setPageContent] = useState(1);
+  const [pageGeoCountry, setPageGeoCountry] = useState(1);
+  const [pageGeoCity, setPageGeoCity] = useState(1);
+  const [pageClicks, setPageClicks] = useState(1);
+  const [pageSource, setPageSource] = useState(1);
+  const [pageVisitsByPage, setPageVisitsByPage] = useState(1);
+  const [pageVisitors, setPageVisitors] = useState(1);
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
@@ -185,6 +200,96 @@ export default function StatisticsModal({
     return sec > 0 ? `${min} min ${sec} s` : `${min} min`;
   };
 
+  const formatCity = (raw: string) => {
+    if (!raw || typeof raw !== 'string') return raw ?? '';
+    try {
+      return decodeURIComponent(String(raw).replace(/\+/g, ' '));
+    } catch {
+      return raw;
+    }
+  };
+
+  const addIpToExclude = (ip: string | null) => {
+    if (!ip || !ip.trim()) return;
+    setIpFilter((prev) => ({
+      ...prev,
+      exclude: prev.exclude.includes(ip) ? prev.exclude : [...prev.exclude, ip],
+    }));
+    setFilterTab('exclude');
+    setFilterDirty(true);
+  };
+
+  const addHashToExclude = (ip_hash: string | null) => {
+    if (!ip_hash?.trim()) return;
+    setIpFilter((prev) => {
+      const list = prev.excludeHashes ?? [];
+      if (list.includes(ip_hash)) return prev;
+      return { ...prev, excludeHashes: [...list, ip_hash] };
+    });
+    setHashAddedFeedback(ip_hash.slice(0, 12) + '… ajouté');
+    setTimeout(() => setHashAddedFeedback(null), 2500);
+    setFilterDirty(true);
+  };
+
+  const addHashesToExclude = (hashes: string[]) => {
+    const toAdd = hashes.filter((h) => h?.trim());
+    if (toAdd.length === 0) return;
+    setIpFilter((prev) => {
+      const list = prev.excludeHashes ?? [];
+      const set = new Set(list);
+      toAdd.forEach((h) => set.add(h));
+      return { ...prev, excludeHashes: Array.from(set) };
+    });
+    setSelectedVisitorHashes(new Set());
+    setFilterDirty(true);
+  };
+
+  const removeHashFromExclude = (hash: string) => {
+    setIpFilter((prev) => ({
+      ...prev,
+      excludeHashes: (prev.excludeHashes ?? []).filter((h) => h !== hash),
+    }));
+    setFilterDirty(true);
+  };
+
+  const runPurgeHashes = async () => {
+    const hashes = ipFilter.excludeHashes ?? [];
+    if (hashes.length === 0) {
+      setPurgeHashResult('Aucun hash à purger. Ajoutez des hash dans "Exclure Hash" puis enregistrez.');
+      return;
+    }
+    if (!confirm(`Supprimer définitivement les sessions et événements pour ${hashes.length} hash ?`)) return;
+    setPurgingHashes(true);
+    setPurgeHashResult(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) {
+        setPurgeHashResult('Non connecté');
+        return;
+      }
+      const res = await fetch('/api/admin/analytics/purge', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hashes }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPurgeHashResult(json?.error || `Erreur ${res.status}`);
+        return;
+      }
+      const count = json?.deleted ?? 0;
+      setPurgeHashResult(`${count} session(s) supprimée(s) pour ${hashes.length} hash.`);
+      setIpFilter((prev) => ({ ...prev, excludeHashes: [] }));
+      setFilterDirty(true);
+      fetchAnalytics();
+    } catch (e: unknown) {
+      setPurgeHashResult(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPurgingHashes(false);
+    }
+  };
+
   const PAGE_LABELS: Record<string, string> = {
     '/': 'Accueil',
     '/contact': 'Contact',
@@ -218,8 +323,10 @@ export default function StatisticsModal({
     'menu mobile': 'Menu mobile',
     'image': 'Image',
     'image galerie': 'Image galerie',
+    'vidéo galerie': 'Vidéo galerie',
+    'photo galerie': 'Photo galerie',
     'élément': 'Élément',
-    'id': 'Élément',
+    'id': 'Clic identifié',
     'inconnu': 'Inconnu',
   };
 
@@ -441,6 +548,21 @@ export default function StatisticsModal({
                 >
                   Visites par page
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setDataTab('visitors')}
+                  style={{
+                    padding: '8px 16px',
+                    border: `2px solid ${dataTab === 'visitors' ? '#2563eb' : '#cbd5e1'}`,
+                    background: dataTab === 'visitors' ? '#eff6ff' : '#f8fafc',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    fontWeight: dataTab === 'visitors' ? 600 : 500,
+                    color: dataTab === 'visitors' ? '#1d4ed8' : '#475569',
+                  }}
+                >
+                  Visiteurs
+                </button>
               </div>
 
               {dataTab === 'content' && (
@@ -456,7 +578,7 @@ export default function StatisticsModal({
                         </tr>
                       </thead>
                       <tbody>
-                        {data.topContent.map((row) => (
+                        {(data.topContent.slice((pageContent - 1) * PAGE_SIZE, pageContent * PAGE_SIZE)).map((row) => (
                           <tr key={row.path} style={{ borderBottom: '1px solid #e2e8f0' }}>
                             <td style={{ padding: '10px 14px', color: '#1e293b' }}>Page {getPageLabel(row.path || '/')}</td>
                             <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.views}</td>
@@ -466,6 +588,13 @@ export default function StatisticsModal({
                       </tbody>
                     </table>
                   </div>
+                  {data.topContent.length > PAGE_SIZE && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, fontSize: 14 }}>
+                      <button type="button" onClick={() => setPageContent((p) => Math.max(1, p - 1))} disabled={pageContent <= 1} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageContent <= 1 ? 'not-allowed' : 'pointer', opacity: pageContent <= 1 ? 0.6 : 1 }}>Précédent</button>
+                      <span style={{ color: '#475569' }}>Page {pageContent} / {Math.ceil(data.topContent.length / PAGE_SIZE)}</span>
+                      <button type="button" onClick={() => setPageContent((p) => Math.min(Math.ceil(data.topContent.length / PAGE_SIZE), p + 1))} disabled={pageContent >= Math.ceil(data.topContent.length / PAGE_SIZE)} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageContent >= Math.ceil(data.topContent.length / PAGE_SIZE) ? 'not-allowed' : 'pointer', opacity: pageContent >= Math.ceil(data.topContent.length / PAGE_SIZE) ? 0.6 : 1 }}>Suivant</button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -483,9 +612,9 @@ export default function StatisticsModal({
                           </tr>
                         </thead>
                         <tbody>
-                          {data.byCountry.map((row) => (
+                          {data.byCountry.slice((pageGeoCountry - 1) * PAGE_SIZE, pageGeoCountry * PAGE_SIZE).map((row) => (
                             <tr key={row.country} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                              <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.country}</td>
+                              <td style={{ padding: '10px 14px', color: '#1e293b' }}>{formatCity(row.country)}</td>
                               <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.count}</td>
                               <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{formatDurationSeconds(row.avgTimeSeconds ?? 0)}</td>
                             </tr>
@@ -493,6 +622,13 @@ export default function StatisticsModal({
                         </tbody>
                       </table>
                     </div>
+                    {data.byCountry.length > PAGE_SIZE && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, fontSize: 14 }}>
+                        <button type="button" onClick={() => setPageGeoCountry((p) => Math.max(1, p - 1))} disabled={pageGeoCountry <= 1} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageGeoCountry <= 1 ? 'not-allowed' : 'pointer', opacity: pageGeoCountry <= 1 ? 0.6 : 1 }}>Précédent</button>
+                        <span style={{ color: '#475569' }}>Page {pageGeoCountry} / {Math.ceil(data.byCountry.length / PAGE_SIZE)}</span>
+                        <button type="button" onClick={() => setPageGeoCountry((p) => Math.min(Math.ceil(data.byCountry.length / PAGE_SIZE), p + 1))} disabled={pageGeoCountry >= Math.ceil(data.byCountry.length / PAGE_SIZE)} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageGeoCountry >= Math.ceil(data.byCountry.length / PAGE_SIZE) ? 'not-allowed' : 'pointer', opacity: pageGeoCountry >= Math.ceil(data.byCountry.length / PAGE_SIZE) ? 0.6 : 1 }}>Suivant</button>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <h3 className={styles.sectionTitle} style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Par ville</h3>
@@ -506,9 +642,9 @@ export default function StatisticsModal({
                           </tr>
                         </thead>
                         <tbody>
-                          {data.byCity.map((row) => (
+                          {data.byCity.slice((pageGeoCity - 1) * PAGE_SIZE, pageGeoCity * PAGE_SIZE).map((row) => (
                             <tr key={`${row.country}-${row.city}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                              <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.city} ({row.country})</td>
+                              <td style={{ padding: '10px 14px', color: '#1e293b' }}>{formatCity(row.city)} ({formatCity(row.country)})</td>
                               <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.count}</td>
                               <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{formatDurationSeconds(row.avgTimeSeconds ?? 0)}</td>
                             </tr>
@@ -516,6 +652,13 @@ export default function StatisticsModal({
                         </tbody>
                       </table>
                     </div>
+                    {data.byCity.length > PAGE_SIZE && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, fontSize: 14 }}>
+                        <button type="button" onClick={() => setPageGeoCity((p) => Math.max(1, p - 1))} disabled={pageGeoCity <= 1} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageGeoCity <= 1 ? 'not-allowed' : 'pointer', opacity: pageGeoCity <= 1 ? 0.6 : 1 }}>Précédent</button>
+                        <span style={{ color: '#475569' }}>Page {pageGeoCity} / {Math.ceil(data.byCity.length / PAGE_SIZE)}</span>
+                        <button type="button" onClick={() => setPageGeoCity((p) => Math.min(Math.ceil(data.byCity.length / PAGE_SIZE), p + 1))} disabled={pageGeoCity >= Math.ceil(data.byCity.length / PAGE_SIZE)} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageGeoCity >= Math.ceil(data.byCity.length / PAGE_SIZE) ? 'not-allowed' : 'pointer', opacity: pageGeoCity >= Math.ceil(data.byCity.length / PAGE_SIZE) ? 0.6 : 1 }}>Suivant</button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -532,7 +675,7 @@ export default function StatisticsModal({
                         </tr>
                       </thead>
                       <tbody>
-                        {data.topClicks.map((row) => (
+                        {(data.topClicks.slice((pageClicks - 1) * PAGE_SIZE, pageClicks * PAGE_SIZE)).map((row) => (
                           <tr key={`${row.path ?? '/'}\t${row.element_id}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
                             <td style={{ padding: '10px 14px', color: '#1e293b' }} title={`${getPageLabel(row.path ?? '/')} — ${row.element_id}`}>{formatClickRow(row.path, row.element_id)}</td>
                             <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.count}</td>
@@ -541,6 +684,13 @@ export default function StatisticsModal({
                       </tbody>
                     </table>
                   </div>
+                  {data.topClicks.length > PAGE_SIZE && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, fontSize: 14 }}>
+                      <button type="button" onClick={() => setPageClicks((p) => Math.max(1, p - 1))} disabled={pageClicks <= 1} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageClicks <= 1 ? 'not-allowed' : 'pointer', opacity: pageClicks <= 1 ? 0.6 : 1 }}>Précédent</button>
+                      <span style={{ color: '#475569' }}>Page {pageClicks} / {Math.ceil(data.topClicks.length / PAGE_SIZE)}</span>
+                      <button type="button" onClick={() => setPageClicks((p) => Math.min(Math.ceil(data.topClicks.length / PAGE_SIZE), p + 1))} disabled={pageClicks >= Math.ceil(data.topClicks.length / PAGE_SIZE)} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageClicks >= Math.ceil(data.topClicks.length / PAGE_SIZE) ? 'not-allowed' : 'pointer', opacity: pageClicks >= Math.ceil(data.topClicks.length / PAGE_SIZE) ? 0.6 : 1 }}>Suivant</button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -561,7 +711,7 @@ export default function StatisticsModal({
                         </tr>
                       </thead>
                       <tbody>
-                        {(data.bySource ?? []).map((row, i) => (
+                        {((data.bySource ?? []).slice((pageSource - 1) * PAGE_SIZE, pageSource * PAGE_SIZE)).map((row, i) => (
                           <tr key={`${row.source}-${row.browser}-${i}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
                             <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.source}</td>
                             <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.browser ?? 'Inconnu'}</td>
@@ -577,6 +727,13 @@ export default function StatisticsModal({
                       </tbody>
                     </table>
                   </div>
+                  {(data.bySource ?? []).length > PAGE_SIZE && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, fontSize: 14 }}>
+                      <button type="button" onClick={() => setPageSource((p) => Math.max(1, p - 1))} disabled={pageSource <= 1} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageSource <= 1 ? 'not-allowed' : 'pointer', opacity: pageSource <= 1 ? 0.6 : 1 }}>Précédent</button>
+                      <span style={{ color: '#475569' }}>Page {pageSource} / {Math.ceil((data.bySource ?? []).length / PAGE_SIZE)}</span>
+                      <button type="button" onClick={() => setPageSource((p) => Math.min(Math.ceil((data.bySource ?? []).length / PAGE_SIZE), p + 1))} disabled={pageSource >= Math.ceil((data.bySource ?? []).length / PAGE_SIZE)} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageSource >= Math.ceil((data.bySource ?? []).length / PAGE_SIZE) ? 'not-allowed' : 'pointer', opacity: pageSource >= Math.ceil((data.bySource ?? []).length / PAGE_SIZE) ? 0.6 : 1 }}>Suivant</button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -596,7 +753,7 @@ export default function StatisticsModal({
                         </tr>
                       </thead>
                       <tbody>
-                        {(data.visitsByPage ?? []).map((row) => (
+                        {((data.visitsByPage ?? []).slice((pageVisitsByPage - 1) * PAGE_SIZE, pageVisitsByPage * PAGE_SIZE)).map((row) => (
                           <tr key={row.path} style={{ borderBottom: '1px solid #e2e8f0' }}>
                             <td style={{ padding: '10px 14px', color: '#1e293b' }}>Page {getPageLabel(row.path || '/')}</td>
                             <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.uniqueVisitors}</td>
@@ -605,12 +762,149 @@ export default function StatisticsModal({
                         ))}
                         {(data.visitsByPage ?? []).length === 0 && (
                           <tr>
-                            <td colSpan={2} style={{ padding: '16px 14px', color: '#64748b', textAlign: 'center' }}>Aucune donnée</td>
+                            <td colSpan={3} style={{ padding: '16px 14px', color: '#64748b', textAlign: 'center' }}>Aucune donnée</td>
                           </tr>
                         )}
                       </tbody>
                     </table>
                   </div>
+                  {(data.visitsByPage ?? []).length > PAGE_SIZE && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, fontSize: 14 }}>
+                      <button type="button" onClick={() => setPageVisitsByPage((p) => Math.max(1, p - 1))} disabled={pageVisitsByPage <= 1} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageVisitsByPage <= 1 ? 'not-allowed' : 'pointer', opacity: pageVisitsByPage <= 1 ? 0.6 : 1 }}>Précédent</button>
+                      <span style={{ color: '#475569' }}>Page {pageVisitsByPage} / {Math.ceil((data.visitsByPage ?? []).length / PAGE_SIZE)}</span>
+                      <button type="button" onClick={() => setPageVisitsByPage((p) => Math.min(Math.ceil((data.visitsByPage ?? []).length / PAGE_SIZE), p + 1))} disabled={pageVisitsByPage >= Math.ceil((data.visitsByPage ?? []).length / PAGE_SIZE)} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageVisitsByPage >= Math.ceil((data.visitsByPage ?? []).length / PAGE_SIZE) ? 'not-allowed' : 'pointer', opacity: pageVisitsByPage >= Math.ceil((data.visitsByPage ?? []).length / PAGE_SIZE) ? 0.6 : 1 }}>Suivant</button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {dataTab === 'visitors' && (
+                <div>
+                  <h3 className={styles.sectionTitle} style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Visiteurs</h3>
+                  <p style={{ fontSize: 13, color: '#475569', marginBottom: 12, lineHeight: 1.5 }}>
+                    Liste des visiteurs (IP, pays, ville) sur la période. Utilisez &quot;Exclure cette IP&quot; ou &quot;Exclure ce visiteur&quot; (si l&apos;IP n&apos;est pas affichée) pour retirer crawlers, trackers ou votre IP des stats, puis enregistrez le filtre ci-dessous. L&apos;IP peut rester vide si la migration Supabase (colonne ip) n&apos;a pas été exécutée.
+                  </p>
+                  {(data.visitors ?? []).length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const visitors = data.visitors ?? [];
+                          const selectedCountriesCities = new Set<string>();
+                          selectedVisitorHashes.forEach((hash) => {
+                            const row = visitors.find((r) => r.ip_hash === hash);
+                            if (row) selectedCountriesCities.add(`${formatCity(row.country)}\t${formatCity(row.city)}`);
+                          });
+                          if (selectedCountriesCities.size === 0) return;
+                          const toAdd = visitors
+                            .filter((r) => r.ip_hash && selectedCountriesCities.has(`${formatCity(r.country)}\t${formatCity(r.city)}`))
+                            .map((r) => r.ip_hash!);
+                          setSelectedVisitorHashes((prev) => new Set([...prev, ...toAdd]));
+                        }}
+                        disabled={selectedVisitorHashes.size === 0}
+                        style={{ padding: '6px 12px', fontSize: 12, background: selectedVisitorHashes.size ? '#e0e7ff' : '#f1f5f9', color: selectedVisitorHashes.size ? '#3730a3' : '#94a3b8', border: `1px solid ${selectedVisitorHashes.size ? '#a5b4fc' : '#e2e8f0'}`, borderRadius: 6, cursor: selectedVisitorHashes.size ? 'pointer' : 'not-allowed', fontWeight: 500 }}
+                      >
+                        Sélectionner même pays+ville que la sélection
+                      </button>
+                      <button
+                        type="button"
+                        disabled={selectedVisitorHashes.size === 0}
+                        onClick={() => addHashesToExclude(Array.from(selectedVisitorHashes))}
+                        style={{ padding: '6px 12px', fontSize: 12, background: selectedVisitorHashes.size ? '#fef3c7' : '#f1f5f9', color: selectedVisitorHashes.size ? '#92400e' : '#94a3b8', border: `1px solid ${selectedVisitorHashes.size ? '#fcd34d' : '#e2e8f0'}`, borderRadius: 6, cursor: selectedVisitorHashes.size ? 'pointer' : 'not-allowed', fontWeight: 500 }}
+                      >
+                        Exclure les visiteurs sélectionnés ({selectedVisitorHashes.size})
+                      </button>
+                      {selectedVisitorHashes.size > 0 && (
+                        <button type="button" onClick={() => setSelectedVisitorHashes(new Set())} style={{ padding: '6px 12px', fontSize: 12, background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: 6, cursor: 'pointer' }}>
+                          Désélectionner tout
+                        </button>
+                      )}
+                      {hashAddedFeedback && (
+                        <span style={{ fontSize: 12, color: '#059669', fontWeight: 500 }}>{hashAddedFeedback}</span>
+                      )}
+                    </div>
+                  )}
+                  <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                      <thead>
+                        <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                          <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600, width: 40 }}>Sel.</th>
+                          <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>IP</th>
+                          <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Pays</th>
+                          <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Ville</th>
+                          <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Visites</th>
+                          <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {((data.visitors ?? []).slice((pageVisitors - 1) * PAGE_SIZE, pageVisitors * PAGE_SIZE)).map((row, i) => {
+                          const hasHash = !!row.ip_hash;
+                          const isSelected = hasHash && selectedVisitorHashes.has(row.ip_hash!);
+                          return (
+                            <tr key={`${row.ip_hash ?? row.ip ?? ''}-${row.country}-${row.city}-${i}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                              <td style={{ padding: '10px 14px', color: '#1e293b' }}>
+                                {hasHash ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => {
+                                      setSelectedVisitorHashes((prev) => {
+                                        const next = new Set(prev);
+                                        if (next.has(row.ip_hash!)) next.delete(row.ip_hash!);
+                                        else next.add(row.ip_hash!);
+                                        return next;
+                                      });
+                                    }}
+                                    aria-label={`Sélectionner ${formatCity(row.country)} ${formatCity(row.city)}`}
+                                  />
+                                ) : (
+                                  <span style={{ color: '#cbd5e1' }}>—</span>
+                                )}
+                              </td>
+                              <td style={{ padding: '10px 14px', color: '#1e293b', fontFamily: 'monospace', fontSize: 13 }}>{row.ip ?? '—'}</td>
+                              <td style={{ padding: '10px 14px', color: '#1e293b' }}>{formatCity(row.country)}</td>
+                              <td style={{ padding: '10px 14px', color: '#1e293b' }}>{formatCity(row.city)}</td>
+                              <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.sessionCount}</td>
+                              <td style={{ padding: '10px 14px', color: '#1e293b' }}>
+                                {row.ip ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => addIpToExclude(row.ip)}
+                                    style={{ padding: '4px 10px', fontSize: 12, background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: 6, cursor: 'pointer', fontWeight: 500 }}
+                                  >
+                                    Exclure cette IP
+                                  </button>
+                                ) : row.ip_hash ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => addHashToExclude(row.ip_hash)}
+                                    style={{ padding: '4px 10px', fontSize: 12, background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d', borderRadius: 6, cursor: 'pointer', fontWeight: 500 }}
+                                    title="Exclure ce visiteur (IP non enregistrée, exclusion par identifiant)"
+                                  >
+                                    Exclure ce visiteur
+                                  </button>
+                                ) : (
+                                  <span style={{ fontSize: 12, color: '#94a3b8' }}>—</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {(data.visitors ?? []).length === 0 && (
+                          <tr>
+                            <td colSpan={6} style={{ padding: '16px 14px', color: '#64748b', textAlign: 'center' }}>Aucun visiteur sur la période (ou colonne IP non migrée)</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  {(data.visitors ?? []).length > PAGE_SIZE && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10, fontSize: 14 }}>
+                      <button type="button" onClick={() => setPageVisitors((p) => Math.max(1, p - 1))} disabled={pageVisitors <= 1} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageVisitors <= 1 ? 'not-allowed' : 'pointer', opacity: pageVisitors <= 1 ? 0.6 : 1 }}>Précédent</button>
+                      <span style={{ color: '#475569' }}>Page {pageVisitors} / {Math.ceil((data.visitors ?? []).length / PAGE_SIZE)}</span>
+                      <button type="button" onClick={() => setPageVisitors((p) => Math.min(Math.ceil((data.visitors ?? []).length / PAGE_SIZE), p + 1))} disabled={pageVisitors >= Math.ceil((data.visitors ?? []).length / PAGE_SIZE)} style={{ padding: '6px 12px', border: '1px solid #cbd5e1', borderRadius: 6, background: '#fff', cursor: pageVisitors >= Math.ceil((data.visitors ?? []).length / PAGE_SIZE) ? 'not-allowed' : 'pointer', opacity: pageVisitors >= Math.ceil((data.visitors ?? []).length / PAGE_SIZE) ? 0.6 : 1 }}>Suivant</button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -691,6 +985,59 @@ export default function StatisticsModal({
                   style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #cbd5e1', fontFamily: 'monospace', fontSize: 13, color: '#1e293b' }}
                 />
               </div>
+
+              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 16, marginTop: 8, marginBottom: 12 }}>
+                <h4 style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 600, color: '#92400e' }}>Exclure Hash</h4>
+                <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8, lineHeight: 1.4 }}>
+                  Hash des visiteurs à exclure des stats (ajoutés via &quot;Exclure ce visiteur&quot; ou &quot;Exclure les visiteurs sélectionnés&quot;). Gérés séparément des IP. Utilisez &quot;Purge Hash&quot; pour supprimer en base les données de ces hash.
+                </p>
+                <div style={{ marginBottom: 8 }}>
+                  <textarea
+                    value={(ipFilter.excludeHashes ?? []).join('\n')}
+                    onChange={(e) => {
+                      const list = e.target.value.split(/\n/).map((s) => s.trim()).filter(Boolean);
+                      setIpFilter((prev) => ({ ...prev, excludeHashes: list }));
+                      setFilterDirty(true);
+                    }}
+                    rows={3}
+                    placeholder="Hash ajoutés via Exclure ce visiteur ou Exclure les visiteurs sélectionnés"
+                    style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #fcd34d', fontFamily: 'monospace', fontSize: 11, color: '#1e293b', background: '#fffbeb' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const h = (ipFilter.excludeHashes ?? []).join('\n');
+                      if (h) {
+                        navigator.clipboard.writeText(h).then(() => setPurgeHashResult('Hash copiés dans le presse-papier.')).catch(() => setPurgeHashResult('Erreur copie'));
+                        setTimeout(() => setPurgeHashResult(null), 3000);
+                      }
+                    }}
+                    disabled={(ipFilter.excludeHashes ?? []).length === 0}
+                    style={{ padding: '6px 12px', fontSize: 12, background: (ipFilter.excludeHashes ?? []).length ? '#fef3c7' : '#f1f5f9', color: (ipFilter.excludeHashes ?? []).length ? '#92400e' : '#94a3b8', border: '1px solid #fcd34d', borderRadius: 6, cursor: (ipFilter.excludeHashes ?? []).length ? 'pointer' : 'not-allowed' }}
+                  >
+                    Copier les hash
+                  </button>
+                  <button
+                    type="button"
+                    onClick={runPurgeHashes}
+                    disabled={purgingHashes || (ipFilter.excludeHashes ?? []).length === 0}
+                    style={{ padding: '6px 12px', fontSize: 12, background: purgingHashes || (ipFilter.excludeHashes ?? []).length === 0 ? '#f1f5f9' : '#dc2626', color: purgingHashes || (ipFilter.excludeHashes ?? []).length === 0 ? '#94a3b8' : '#fff', border: 'none', borderRadius: 6, cursor: purgingHashes || (ipFilter.excludeHashes ?? []).length === 0 ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+                  >
+                    {purgingHashes ? 'Purge en cours…' : 'Purge Hash (supprimer les données de ces hash)'}
+                  </button>
+                  {purgeHashResult && (
+                    <span style={{ fontSize: 12, color: purgeHashResult.startsWith('Erreur') || purgeHashResult.includes('Aucun') ? '#dc2626' : '#059669' }}>{purgeHashResult}</span>
+                  )}
+                </div>
+                {(ipFilter.excludeHashes ?? []).length > 0 && (
+                  <p style={{ fontSize: 11, color: '#64748b', marginTop: 6 }}>
+                    {(ipFilter.excludeHashes ?? []).length} hash. Cliquez sur &quot;Enregistrer le filtre&quot; ci-dessous pour persister l&apos;exclusion dans les stats.
+                  </p>
+                )}
+              </div>
+
               {filterDirty && (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button

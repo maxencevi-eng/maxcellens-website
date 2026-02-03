@@ -291,12 +291,12 @@ export default function Footer() {
     <div className={`${styles.col} ${styles.colServices}`} key="colServices">
       <h4>Services</h4>
       <ul className={styles.list}>
-        {(!footerMenuVisible || footerMenuVisible.realisation) && <li><Link href="/realisation">Réalisation</Link></li>}
-        {(!footerMenuVisible || footerMenuVisible.evenement) && <li><Link href="/evenement">Évènement</Link></li>}
-        {(!footerMenuVisible || footerMenuVisible.corporate) && <li><Link href="/corporate">Corporate</Link></li>}
-        {(!footerMenuVisible || footerMenuVisible.portrait) && <li><Link href="/portrait">Portrait</Link></li>}
-        {(!footerMenuVisible || footerMenuVisible.animation) && <li><Link href="/animation">Animation</Link></li>}
-        {(!footerMenuVisible || footerMenuVisible.galleries) && <li><Link href="/galeries">Galeries</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.realisation) && <li><Link href="/realisation" data-analytics-id="Footer|Réalisation">Réalisation</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.evenement) && <li><Link href="/evenement" data-analytics-id="Footer|Évènement">Évènement</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.corporate) && <li><Link href="/corporate" data-analytics-id="Footer|Corporate">Corporate</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.portrait) && <li><Link href="/portrait" data-analytics-id="Footer|Portrait">Portrait</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.animation) && <li><Link href="/animation" data-analytics-id="Footer|Animation">Animation</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.galleries) && <li><Link href="/galeries" data-analytics-id="Footer|Galeries">Galeries</Link></li>}
       </ul>
     </div>
   );
@@ -307,8 +307,8 @@ export default function Footer() {
     <div className={`${styles.col} ${styles.colInfo}`} key="colInfo">
       <h4>Information</h4>
       <ul className={styles.list}>
-        {(!footerMenuVisible || footerMenuVisible.contact) && <li><Link href="/contact">Contact</Link></li>}
-        {(!footerMenuVisible || footerMenuVisible.admin) && <li><Link href="/admin">Admin</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.contact) && <li><Link href="/contact" data-analytics-id="Footer|Contact">Contact</Link></li>}
+        {(!footerMenuVisible || footerMenuVisible.admin) && <li><Link href="/admin" data-analytics-id="Footer|Admin">Admin</Link></li>}
       </ul>
     </div>
   );

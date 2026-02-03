@@ -37,15 +37,18 @@ export function getGeoFromHeaders(headers: Headers): { country: string | null; c
 export type AnalyticsIpFilter = {
   include?: string[] | null;
   exclude?: string[] | null;
+  /** Hashes to exclude when IP is unknown (e.g. visitor row without IP). */
+  excludeHashes?: string[] | null;
 };
 
 export function parseIpFilter(value: unknown): AnalyticsIpFilter {
   if (!value || typeof value !== 'string') return {};
   try {
-    const parsed = JSON.parse(value) as { include?: string[]; exclude?: string[] };
+    const parsed = JSON.parse(value) as { include?: string[]; exclude?: string[]; excludeHashes?: string[] };
     return {
       include: Array.isArray(parsed.include) ? parsed.include.filter((x) => typeof x === 'string') : null,
       exclude: Array.isArray(parsed.exclude) ? parsed.exclude.filter((x) => typeof x === 'string') : null,
+      excludeHashes: Array.isArray(parsed.excludeHashes) ? parsed.excludeHashes.filter((x) => typeof x === 'string') : null,
     };
   } catch {
     return {};

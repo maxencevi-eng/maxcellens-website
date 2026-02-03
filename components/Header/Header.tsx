@@ -262,7 +262,7 @@ export default function Header() {
       <div className={styles.contentWrap}>
         <div className={styles.inner}>
           <div className={styles.left}>
-            <Link href="/" className={styles.logo} data-measure="logo">
+            <Link href="/" className={styles.logo} data-measure="logo" data-analytics-id="Logo-Maxcellens">
               {!imgError ? (
                 <img
                   src={logoSrc}

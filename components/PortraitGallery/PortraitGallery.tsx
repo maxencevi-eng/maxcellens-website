@@ -98,7 +98,7 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
   }, [settings.aspect, settings.disposition]);
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center' }}>
+    <div className="PortraitGallery" style={{ display: 'flex', justifyContent: 'center' }}>
       <div style={{ maxWidth: 1100, width: '100%' }}>
         {/* Render according to galleryType */}
         {(!settings.galleryType || settings.galleryType === 'masonry') && (

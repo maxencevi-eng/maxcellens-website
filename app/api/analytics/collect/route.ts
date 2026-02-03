@@ -64,11 +64,19 @@ export async function POST(req: Request) {
       updated_at: new Date().toISOString(),
     };
     if (includeReferrerInRow) sessionRow.referrer = referrerValue;
+    sessionRow.ip = ip ?? null;
 
-    const { error: sessionError } = await supabaseAdmin
+    let { error: sessionError } = await supabaseAdmin
       .from('analytics_sessions')
       .upsert(sessionRow, { onConflict: 'session_id', ignoreDuplicates: false });
 
+    if (sessionError && /column.*ip/i.test(sessionError.message)) {
+      delete sessionRow.ip;
+      const retry = await supabaseAdmin
+        .from('analytics_sessions')
+        .upsert(sessionRow, { onConflict: 'session_id', ignoreDuplicates: false });
+      sessionError = retry.error;
+    }
     if (sessionError) {
       console.error('analytics collect session upsert error', sessionError);
       return NextResponse.json({ ok: false }, { status: 500 });

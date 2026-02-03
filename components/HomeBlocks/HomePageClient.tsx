@@ -256,7 +256,7 @@ export default function HomePageClient() {
             {(services as any).blockSubtitle ? (() => { const Tag = (services as any).blockSubtitleStyle || "p"; const fs = (services as any).blockSubtitleFontSize; return <Tag className={`${styles.servicesSubtitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(services as any).blockSubtitle}</Tag>; })() : null}
             <div className={styles.servicesGrid}>
               {serviceItems.map((item, i) => (
-                <Link key={i} href={item.href || "#"} className={styles.serviceCard}>
+                <Link key={i} href={item.href || "#"} className={styles.serviceCard} data-analytics-id={`Accueil|Service - ${(item.title || 'Service').toString().slice(0, 40)}`}>
                   <div className={styles.serviceCardImageWrap}>
                     {item.image?.url ? (
                       <img src={item.image.url} alt="" className={styles.serviceCardImage} />
@@ -354,7 +354,7 @@ export default function HomePageClient() {
               <div className={`${styles.portraitCarouselContent} ${styles.portraitContentFade}`}>
                 {activePortraitSlide?.title ? (() => { const Tag = (activePortraitSlide as any).titleStyle || "h3"; const fs = (activePortraitSlide as any).titleFontSize; return <Tag className={`${styles.portraitSlideTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{activePortraitSlide.title}</Tag>; })() : null}
                 {activePortraitSlide?.text ? <div className={styles.portraitSlideText} dangerouslySetInnerHTML={{ __html: activePortraitSlide.text }} /> : null}
-                <Link href={(portraitBlock as any).ctaHref || "/portrait"} className={`${styles.portraitCta} btn-site-${(portraitBlock as any).ctaButtonStyle || "1"}`}>
+                <Link href={(portraitBlock as any).ctaHref || "/portrait"} className={`${styles.portraitCta} btn-site-${(portraitBlock as any).ctaButtonStyle || "1"}`} data-analytics-id="Accueil|CTA Portrait">
                   {(portraitBlock as any).ctaLabel || "Découvrir le portrait"}
                 </Link>
                 <div className={styles.portraitNav}>
@@ -485,10 +485,10 @@ export default function HomePageClient() {
                   return <Tag className={`${styles.animationBlockSubtitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(animationBlock as any).blockSubtitle}</Tag>;
                 })() : null}
                 <div className={styles.animationBlockButtons}>
-                  <Link href="/animation#animation_s1" className={styles.animationBlockCtaSection}>Le concept</Link>
-                  <Link href="/animation#animation_s2" className={styles.animationBlockCtaSection}>Pour qui</Link>
-                  <Link href="/animation#animation_s3" className={styles.animationBlockCtaSection}>Déroulé</Link>
-                  <Link href="/animation#animation_cta" className={styles.animationBlockCtaSection}>Livrables & contact</Link>
+                  <Link href="/animation#animation_s1" className={styles.animationBlockCtaSection} data-analytics-id="Accueil|Animation - Le concept">Le concept</Link>
+                  <Link href="/animation#animation_s2" className={styles.animationBlockCtaSection} data-analytics-id="Accueil|Animation - Pour qui">Pour qui</Link>
+                  <Link href="/animation#animation_s3" className={styles.animationBlockCtaSection} data-analytics-id="Accueil|Animation - Déroulé">Déroulé</Link>
+                  <Link href="/animation#animation_cta" className={styles.animationBlockCtaSection} data-analytics-id="Accueil|Animation - Livrables & contact">Livrables & contact</Link>
                 </div>
               </div>
               <div className={styles.animationBlockGlow} aria-hidden />
@@ -585,7 +585,7 @@ export default function HomePageClient() {
               </div>
             )}
             {cta.title ? (() => { const Tag = (cta as any).titleStyle || "h2"; const fs = (cta as any).titleFontSize; return <Tag className={`${styles.ctaTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{cta.title}</Tag>; })() : null}
-            <Link href={cta.buttonHref || "/contact"} className={`${styles.ctaButton} btn-site-${cta.buttonStyle || "1"}`}>
+            <Link href={cta.buttonHref || "/contact"} className={`${styles.ctaButton} btn-site-${cta.buttonStyle || "1"}`} data-analytics-id="Accueil|CTA Contact">
               {cta.buttonLabel || "Contactez-moi"}
             </Link>
           </div>

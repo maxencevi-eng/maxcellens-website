@@ -59,7 +59,11 @@ export async function GET(req: Request) {
     const { data: filterRow } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'analytics_ip_filter').maybeSingle();
     const filter = parseIpFilter((filterRow as any)?.value);
     const includeHashes = filter.include?.length ? hashedIpList(filter.include) : null;
-    const excludeHashes = filter.exclude?.length ? hashedIpList(filter.exclude) : null;
+    const excludeHashes = [
+      ...(filter.exclude?.length ? hashedIpList(filter.exclude) : []),
+      ...(filter.excludeHashes?.length ? filter.excludeHashes : []),
+    ].filter(Boolean);
+    const excludeHashesOrNull = excludeHashes.length ? excludeHashes : null;
 
     let sessionsRes = await supabaseAdmin
       .from('analytics_sessions')
@@ -92,10 +96,43 @@ export async function GET(req: Request) {
         .or('is_authenticated.is.null,is_authenticated.eq.false');
     }
     if (sessionsRes.error) return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
-    let sessions = (sessionsRes.data || []) as { id: string; session_id: string; ip_hash: string | null; country: string | null; city: string | null; referrer?: string | null; browser?: string | null; created_at: string }[];
+    let sessions = (sessionsRes.data || []) as { id: string; session_id: string; ip_hash: string | null; country: string | null; city: string | null; referrer?: string | null; browser?: string | null; created_at: string; ip?: string | null }[];
 
     if (includeHashes?.length) sessions = sessions.filter((s) => s.ip_hash && includeHashes.includes(s.ip_hash));
-    if (excludeHashes?.length) sessions = sessions.filter((s) => !s.ip_hash || !excludeHashes.includes(s.ip_hash));
+    if (excludeHashesOrNull?.length) sessions = sessions.filter((s) => !s.ip_hash || !excludeHashesOrNull.includes(s.ip_hash));
+
+    let visitors: { ip: string | null; ip_hash: string | null; country: string; city: string; sessionCount: number }[] = [];
+    try {
+      let visitorsRes = await supabaseAdmin
+        .from('analytics_sessions')
+        .select('session_id, ip_hash, ip, country, city')
+        .gte('created_at', sinceStr)
+        .lte('created_at', untilStr)
+        .or('is_authenticated.is.null,is_authenticated.eq.false');
+      if (visitorsRes.error && /column.*ip/i.test(visitorsRes.error.message)) {
+        visitorsRes = await supabaseAdmin
+          .from('analytics_sessions')
+          .select('session_id, ip_hash, country, city')
+          .gte('created_at', sinceStr)
+          .lte('created_at', untilStr)
+          .or('is_authenticated.is.null,is_authenticated.eq.false');
+      }
+      if (!visitorsRes.error && visitorsRes.data?.length) {
+        const allSessions = (visitorsRes.data || []) as { session_id: string; ip_hash: string | null; ip?: string | null; country: string | null; city: string | null }[];
+        const byHash = new Map<string, { ip: string | null; ip_hash: string | null; country: string; city: string; count: number }>();
+        allSessions.forEach((s) => {
+          const key = s.ip_hash ?? '';
+          const countryLabel = (s.country && String(s.country).trim()) ? String(s.country).trim() : 'Inconnu';
+          const cityLabel = (s.city && String(s.city).trim()) ? String(s.city).trim() : 'Inconnu';
+          const cur = byHash.get(key);
+          if (!cur) byHash.set(key, { ip: s.ip ?? null, ip_hash: s.ip_hash ?? null, country: countryLabel, city: cityLabel, count: 1 });
+          else cur.count += 1;
+        });
+        visitors = Array.from(byHash.entries())
+          .map(([, v]) => ({ ip: v.ip, ip_hash: v.ip_hash, country: v.country, city: v.city, sessionCount: v.count }))
+          .sort((a, b) => b.sessionCount - a.sessionCount);
+      }
+    } catch (_) {}
 
     const sessionIds = sessions.map((s) => s.session_id);
 
@@ -315,6 +352,7 @@ export async function GET(req: Request) {
       topClicks,
       bySource,
       visitsByPage,
+      visitors,
       filterApplied: { include: !!includeHashes?.length, exclude: !!excludeHashes?.length },
     });
   } catch (err: any) {

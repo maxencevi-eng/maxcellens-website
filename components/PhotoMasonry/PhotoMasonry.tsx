@@ -8,7 +8,7 @@ import type { Project } from '../../types';
 
 export default function PhotoMasonry({ items }: { items: Project[] }) {
   return (
-    <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
+    <div className="photo-gallery columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
       {items.map((item) => (
         <motion.article
           key={item.id}
@@ -16,7 +16,7 @@ export default function PhotoMasonry({ items }: { items: Project[] }) {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.99 }}
         >
-          <Link href={`/projects/${item.slug}`} aria-label={item.title}>
+          <Link href={`/projects/${item.slug}`} aria-label={item.title} data-analytics-id={`Projet|${(item.title || item.slug || '').toString().slice(0, 50)}`}>
             <div className="relative w-full" style={{ paddingBottom: `${(item.height || 3) / (item.width || 4) * 100}%` }}>
               <Image
                 src={item.image_url}

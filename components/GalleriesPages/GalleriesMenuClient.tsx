@@ -97,6 +97,7 @@ export default function GalleriesMenuClient() {
             <Link
               key={p.id}
               href={`/galeries/${encodeURIComponent(p.slug)}`}
+              data-analytics-id={`Galeries|${(p.name || p.slug || 'Galerie').toString().slice(0, 40)}`}
               style={{
                 display: "block",
                 borderRadius: 8,

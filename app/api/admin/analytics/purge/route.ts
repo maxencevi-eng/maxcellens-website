@@ -46,28 +46,53 @@ export async function POST(req: Request) {
     if (!isCron && !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const purgeAll = url.searchParams.get('all') === '1' || url.searchParams.get('all') === 'true';
-    const purgeIp = url.searchParams.get('ip')?.trim() || null;
+    const olderThan1Month = url.searchParams.get('olderThan') === '1month';
+    let purgeIps = url.searchParams.getAll('ip').map((s) => s.trim()).filter(Boolean);
+    if (purgeIps.length === 0) {
+      const single = url.searchParams.get('ip')?.trim();
+      if (single) purgeIps = [single];
+    }
+    let purgeHashes: string[] = [];
+    if (purgeIps.length === 0 && !purgeAll) {
+      try {
+        const body = (await req.json().catch(() => ({}))) as { ips?: unknown; hashes?: unknown };
+        if (Array.isArray(body?.ips)) purgeIps = body.ips.map((x: unknown) => String(x).trim()).filter(Boolean);
+        if (Array.isArray(body?.hashes)) purgeHashes = body.hashes.map((x: unknown) => String(x).trim()).filter(Boolean);
+      } catch (_) {}
+    }
 
     let deleted: { id: string }[] = [];
 
-    if (purgeIp) {
-      // Purge par IP : supprimer uniquement les sessions dont l'IP (hash) correspond
-      const ipHash = hashIp(purgeIp);
-      if (!ipHash) {
-        return NextResponse.json({ error: 'IP invalide ou vide' }, { status: 400 });
+    if (purgeHashes.length > 0) {
+      const { data, error } = await supabaseAdmin
+        .from('analytics_sessions')
+        .delete()
+        .in('ip_hash', purgeHashes)
+        .select('id');
+      if (error) {
+        console.error('analytics purge by hash error', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      deleted = data ?? [];
+      return NextResponse.json({ ok: true, deleted: deleted.length, byHash: true });
+    }
+
+    if (purgeIps.length > 0) {
+      const hashes = purgeIps.map((ip) => hashIp(ip)).filter((h): h is string => !!h);
+      if (hashes.length === 0) {
+        return NextResponse.json({ error: 'Aucune IP valide' }, { status: 400 });
       }
       const { data, error } = await supabaseAdmin
         .from('analytics_sessions')
         .delete()
-        .eq('ip_hash', ipHash)
+        .in('ip_hash', hashes)
         .select('id');
       if (error) {
         console.error('analytics purge by ip error', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
       deleted = data ?? [];
-      const count = deleted.length;
-      return NextResponse.json({ ok: true, deleted: count, byIp: true });
+      return NextResponse.json({ ok: true, deleted: deleted.length, byIp: true });
     }
 
     if (purgeAll) {
@@ -79,6 +104,23 @@ export async function POST(req: Request) {
         .select('id');
       if (error) {
         console.error('analytics purge all error', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      deleted = data ?? [];
+    } else if (olderThan1Month) {
+      // Purge tout ce qui est avant le 1er du mois dernier (ex. le 5 fév. → avant le 1er janv.)
+      const now = new Date();
+      const cutoff = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+      const cutoffStr = cutoff.toISOString();
+
+      const { data, error } = await supabaseAdmin
+        .from('analytics_sessions')
+        .delete()
+        .lt('created_at', cutoffStr)
+        .select('id');
+
+      if (error) {
+        console.error('analytics purge olderThan1Month error', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
       deleted = data ?? [];
@@ -101,7 +143,7 @@ export async function POST(req: Request) {
     }
 
     const count = deleted?.length ?? 0;
-    return NextResponse.json({ ok: true, deleted: count, all: purgeAll });
+    return NextResponse.json({ ok: true, deleted: count, all: purgeAll, olderThan1Month: olderThan1Month });
   } catch (err: unknown) {
     console.error('analytics purge error', err);
     return NextResponse.json(

@@ -7,6 +7,7 @@ import styles from './StatisticsModal.module.css';
 export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
   const [purging, setPurging] = useState(false);
   const [purgingAll, setPurgingAll] = useState(false);
+  const [purgingOlderThan1Month, setPurgingOlderThan1Month] = useState(false);
   const [purgeResult, setPurgeResult] = useState<string | null>(null);
   const [ipToPurge, setIpToPurge] = useState('');
   const [purgingByIp, setPurgingByIp] = useState(false);
@@ -40,12 +41,12 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
   };
 
   const runPurgeByIp = async () => {
-    const ip = ipToPurge.trim();
-    if (!ip) {
-      setPurgeByIpResult('Saisissez une IP ou utilisez "Utiliser mon IP".');
+    const ips = ipToPurge.split(/\n/).map((s) => s.trim()).filter(Boolean);
+    if (ips.length === 0) {
+      setPurgeByIpResult('Saisissez une ou plusieurs IP (une par ligne) ou utilisez "Utiliser mon IP".');
       return;
     }
-    if (!confirm(`Supprimer définitivement toutes les sessions et événements associés à l'IP ${ip} ?`)) return;
+    if (!confirm(`Supprimer définitivement toutes les sessions et événements associés à ${ips.length} IP ?`)) return;
     setPurgingByIp(true);
     setPurgeByIpResult(null);
     try {
@@ -55,9 +56,10 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
         setPurgeByIpResult('Non connecté');
         return;
       }
-      const res = await fetch(`/api/admin/analytics/purge?ip=${encodeURIComponent(ip)}`, {
+      const res = await fetch('/api/admin/analytics/purge', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ips }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -65,7 +67,7 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
         return;
       }
       const count = json?.deleted ?? 0;
-      setPurgeByIpResult(`${count} session(s) supprimée(s) pour cette IP.`);
+      setPurgeByIpResult(`${count} session(s) supprimée(s) pour ${ips.length} IP.`);
     } catch (e: unknown) {
       setPurgeByIpResult(e instanceof Error ? e.message : String(e));
     } finally {
@@ -105,6 +107,38 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
     } finally {
       setPurging(false);
       setPurgingAll(false);
+    }
+  };
+
+  const runPurgeOlderThan1Month = async () => {
+    const now = new Date();
+    const firstOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const label = firstOfLastMonth.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    if (!confirm(`Supprimer définitivement toutes les sessions et événements avant le ${label} ? (ex. le 5 fév. → tout avant le 1er janv.)`)) return;
+    setPurgingOlderThan1Month(true);
+    setPurgeResult(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) {
+        setPurgeResult('Non connecté');
+        return;
+      }
+      const res = await fetch('/api/admin/analytics/purge?olderThan=1month', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPurgeResult(json?.error || `Erreur ${res.status}`);
+        return;
+      }
+      const count = json?.deleted ?? 0;
+      setPurgeResult(`${count} session(s) supprimée(s) (données avant le ${label}).`);
+    } catch (e: unknown) {
+      setPurgeResult(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPurgingOlderThan1Month(false);
     }
   };
 
@@ -153,14 +187,14 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
               <button
                 type="button"
                 onClick={() => runPurge(false)}
-                disabled={purging || purgingAll}
+                disabled={purging || purgingAll || purgingOlderThan1Month}
                 style={{
                   padding: '8px 16px',
-                  background: purging || purgingAll ? '#94a3b8' : '#dc2626',
+                  background: purging || purgingAll || purgingOlderThan1Month ? '#94a3b8' : '#dc2626',
                   color: '#fff',
                   border: 'none',
                   borderRadius: 8,
-                  cursor: purging || purgingAll ? 'not-allowed' : 'pointer',
+                  cursor: purging || purgingAll || purgingOlderThan1Month ? 'not-allowed' : 'pointer',
                   fontWeight: 600,
                 }}
               >
@@ -168,15 +202,32 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
               </button>
               <button
                 type="button"
-                onClick={() => runPurge(true)}
-                disabled={purging || purgingAll}
+                onClick={runPurgeOlderThan1Month}
+                disabled={purging || purgingAll || purgingOlderThan1Month}
                 style={{
                   padding: '8px 16px',
-                  background: purging || purgingAll ? '#94a3b8' : '#b91c1c',
+                  background: purging || purgingAll || purgingOlderThan1Month ? '#94a3b8' : '#ea580c',
                   color: '#fff',
                   border: 'none',
                   borderRadius: 8,
-                  cursor: purging || purgingAll ? 'not-allowed' : 'pointer',
+                  cursor: purging || purgingAll || purgingOlderThan1Month ? 'not-allowed' : 'pointer',
+                  fontWeight: 600,
+                }}
+                title="Supprimer tout ce qui date d'avant le 1er du mois dernier (ex. le 5 fév. → avant le 1er janv.)"
+              >
+                {purgingOlderThan1Month ? 'Purge en cours…' : 'Purger les données de +1 mois'}
+              </button>
+              <button
+                type="button"
+                onClick={() => runPurge(true)}
+                disabled={purging || purgingAll || purgingOlderThan1Month}
+                style={{
+                  padding: '8px 16px',
+                  background: purging || purgingAll || purgingOlderThan1Month ? '#94a3b8' : '#b91c1c',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  cursor: purging || purgingAll || purgingOlderThan1Month ? 'not-allowed' : 'pointer',
                   fontWeight: 600,
                 }}
               >
@@ -191,58 +242,62 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
 
             <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 16, marginTop: 8 }}>
               <p style={{ fontSize: 14, color: '#475569', marginBottom: 12, lineHeight: 1.5 }}>
-                Purger les tracks d&apos;une IP précise (sessions + événements associés). Utile pour retirer vos propres visites de test.
+                Purger les tracks d&apos;une ou plusieurs IP (sessions + événements associés). Une IP par ligne, comme pour l&apos;exclusion. Utile pour retirer crawlers, trackers ou vos visites de test.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <input
-                    type="text"
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
+                  <textarea
                     value={ipToPurge}
                     onChange={(e) => { setIpToPurge(e.target.value); setPurgeByIpResult(null); }}
-                    placeholder="Ex. 82.65.123.45"
+                    placeholder="Une IP par ligne&#10;Ex. 82.65.123.45&#10;192.168.1.1"
+                    rows={4}
                     style={{
                       padding: '8px 12px',
                       border: '1px solid #d1d5db',
                       borderRadius: 8,
                       fontSize: 14,
-                      minWidth: 160,
+                      minWidth: 220,
+                      fontFamily: 'monospace',
+                      resize: 'vertical',
                     }}
-                    aria-label="Adresse IP à purger"
+                    aria-label="Adresses IP à purger (une par ligne)"
                   />
-                  <button
-                    type="button"
-                    onClick={fillMyIp}
-                    disabled={myIpLoading || purgingByIp}
-                    style={{
-                      padding: '8px 14px',
-                      background: myIpLoading || purgingByIp ? '#94a3b8' : '#64748b',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 8,
-                      cursor: myIpLoading || purgingByIp ? 'not-allowed' : 'pointer',
-                      fontWeight: 500,
-                      fontSize: 13,
-                    }}
-                  >
-                    {myIpLoading ? 'Chargement…' : 'Utiliser mon IP'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={runPurgeByIp}
-                    disabled={purgingByIp || purging || purgingAll || !ipToPurge.trim()}
-                    style={{
-                      padding: '8px 14px',
-                      background: purgingByIp || purging || purgingAll || !ipToPurge.trim() ? '#94a3b8' : '#b91c1c',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 8,
-                      cursor: purgingByIp || purging || purgingAll || !ipToPurge.trim() ? 'not-allowed' : 'pointer',
-                      fontWeight: 600,
-                      fontSize: 13,
-                    }}
-                  >
-                    {purgingByIp ? 'Purge en cours…' : 'Purger les tracks de cette IP'}
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={fillMyIp}
+                      disabled={myIpLoading || purgingByIp || purgingOlderThan1Month}
+                      style={{
+                        padding: '8px 14px',
+                        background: myIpLoading || purgingByIp ? '#94a3b8' : '#64748b',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: myIpLoading || purgingByIp ? 'not-allowed' : 'pointer',
+                        fontWeight: 500,
+                        fontSize: 13,
+                      }}
+                    >
+                      {myIpLoading ? 'Chargement…' : 'Utiliser mon IP'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={runPurgeByIp}
+                      disabled={purgingByIp || purging || purgingAll || purgingOlderThan1Month || !ipToPurge.trim()}
+                      style={{
+                        padding: '8px 14px',
+                        background: purgingByIp || purging || purgingAll || purgingOlderThan1Month || !ipToPurge.trim() ? '#94a3b8' : '#b91c1c',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: purgingByIp || purging || purgingAll || purgingOlderThan1Month || !ipToPurge.trim() ? 'not-allowed' : 'pointer',
+                        fontWeight: 600,
+                        fontSize: 13,
+                      }}
+                    >
+                      {purgingByIp ? 'Purge en cours…' : 'Purger les tracks de ces IP'}
+                    </button>
+                  </div>
                 </div>
                 {purgeByIpResult && (
                   <span style={{ fontSize: 13, color: purgeByIpResult.startsWith('Erreur') || purgeByIpResult === 'Non connecté' || purgeByIpResult.includes('Saisissez') ? '#dc2626' : '#059669', fontWeight: 500 }}>

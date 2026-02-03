@@ -149,6 +149,7 @@ export default function VideoGallery({ videos, className }: Props) {
                       type="button"
                       onClick={() => openLightbox(myIndex)}
                       className={styles.cardButton}
+                      aria-label="Vidéo galerie"
                       style={{ position: 'relative', paddingTop, display: 'block', width: '100%', border: 'none', cursor: 'pointer', background: '#000', overflow: 'hidden' }}
                     >
                       <img
@@ -206,6 +207,7 @@ export default function VideoGallery({ videos, className }: Props) {
                   type="button"
                   onClick={() => openLightbox(myIndex)}
                   className={styles.cardButton}
+                  aria-label="Vidéo galerie"
                   style={{ position: 'relative', paddingTop, display: 'block', width: '100%', border: 'none', cursor: 'pointer', background: '#000', overflow: 'hidden' }}
                 >
                   <img
@@ -245,6 +247,7 @@ export default function VideoGallery({ videos, className }: Props) {
               type="button"
               onClick={() => openLightbox(myIndex)}
               className={styles.cardButton}
+              aria-label="Vidéo galerie"
               style={{ position: 'relative', paddingTop, display: 'block', width: '100%', border: 'none', cursor: 'pointer', background: '#000', overflow: 'hidden' }}
             >
               <img

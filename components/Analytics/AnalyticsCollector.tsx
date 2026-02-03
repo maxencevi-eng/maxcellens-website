@@ -147,23 +147,38 @@ export default function AnalyticsCollector() {
             /pinterest\.com/i.test(host) ? 'Pinterest' :
             /snapchat\.com/i.test(host) ? 'Snapchat' :
             null;
-          const label = socialLabel ?? text ?? pageLabel;
+          const inGalleryLike = (link as HTMLElement).closest?.('[class*="Gallery"]') || (link as HTMLElement).closest?.('[class*="gallery"]') || (link as HTMLElement).closest?.('[class*="masonry"]');
+          const linkHasImg = (link as HTMLElement).querySelector?.('img');
+          const galleryLabel = (linkHasImg && inGalleryLike && isInternal) ? (text || (link as HTMLElement).querySelector?.('img') && ((link as HTMLElement).querySelector('img') as HTMLImageElement).alt?.trim().slice(0, 60) || pageLabel) : null;
+          const label = galleryLabel ?? socialLabel ?? text ?? pageLabel;
           const linkType = isInternal ? 'lien interne' : 'lien externe';
           const inMobileDrawer = inNav && (link as HTMLElement).closest?.('nav[data-mobile-drawer="true"]');
-          return inMobileDrawer ? `menu mobile|${label}` : inNav ? `menu|${label}` : `${linkType}|${label}`;
+          if (inMobileDrawer) return `menu mobile|${label}`;
+          if (inNav) return `menu|${label}`;
+          if (galleryLabel != null) return `photo galerie|${label}`;
+          return `${linkType}|${label}`;
         } catch (_) {}
         return `lien externe|${text || 'Lien'}`;
       }
       const button = el.tagName === 'BUTTON' ? el : el.closest?.('button') || el.closest?.('[role="button"]');
       if (button) {
         const btnEl = button as HTMLElement;
-        const ariaLabel = btnEl.getAttribute?.('aria-label')?.trim().toLowerCase() || '';
+        const ariaLabel = btnEl.getAttribute?.('aria-label')?.trim() || '';
+        const ariaLabelLower = ariaLabel.toLowerCase();
         const btnClass = (typeof btnEl.className === 'string' ? btnEl.className : '') || '';
         const hasHamburger = btnEl.querySelector?.('[class*="hamburger"]') || /hamburger|menuButton|menu-button/i.test(btnClass);
-        if (ariaLabel === 'menu' || (hasHamburger && !btnEl.textContent?.trim())) {
+        if (ariaLabelLower === 'menu' || (hasHamburger && !btnEl.textContent?.trim())) {
           return 'menu mobile|';
         }
-        const text = btnEl.textContent?.trim().slice(0, 80) || (btnEl as HTMLButtonElement).innerText?.trim().slice(0, 80) || (button as HTMLButtonElement).value || 'Bouton';
+        const isVideoGallery = ariaLabelLower === 'vidéo galerie' || /cardButton|videoGallery|VideoGallery/i.test(btnClass) || (btnEl.closest?.('[class*="VideoGallery"]') != null);
+        if (isVideoGallery) return 'vidéo galerie|Vidéo galerie';
+        const hasImg = btnEl.querySelector?.('img');
+        const inGalleryLike = btnEl.closest?.('[class*="Gallery"]') || btnEl.closest?.('[class*="gallery"]') || btnEl.closest?.('[class*="masonry"]');
+        if (hasImg && inGalleryLike) {
+          const detail = ariaLabel || (btnEl.querySelector('img') as HTMLImageElement)?.alt?.trim().slice(0, 60) || 'Photo galerie';
+          return `photo galerie|${detail}`;
+        }
+        const text = btnEl.textContent?.trim().slice(0, 80) || (btnEl as HTMLButtonElement).innerText?.trim().slice(0, 80) || (button as HTMLButtonElement).value || ariaLabel || 'Bouton';
         const inNav = button.closest?.('nav') || button.closest?.('[role="navigation"]');
         const inMobileDrawer = inNav && (button as HTMLElement).closest?.('nav[data-mobile-drawer="true"]');
         return inMobileDrawer ? `menu mobile|${text}` : inNav ? `menu|${text}` : `bouton|${text}`;
