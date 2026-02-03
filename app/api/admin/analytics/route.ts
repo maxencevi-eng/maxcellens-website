@@ -63,7 +63,7 @@ export async function GET(req: Request) {
 
     let sessionsRes = await supabaseAdmin
       .from('analytics_sessions')
-      .select('id, session_id, ip_hash, country, city, referrer, created_at')
+      .select('id, session_id, ip_hash, country, city, referrer, browser, created_at')
       .gte('created_at', sinceStr)
       .lte('created_at', untilStr)
       .or('is_authenticated.is.null,is_authenticated.eq.false');
@@ -71,20 +71,28 @@ export async function GET(req: Request) {
     if (sessionsRes.error && /does not exist|column.*is_authenticated/i.test(sessionsRes.error.message)) {
       sessionsRes = await supabaseAdmin
         .from('analytics_sessions')
-        .select('id, session_id, ip_hash, country, city, referrer, created_at')
+        .select('id, session_id, ip_hash, country, city, referrer, browser, created_at')
         .gte('created_at', sinceStr)
         .lte('created_at', untilStr);
     }
     if (sessionsRes.error && /column.*referrer/i.test(sessionsRes.error.message)) {
       sessionsRes = await supabaseAdmin
         .from('analytics_sessions')
-        .select('id, session_id, ip_hash, country, city, created_at')
+        .select('id, session_id, ip_hash, country, city, browser, created_at')
+        .gte('created_at', sinceStr)
+        .lte('created_at', untilStr)
+        .or('is_authenticated.is.null,is_authenticated.eq.false');
+    }
+    if (sessionsRes.error && /column.*browser/i.test(sessionsRes.error.message)) {
+      sessionsRes = await supabaseAdmin
+        .from('analytics_sessions')
+        .select('id, session_id, ip_hash, country, city, referrer, created_at')
         .gte('created_at', sinceStr)
         .lte('created_at', untilStr)
         .or('is_authenticated.is.null,is_authenticated.eq.false');
     }
     if (sessionsRes.error) return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
-    let sessions = (sessionsRes.data || []) as { id: string; session_id: string; ip_hash: string | null; country: string | null; city: string | null; referrer?: string | null; created_at: string }[];
+    let sessions = (sessionsRes.data || []) as { id: string; session_id: string; ip_hash: string | null; country: string | null; city: string | null; referrer?: string | null; browser?: string | null; created_at: string }[];
 
     if (includeHashes?.length) sessions = sessions.filter((s) => s.ip_hash && includeHashes.includes(s.ip_hash));
     if (excludeHashes?.length) sessions = sessions.filter((s) => !s.ip_hash || !excludeHashes.includes(s.ip_hash));
@@ -203,13 +211,18 @@ export async function GET(req: Request) {
       return r ? 'Autre (lien externe)' : 'Accès direct';
     }
 
-    const sourceCount = new Map<string, number>();
+    const sourceBrowserCount = new Map<string, number>();
     sessions.forEach((s) => {
-      const label = referrerToSourceLabel(s.referrer);
-      sourceCount.set(label, (sourceCount.get(label) || 0) + 1);
+      const sourceLabel = referrerToSourceLabel(s.referrer);
+      const browserLabel = (s as { browser?: string | null }).browser?.trim() || 'Inconnu';
+      const key = `${sourceLabel}\t${browserLabel}`;
+      sourceBrowserCount.set(key, (sourceBrowserCount.get(key) || 0) + 1);
     });
-    const bySource = Array.from(sourceCount.entries())
-      .map(([source, count]) => ({ source, count }))
+    const bySource = Array.from(sourceBrowserCount.entries())
+      .map(([key, count]) => {
+        const [source, browser] = key.split('\t');
+        return { source: source || 'Accès direct', browser: browser || 'Inconnu', count };
+      })
       .sort((a, b) => b.count - a.count);
 
     const uniqueVisitorsByPath = new Map<string, Set<string>>();

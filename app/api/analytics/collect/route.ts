@@ -23,6 +23,9 @@ export async function POST(req: Request) {
     const { session_id, session: sessionInfo, event_type, path, element_id, metadata, duration, is_authenticated, referrer } = body;
     if (!session_id || !event_type) return NextResponse.json({ ok: false }, { status: 400 });
 
+    // Ne pas enregistrer les visites (sessions ni événements) quand le visiteur est connecté
+    if (is_authenticated === true) return NextResponse.json({ ok: true });
+
     const ip = getClientIp(req.headers);
     const ip_hash = hashIp(ip);
     const { country, city } = getGeoFromHeaders(req.headers);

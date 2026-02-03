@@ -314,7 +314,7 @@ export default function Header() {
           </button>
 
           <div className={styles.center}>
-            <nav data-measure="nav" className={`${styles.nav} ${open ? styles.open : ''} ${headerVisible ? '' : styles.hiddenUntilReady}`} aria-label="Main navigation" aria-hidden={!headerVisible}>
+            <nav data-measure="nav" data-mobile-drawer={open && isMobile ? 'true' : undefined} className={`${styles.nav} ${open ? styles.open : ''} ${headerVisible ? '' : styles.hiddenUntilReady}`} aria-label="Main navigation" aria-hidden={!headerVisible}>
               { ((isMobile ? navMobileVisible : navVisible).realisation ?? true) ? <Link href="/realisation" className={linkClass('/realisation')} onClick={() => setOpen(false)}>Réalisation</Link> : null }
               { ((isMobile ? navMobileVisible : navVisible).evenement ?? true) ? <Link href="/evenement" className={linkClass('/evenement')} onClick={() => setOpen(false)}>Évènement</Link> : null }
               { ((isMobile ? navMobileVisible : navVisible).corporate ?? true) ? <Link href="/corporate" className={linkClass('/corporate')} onClick={() => setOpen(false)}>Corporate</Link> : null }

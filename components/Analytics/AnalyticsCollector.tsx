@@ -127,15 +127,24 @@ export default function AnalyticsCollector() {
             isInternal = linkHost === pageHost;
           }
           const linkType = isInternal ? 'lien interne' : 'lien externe';
-          return inNav ? `menu|${label}` : `${linkType}|${label}`;
+          const inMobileDrawer = inNav && (link as HTMLElement).closest?.('nav[data-mobile-drawer="true"]');
+          return inMobileDrawer ? `menu mobile|${label}` : inNav ? `menu|${label}` : `${linkType}|${label}`;
         } catch (_) {}
         return `lien externe|${text || 'Lien'}`;
       }
       const button = el.tagName === 'BUTTON' ? el : el.closest?.('button') || el.closest?.('[role="button"]');
       if (button) {
-        const text = (button as HTMLElement).textContent?.trim().slice(0, 80) || (button as HTMLElement).innerText?.trim().slice(0, 80) || (button as HTMLButtonElement).value || 'Bouton';
+        const btnEl = button as HTMLElement;
+        const ariaLabel = btnEl.getAttribute?.('aria-label')?.trim().toLowerCase() || '';
+        const btnClass = (typeof btnEl.className === 'string' ? btnEl.className : '') || '';
+        const hasHamburger = btnEl.querySelector?.('[class*="hamburger"]') || /hamburger|menuButton|menu-button/i.test(btnClass);
+        if (ariaLabel === 'menu' || (hasHamburger && !btnEl.textContent?.trim())) {
+          return 'menu mobile|';
+        }
+        const text = btnEl.textContent?.trim().slice(0, 80) || (btnEl as HTMLButtonElement).innerText?.trim().slice(0, 80) || (button as HTMLButtonElement).value || 'Bouton';
         const inNav = button.closest?.('nav') || button.closest?.('[role="navigation"]');
-        return inNav ? `menu|${text}` : `bouton|${text}`;
+        const inMobileDrawer = inNav && (button as HTMLElement).closest?.('nav[data-mobile-drawer="true"]');
+        return inMobileDrawer ? `menu mobile|${text}` : inNav ? `menu|${text}` : `bouton|${text}`;
       }
       const img = el.tagName === 'IMG' ? el : el.querySelector?.('img');
       if (img) {
@@ -144,9 +153,11 @@ export default function AnalyticsCollector() {
         const type = inGallery ? 'image galerie' : 'image';
         return `${type}|${alt || 'Image'}`;
       }
-      if (el.closest?.('nav') || el.closest?.('[role="navigation"]')) {
+      const inNav = el.closest?.('nav') || el.closest?.('[role="navigation"]');
+      if (inNav) {
         const text = (el as HTMLElement).textContent?.trim().slice(0, 60) || (el as HTMLElement).innerText?.trim().slice(0, 60) || 'Menu';
-        return `menu|${text}`;
+        const inMobileDrawer = (el as HTMLElement).closest?.('nav[data-mobile-drawer="true"]');
+        return inMobileDrawer ? `menu mobile|${text}` : `menu|${text}`;
       }
       const cls = el.className && typeof el.className === 'string' ? el.className : '';
       if (/admin|bloc|edit|modifier|visibility|width|order/i.test(cls) || el.closest?.('[class*="BlockVisibility"]')) {

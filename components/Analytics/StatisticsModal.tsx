@@ -26,7 +26,7 @@ type AnalyticsData = {
   byCountry: { country: string; count: number }[];
   byCity: { country: string; city: string; count: number }[];
   topClicks: { path: string; element_id: string; count: number }[];
-  bySource?: { source: string; count: number }[];
+  bySource?: { source: string; browser: string; count: number }[];
   visitsByPage?: { path: string; uniqueVisitors: number }[];
   filterApplied: { include: boolean; exclude: boolean };
 };
@@ -64,6 +64,7 @@ export default function StatisticsModal({
   const [filterTab, setFilterTab] = useState<'include' | 'exclude'>('include');
   const [lastSavedFilter, setLastSavedFilter] = useState<IpFilter>(defaultFilter);
   const [dataTab, setDataTab] = useState<'content' | 'geo' | 'clicks' | 'source' | 'visitsByPage'>('content');
+  const [myIp, setMyIp] = useState<string | null>(null);
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
@@ -115,6 +116,18 @@ export default function StatisticsModal({
         setLastSavedFilter(f);
       })
       .catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted || !session?.access_token) return;
+      fetch('/api/admin/analytics/my-ip', { headers: { Authorization: `Bearer ${session.access_token}` } })
+        .then((r) => r.json())
+        .then((j) => { if (mounted && j?.ip) setMyIp(j.ip); })
+        .catch(() => {});
+    });
     return () => { mounted = false; };
   }, []);
 
@@ -202,6 +215,7 @@ export default function StatisticsModal({
     'bouton': 'Bouton',
     'bouton bloc': 'Bouton bloc',
     'menu': 'Menu',
+    'menu mobile': 'Menu mobile',
     'image': 'Image',
     'image galerie': 'Image galerie',
     'élément': 'Élément',
@@ -537,19 +551,21 @@ export default function StatisticsModal({
                       <thead>
                         <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
                           <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Source</th>
+                          <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Navigateur</th>
                           <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Visiteurs</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {(data.bySource ?? []).map((row) => (
-                          <tr key={row.source} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        {(data.bySource ?? []).map((row, i) => (
+                          <tr key={`${row.source}-${row.browser}-${i}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
                             <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.source}</td>
+                            <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.browser ?? '—'}</td>
                             <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.count}</td>
                           </tr>
                         ))}
                         {(data.bySource ?? []).length === 0 && (
                           <tr>
-                            <td colSpan={2} style={{ padding: '16px 14px', color: '#64748b', textAlign: 'center' }}>Aucune donnée (colonne referrer peut être absente en base)</td>
+                            <td colSpan={3} style={{ padding: '16px 14px', color: '#64748b', textAlign: 'center' }}>Aucune donnée (colonne referrer peut être absente en base)</td>
                           </tr>
                         )}
                       </tbody>
@@ -597,6 +613,31 @@ export default function StatisticsModal({
               <p style={{ fontSize: 13, color: '#475569', marginBottom: 12, lineHeight: 1.5 }}>
                 Inclure uniquement ces IP : ne garder que les stats des visites dont l&apos;IP est dans la liste. Exclure ces IP : retirer des stats les visites dont l&apos;IP est dans la liste. Une IP par ligne.
               </p>
+              <p style={{ fontSize: 13, color: '#475569', marginBottom: 12, lineHeight: 1.5 }}>
+                En base, seuls des <strong>hash d&apos;IP</strong> sont stockés (pas l&apos;IP en clair), pour la confidentialité. Pour exclure un visiteur, utilisez le filtre ci‑dessous avec l&apos;IP exacte telle que vue par le serveur.
+              </p>
+              {myIp && (
+                <div style={{ marginBottom: 12, padding: 12, background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8 }}>
+                  <span style={{ fontSize: 13, color: '#166534', fontWeight: 600 }}>Votre IP actuelle</span>
+                  <span style={{ fontSize: 13, color: '#166534', marginLeft: 8 }}>(celle enregistrée quand vous visitez le site) : </span>
+                  <code style={{ fontSize: 14, color: '#0f172a', marginLeft: 4 }}>{myIp}</code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!myIp) return;
+                      setIpFilter((prev) => ({
+                        ...prev,
+                        exclude: prev.exclude.includes(myIp) ? prev.exclude : [...prev.exclude, myIp],
+                      }));
+                      setFilterTab('exclude');
+                      setFilterDirty(true);
+                    }}
+                    style={{ marginLeft: 12, padding: '4px 10px', fontSize: 12, background: '#166534', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 500 }}
+                  >
+                    Ajouter à Exclure
+                  </button>
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
                 <button
                   type="button"
