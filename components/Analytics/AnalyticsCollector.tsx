@@ -44,18 +44,20 @@ export default function AnalyticsCollector() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !authChecked) return;
+    if (isAuthenticatedRef.current) return; // Ne pas envoyer de pageview si connecté
     const path = pathname || window.location.pathname || '/';
     setPageEnterTime();
     pathRef.current = path;
-    trackPageview(path, undefined, isAuthenticatedRef.current);
+    trackPageview(path, undefined, false);
   }, [pathname, authChecked]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     function sendLeave() {
+      if (isAuthenticatedRef.current) return; // Ne pas envoyer si connecté
       const path = pathRef.current || window.location.pathname || '/';
       const duration = getTimeOnPageSeconds();
-      const payload = buildPageviewPayload(path, duration, isAuthenticatedRef.current);
+      const payload = buildPageviewPayload(path, duration, false);
       sendToCollect(payload, true);
     }
     function onVisibilityChange() {
@@ -73,7 +75,7 @@ export default function AnalyticsCollector() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !authChecked) return; // Attendre la connaissance de l'auth avant d'écouter les clics
     function findClickableInPath(ev: MouseEvent): HTMLElement | null {
       const path = (ev as any).composedPath?.() as HTMLElement[] | undefined;
       if (Array.isArray(path)) {
@@ -172,15 +174,16 @@ export default function AnalyticsCollector() {
       return text ? `élément|${text}` : 'inconnu|';
     }
     function handleClick(e: MouseEvent) {
+      if (isAuthenticatedRef.current) return; // Ne pas enregistrer les clics si connecté
       const path = window.location.pathname || '/';
       const clickable = findClickableInPath(e);
       if (!clickable) return;
       const typeDetail = getElementTypeAndDetail(clickable);
-      trackClick(path, typeDetail, {}, isAuthenticatedRef.current);
+      trackClick(path, typeDetail, {}, false);
     }
     document.addEventListener('click', handleClick, { capture: true, passive: true });
     return () => document.removeEventListener('click', handleClick, { capture: true });
-  }, []);
+  }, [authChecked]);
 
   return null;
 }
