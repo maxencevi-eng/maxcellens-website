@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       browser: sessionInfo?.browser ?? null,
       country: country ?? null,
       city: city ?? null,
-      is_authenticated: is_authenticated === true,
+      is_authenticated: false, // on n'arrive ici que si visiteur non connecté
       updated_at: new Date().toISOString(),
     };
     if (includeReferrerInRow) sessionRow.referrer = referrerValue;
