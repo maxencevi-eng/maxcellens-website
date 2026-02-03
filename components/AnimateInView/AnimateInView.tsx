@@ -4,7 +4,7 @@ import React from "react";
 import { motion, type Variants } from "framer-motion";
 
 const viewport = { once: true, amount: 0.15 };
-const transition = { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] };
+const transition = { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const };
 
 export const variants: Record<string, Variants> = {
   /** Texte : fondu + léger slide du bas */
