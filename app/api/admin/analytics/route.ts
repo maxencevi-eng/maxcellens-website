@@ -159,17 +159,20 @@ export async function GET(req: Request) {
 
     const countryCount = new Map<string, number>();
     const cityCount = new Map<string, number>();
+    const countryLabel = (v: string | null | undefined) => (v && String(v).trim()) ? String(v).trim() : 'Inconnu';
+    const cityLabel = (v: string | null | undefined) => (v && String(v).trim()) ? String(v).trim() : 'Inconnu';
     sessions.forEach((s) => {
-      const c = s.country || 'Inconnu';
+      const c = countryLabel(s.country);
       countryCount.set(c, (countryCount.get(c) || 0) + 1);
-      const cityKey = [c, s.city || ''].join('|');
+      const cityVal = cityLabel(s.city);
+      const cityKey = `${c}|${cityVal}`;
       cityCount.set(cityKey, (cityCount.get(cityKey) || 0) + 1);
     });
     const byCountry = Array.from(countryCount.entries()).map(([country, count]) => ({ country, count })).sort((a, b) => b.count - a.count).slice(0, 15);
     const byCity = Array.from(cityCount.entries())
       .map(([key, count]) => {
         const [country, city] = key.split('|');
-        return { country, city: city || '—', count };
+        return { country, city: city || 'Inconnu', count };
       })
       .sort((a, b) => b.count - a.count)
       .slice(0, 15);
@@ -212,9 +215,10 @@ export async function GET(req: Request) {
     }
 
     const sourceBrowserCount = new Map<string, number>();
+    const browserLabelNorm = (v: string | null | undefined) => (v && String(v).trim()) ? String(v).trim() : 'Inconnu';
     sessions.forEach((s) => {
       const sourceLabel = referrerToSourceLabel(s.referrer);
-      const browserLabel = (s as { browser?: string | null }).browser?.trim() || 'Inconnu';
+      const browserLabel = browserLabelNorm((s as { browser?: string | null }).browser);
       const key = `${sourceLabel}\t${browserLabel}`;
       sourceBrowserCount.set(key, (sourceBrowserCount.get(key) || 0) + 1);
     });

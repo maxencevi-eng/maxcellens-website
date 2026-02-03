@@ -8,6 +8,70 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
   const [purging, setPurging] = useState(false);
   const [purgingAll, setPurgingAll] = useState(false);
   const [purgeResult, setPurgeResult] = useState<string | null>(null);
+  const [ipToPurge, setIpToPurge] = useState('');
+  const [purgingByIp, setPurgingByIp] = useState(false);
+  const [myIpLoading, setMyIpLoading] = useState(false);
+  const [purgeByIpResult, setPurgeByIpResult] = useState<string | null>(null);
+
+  const fillMyIp = async () => {
+    setMyIpLoading(true);
+    setPurgeByIpResult(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) {
+        setPurgeByIpResult('Non connecté');
+        return;
+      }
+      const res = await fetch('/api/admin/analytics/my-ip', { headers: { Authorization: `Bearer ${token}` } });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPurgeByIpResult(json?.error || `Erreur ${res.status}`);
+        return;
+      }
+      const ip = json?.ip;
+      if (ip != null && typeof ip === 'string') setIpToPurge(ip.trim());
+      else setPurgeByIpResult('IP non disponible');
+    } catch (e: unknown) {
+      setPurgeByIpResult(e instanceof Error ? e.message : String(e));
+    } finally {
+      setMyIpLoading(false);
+    }
+  };
+
+  const runPurgeByIp = async () => {
+    const ip = ipToPurge.trim();
+    if (!ip) {
+      setPurgeByIpResult('Saisissez une IP ou utilisez "Utiliser mon IP".');
+      return;
+    }
+    if (!confirm(`Supprimer définitivement toutes les sessions et événements associés à l'IP ${ip} ?`)) return;
+    setPurgingByIp(true);
+    setPurgeByIpResult(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) {
+        setPurgeByIpResult('Non connecté');
+        return;
+      }
+      const res = await fetch(`/api/admin/analytics/purge?ip=${encodeURIComponent(ip)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPurgeByIpResult(json?.error || `Erreur ${res.status}`);
+        return;
+      }
+      const count = json?.deleted ?? 0;
+      setPurgeByIpResult(`${count} session(s) supprimée(s) pour cette IP.`);
+    } catch (e: unknown) {
+      setPurgeByIpResult(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPurgingByIp(false);
+    }
+  };
 
   const runPurge = async (all: boolean) => {
     const msg = all
@@ -124,6 +188,70 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
                 </span>
               )}
             </div>
+
+            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 16, marginTop: 8 }}>
+              <p style={{ fontSize: 14, color: '#475569', marginBottom: 12, lineHeight: 1.5 }}>
+                Purger les tracks d&apos;une IP précise (sessions + événements associés). Utile pour retirer vos propres visites de test.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    value={ipToPurge}
+                    onChange={(e) => { setIpToPurge(e.target.value); setPurgeByIpResult(null); }}
+                    placeholder="Ex. 82.65.123.45"
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: 8,
+                      fontSize: 14,
+                      minWidth: 160,
+                    }}
+                    aria-label="Adresse IP à purger"
+                  />
+                  <button
+                    type="button"
+                    onClick={fillMyIp}
+                    disabled={myIpLoading || purgingByIp}
+                    style={{
+                      padding: '8px 14px',
+                      background: myIpLoading || purgingByIp ? '#94a3b8' : '#64748b',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 8,
+                      cursor: myIpLoading || purgingByIp ? 'not-allowed' : 'pointer',
+                      fontWeight: 500,
+                      fontSize: 13,
+                    }}
+                  >
+                    {myIpLoading ? 'Chargement…' : 'Utiliser mon IP'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={runPurgeByIp}
+                    disabled={purgingByIp || purging || purgingAll || !ipToPurge.trim()}
+                    style={{
+                      padding: '8px 14px',
+                      background: purgingByIp || purging || purgingAll || !ipToPurge.trim() ? '#94a3b8' : '#b91c1c',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 8,
+                      cursor: purgingByIp || purging || purgingAll || !ipToPurge.trim() ? 'not-allowed' : 'pointer',
+                      fontWeight: 600,
+                      fontSize: 13,
+                    }}
+                  >
+                    {purgingByIp ? 'Purge en cours…' : 'Purger les tracks de cette IP'}
+                  </button>
+                </div>
+                {purgeByIpResult && (
+                  <span style={{ fontSize: 13, color: purgeByIpResult.startsWith('Erreur') || purgeByIpResult === 'Non connecté' || purgeByIpResult.includes('Saisissez') ? '#dc2626' : '#059669', fontWeight: 500 }}>
+                    {purgeByIpResult}
+                  </span>
+                )}
+              </div>
+            </div>
+
             <details style={{ fontSize: 12, color: '#64748b' }}>
               <summary style={{ cursor: 'pointer' }}>SQL manuel (purge totale)</summary>
               <pre style={{ marginTop: 8, padding: 12, background: '#f1f5f9', borderRadius: 8, overflow: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>

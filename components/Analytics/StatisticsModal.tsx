@@ -559,7 +559,7 @@ export default function StatisticsModal({
                         {(data.bySource ?? []).map((row, i) => (
                           <tr key={`${row.source}-${row.browser}-${i}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
                             <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.source}</td>
-                            <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.browser ?? '—'}</td>
+                            <td style={{ padding: '10px 14px', color: '#1e293b' }}>{row.browser ?? 'Inconnu'}</td>
                             <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.count}</td>
                           </tr>
                         ))}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../../lib/supabaseAdmin';
+import { hashIp } from '../../../../../lib/analytics';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,8 +46,29 @@ export async function POST(req: Request) {
     if (!isCron && !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const purgeAll = url.searchParams.get('all') === '1' || url.searchParams.get('all') === 'true';
+    const purgeIp = url.searchParams.get('ip')?.trim() || null;
 
     let deleted: { id: string }[] = [];
+
+    if (purgeIp) {
+      // Purge par IP : supprimer uniquement les sessions dont l'IP (hash) correspond
+      const ipHash = hashIp(purgeIp);
+      if (!ipHash) {
+        return NextResponse.json({ error: 'IP invalide ou vide' }, { status: 400 });
+      }
+      const { data, error } = await supabaseAdmin
+        .from('analytics_sessions')
+        .delete()
+        .eq('ip_hash', ipHash)
+        .select('id');
+      if (error) {
+        console.error('analytics purge by ip error', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      deleted = data ?? [];
+      const count = deleted.length;
+      return NextResponse.json({ ok: true, deleted: count, byIp: true });
+    }
 
     if (purgeAll) {
       // Purge totale : toutes les sessions (les événements sont supprimés en CASCADE)
