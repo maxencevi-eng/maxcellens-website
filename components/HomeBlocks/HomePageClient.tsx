@@ -28,6 +28,7 @@ import {
 } from "./homeDefaults";
 import type { HomeBlockKey } from "./HomeBlockModal";
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
+import AnimateInView, { AnimateStaggerItem } from "../AnimateInView/AnimateInView";
 import styles from "./HomeBlocks.module.css";
 
 const SETTINGS_KEYS =
@@ -222,9 +223,11 @@ export default function HomePageClient() {
                 <BlockOrderButtons page="home" blockId="home_intro" />
               </div>
             )}
-            {intro.title ? (() => { const Tag = (intro as any).titleStyle || "h1"; const fs = (intro as any).titleFontSize; return <Tag className={`${styles.introTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{intro.title}</Tag>; })() : null}
-            {intro.subtitle ? (() => { const Tag = (intro as any).subtitleStyle || "p"; const fs = (intro as any).subtitleFontSize; return <Tag className={`${styles.introSubtitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{intro.subtitle}</Tag>; })() : null}
-            {intro.html ? <div className={styles.introText} dangerouslySetInnerHTML={{ __html: intro.html }} /> : null}
+            <AnimateInView variant="fadeUp">
+              {intro.title ? (() => { const Tag = (intro as any).titleStyle || "h1"; const fs = (intro as any).titleFontSize; return <Tag className={`${styles.introTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{intro.title}</Tag>; })() : null}
+              {intro.subtitle ? (() => { const Tag = (intro as any).subtitleStyle || "p"; const fs = (intro as any).subtitleFontSize; return <Tag className={`${styles.introSubtitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{intro.subtitle}</Tag>; })() : null}
+              {intro.html ? <div className={styles.introText} dangerouslySetInnerHTML={{ __html: intro.html }} /> : null}
+            </AnimateInView>
           </div>
         </div>
       </section>
@@ -244,25 +247,29 @@ export default function HomePageClient() {
                 <BlockOrderButtons page="home" blockId="home_services" />
               </div>
             )}
-            {(services as any).blockTitle ? (() => { const Tag = (services as any).blockTitleStyle || "h2"; const fs = (services as any).blockTitleFontSize; return <Tag className={`${styles.servicesTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(services as any).blockTitle}</Tag>; })() : null}
-            {(services as any).blockSubtitle ? (() => { const Tag = (services as any).blockSubtitleStyle || "p"; const fs = (services as any).blockSubtitleFontSize; return <Tag className={`${styles.servicesSubtitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(services as any).blockSubtitle}</Tag>; })() : null}
-            <div className={styles.servicesGrid}>
+            <AnimateInView variant="fadeUp">
+              {(services as any).blockTitle ? (() => { const Tag = (services as any).blockTitleStyle || "h2"; const fs = (services as any).blockTitleFontSize; return <Tag className={`${styles.servicesTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(services as any).blockTitle}</Tag>; })() : null}
+              {(services as any).blockSubtitle ? (() => { const Tag = (services as any).blockSubtitleStyle || "p"; const fs = (services as any).blockSubtitleFontSize; return <Tag className={`${styles.servicesSubtitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(services as any).blockSubtitle}</Tag>; })() : null}
+            </AnimateInView>
+            <AnimateInView variant="stagger" className={styles.servicesGrid}>
               {serviceItems.map((item, i) => (
-                <Link key={i} href={item.href || "#"} className={styles.serviceCard} data-analytics-id={`Accueil|Service - ${(item.title || 'Service').toString().slice(0, 40)}`}>
-                  <div className={styles.serviceCardImageWrap}>
-                    {item.image?.url ? (
-                      <img src={item.image.url} alt="" className={styles.serviceCardImage} />
-                    ) : (
-                      <div className={styles.serviceCardImage} style={{ background: "rgba(0,0,0,0.06)", minHeight: "100%" }} />
-                    )}
-                  </div>
-                  <div className={styles.serviceCardContent}>
-                    {(item.title || "Service") ? (() => { const Tag = (item as any).titleStyle || "h3"; const fs = (item as any).titleFontSize; return <Tag className={`${styles.serviceCardTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{item.title || "Service"}</Tag>; })() : null}
-                    {(item.description || "") ? (() => { const Tag = (item as any).descriptionStyle || "p"; return <Tag className={`${styles.serviceCardDesc} style-${Tag}`}>{item.description || ""}</Tag>; })() : null}
-                  </div>
-                </Link>
+                <AnimateStaggerItem key={i}>
+                  <Link href={item.href || "#"} className={styles.serviceCard} data-analytics-id={`Accueil|Service - ${(item.title || 'Service').toString().slice(0, 40)}`}>
+                    <div className={styles.serviceCardImageWrap}>
+                      {item.image?.url ? (
+                        <img src={item.image.url} alt="" className={styles.serviceCardImage} />
+                      ) : (
+                        <div className={styles.serviceCardImage} style={{ background: "rgba(0,0,0,0.06)", minHeight: "100%" }} />
+                      )}
+                    </div>
+                    <div className={styles.serviceCardContent}>
+                      {(item.title || "Service") ? (() => { const Tag = (item as any).titleStyle || "h3"; const fs = (item as any).titleFontSize; return <Tag className={`${styles.serviceCardTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{item.title || "Service"}</Tag>; })() : null}
+                      {(item.description || "") ? (() => { const Tag = (item as any).descriptionStyle || "p"; return <Tag className={`${styles.serviceCardDesc} style-${Tag}`}>{item.description || ""}</Tag>; })() : null}
+                    </div>
+                  </Link>
+                </AnimateStaggerItem>
               ))}
-            </div>
+            </AnimateInView>
           </div>
         </div>
       </section>
@@ -282,12 +289,15 @@ export default function HomePageClient() {
                 <BlockOrderButtons page="home" blockId="home_portrait" />
               </div>
             )}
-            {(() => {
-              const blockTitleText = (portraitBlock as any).blockTitle ?? (portraitBlock as any).title ?? "Portrait";
-              const Tag = (portraitBlock as any).blockTitleStyle || "h2";
-              const fs = (portraitBlock as any).blockTitleFontSize;
-              return <Tag className={`${styles.portraitBlockTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{blockTitleText}</Tag>;
-            })()}
+            <AnimateInView variant="fadeUp">
+              {(() => {
+                const blockTitleText = (portraitBlock as any).blockTitle ?? (portraitBlock as any).title ?? "Portrait";
+                const Tag = (portraitBlock as any).blockTitleStyle || "h2";
+                const fs = (portraitBlock as any).blockTitleFontSize;
+                return <Tag className={`${styles.portraitBlockTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{blockTitleText}</Tag>;
+              })()}
+            </AnimateInView>
+            <AnimateInView variant="slideUp">
             <div
               className={styles.portraitCarousel}
               onTouchStart={(e) => { portraitTouchStartX.current = e.touches[0]?.clientX ?? null; }}
@@ -389,9 +399,10 @@ export default function HomePageClient() {
                     </button>
                   </div>
                 </div>
-              </div>
+                </div>
               </div>
             </div>
+            </AnimateInView>
           </div>
         </div>
       </section>
@@ -412,11 +423,11 @@ export default function HomePageClient() {
               </div>
             )}
             <div className={styles.cadreurGrid}>
-              <div className={styles.cadreurContent}>
+              <AnimateInView variant="slideFromLeft" className={styles.cadreurContent}>
                 {cadreurBlock.title ? (() => { const Tag = (cadreurBlock as any).titleStyle || "h2"; const fs = (cadreurBlock as any).titleFontSize; return <Tag className={`${styles.cadreurTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{cadreurBlock.title}</Tag>; })() : null}
                 {cadreurBlock.html ? <div className={styles.cadreurText} dangerouslySetInnerHTML={{ __html: cadreurBlock.html }} /> : null}
-              </div>
-              <div className={styles.cadreurMedia}>
+              </AnimateInView>
+              <AnimateInView variant="slideFromRight" className={styles.cadreurMedia}>
                 {cadreurBlock.image?.url ? (
                   <img
                     src={cadreurBlock.image.url}
@@ -431,7 +442,7 @@ export default function HomePageClient() {
                 ) : (
                   <div className={styles.cadreurImage} style={{ background: "rgba(0,0,0,0.06)", minHeight: 200 }} />
                 )}
-              </div>
+              </AnimateInView>
             </div>
           </div>
         </div>
@@ -459,6 +470,7 @@ export default function HomePageClient() {
                 <BlockOrderButtons page="home" blockId="home_animation" />
               </div>
             )}
+            <AnimateInView variant="scaleIn">
             <div className={styles.animationBlockCard}>
               {(animationBlock as any).image?.url ? (
                 <div className={styles.animationBlockBannerWrap}>
@@ -485,6 +497,7 @@ export default function HomePageClient() {
               </div>
               <div className={styles.animationBlockGlow} aria-hidden />
             </div>
+            </AnimateInView>
           </div>
         </div>
       </section>
@@ -504,20 +517,26 @@ export default function HomePageClient() {
                 <BlockOrderButtons page="home" blockId="home_stats" />
               </div>
             )}
-            <div className={styles.statsGrid}>
+            <AnimateInView variant="stagger" className={styles.statsGrid}>
               {statItems.map((item, i) => (
-                <div key={i}>
-                  <div className={styles.statValue}>{item.value || "—"}</div>
-                  <p className={styles.statLabel}>{item.label || ""}</p>
-                </div>
+                <AnimateStaggerItem key={i}>
+                  <div>
+                    <div className={styles.statValue}>{item.value || "—"}</div>
+                    <p className={styles.statLabel}>{item.label || ""}</p>
+                  </div>
+                </AnimateStaggerItem>
               ))}
-            </div>
+            </AnimateInView>
           </div>
         </div>
       </section>
   );
 
-  const clientsSection = hide("clients") ? null : <Clients />;
+  const clientsSection = hide("clients") ? null : (
+      <AnimateInView variant="slideDown">
+        <Clients />
+      </AnimateInView>
+    );
 
   const quoteSection = hide("home_quote") ? null : (
       <section className={styles.quote} style={(quote as any).backgroundColor ? { backgroundColor: (quote as any).backgroundColor } : undefined}>
@@ -533,6 +552,7 @@ export default function HomePageClient() {
                 <BlockOrderButtons page="home" blockId="home_quote" />
               </div>
             )}
+            <AnimateInView variant="fade">
             <div className={styles.quoteMarqueeWrap} aria-label="Citations défilantes">
               <div className={styles.quoteMarqueeInner} style={{ animationDuration: `${quoteScrollDuration}s` }}>
                 {[0, 1].map((copy) => (
@@ -548,6 +568,7 @@ export default function HomePageClient() {
                 ))}
               </div>
             </div>
+            </AnimateInView>
           </div>
         </div>
       </section>
@@ -567,10 +588,12 @@ export default function HomePageClient() {
                 <BlockOrderButtons page="home" blockId="home_cta" />
               </div>
             )}
-            {cta.title ? (() => { const Tag = (cta as any).titleStyle || "h2"; const fs = (cta as any).titleFontSize; return <Tag className={`${styles.ctaTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{cta.title}</Tag>; })() : null}
-            <Link href={cta.buttonHref || "/contact"} className={`${styles.ctaButton} btn-site-${cta.buttonStyle || "1"}`} data-analytics-id="Accueil|CTA Contact">
-              {cta.buttonLabel || "Contactez-moi"}
-            </Link>
+            <AnimateInView variant="fadeUp">
+              {cta.title ? (() => { const Tag = (cta as any).titleStyle || "h2"; const fs = (cta as any).titleFontSize; return <Tag className={`${styles.ctaTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{cta.title}</Tag>; })() : null}
+              <Link href={cta.buttonHref || "/contact"} className={`${styles.ctaButton} btn-site-${cta.buttonStyle || "1"}`} data-analytics-id="Accueil|CTA Contact">
+                {cta.buttonLabel || "Contactez-moi"}
+              </Link>
+            </AnimateInView>
           </div>
         </div>
       </section>

@@ -345,7 +345,7 @@ export default function Footer() {
             ) : (
               <div className={styles.copy}><p style={{ margin: 0 }}>{footerBottomText || `© ${year} Maxcellens | Tous droits réservés | SIRET 889 577 250 00018 | Maxcellens@gmail.com`}</p></div>
             )}
-            <div className={`${styles.socials} ${styles[iconStyle] || ''}`} style={isMobileFooter ? { justifyContent: 'center', margin: '0 auto', width: 'auto', display: 'flex' } : undefined}>
+            <div data-site-social="icons" className={`${styles.socials} ${styles[iconStyle] || ''}`} style={isMobileFooter ? { justifyContent: 'center', margin: '0 auto', width: 'auto', display: 'flex' } : undefined}>
                 <a href={socialInstagram || 'https://instagram.com'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={styles.social} style={isMobileFooter ? { width: 48, height: 48, minWidth: 48, minHeight: 48, borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } : undefined}>
                 {customIcons.instagram ? <img src={customIcons.instagram} alt="Instagram custom" className={styles.customIcon} style={isMobileFooter ? { width: 28, height: 28 } : undefined} /> : <span className={styles.socialLetter} aria-hidden="true" style={isMobileFooter ? { fontSize: '14px' } : undefined}>I</span>}
               </a>

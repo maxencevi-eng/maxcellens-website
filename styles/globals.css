@@ -683,6 +683,19 @@ html.wf-loaded .containerInner {
   transition: opacity 220ms ease-in;
 }
 
+/* Social icons + menu: hidden until site-ready (fonts + short delay), then fade in like icons */
+html:not(.site-ready) [data-site-social="icons"],
+html:not(.site-ready) [data-site-nav="menu"] {
+  visibility: hidden;
+  opacity: 0;
+}
+html.site-ready [data-site-social="icons"],
+html.site-ready [data-site-nav="menu"] {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.22s ease;
+}
+
 /* If font load fails, show content but mark with a class to allow different fallback styling */
 html.wf-failed .nav,
 html.wf-failed .hero,

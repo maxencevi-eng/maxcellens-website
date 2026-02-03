@@ -276,7 +276,7 @@ export default function Header() {
               <span style={{position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden'}}>Maxcellens</span>
             </Link>
 
-            <div className={`${styles.social} ${styles[iconStyle] || ''} ${headerVisible ? '' : styles.hiddenUntilReady}`} aria-hidden={!headerVisible}>
+            <div data-site-social="icons" className={`${styles.social} ${styles[iconStyle] || ''} ${headerVisible ? '' : styles.hiddenUntilReady}`} aria-hidden={!headerVisible}>
               <a href={socialLinks.instagram || 'https://instagram.com'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={styles.socialLink}>
                 {customIcons.instagram ? <img src={customIcons.instagram} alt="Instagram custom" className={styles.customIcon} /> : (
                   <svg className={styles.socialPlaceholder} viewBox="0 0 24 24" aria-hidden="true" role="img"><rect x="4" y="4" width="16" height="16" rx="4" ry="4"/><circle cx="12" cy="12" r="4" /></svg>
@@ -314,7 +314,7 @@ export default function Header() {
           </button>
 
           <div className={styles.center}>
-            <nav data-measure="nav" data-mobile-drawer={open && isMobile ? 'true' : undefined} className={`${styles.nav} ${open ? styles.open : ''} ${headerVisible ? '' : styles.hiddenUntilReady}`} aria-label="Main navigation" aria-hidden={!headerVisible}>
+            <nav data-site-nav="menu" data-measure="nav" data-mobile-drawer={open && isMobile ? 'true' : undefined} className={`${styles.nav} ${open ? styles.open : ''} ${headerVisible ? '' : styles.hiddenUntilReady}`} aria-label="Main navigation" aria-hidden={!headerVisible}>
               { ((isMobile ? navMobileVisible : navVisible).realisation ?? true) ? <Link href="/realisation" className={linkClass('/realisation')} onClick={() => setOpen(false)}>Réalisation</Link> : null }
               { ((isMobile ? navMobileVisible : navVisible).evenement ?? true) ? <Link href="/evenement" className={linkClass('/evenement')} onClick={() => setOpen(false)}>Évènement</Link> : null }
               { ((isMobile ? navMobileVisible : navVisible).corporate ?? true) ? <Link href="/corporate" className={linkClass('/corporate')} onClick={() => setOpen(false)}>Corporate</Link> : null }

@@ -4,6 +4,7 @@ import React, { Fragment } from "react";
 import VideoIntroEditor from "../VideoIntroEditor/VideoIntroEditor";
 import EditableVideoGallery from "../VideoGallery/EditableVideoGallery";
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
+import AnimateInView from "../AnimateInView/AnimateInView";
 import { productionVideos } from "../../data/videos/productionVideos";
 
 const btnWrapStyle: React.CSSProperties = { display: "flex", gap: 8, alignItems: "center", position: "absolute", right: 12, top: 12, zIndex: 5 };
@@ -22,7 +23,9 @@ export default function ProductionPageClient() {
           <BlockOrderButtons page="realisation" blockId="production_intro" />
         </div>
       )}
-      <VideoIntroEditor keyName="production_intro" title="" placeholder="" />
+      <AnimateInView variant="fadeUp">
+        <VideoIntroEditor keyName="production_intro" title="" placeholder="" />
+      </AnimateInView>
     </div>
   );
 
@@ -35,7 +38,9 @@ export default function ProductionPageClient() {
           <BlockOrderButtons page="realisation" blockId="production_videos" />
         </div>
       )}
-      <EditableVideoGallery keyName="videos_production" initial={productionVideos} />
+      <AnimateInView variant="slideUp">
+        <EditableVideoGallery keyName="videos_production" initial={productionVideos} />
+      </AnimateInView>
     </div>
   );
 

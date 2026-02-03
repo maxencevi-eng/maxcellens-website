@@ -4,6 +4,7 @@ import React, { Fragment } from "react";
 import PortraitIntroEditor from "../PortraitIntroEditor/PortraitIntroEditor";
 import EditablePortraitGallery from "../PortraitGallery/EditablePortraitGallery";
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
+import AnimateInView from "../AnimateInView/AnimateInView";
 
 const btnWrapStyle: React.CSSProperties = { display: "flex", gap: 8, alignItems: "center", position: "absolute", right: 12, top: 12, zIndex: 5 };
 
@@ -21,7 +22,9 @@ export default function PortraitPageClient() {
           <BlockOrderButtons page="portrait" blockId="portrait_intro" />
         </div>
       )}
-      <PortraitIntroEditor />
+      <AnimateInView variant="fadeUp">
+        <PortraitIntroEditor />
+      </AnimateInView>
     </div>
   );
 
@@ -34,7 +37,9 @@ export default function PortraitPageClient() {
           <BlockOrderButtons page="portrait" blockId="portrait_gallery" />
         </div>
       )}
-      <EditablePortraitGallery items={[]} />
+      <AnimateInView variant="slideUp">
+        <EditablePortraitGallery items={[]} />
+      </AnimateInView>
     </div>
   );
 

@@ -7,6 +7,7 @@ import styles from './ContactBlocks.module.css';
 import type { ContactZonesData } from './ContactZonesEditModal';
 import type { ContactKitData } from './ContactKitEditModal';
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from '../BlockVisibility';
+import AnimateInView, { AnimateStaggerItem } from '../AnimateInView/AnimateInView';
 
 const ContactEditModal = dynamic(() => import('./ContactEditModal'), { ssr: false });
 const ContactZonesEditModal = dynamic(() => import('./ContactZonesEditModal'), { ssr: false });
@@ -99,6 +100,7 @@ export default function ContactBlocks() {
         )}
       </div>
 
+      <AnimateInView variant="fadeUp">
       <div className={styles.introGrid}>
         <div>
           {/* Only render the photo if a custom photo is set; otherwise render an empty placeholder to avoid showing base images */}
@@ -119,6 +121,7 @@ export default function ContactBlocks() {
         </div>
       </div>
       </div>
+      </AnimateInView>
       </div>
   );
 
@@ -139,38 +142,44 @@ export default function ContactBlocks() {
             <BlockOrderButtons page="contact" blockId="contact_zones" />
           </div>
         )}
-        <div className={styles.threeCols}>
-          <div>
-            {(() => {
-              const tag = (zones?.qg?.titleStyle && ['p', 'h1', 'h2', 'h3', 'h4', 'h5'].includes(zones.qg.titleStyle)) ? zones.qg.titleStyle : 'h3';
-              const Tag = tag as keyof React.JSX.IntrinsicElements;
-              const fs = zones?.qg?.titleFontSize != null && zones.qg.titleFontSize >= 8 && zones.qg.titleFontSize <= 72 ? zones.qg.titleFontSize : undefined;
-              return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.qg?.title ?? 'QG'}</Tag>;
-            })()}
-            <div className={styles.colBody} dangerouslySetInnerHTML={{ __html: zones?.qg?.text ?? '<p>Basé à Clamart (92). Point de départ de mes missions en Île-de-France.</p>' }} />
-            {(zones?.qg?.phone ?? '06 74 96 64 58') && (
-              <div style={{ marginTop: '0.5rem' }}>📞 {zones?.qg?.phone ?? '06 74 96 64 58'}</div>
-            )}
-          </div>
-          <div>
-            {(() => {
-              const tag = (zones?.paris?.titleStyle && ['p', 'h1', 'h2', 'h3', 'h4', 'h5'].includes(zones.paris.titleStyle)) ? zones.paris.titleStyle : 'h3';
-              const Tag = tag as keyof React.JSX.IntrinsicElements;
-              const fs = zones?.paris?.titleFontSize != null && zones.paris.titleFontSize >= 8 && zones.paris.titleFontSize <= 72 ? zones.paris.titleFontSize : undefined;
-              return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.paris?.title ?? 'Paris & Alentours'}</Tag>;
-            })()}
-            <div className={styles.colBody} dangerouslySetInnerHTML={{ __html: zones?.paris?.text ?? '<p>Priorité aux transports en commun. Voiture possible pour la banlieue proche — frais kilométriques.</p>' }} />
-          </div>
-          <div>
-            {(() => {
-              const tag = (zones?.france?.titleStyle && ['p', 'h1', 'h2', 'h3', 'h4', 'h5'].includes(zones.france.titleStyle)) ? zones.france.titleStyle : 'h3';
-              const Tag = tag as keyof React.JSX.IntrinsicElements;
-              const fs = zones?.france?.titleFontSize != null && zones.france.titleFontSize >= 8 && zones.france.titleFontSize <= 72 ? zones.france.titleFontSize : undefined;
-              return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.france?.title ?? 'France & Monde'}</Tag>;
-            })()}
-            <div className={styles.colBody} dangerouslySetInnerHTML={{ __html: zones?.france?.text ?? '<p>Déplacements réguliers en train pour des missions partout en France et parfois à l\'étranger — frais de déplacement.</p>' }} />
-          </div>
-        </div>
+        <AnimateInView variant="stagger" className={styles.threeCols}>
+          <AnimateStaggerItem>
+            <div>
+              {(() => {
+                const tag = (zones?.qg?.titleStyle && ['p', 'h1', 'h2', 'h3', 'h4', 'h5'].includes(zones.qg.titleStyle)) ? zones.qg.titleStyle : 'h3';
+                const Tag = tag as keyof React.JSX.IntrinsicElements;
+                const fs = zones?.qg?.titleFontSize != null && zones.qg.titleFontSize >= 8 && zones.qg.titleFontSize <= 72 ? zones.qg.titleFontSize : undefined;
+                return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.qg?.title ?? 'QG'}</Tag>;
+              })()}
+              <div className={styles.colBody} dangerouslySetInnerHTML={{ __html: zones?.qg?.text ?? '<p>Basé à Clamart (92). Point de départ de mes missions en Île-de-France.</p>' }} />
+              {(zones?.qg?.phone ?? '06 74 96 64 58') && (
+                <div style={{ marginTop: '0.5rem' }}>📞 {zones?.qg?.phone ?? '06 74 96 64 58'}</div>
+              )}
+            </div>
+          </AnimateStaggerItem>
+          <AnimateStaggerItem>
+            <div>
+              {(() => {
+                const tag = (zones?.paris?.titleStyle && ['p', 'h1', 'h2', 'h3', 'h4', 'h5'].includes(zones.paris.titleStyle)) ? zones.paris.titleStyle : 'h3';
+                const Tag = tag as keyof React.JSX.IntrinsicElements;
+                const fs = zones?.paris?.titleFontSize != null && zones.paris.titleFontSize >= 8 && zones.paris.titleFontSize <= 72 ? zones.paris.titleFontSize : undefined;
+                return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.paris?.title ?? 'Paris & Alentours'}</Tag>;
+              })()}
+              <div className={styles.colBody} dangerouslySetInnerHTML={{ __html: zones?.paris?.text ?? '<p>Priorité aux transports en commun. Voiture possible pour la banlieue proche — frais kilométriques.</p>' }} />
+            </div>
+          </AnimateStaggerItem>
+          <AnimateStaggerItem>
+            <div>
+              {(() => {
+                const tag = (zones?.france?.titleStyle && ['p', 'h1', 'h2', 'h3', 'h4', 'h5'].includes(zones.france.titleStyle)) ? zones.france.titleStyle : 'h3';
+                const Tag = tag as keyof React.JSX.IntrinsicElements;
+                const fs = zones?.france?.titleFontSize != null && zones.france.titleFontSize >= 8 && zones.france.titleFontSize <= 72 ? zones.france.titleFontSize : undefined;
+                return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.france?.title ?? 'France & Monde'}</Tag>;
+              })()}
+              <div className={styles.colBody} dangerouslySetInnerHTML={{ __html: zones?.france?.text ?? '<p>Déplacements réguliers en train pour des missions partout en France et parfois à l\'étranger — frais de déplacement.</p>' }} />
+            </div>
+          </AnimateStaggerItem>
+        </AnimateInView>
 
         <div className={styles.mapContainer}>
           <iframe
@@ -200,18 +209,20 @@ export default function ContactBlocks() {
             <BlockOrderButtons page="contact" blockId="contact_kit" />
           </div>
         )}
-        {kitData?.title?.trim() ? (
-          <h3 className={styles.kitTitle}>{kitData.title.trim()}</h3>
-        ) : null}
-        <div className={styles.kitWidget}>
-          <iframe
-            src={kitData?.embedUrl?.trim() || 'https://kit.co/embed?url=https%3A%2F%2Fkit.co%2FMaxcellens%2Fmon-equipement'}
-            className={styles.kitIframe}
-            scrolling="no"
-            title="Mon équipement — Kit.co"
-            loading="lazy"
-          />
-        </div>
+        <AnimateInView variant="fadeUp">
+          {kitData?.title?.trim() ? (
+            <h3 className={styles.kitTitle}>{kitData.title.trim()}</h3>
+          ) : null}
+          <div className={styles.kitWidget}>
+            <iframe
+              src={kitData?.embedUrl?.trim() || 'https://kit.co/embed?url=https%3A%2F%2Fkit.co%2FMaxcellens%2Fmon-equipement'}
+              className={styles.kitIframe}
+              scrolling="no"
+              title="Mon équipement — Kit.co"
+              loading="lazy"
+            />
+          </div>
+        </AnimateInView>
       </div>
   );
 

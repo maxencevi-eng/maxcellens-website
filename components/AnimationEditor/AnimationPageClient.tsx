@@ -7,6 +7,7 @@ import type { AnimationSectionData, AnimationCtaData } from "./AnimationBlockMod
 import AnimationBlockModal from "./AnimationBlockModal";
 import { DEFAULT_S1, DEFAULT_S2, DEFAULT_S3, DEFAULT_CTA } from "./animationDefaults";
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
+import AnimateInView from "../AnimateInView/AnimateInView";
 import styles from "../../app/animation/animation.module.css";
 
 const SETTINGS_KEYS = "animation_s1,animation_s2,animation_s3,animation_cta";
@@ -172,22 +173,24 @@ export default function AnimationPageClient() {
                 <BlockOrderButtons page="animation" blockId="animation_s1" />
               </div>
             )}
+            <AnimateInView variant="fadeUp">
             <div className={styles.grid}>
-              <div className={styles.gridContent}>
+              <AnimateInView variant="slideFromLeft" className={styles.gridContent}>
                 {s1.label ? (() => { const Tag = (s1 as any).labelStyle || 'p'; return <Tag className={`${styles.label} style-${Tag}`}>{s1.label}</Tag>; })() : null}
                 {s1.title ? (() => { const Tag = (s1 as any).titleStyle || 'h2'; const fs = (s1 as any).titleFontSize; return <Tag className={`${styles.title} style-${Tag}`} style={fs != null && fs >= 8 && fs <= 72 ? { fontSize: `${fs}px` } : undefined}>{s1.title}</Tag>; })() : null}
                 {s1.html ? (
                   <div className={styles.text} dangerouslySetInnerHTML={{ __html: s1.html }} />
                 ) : null}
-              </div>
-              <div className={styles.gridMedia}>
+              </AnimateInView>
+              <AnimateInView variant="slideFromRight" className={styles.gridMedia}>
                 {s1.image?.url ? (
                   <img src={s1.image.url} alt="" className={styles.image} />
                 ) : (
                   <div className={styles.image} style={{ background: "var(--muted)", opacity: 0.2, minHeight: 200 }} />
                 )}
-              </div>
+              </AnimateInView>
             </div>
+            </AnimateInView>
           </div>
         </div>
       </div>
@@ -206,22 +209,24 @@ export default function AnimationPageClient() {
                 <BlockOrderButtons page="animation" blockId="animation_s2" />
               </div>
             )}
+            <AnimateInView variant="fadeUp">
             <div className={`${styles.grid} ${styles.gridReverse}`}>
-              <div className={styles.gridContent}>
+              <AnimateInView variant="slideFromRight" className={styles.gridContent}>
                 {s2.label ? (() => { const Tag = (s2 as any).labelStyle || 'p'; return <Tag className={`${styles.label} style-${Tag}`}>{s2.label}</Tag>; })() : null}
                 {s2.title ? (() => { const Tag = (s2 as any).titleStyle || 'h2'; const fs = (s2 as any).titleFontSize; return <Tag className={`${styles.title} style-${Tag}`} style={fs != null && fs >= 8 && fs <= 72 ? { fontSize: `${fs}px` } : undefined}>{s2.title}</Tag>; })() : null}
                 {s2.html ? (
                   <div className={styles.text} dangerouslySetInnerHTML={{ __html: s2.html }} />
                 ) : null}
-              </div>
-              <div className={styles.gridMedia}>
+              </AnimateInView>
+              <AnimateInView variant="slideFromLeft" className={styles.gridMedia}>
                 {s2.image?.url ? (
                   <img src={s2.image.url} alt="" className={styles.image} />
                 ) : (
                   <div className={styles.image} style={{ background: "var(--muted)", opacity: 0.2, minHeight: 200 }} />
                 )}
-              </div>
+              </AnimateInView>
             </div>
+            </AnimateInView>
           </div>
         </div>
       </div>
@@ -240,6 +245,7 @@ export default function AnimationPageClient() {
                 <BlockOrderButtons page="animation" blockId="animation_s3" />
               </div>
             )}
+            <AnimateInView variant="fadeUp">
             <div className={styles.grid}>
               <div className={styles.gridContent}>
                 {s3.label ? (() => { const Tag = (s3 as any).labelStyle || 'p'; return <Tag className={`${styles.label} style-${Tag}`}>{s3.label}</Tag>; })() : null}
@@ -266,6 +272,7 @@ export default function AnimationPageClient() {
                 )}
               </div>
             </div>
+            </AnimateInView>
           </div>
         </div>
       </div>
@@ -284,6 +291,7 @@ export default function AnimationPageClient() {
                 <BlockOrderButtons page="animation" blockId="animation_cta" />
               </div>
             )}
+            <AnimateInView variant="fadeUp">
             <div className={styles.ctaGrid}>
               <div className={styles.ctaBlock}>
                 {(() => {
@@ -319,6 +327,7 @@ export default function AnimationPageClient() {
                 {cta.buttonLabel || "En discuter ensemble"}
               </Link>
             </div>
+            </AnimateInView>
           </div>
         </div>
       </div>

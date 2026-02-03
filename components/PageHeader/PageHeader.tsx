@@ -2,6 +2,7 @@ import React from 'react';
 import styles from './PageHeader.module.css';
 import { getHeaderForPage, getGlobalHeaderSiteSettings } from '../../lib/supabaseAdmin';
 import HeroEditorClientWrapper from '../HeroEditor/HeroEditorClientWrapper';
+import PageHeaderEntrance from './PageHeaderEntrance';
 
 type Props = {
   title: string;
@@ -80,6 +81,7 @@ export default async function PageHeader({ title, subtitle, bgImage, page, bgIma
   const preloadUrl = styleBase && (styleBase as any).backgroundImage ? String((styleBase as any).backgroundImage).replace(/^url\(['"]?|['"]?\)$/g, '') : null;
 
   return (
+    <PageHeaderEntrance>
     <header className={styles.hero}>
       {preloadUrl ? <link rel="preload" as="image" href={preloadUrl} /> : null}
       <div className={styles.containerInner}>
@@ -126,5 +128,6 @@ export default async function PageHeader({ title, subtitle, bgImage, page, bgIma
         </div>
       </div>
     </header>
+    </PageHeaderEntrance>
   );
 }

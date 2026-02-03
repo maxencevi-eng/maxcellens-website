@@ -3,6 +3,7 @@
 import React from "react";
 import GalleriesMenuClient from "../GalleriesPages/GalleriesMenuClient";
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
+import AnimateInView from "../AnimateInView/AnimateInView";
 
 const btnWrapStyle: React.CSSProperties = { display: "flex", gap: 8, alignItems: "center", position: "absolute", right: 12, top: 12, zIndex: 5 };
 
@@ -20,7 +21,9 @@ export default function GaleriesPageClient() {
           <BlockOrderButtons page="galeries" blockId="galeries_menu" />
         </div>
       )}
-      <GalleriesMenuClient />
+      <AnimateInView variant="fadeUp">
+        <GalleriesMenuClient />
+      </AnimateInView>
     </div>
   );
 

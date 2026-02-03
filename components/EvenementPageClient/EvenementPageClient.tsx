@@ -4,6 +4,7 @@ import React, { Fragment } from "react";
 import VideoIntroEditor from "../VideoIntroEditor/VideoIntroEditor";
 import EditableVideoGallery from "../VideoGallery/EditableVideoGallery";
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
+import AnimateInView from "../AnimateInView/AnimateInView";
 import { evenementVideos } from "../../data/videos/evenementVideos";
 
 const btnWrapStyle: React.CSSProperties = { display: "flex", gap: 8, alignItems: "center", position: "absolute", right: 12, top: 12, zIndex: 5 };
@@ -22,7 +23,9 @@ export default function EvenementPageClient() {
           <BlockOrderButtons page="evenement" blockId="evenement_intro" />
         </div>
       )}
-      <VideoIntroEditor keyName="evenement_intro" title="" placeholder="" />
+      <AnimateInView variant="fadeUp">
+        <VideoIntroEditor keyName="evenement_intro" title="" placeholder="" />
+      </AnimateInView>
     </div>
   );
 
@@ -35,7 +38,9 @@ export default function EvenementPageClient() {
           <BlockOrderButtons page="evenement" blockId="evenement_videos" />
         </div>
       )}
-      <EditableVideoGallery keyName="videos_evenement" initial={evenementVideos} />
+      <AnimateInView variant="slideUp">
+        <EditableVideoGallery keyName="videos_evenement" initial={evenementVideos} />
+      </AnimateInView>
     </div>
   );
 
