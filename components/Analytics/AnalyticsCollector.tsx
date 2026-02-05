@@ -44,7 +44,12 @@ export default function AnalyticsCollector() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !authChecked) return;
-    if (isAuthenticatedRef.current) return; // Ne pas envoyer de pageview si connecté
+    if (isAuthenticatedRef.current) {
+      if (typeof window !== 'undefined' && window.location.search.includes('analytics_debug=1')) {
+        console.warn('[Analytics] Pageview non envoyé : vous êtes connecté (admin). Déconnectez-vous ou utilisez la navigation privée pour que vos visites soient enregistrées.');
+      }
+      return;
+    }
     const path = pathname || window.location.pathname || '/';
     // En navigation in-app : envoyer le "leave" de la page précédente avec la durée avant de changer de page
     const prevPath = pathRef.current;

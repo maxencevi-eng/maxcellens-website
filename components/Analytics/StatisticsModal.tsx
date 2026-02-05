@@ -450,7 +450,7 @@ export default function StatisticsModal({
             )}
 
             <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16, padding: '10px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-              <strong>Pourquoi je ne vois pas mes visites ?</strong> Les visites effectuées lorsque vous êtes <strong>connecté (admin)</strong> ne sont pas enregistrées. Pour voir vos propres visites dans les stats (ex. avec un VPN), consultez le site en <strong>navigation privée</strong> ou <strong>déconnectez-vous</strong> avant de visiter.
+              <strong>Pourquoi je ne vois pas mes visites ?</strong> Les visites sont enregistrées uniquement lorsque vous n&apos;êtes <strong>pas connecté (admin)</strong>. Fermer l&apos;onglet ne suffit pas : la session reste active. Pour tester : <strong>déconnectez-vous</strong> (menu Admin → Se déconnecter) puis visitez le site, ou utilisez une <strong>fenêtre de navigation privée</strong> (sans vous connecter). Si ça ne remonte toujours pas : ouvrez le site avec <code style={{ fontSize: 12, background: '#e2e8f0', padding: '2px 6px', borderRadius: 4 }}>?analytics_debug=1</code> dans l&apos;URL et regardez la console (F12) pour voir si la collecte échoue.
             </p>
 
             {/* Chart */}

@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     }
     if (sessionError) {
       console.error('analytics collect session upsert error', sessionError);
-      return NextResponse.json({ ok: false }, { status: 500 });
+      return NextResponse.json({ ok: false, error: String(sessionError.message) }, { status: 500 });
     }
 
     const eventRow = {
@@ -94,12 +94,13 @@ export async function POST(req: Request) {
     const { error: eventError } = await supabaseAdmin.from('analytics_events').insert(eventRow);
     if (eventError) {
       console.error('analytics collect event insert error', eventError);
-      return NextResponse.json({ ok: false }, { status: 500 });
+      return NextResponse.json({ ok: false, error: String(eventError.message) }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });
-  } catch (e) {
+  } catch (e: unknown) {
     console.error('analytics collect error', e);
-    return NextResponse.json({ ok: false }, { status: 500 });
+    const message = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }
