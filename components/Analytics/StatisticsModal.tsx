@@ -449,6 +449,10 @@ export default function StatisticsModal({
               </p>
             )}
 
+            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 16, padding: '10px 12px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <strong>Pourquoi je ne vois pas mes visites ?</strong> Les visites effectuées lorsque vous êtes <strong>connecté (admin)</strong> ne sont pas enregistrées. Pour voir vos propres visites dans les stats (ex. avec un VPN), consultez le site en <strong>navigation privée</strong> ou <strong>déconnectez-vous</strong> avant de visiter.
+            </p>
+
             {/* Chart */}
             <div style={{ marginBottom: 24 }}>
               <h3 style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Évolution du trafic</h3>

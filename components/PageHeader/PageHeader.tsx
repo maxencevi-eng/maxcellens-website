@@ -94,7 +94,7 @@ export default async function PageHeader({ title, subtitle, bgImage, page, bgIma
                 opacity: typeof settingsSite.overlay.opacity !== 'undefined' ? String(settingsSite.overlay.opacity) : undefined
               } : undefined
             )} />
-            <div className={styles.content}>
+            <div className={`${styles.content} ${styles.contentSeoOnly}`}>
               <h1 className={styles.logo}>{title}</h1>
               {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
             </div>

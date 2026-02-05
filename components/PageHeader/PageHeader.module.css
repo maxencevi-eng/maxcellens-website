@@ -93,6 +93,20 @@
   padding: 0 1rem; /* small gutter on mobile */
 }
 
+/* Titre et sous-titre conservés pour le SEO mais masqués visuellement (pas d’affichage sur le hero) */
+.contentSeoOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 .logo {
   color: #ffffff;
   font-size: 72px;

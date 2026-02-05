@@ -123,15 +123,23 @@ export default function AnimationPageClient() {
     };
   }, []);
 
+  // Scroll vers la section cible au chargement (depuis accueil avec #animation_s1, etc.)
   useEffect(() => {
-    if (!loaded) return;
-    const hash = typeof window !== "undefined" ? window.location.hash?.replace(/^#/, "") : "";
-    if (!hash) return;
-    const el = document.getElementById(hash);
-    if (el) {
-      const t = setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
-      return () => clearTimeout(t);
-    }
+    if (!loaded || typeof window === "undefined") return;
+    const hash = window.location.hash?.replace(/^#/, "") || "";
+    if (!hash || !["animation_s1", "animation_s2", "animation_s3", "animation_cta"].includes(hash)) return;
+    const scrollToEl = () => {
+      const el = document.getElementById(hash);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        return true;
+      }
+      return false;
+    };
+    const t1 = setTimeout(() => {
+      if (!scrollToEl()) setTimeout(scrollToEl, 350);
+    }, 250);
+    return () => clearTimeout(t1);
   }, [loaded]);
 
   const { hiddenBlocks, blockWidthModes, blockOrderAnimation, isAdmin: isAdminCtx } = useBlockVisibility();

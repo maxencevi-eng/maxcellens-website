@@ -2,6 +2,7 @@
 
 import React, { Fragment, useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import Clients from "../Clients/Clients";
 import HomeBlockModal from "./HomeBlockModal";
@@ -58,7 +59,15 @@ const editBtnStyle: React.CSSProperties = {
   boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
 };
 
+const ANIMATION_SECTIONS = [
+  { label: "Le concept", hash: "animation_s1" },
+  { label: "Pour qui", hash: "animation_s2" },
+  { label: "Déroulé", hash: "animation_s3" },
+  { label: "Livrables & contact", hash: "animation_cta" },
+] as const;
+
 export default function HomePageClient() {
+  const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [editBlock, setEditBlock] = useState<HomeBlockKey | null>(null);
@@ -492,10 +501,17 @@ export default function HomePageClient() {
                   return <Tag className={`${styles.animationBlockSubtitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(animationBlock as any).blockSubtitle}</Tag>;
                 })() : null}
                 <div className={styles.animationBlockButtons}>
-                  <Link href="/animation#animation_s1" className={styles.animationBlockCtaSection} data-analytics-id="Accueil|Animation - Le concept">Le concept</Link>
-                  <Link href="/animation#animation_s2" className={styles.animationBlockCtaSection} data-analytics-id="Accueil|Animation - Pour qui">Pour qui</Link>
-                  <Link href="/animation#animation_s3" className={styles.animationBlockCtaSection} data-analytics-id="Accueil|Animation - Déroulé">Déroulé</Link>
-                  <Link href="/animation#animation_cta" className={styles.animationBlockCtaSection} data-analytics-id="Accueil|Animation - Livrables & contact">Livrables & contact</Link>
+                  {ANIMATION_SECTIONS.map(({ label, hash }) => (
+                    <button
+                      type="button"
+                      key={hash}
+                      className={styles.animationBlockCtaSection}
+                      data-analytics-id={`Accueil|Animation - ${label}`}
+                      onClick={() => router.push(`/animation#${hash}`)}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div className={styles.animationBlockGlow} aria-hidden />

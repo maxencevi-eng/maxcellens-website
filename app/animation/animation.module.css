@@ -1,6 +1,7 @@
-/* Section base */
+/* Section base — scroll-margin pour que le scroll vers #animation_s1 etc. place la section sous le header */
 .section {
   padding: 3rem 0;
+  scroll-margin-top: 5rem;
 }
 
 .sectionAlt {
@@ -10,6 +11,7 @@
 .sectionCta {
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.08) 100%);
   padding: 4rem 0;
+  scroll-margin-top: 5rem;
 }
 
 /* Grid: content + image */
