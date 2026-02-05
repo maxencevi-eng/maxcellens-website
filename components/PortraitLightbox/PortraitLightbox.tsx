@@ -129,8 +129,8 @@ export default function PortraitLightbox({ images, index, onClose, onPrev, onNex
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            maxWidth: '95vw',
             maxHeight: '85vh',
-            overflowY: 'auto',
           }}
         >
           <img
@@ -138,7 +138,8 @@ export default function PortraitLightbox({ images, index, onClose, onPrev, onNex
             alt={img.title || ''}
             style={{
               maxWidth: '95vw',
-              width: '95vw',
+              maxHeight: '85vh',
+              width: 'auto',
               height: 'auto',
               display: 'block',
               objectFit: 'contain',

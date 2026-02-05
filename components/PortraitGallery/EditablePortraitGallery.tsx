@@ -14,9 +14,11 @@ type EditablePortraitGalleryProps = {
   uploadPage?: string;
   /** Folder in medias bucket (e.g. Portrait/Galerie1 or Galleries/mariage) */
   uploadFolder?: string;
+  /** Label affiché dans le bouton / modal (ex. "Lifestyle") */
+  galleryLabel?: string;
 };
 
-export default function EditablePortraitGallery({ items: initialItems, settingsKey = 'portrait_gallery', uploadPage = 'portrait', uploadFolder = 'Portrait/Galerie1' }: EditablePortraitGalleryProps) {
+export default function EditablePortraitGallery({ items: initialItems, settingsKey = 'portrait_gallery', uploadPage = 'portrait', uploadFolder = 'Portrait/Galerie1', galleryLabel }: EditablePortraitGalleryProps) {
   const [items, setItems] = useState<ImageItem[]>(() => (initialItems || []).map((it, i) => ({ id: String(it.id ?? i), image_url: it.image_url, image_path: (it as any).path || (it as any).image_path || undefined, title: it.title, width: it.width, height: it.height })));
   const [open, setOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -34,8 +36,9 @@ export default function EditablePortraitGallery({ items: initialItems, settingsK
     return () => { mounted = false; try { (listener as any)?.subscription?.unsubscribe?.(); } catch (_) {} };
   }, []);
 
-  // load persisted data (if admin and a key exists) — ne jamais écraser les items serveur par un tableau vide
+  // load persisted data (if admin and a key exists) — réinitialiser quand on change de galerie (settingsKey)
   useEffect(() => {
+    setItems([]); // évite d'afficher la galerie précédente pendant le chargement
     async function load() {
       try {
         const res = await fetch(`/api/admin/site-settings?keys=${encodeURIComponent(settingsKey)}`);
@@ -138,7 +141,7 @@ export default function EditablePortraitGallery({ items: initialItems, settingsK
     <div>
       <div style={{ position: 'relative', marginBottom: 12 }}>
         {isAdmin && (
-          <button className="btn-secondary" onClick={openEditor} style={{ position: 'absolute', left: 12, top: -16, zIndex: 5, background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>Modifier la galerie</button>
+          <button className="btn-secondary" onClick={openEditor} style={{ position: 'absolute', left: 12, top: -16, zIndex: 5, background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>Modifier la galerie{galleryLabel ? ` ${galleryLabel}` : ''}</button>
         )}
       </div>
       <div>
@@ -153,7 +156,7 @@ export default function EditablePortraitGallery({ items: initialItems, settingsK
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ width: '95%', maxWidth: 900, maxHeight: '90vh', overflow: 'auto', background: '#fff', borderRadius: 8, padding: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h3 style={{ margin: 0 }}>Modifier la galerie</h3>
+              <h3 style={{ margin: 0 }}>Modifier la galerie{galleryLabel ? ` ${galleryLabel}` : ''}</h3>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={closeEditor} style={{ padding: '6px 10px' }}>Annuler</button>
                 <button onClick={save} style={{ background: '#111', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: 6 }}>Enregistrer</button>

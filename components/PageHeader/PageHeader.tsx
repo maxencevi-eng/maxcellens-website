@@ -93,8 +93,10 @@ export default async function PageHeader({ title, subtitle, bgImage, page, bgIma
                 backgroundColor: settingsSite.overlay.color || undefined,
                 opacity: typeof settingsSite.overlay.opacity !== 'undefined' ? String(settingsSite.overlay.opacity) : undefined
               } : undefined
-            )} />            <div className={styles.content}>
-              {/* Title and subtitle removed per request */}
+            )} />
+            <div className={styles.content}>
+              <h1 className={styles.logo}>{title}</h1>
+              {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
             </div>
             {/* if video mode, render a player or YouTube embed */}
             {mode === 'video' && (settings?.videoUrl || settings?.url) ? (

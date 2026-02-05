@@ -73,9 +73,8 @@ export default function Lightbox({ images, index, onClose, onPrev, onNext }: Pro
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            maxWidth: '95vw',
             maxHeight: '85vh',
-            overflowY: 'auto',
-            flex: '0 0 auto',
           }}
         >
           <img
@@ -83,7 +82,8 @@ export default function Lightbox({ images, index, onClose, onPrev, onNext }: Pro
             alt={img.title || ''}
             style={{
               maxWidth: '95vw',
-              width: '95vw',
+              maxHeight: '85vh',
+              width: 'auto',
               height: 'auto',
               display: 'block',
               objectFit: 'contain',

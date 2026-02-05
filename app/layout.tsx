@@ -13,32 +13,41 @@ import { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://maxcellens.vercel.app';
+const baseUrl = siteUrl.replace(/\/$/, '');
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+
 export const metadata: Metadata = {
   title: {
     default: 'Portfolio — Maxcellens',
     template: '%s | Maxcellens',
   },
   description: 'Portfolio photo & video — performant, accessible et optimisé SEO (Next.js + Supabase).',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+  metadataBase: new URL(siteUrl),
   openGraph: {
     title: 'Maxcellens — Portfolio',
     description: 'Portfolio photo & video — performant, accessible et optimisé SEO.',
-    url: process.env.NEXT_PUBLIC_SITE_URL,
+    url: `${baseUrl}/`,
     type: 'website',
-    images: ['/og-image.jpg'],
+    siteName: 'Maxcellens',
+    locale: 'fr_FR',
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Maxcellens — Portfolio' }],
   },
   twitter: {
     card: 'summary_large_image',
+    title: 'Maxcellens — Portfolio',
+    description: 'Portfolio photo & video — performant, accessible et optimisé SEO.',
   },
   robots: {
     index: true,
     follow: true,
   },
-  icons: process.env.NEXT_PUBLIC_SUPABASE_URL
-    ? {
-        icon: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/site-assets/favicons/favicon.webp`,
-      }
-    : undefined,
+  icons: supabaseUrl
+    ? [
+        { url: `${supabaseUrl}/storage/v1/object/public/site-assets/favicons/favicon.webp`, type: 'image/webp', sizes: '32x32' },
+        { url: '/favicon.ico', sizes: 'any', rel: 'icon' },
+      ]
+    : { icon: '/favicon.ico', sizes: 'any' },
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
@@ -199,14 +208,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // inject font loader after previously generated styleTag so it runs early
   if (styleTag) styleTag = styleTag + '\n' + fontLoaderScript + '\n' + trustedTypesShim; else styleTag = fontLoaderScript + '\n' + trustedTypesShim;
 
-  // Favicon: use Supabase-stored favicon (admin "Général") so SEO tools and browsers detect it
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const faviconUrl = supabaseUrl
+  // Favicon: Supabase si dispo, sinon fallback local pour éviter erreur SEO (favicon manquant)
+  const faviconSupabase = supabaseUrl
     ? `${supabaseUrl}/storage/v1/object/public/site-assets/favicons/favicon.webp`
-    : null;
-  const faviconLinks = faviconUrl
-    ? `<link rel="icon" href="${faviconUrl}" type="image/webp" sizes="32x32" />\n<link rel="shortcut icon" href="${faviconUrl}" type="image/webp" />`
-    : '<link rel="icon" href="/favicon.ico" sizes="any" />';
+    : '';
+  const faviconLinks = faviconSupabase
+    ? `<link rel="icon" href="${faviconSupabase}" type="image/webp" sizes="32x32" />\n<link rel="shortcut icon" href="${faviconSupabase}" type="image/webp" />\n<link rel="icon" href="/favicon.svg" type="image/svg+xml" />`
+    : '<link rel="icon" href="/favicon.svg" type="image/svg+xml" />';
 
   // ensure a viewport meta is present so matchMedia reports expected widths on mobile devices
   const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${faviconLinks}\n${styleTag}`;
