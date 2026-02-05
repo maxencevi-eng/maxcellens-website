@@ -136,6 +136,8 @@ export default function PortraitLightbox({ images, index, onClose, onPrev, onNex
           <img
             src={img.src}
             alt={img.title || ''}
+            width={1200}
+            height={800}
             style={{
               maxWidth: '95vw',
               maxHeight: '85vh',

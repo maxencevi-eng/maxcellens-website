@@ -80,6 +80,8 @@ export default function Lightbox({ images, index, onClose, onPrev, onNext }: Pro
           <img
             src={img.src}
             alt={img.title || ''}
+            width={1200}
+            height={800}
             style={{
               maxWidth: '95vw',
               maxHeight: '85vh',

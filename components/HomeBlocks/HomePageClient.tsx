@@ -269,7 +269,7 @@ export default function HomePageClient() {
                   <Link href={item.href || "#"} className={styles.serviceCard} data-analytics-id={`Accueil|Service - ${(item.title || 'Service').toString().slice(0, 40)}`}>
                     <div className={styles.serviceCardImageWrap}>
                       {item.image?.url ? (
-                        <img src={item.image.url} alt="" className={styles.serviceCardImage} />
+                        <img src={item.image.url} alt="" className={styles.serviceCardImage} width={400} height={300} loading="lazy" />
                       ) : (
                         <div className={styles.serviceCardImage} style={{ background: "rgba(0,0,0,0.06)", minHeight: "100%" }} />
                       )}
@@ -339,6 +339,9 @@ export default function HomePageClient() {
                         src={activePortraitSlide.image.url}
                         alt=""
                         className={styles.portraitImageTorn}
+                        width={800}
+                        height={600}
+                        loading="lazy"
                         style={
                           (activePortraitSlide.image as any)?.focus?.x != null
                             ? { objectPosition: `${(activePortraitSlide.image as any).focus.x}% ${(activePortraitSlide.image as any).focus.y}%` }
@@ -355,6 +358,9 @@ export default function HomePageClient() {
                         src={(activePortraitSlide as any).image2.url}
                         alt=""
                         className={styles.portraitImageSecondary}
+                        width={600}
+                        height={400}
+                        loading="lazy"
                         style={
                           (activePortraitSlide as any).image2?.focus?.x != null
                             ? { objectPosition: `${(activePortraitSlide as any).image2.focus.x}% ${(activePortraitSlide as any).image2.focus.y}%` }
@@ -445,6 +451,9 @@ export default function HomePageClient() {
                     src={cadreurBlock.image.url}
                     alt=""
                     className={styles.cadreurImage}
+                    width={800}
+                    height={600}
+                    loading="lazy"
                     style={
                       (cadreurBlock.image as any)?.focus?.x != null
                         ? { objectPosition: `${(cadreurBlock.image as any).focus.x}% ${(cadreurBlock.image as any).focus.y}%` }
@@ -486,7 +495,7 @@ export default function HomePageClient() {
             <div className={styles.animationBlockCard}>
               {(animationBlock as any).image?.url ? (
                 <div className={styles.animationBlockBannerWrap}>
-                  <img src={(animationBlock as any).image.url} alt="" className={styles.animationBlockBanner} />
+                  <img src={(animationBlock as any).image.url} alt="" className={styles.animationBlockBanner} width={1200} height={600} loading="lazy" />
                 </div>
               ) : null}
               <div className={styles.animationBlockContent}>

@@ -264,7 +264,7 @@ export default function Footer() {
       <h3 className={styles.logo}>
         <Link href="/" aria-label="Accueil" data-analytics-id="Logo-pied de page">
           {!imgError ? (
-            <img src={logoSrc} alt="Maxcellens" onError={() => setImgError(true)} onLoad={() => setImgError(false)} />
+            <img src={logoSrc} alt="Maxcellens" width={160} height={60} onError={() => setImgError(true)} onLoad={() => setImgError(false)} style={{ maxWidth: '100%', height: 'auto' }} />
           ) : (
             <span style={{ fontWeight: 800, color: 'var(--fg)' }}>Maxcellens</span>
           )}

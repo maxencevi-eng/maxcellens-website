@@ -267,8 +267,11 @@ export default function Header() {
                 <img
                   src={logoSrc}
                   alt="Maxcellens"
+                  width={160}
+                  height={60}
                   onError={() => setImgError(true)}
                   onLoad={() => setImgError(false)}
+                  style={{ height: 'var(--site-logo-height, 48px)', width: 'auto' }}
                 />
               ) : (
                 <span style={{ position: 'relative', fontWeight: 800, color: 'var(--fg)' }}>Maxcellens</span>
@@ -278,31 +281,31 @@ export default function Header() {
 
             <div data-site-social="icons" className={`${styles.social} ${styles[iconStyle] || ''} ${headerVisible ? '' : styles.hiddenUntilReady}`} aria-hidden={!headerVisible}>
               <a href={socialLinks.instagram || 'https://instagram.com'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={styles.socialLink}>
-                {customIcons.instagram ? <img src={customIcons.instagram} alt="Instagram custom" className={styles.customIcon} /> : (
+                {customIcons.instagram ? <img src={customIcons.instagram} alt="Instagram custom" className={styles.customIcon} width={24} height={24} /> : (
                   <svg className={styles.socialPlaceholder} viewBox="0 0 24 24" aria-hidden="true" role="img"><rect x="4" y="4" width="16" height="16" rx="4" ry="4"/><circle cx="12" cy="12" r="4" /></svg>
                 )}
               </a>
 
               <a href={socialLinks.facebook || 'https://facebook.com'} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className={styles.socialLink}>
-                {customIcons.facebook ? <img src={customIcons.facebook} alt="Facebook custom" className={styles.customIcon} /> : (
+                {customIcons.facebook ? <img src={customIcons.facebook} alt="Facebook custom" className={styles.customIcon} width={24} height={24} /> : (
                   <svg className={styles.socialPlaceholder} viewBox="0 0 24 24" aria-hidden="true" role="img"><circle cx="12" cy="12" r="8"/></svg>
                 )}
               </a>
 
               <a href={socialLinks.youtube || 'https://youtube.com'} target="_blank" rel="noopener noreferrer" aria-label="YouTube" className={styles.socialLink}>
-                {customIcons.youtube ? <img src={customIcons.youtube} alt="YouTube custom" className={styles.customIcon} /> : (
+                {customIcons.youtube ? <img src={customIcons.youtube} alt="YouTube custom" className={styles.customIcon} width={24} height={24} /> : (
                   <svg className={styles.socialPlaceholder} viewBox="0 0 24 24" aria-hidden="true" role="img"><polygon points="9,7 16,12 9,17"/></svg>
                 )}
               </a>
 
               <a href={socialLinks.tiktok || 'https://tiktok.com'} target="_blank" rel="noopener noreferrer" aria-label="TikTok" className={styles.socialLink}>
-                {customIcons.tiktok ? <img src={customIcons.tiktok} alt="TikTok custom" className={styles.customIcon} /> : (
+                {customIcons.tiktok ? <img src={customIcons.tiktok} alt="TikTok custom" className={styles.customIcon} width={24} height={24} /> : (
                   <svg className={styles.socialPlaceholder} viewBox="0 0 24 24" aria-hidden="true" role="img"><path d="M16 7c-1 0-2 0-2 0v6c0 3-3 3-3 3-2 0-3-1-3-3s1-3 3-3h1V7h4z"/></svg>
                 )}
               </a>
 
               <a href={socialLinks.linkedin || 'https://linkedin.com'} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className={styles.socialLink}>
-                {customIcons.linkedin ? <img src={customIcons.linkedin} alt="LinkedIn custom" className={styles.customIcon} /> : (
+                {customIcons.linkedin ? <img src={customIcons.linkedin} alt="LinkedIn custom" className={styles.customIcon} width={24} height={24} /> : (
                   <svg className={styles.socialPlaceholder} viewBox="0 0 24 24" aria-hidden="true" role="img"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
                 )}
               </a>
