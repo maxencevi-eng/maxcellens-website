@@ -45,9 +45,9 @@ export const metadata: Metadata = {
   icons: supabaseUrl
     ? [
         { url: `${supabaseUrl}/storage/v1/object/public/site-assets/favicons/favicon.webp`, type: 'image/webp', sizes: '32x32' },
-        { url: '/favicon.ico', sizes: 'any', rel: 'icon' },
+        { url: '/favicon.svg', type: 'image/svg+xml' },
       ]
-    : { icon: '/favicon.ico', sizes: 'any' },
+    : '/favicon.svg',
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
