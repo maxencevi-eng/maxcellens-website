@@ -131,6 +131,14 @@ export async function GET(req: Request) {
         visitors = Array.from(byHash.entries())
           .map(([, v]) => ({ ip: v.ip, ip_hash: v.ip_hash, country: v.country, city: v.city, sessionCount: v.count }))
           .sort((a, b) => b.sessionCount - a.sessionCount);
+        // Exclure les visiteurs dont le hash est dans le filtre d'exclusion (ils ne doivent plus apparaître dans la liste)
+        if (excludeHashesOrNull?.length) {
+          visitors = visitors.filter((v) => !v.ip_hash || !excludeHashesOrNull.includes(v.ip_hash));
+        }
+        // Si filtre "inclure uniquement" : ne garder que les visiteurs dont l'IP/hash est dans la liste
+        if (includeHashes?.length) {
+          visitors = visitors.filter((v) => v.ip_hash && includeHashes.includes(v.ip_hash));
+        }
       }
     } catch (_) {}
 
