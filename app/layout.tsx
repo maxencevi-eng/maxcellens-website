@@ -13,7 +13,7 @@ import { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://maxcellens.vercel.app';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://maxcellens-website.vercel.app';
 const baseUrl = siteUrl.replace(/\/$/, '');
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 

@@ -62,26 +62,10 @@ export function sendToCollect(payload: Record<string, unknown>, useBeacon = fals
   const body = JSON.stringify(payload);
   if (useBeacon && typeof navigator !== 'undefined' && navigator.sendBeacon) {
     const blob = new Blob([body], { type: 'application/json' });
-    const sent = navigator.sendBeacon(url, blob);
-    if (typeof window !== 'undefined' && !sent && (process.env.NODE_ENV === 'development' || window.location.search.includes('analytics_debug=1'))) {
-      console.warn('[Analytics] sendBeacon failed, fallback fetch');
-      fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'application/json' }, keepalive: true }).then((r) => { if (!r.ok) console.warn('[Analytics] collect failed', r.status); }).catch((e) => console.warn('[Analytics] collect error', e));
-    }
+    navigator.sendBeacon(url, blob);
     return;
   }
-  fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'application/json' }, keepalive: true })
-    .then(async (r) => {
-      if (!r.ok && typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || window.location.search.includes('analytics_debug=1'))) {
-        let msg = r.status + ' ' + r.statusText;
-        try { const j = await r.json(); if (j?.error) msg += ' — ' + j.error; } catch (_) {}
-        console.warn('[Analytics] collect failed:', msg);
-      }
-    })
-    .catch((e) => {
-      if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || window.location.search.includes('analytics_debug=1'))) {
-        console.warn('[Analytics] collect error', e);
-      }
-    });
+  fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'application/json' }, keepalive: true }).catch(() => {});
 }
 
 function getReferrer(): string {

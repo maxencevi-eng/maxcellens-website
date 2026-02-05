@@ -1,4 +1,4 @@
 # public/robots.txt
 User-agent: *
 Allow: /
-Sitemap: https://maxcellens.vercel.app/sitemap.xml
+Sitemap: https://maxcellens-website.vercel.app/sitemap.xml
