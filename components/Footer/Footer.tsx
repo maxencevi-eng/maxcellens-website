@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import styles from './Footer.module.css';
 import { Instagram, Youtube, Linkedin } from 'lucide-react';
 
@@ -264,7 +265,7 @@ export default function Footer() {
       <h3 className={styles.logo}>
         <Link href="/" aria-label="Accueil" data-analytics-id="Logo-pied de page">
           {!imgError ? (
-            <img src={logoSrc} alt="Maxcellens" width={160} height={60} onError={() => setImgError(true)} onLoad={() => setImgError(false)} style={{ maxWidth: '100%', height: 'auto' }} />
+            <Image src={logoSrc} alt="Maxcellens" width={160} height={60} onError={() => setImgError(true)} onLoad={() => setImgError(false)} style={{ maxWidth: '100%', height: 'auto' }} />
           ) : (
             <span style={{ fontWeight: 800, color: 'var(--fg)' }}>Maxcellens</span>
           )}

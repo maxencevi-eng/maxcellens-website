@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+/* Playfair Display chargée via layout (next/font ou link async) pour éviter le blocage du rendu */
 
 /* Global base styles (no Tailwind) */
 :root {

@@ -216,8 +216,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     ? `<link rel="icon" href="${faviconSupabase}" type="image/webp" sizes="32x32" />\n<link rel="shortcut icon" href="${faviconSupabase}" type="image/webp" />\n<link rel="icon" href="/favicon.svg" type="image/svg+xml" />`
     : '<link rel="icon" href="/favicon.svg" type="image/svg+xml" />';
 
+  // Playfair Display : chargement non bloquant (évite render-blocking, améliore LCP mobile)
+  const fontNonBlocking = `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" media="print" onload="this.media='all'" /><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" /></noscript>`;
   // ensure a viewport meta is present so matchMedia reports expected widths on mobile devices
-  const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${faviconLinks}\n${styleTag}`;
+  const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${faviconLinks}\n${fontNonBlocking}\n${styleTag}`;
 
   return (
     <html lang="fr" className="wf-loading" suppressHydrationWarning>

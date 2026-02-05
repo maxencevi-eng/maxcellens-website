@@ -2,6 +2,7 @@
 
 import React, { Fragment, useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import Clients from "../Clients/Clients";
@@ -269,7 +270,7 @@ export default function HomePageClient() {
                   <Link href={item.href || "#"} className={styles.serviceCard} data-analytics-id={`Accueil|Service - ${(item.title || 'Service').toString().slice(0, 40)}`}>
                     <div className={styles.serviceCardImageWrap}>
                       {item.image?.url ? (
-                        <img src={item.image.url} alt="" className={styles.serviceCardImage} width={400} height={300} loading="lazy" />
+                        <Image src={item.image.url} alt="" className={styles.serviceCardImage} width={400} height={300} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
                       ) : (
                         <div className={styles.serviceCardImage} style={{ background: "rgba(0,0,0,0.06)", minHeight: "100%" }} />
                       )}
@@ -335,13 +336,13 @@ export default function HomePageClient() {
                 <div className={styles.portraitCarouselImage}>
                   <div className={`${styles.portraitPhoto1Wrap} ${portraitSlideDirection === "next" ? styles.portraitPhoto1FromRight : styles.portraitPhoto1FromLeft}`}>
                     {activePortraitSlide?.image?.url ? (
-                      <img
+                      <Image
                         src={activePortraitSlide.image.url}
                         alt=""
                         className={styles.portraitImageTorn}
                         width={800}
                         height={600}
-                        loading="lazy"
+                        sizes="(max-width: 768px) 100vw, 800px"
                         style={
                           (activePortraitSlide.image as any)?.focus?.x != null
                             ? { objectPosition: `${(activePortraitSlide.image as any).focus.x}% ${(activePortraitSlide.image as any).focus.y}%` }
@@ -354,13 +355,13 @@ export default function HomePageClient() {
                   </div>
                   {(activePortraitSlide as any)?.image2?.url ? (
                     <div className={`${styles.portraitPhoto2Wrap} ${styles.portraitPhoto2SlideDown}`}>
-                      <img
+                      <Image
                         src={(activePortraitSlide as any).image2.url}
                         alt=""
                         className={styles.portraitImageSecondary}
                         width={600}
                         height={400}
-                        loading="lazy"
+                        sizes="(max-width: 768px) 100vw, 600px"
                         style={
                           (activePortraitSlide as any).image2?.focus?.x != null
                             ? { objectPosition: `${(activePortraitSlide as any).image2.focus.x}% ${(activePortraitSlide as any).image2.focus.y}%` }
@@ -447,13 +448,13 @@ export default function HomePageClient() {
               </AnimateInView>
               <AnimateInView variant="slideFromRight" className={styles.cadreurMedia}>
                 {cadreurBlock.image?.url ? (
-                  <img
+                  <Image
                     src={cadreurBlock.image.url}
                     alt=""
                     className={styles.cadreurImage}
                     width={800}
                     height={600}
-                    loading="lazy"
+                    sizes="(max-width: 768px) 100vw, 800px"
                     style={
                       (cadreurBlock.image as any)?.focus?.x != null
                         ? { objectPosition: `${(cadreurBlock.image as any).focus.x}% ${(cadreurBlock.image as any).focus.y}%` }
@@ -495,7 +496,7 @@ export default function HomePageClient() {
             <div className={styles.animationBlockCard}>
               {(animationBlock as any).image?.url ? (
                 <div className={styles.animationBlockBannerWrap}>
-                  <img src={(animationBlock as any).image.url} alt="" className={styles.animationBlockBanner} width={1200} height={600} loading="lazy" />
+                  <Image src={(animationBlock as any).image.url} alt="" className={styles.animationBlockBanner} width={1200} height={600} sizes="(max-width: 768px) 100vw, 1200px" />
                 </div>
               ) : null}
               <div className={styles.animationBlockContent}>

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import styles from './Header.module.css';
 
@@ -264,7 +265,7 @@ export default function Header() {
           <div className={styles.left}>
             <Link href="/" className={styles.logo} data-measure="logo" data-analytics-id="Logo-Maxcellens">
               {!imgError ? (
-                <img
+                <Image
                   src={logoSrc}
                   alt="Maxcellens"
                   width={160}
