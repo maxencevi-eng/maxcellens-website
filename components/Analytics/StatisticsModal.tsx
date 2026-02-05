@@ -301,7 +301,6 @@ export default function StatisticsModal({
     '/evenement': 'Événement',
     '/animation': 'Animation',
     '/admin': 'Admin',
-    '/services': 'Services',
   };
 
   const getPageLabel = (path: string) => {

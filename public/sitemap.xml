@@ -36,8 +36,4 @@
     <loc>https://maxcellens-website.vercel.app/galleries</loc>
     <priority>0.7</priority>
   </url>
-  <url>
-    <loc>https://maxcellens-website.vercel.app/services</loc>
-    <priority>0.7</priority>
-  </url>
 </urlset>

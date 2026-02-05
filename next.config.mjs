@@ -29,7 +29,13 @@ const nextConfig = {
     return [
       { source: '/galleries', destination: '/galeries', permanent: true },
       { source: '/production', destination: '/realisation', permanent: true },
-      { source: '/services/production', destination: '/services/realisation', permanent: true },
+      { source: '/services/production', destination: '/realisation', permanent: true },
+      { source: '/services/realisation', destination: '/realisation', permanent: true },
+      { source: '/services/evenement', destination: '/evenement', permanent: true },
+      { source: '/services/corporate', destination: '/corporate', permanent: true },
+      { source: '/services/portrait', destination: '/portrait', permanent: true },
+      { source: '/services/animation', destination: '/animation', permanent: true },
+      { source: '/services', destination: '/', permanent: true },
     ];
   },
 };

@@ -117,7 +117,6 @@ export const PAGE_SEO_SLUGS = [
   'corporate',
   'portrait',
   'galeries',
-  'services',
   'admin',
 ] as const;
 
