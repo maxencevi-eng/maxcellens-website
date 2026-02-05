@@ -412,6 +412,7 @@ export default function SeoCommandCenterModal({
                   value={form.og_site_name}
                   onChange={(e) => setForm((f) => ({ ...f, og_site_name: e.target.value }))}
                   className={styles.seoInput}
+                  placeholder="Maxcellens"
                 />
               </div>
             </section>

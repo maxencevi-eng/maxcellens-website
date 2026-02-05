@@ -72,9 +72,17 @@ export function buildMetadataFromSeo(
   const ogImage = toPublicSeoImageUrl(seo.og_image_path);
   const twitterImage = toPublicSeoImageUrl(seo.twitter_image_path);
 
+  // Meta description : max 300 caractères (reco SEO) pour affichage Google
+  const rawDesc = (seo.meta_description ?? '').trim();
+  const description = rawDesc.length > 300 ? rawDesc.slice(0, 297).trim() + '…' : rawDesc || undefined;
+  const rawOgDesc = (seo.og_description ?? seo.meta_description ?? '').trim();
+  const ogDescription = rawOgDesc.length > 300 ? rawOgDesc.slice(0, 297).trim() + '…' : rawOgDesc || description;
+  const rawTwDesc = (seo.twitter_description ?? seo.og_description ?? seo.meta_description ?? '').trim();
+  const twitterDescription = rawTwDesc.length > 300 ? rawTwDesc.slice(0, 297).trim() + '…' : rawTwDesc || description;
+
   const metadata: Metadata = {
     title: seo.meta_title ?? undefined,
-    description: seo.meta_description ?? undefined,
+    description,
     alternates: canonical ? { canonical } : undefined,
     robots: {
       index: seo.robots_index ?? true,
@@ -82,16 +90,16 @@ export function buildMetadataFromSeo(
     },
     openGraph: {
       title: seo.og_title ?? seo.meta_title ?? undefined,
-      description: seo.og_description ?? seo.meta_description ?? undefined,
+      description: ogDescription,
       type: (seo.og_type as 'website' | 'article') ?? 'website',
-      siteName: seo.og_site_name ?? undefined,
+      siteName: (seo.og_site_name && String(seo.og_site_name).trim()) ? String(seo.og_site_name).trim() : 'Maxcellens',
       url: canonical,
       images: ogImage ? [{ url: ogImage }] : undefined,
     },
     twitter: {
       card: (seo.twitter_card as 'summary_large_image' | 'summary') ?? 'summary_large_image',
       title: seo.twitter_title ?? seo.og_title ?? seo.meta_title ?? undefined,
-      description: seo.twitter_description ?? seo.og_description ?? seo.meta_description ?? undefined,
+      description: twitterDescription,
       images: twitterImage ? [twitterImage] : undefined,
     },
   };

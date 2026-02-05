@@ -54,24 +54,24 @@ INSERT INTO public.page_seo_settings (
   NULL
 ),
 -- -----------------------------------------------------------------------------
--- Animation
+-- Animation (vidéo uniquement : ateliers, formation, animation de groupes)
 -- -----------------------------------------------------------------------------
 (
   'animation',
-  'Animation & Formation | Maxcellens — Vidéaste & Photographe',
-  'Ateliers et formations vidéo/photo par Maxcellens : animation de groupes, team building, formation. Vidéaste et photographe indépendant. Sur mesure pour entreprises et particuliers.',
+  'Animation & Formation vidéo | Maxcellens — Vidéaste & Photographe',
+  'Ateliers et formations vidéo par Maxcellens : animation de groupes, team building, formation. Vidéaste indépendant. Sur mesure pour entreprises et particuliers.',
   'Animation & Formation',
   'https://maxcellens.vercel.app/animation',
   true,
   true,
-  'Animation & Formation | Maxcellens — Vidéaste & Photographe',
-  'Ateliers et formations vidéo/photo. Animation de groupes et team building. Vidéaste et photographe indépendant.',
+  'Animation & Formation vidéo | Maxcellens — Vidéaste & Photographe',
+  'Ateliers et formations vidéo. Animation de groupes et team building. Vidéaste indépendant.',
   NULL,
   'website',
   'Maxcellens',
   'summary_large_image',
-  'Animation & Formation | Maxcellens',
-  'Ateliers et formations vidéo/photo. Animation et team building.',
+  'Animation & Formation vidéo | Maxcellens',
+  'Ateliers et formations vidéo. Animation et team building.',
   NULL,
   NULL
 ),
@@ -98,24 +98,24 @@ INSERT INTO public.page_seo_settings (
   NULL
 ),
 -- -----------------------------------------------------------------------------
--- Événement
+-- Événement (vidéo & photo : séminaires, soirées, conférences, salons pro — pas mariages/naissances)
 -- -----------------------------------------------------------------------------
 (
   'evenement',
-  'Vidéaste & Photographe Événementiel | Maxcellens — Mariages, séminaires, soirées',
-  'Captation vidéo et photo d''événements : mariages, séminaires, soirées, conférences. Vidéaste et photographe indépendant. Paris, Île-de-France et France. Reportages vivants et discrets.',
+  'Vidéaste & Photographe Événementiel | Maxcellens — Séminaires, soirées, conférences',
+  'Captation vidéo et photo d''événements : séminaires, soirées, conférences, salons professionnels. Vidéaste et photographe indépendant. Paris, Île-de-France et France. Reportages vivants et discrets.',
   'Événement',
   'https://maxcellens.vercel.app/evenement',
   true,
   true,
-  'Vidéaste & Photographe Événementiel | Maxcellens — Mariages, séminaires, soirées',
-  'Captation vidéo et photo d''événements : mariages, séminaires, soirées. Vidéaste et photographe indépendant.',
+  'Vidéaste & Photographe Événementiel | Maxcellens — Séminaires, soirées, conférences',
+  'Captation vidéo et photo d''événements : séminaires, soirées, conférences. Vidéaste et photographe indépendant.',
   NULL,
   'website',
   'Maxcellens',
   'summary_large_image',
   'Vidéaste & Photographe Événementiel | Maxcellens',
-  'Mariages, séminaires, soirées, conférences. Vidéo et photo.',
+  'Séminaires, soirées, conférences. Vidéo et photo.',
   NULL,
   NULL
 ),
@@ -142,18 +142,18 @@ INSERT INTO public.page_seo_settings (
   NULL
 ),
 -- -----------------------------------------------------------------------------
--- Portrait
+-- Portrait (photo uniquement — pas de vidéo)
 -- -----------------------------------------------------------------------------
 (
   'portrait',
-  'Photographe Portrait | Maxcellens — Vidéaste & Photographe indépendant',
-  'Séances portrait photo (et vidéo) à Paris et Île-de-France : portraits professionnels, personnels, headshots. Vidéaste et photographe indépendant. Cadre naturel ou studio.',
+  'Photographe Portrait | Maxcellens — Portraits professionnels et personnels',
+  'Séances portrait photo à Paris et Île-de-France : portraits professionnels, personnels, headshots. Photographe indépendant. Cadre naturel ou studio.',
   'Portrait',
   'https://maxcellens.vercel.app/portrait',
   true,
   true,
-  'Photographe Portrait | Maxcellens — Vidéaste & Photographe indépendant',
-  'Séances portrait : professionnels, personnels, headshots. Vidéaste et photographe indépendant. Paris et Île-de-France.',
+  'Photographe Portrait | Maxcellens — Portraits professionnels et personnels',
+  'Séances portrait photo : professionnels, personnels, headshots. Photographe indépendant. Paris et Île-de-France.',
   NULL,
   'website',
   'Maxcellens',

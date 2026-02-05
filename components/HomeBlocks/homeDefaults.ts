@@ -110,7 +110,7 @@ export const DEFAULT_SERVICES: HomeServicesData = {
   blockSubtitleStyle: "p",
   items: [
     { title: "Réalisation", description: "Reportages photo et vidéo sur mesure.", href: "/realisation", image: null, titleStyle: "h3", descriptionStyle: "p" },
-    { title: "Événement", description: "Mariages, séminaires, soirées.", href: "/evenement", image: null, titleStyle: "h3", descriptionStyle: "p" },
+    { title: "Événement", description: "Séminaires, soirées, conférences.", href: "/evenement", image: null, titleStyle: "h3", descriptionStyle: "p" },
     { title: "Corporate", description: "Portraits, équipes, communication.", href: "/corporate", image: null, titleStyle: "h3", descriptionStyle: "p" },
   ],
 };

@@ -13,21 +13,21 @@ export async function generateMetadata(): Promise<Metadata> {
   const built = buildMetadataFromSeo(seo);
   if (built) return built;
   return {
-    title: 'Portfolio',
-    description: 'Portfolio photo & video — sélection de projets. Maxcellens, photographie portrait, corporate, événement et production.',
+    title: 'Maxcellens | Vidéaste & Photographe Indépendant — Portrait, Événement, Corporate',
+    description: 'Vidéaste et photographe indépendant. Portrait, événementiel, corporate et réalisation vidéo. Paris, Île-de-France et France. Missions sur mesure.',
     alternates: { canonical: `${baseUrl}/` },
     openGraph: {
-      title: 'Maxcellens — Portfolio',
-      description: 'Portfolio photo & video — sélection de projets. Maxcellens, photographie portrait, corporate, événement et production.',
+      title: 'Maxcellens | Vidéaste & Photographe Indépendant — Portrait, Événement, Corporate',
+      description: 'Vidéaste et photographe indépendant. Portrait, événementiel, corporate et réalisation vidéo. Paris et France.',
       url: `${baseUrl}/`,
       type: 'website',
       siteName: 'Maxcellens',
-      images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Maxcellens — Portfolio' }],
+      images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Maxcellens — Vidéaste & Photographe Indépendant' }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Maxcellens — Portfolio',
-      description: 'Portfolio photo & video — sélection de projets.',
+      title: 'Maxcellens | Vidéaste & Photographe Indépendant — Portrait, Événement, Corporate',
+      description: 'Vidéaste et photographe indépendant. Portrait, événementiel, corporate et réalisation vidéo.',
     },
   };
 }

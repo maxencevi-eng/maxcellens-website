@@ -19,24 +19,24 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Portfolio — Maxcellens',
+    default: 'Maxcellens | Vidéaste & Photographe Indépendant — Création vidéo et photo',
     template: '%s | Maxcellens',
   },
-  description: 'Portfolio photo & video — performant, accessible et optimisé SEO (Next.js + Supabase).',
+  description: 'Vidéaste et photographe indépendant. Création vidéo et photo : portrait, événementiel, corporate et réalisation. Paris, Île-de-France et France.',
   metadataBase: new URL(siteUrl),
   openGraph: {
-    title: 'Maxcellens — Portfolio',
-    description: 'Portfolio photo & video — performant, accessible et optimisé SEO.',
+    title: 'Maxcellens | Vidéaste & Photographe Indépendant — Création vidéo et photo',
+    description: 'Vidéaste et photographe indépendant. Création vidéo et photo : portrait, événementiel, corporate et réalisation. Paris et France.',
     url: `${baseUrl}/`,
     type: 'website',
     siteName: 'Maxcellens',
     locale: 'fr_FR',
-    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Maxcellens — Portfolio' }],
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Maxcellens — Vidéaste & Photographe Indépendant' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Maxcellens — Portfolio',
-    description: 'Portfolio photo & video — performant, accessible et optimisé SEO.',
+    title: 'Maxcellens | Vidéaste & Photographe Indépendant — Création vidéo et photo',
+    description: 'Vidéaste et photographe indépendant. Création vidéo et photo : portrait, événementiel, corporate et réalisation.',
   },
   robots: {
     index: true,

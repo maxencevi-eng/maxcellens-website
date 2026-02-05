@@ -315,14 +315,14 @@ export default function Header() {
 
           <div className={styles.center}>
             <nav data-site-nav="menu" data-measure="nav" data-mobile-drawer={open && isMobile ? 'true' : undefined} className={`${styles.nav} ${open ? styles.open : ''} ${headerVisible ? '' : styles.hiddenUntilReady}`} aria-label="Main navigation" aria-hidden={!headerVisible}>
-              { ((isMobile ? navMobileVisible : navVisible).realisation ?? true) ? <Link href="/realisation" className={linkClass('/realisation')} onClick={() => setOpen(false)}>Réalisation</Link> : null }
-              { ((isMobile ? navMobileVisible : navVisible).evenement ?? true) ? <Link href="/evenement" className={linkClass('/evenement')} onClick={() => setOpen(false)}>Évènement</Link> : null }
-              { ((isMobile ? navMobileVisible : navVisible).corporate ?? true) ? <Link href="/corporate" className={linkClass('/corporate')} onClick={() => setOpen(false)}>Corporate</Link> : null }
-              { ((isMobile ? navMobileVisible : navVisible).portrait ?? true) ? <Link href="/portrait" className={linkClass('/portrait')} onClick={() => setOpen(false)}>Portrait</Link> : null }
-              { ((isMobile ? navMobileVisible : navVisible).animation ?? true) ? <Link href="/animation" className={linkClass('/animation')} onClick={() => setOpen(false)}>Animation</Link> : null }
-              { ((isMobile ? navMobileVisible : navVisible).galleries ?? true) ? <Link href="/galeries" className={linkClass('/galeries')} onClick={() => setOpen(false)}>Galeries</Link> : null }
-              { ((isMobile ? navMobileVisible : navVisible).contact ?? true) ? <Link href="/contact" className={linkClass('/contact')} onClick={() => setOpen(false)}>Contact</Link> : null }
-              { ((isMobile ? navMobileVisible : navVisible).admin ?? true) ? <Link href="/admin" className={linkClass('/admin')} onClick={() => setOpen(false)}>Admin</Link> : null }
+              { ((isMobile ? navMobileVisible : navVisible).realisation ?? true) ? <><Link href="/realisation" className={linkClass('/realisation')} onClick={() => setOpen(false)}>Réalisation</Link>{' '}</> : null }
+              { ((isMobile ? navMobileVisible : navVisible).evenement ?? true) ? <><Link href="/evenement" className={linkClass('/evenement')} onClick={() => setOpen(false)}>Évènement</Link>{' '}</> : null }
+              { ((isMobile ? navMobileVisible : navVisible).corporate ?? true) ? <><Link href="/corporate" className={linkClass('/corporate')} onClick={() => setOpen(false)}>Corporate</Link>{' '}</> : null }
+              { ((isMobile ? navMobileVisible : navVisible).portrait ?? true) ? <><Link href="/portrait" className={linkClass('/portrait')} onClick={() => setOpen(false)}>Portrait</Link>{' '}</> : null }
+              { ((isMobile ? navMobileVisible : navVisible).animation ?? true) ? <><Link href="/animation" className={linkClass('/animation')} onClick={() => setOpen(false)}>Animation</Link>{' '}</> : null }
+              { ((isMobile ? navMobileVisible : navVisible).galleries ?? true) ? <><Link href="/galeries" className={linkClass('/galeries')} onClick={() => setOpen(false)}>Galeries</Link>{' '}</> : null }
+              { ((isMobile ? navMobileVisible : navVisible).contact ?? true) ? <><Link href="/contact" className={linkClass('/contact')} onClick={() => setOpen(false)}>Contact</Link>{' '}</> : null }
+              { ((isMobile ? navMobileVisible : navVisible).admin ?? true) ? <><Link href="/admin" className={linkClass('/admin')} onClick={() => setOpen(false)}>Admin</Link></> : null }
             </nav>
           </div>
         </div>
