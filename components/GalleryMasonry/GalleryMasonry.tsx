@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import Lightbox from '../Lightbox/Lightbox';
+
+const Lightbox = dynamic(() => import('../Lightbox/Lightbox'), { ssr: false });
 
 type Item = { id: string | number; title?: string; image_url: string; width?: number; height?: number };
 

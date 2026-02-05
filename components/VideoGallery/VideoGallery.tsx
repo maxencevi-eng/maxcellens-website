@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import VideoLightbox, { type VideoLightboxItem } from './VideoLightbox';
+import dynamic from 'next/dynamic';
+import type { VideoLightboxItem } from './VideoLightbox';
 import styles from './VideoGallery.module.css';
+
+const VideoLightbox = dynamic(() => import('./VideoLightbox').then((m) => ({ default: m.default })), { ssr: false });
 
 type VideoItem = { url: string; columns?: 1 | 2 | 3 | 4; cover?: { url: string; path?: string } };
 type Props = {

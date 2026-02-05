@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 // use native img to avoid next/image remote domain restrictions in admin editor preview
-import PortraitLightbox from '../PortraitLightbox/PortraitLightbox';
+const PortraitLightbox = dynamic(() => import('../PortraitLightbox/PortraitLightbox'), { ssr: false });
 
 type Item = { id: string | number; title?: string; image_url: string; width?: number; height?: number };
 

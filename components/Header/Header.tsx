@@ -270,6 +270,7 @@ export default function Header() {
                   alt="Maxcellens"
                   width={160}
                   height={60}
+                  priority
                   onError={() => setImgError(true)}
                   onLoad={() => setImgError(false)}
                   style={{ height: 'var(--site-logo-height, 48px)', width: 'auto' }}

@@ -3,7 +3,7 @@ import '../styles/globals.css';
 import Header from '../components/Header/Header';
 import Container from '../components/Container/Container';
 import Footer from '../components/Footer/Footer';
-import AdminSidebar from '../components/AdminSidebar/AdminSidebar';
+import AdminSidebarClient from '../components/AdminSidebar/AdminSidebarClient';
 import SiteStyleProvider from '../components/SiteStyle/SiteStyleProvider';
 import DisableImageSave from '../components/DisableImageSave/DisableImageSave';
 import PageLayoutProvider from '../components/PageLayoutModal/PageLayoutProvider';
@@ -230,7 +230,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <BlockVisibilityProvider>
               <DisableImageSave />
               <AnalyticsCollector />
-              <AdminSidebar />
+              <AdminSidebarClient />
             <Header />
             <main>
               <Container>
