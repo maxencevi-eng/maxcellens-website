@@ -22,21 +22,13 @@ export default function PortraitPageClient() {
   const hide = (id: string) => !isAdmin && hiddenBlocks.includes(id);
   const blockWidthClass = (id: string) => (blockWidthModes[id] === "max1600" ? "block-width-1600" : "");
 
-  const [activeGallery, setActiveGallery] = useState<PortraitGalleryId>(() => {
-    if (typeof window !== "undefined") {
-      const hash = window.location.hash.slice(1).toLowerCase();
-      const validIds = PORTRAIT_GALLERIES.map((g) => g.id);
-      if (hash && validIds.includes(hash as PortraitGalleryId)) {
-        return hash as PortraitGalleryId;
-      }
-    }
-    return "lifestyle";
-  });
+  // Toujours "lifestyle" au premier rendu (serveur + client) pour éviter un hydration mismatch
+  const [activeGallery, setActiveGallery] = useState<PortraitGalleryId>("lifestyle");
   const activeConfig = PORTRAIT_GALLERIES.find((g) => g.id === activeGallery) ?? PORTRAIT_GALLERIES[0];
 
   // Synchroniser avec le hash de l’URL (ex. /portrait#lifestyle), y compris sur changement de hash
+  // Après hydratation : sync avec le hash (ex. /portrait#entreprise)
   useEffect(() => {
-    if (typeof window === "undefined") return;
     const validIds = PORTRAIT_GALLERIES.map((g) => g.id);
 
     function syncFromHash() {
