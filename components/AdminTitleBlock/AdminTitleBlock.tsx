@@ -133,7 +133,17 @@ export default function AdminTitleBlock({
 
   return (
     <>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 12,
+          marginBottom: 12,
+          flexWrap: "wrap",
+          textAlign: "center",
+        }}
+      >
         <TitleTag style={titleInlineStyle}>{title}</TitleTag>
         {isAdmin && (
           <button
