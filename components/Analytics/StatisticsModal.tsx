@@ -30,6 +30,7 @@ type AnalyticsData = {
   visitsByPage?: { path: string; uniqueVisitors: number; avgTimeSeconds?: number }[];
   visitors?: { ip: string | null; ip_hash: string | null; country: string; city: string; sessionCount: number }[];
   filterApplied: { include: boolean; exclude: boolean };
+  excludeBots?: boolean;
 };
 
 const PAGE_SIZE = 20;
@@ -73,6 +74,10 @@ export default function StatisticsModal({
   const [hashAddedFeedback, setHashAddedFeedback] = useState<string | null>(null);
   const [purgingHashes, setPurgingHashes] = useState(false);
   const [purgeHashResult, setPurgeHashResult] = useState<string | null>(null);
+  const [excludeBotsSaving, setExcludeBotsSaving] = useState(false);
+  const [excludeBotsMassLoading, setExcludeBotsMassLoading] = useState(false);
+  const [purgeBotsLoading, setPurgeBotsLoading] = useState(false);
+  const [purgeBotsResult, setPurgeBotsResult] = useState<string | null>(null);
   const [pageContent, setPageContent] = useState(1);
   const [pageGeoCountry, setPageGeoCountry] = useState(1);
   const [pageGeoCity, setPageGeoCity] = useState(1);
@@ -250,6 +255,82 @@ export default function StatisticsModal({
       excludeHashes: (prev.excludeHashes ?? []).filter((h) => h !== hash),
     }));
     setFilterDirty(true);
+  };
+
+  const toggleExcludeBots = async () => {
+    const next = !(data?.excludeBots !== false);
+    setExcludeBotsSaving(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) return;
+      await fetch('/api/admin/analytics/settings', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ excludeBots: next }),
+      });
+      await fetchAnalytics();
+    } catch (_) {}
+    finally { setExcludeBotsSaving(false); }
+  };
+
+  const excludeBotsMass = async () => {
+    setExcludeBotsMassLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) return;
+      const res = await fetch('/api/admin/analytics/bot-hashes', { headers: { Authorization: `Bearer ${token}` } });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPurgeHashResult(json?.error || json?.message || `Erreur ${res.status}`);
+        return;
+      }
+      const hashes = json?.hashes ?? [];
+      if (hashes.length === 0) {
+        setPurgeHashResult('Aucun bot détecté (ou colonne user_agent absente).');
+        setTimeout(() => setPurgeHashResult(null), 4000);
+        return;
+      }
+      addHashesToExclude(hashes);
+      setPurgeHashResult(`${hashes.length} hash bot(s) ajoutés au filtre. Enregistrez le filtre ci-dessous.`);
+      setTimeout(() => setPurgeHashResult(null), 5000);
+    } catch (e: unknown) {
+      setPurgeHashResult(e instanceof Error ? e.message : String(e));
+    } finally {
+      setExcludeBotsMassLoading(false);
+    }
+  };
+
+  const purgeBotsOnly = async () => {
+    if (!confirm('Supprimer définitivement en base toutes les sessions et événements identifiés comme bots (crawlers) ?')) return;
+    setPurgeBotsLoading(true);
+    setPurgeBotsResult(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) {
+        setPurgeBotsResult('Non connecté');
+        return;
+      }
+      const res = await fetch('/api/admin/analytics/purge?bots=1', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPurgeBotsResult(json?.error || `Erreur ${res.status}`);
+        return;
+      }
+      const count = json?.deleted ?? 0;
+      setPurgeBotsResult(`${count} session(s) bot supprimée(s).`);
+      fetchAnalytics();
+      setTimeout(() => setPurgeBotsResult(null), 5000);
+    } catch (e: unknown) {
+      setPurgeBotsResult(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPurgeBotsLoading(false);
+    }
   };
 
   const runPurgeHashes = async () => {
@@ -910,6 +991,51 @@ export default function StatisticsModal({
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Crawlers / Bots */}
+            <div style={{ borderTop: '2px solid #e2e8f0', paddingTop: 24, marginBottom: 24 }}>
+              <h3 className={styles.sectionTitle} style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Crawlers / Bots</h3>
+              <p style={{ fontSize: 13, color: '#475569', marginBottom: 12, lineHeight: 1.5 }}>
+                Les visites des bots sont toujours enregistrées (User-Agent stocké). Vous pouvez les exclure des stats à l&apos;affichage ou les purger en base.
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', marginBottom: 8 }}>
+                <button
+                  type="button"
+                  onClick={toggleExcludeBots}
+                  disabled={excludeBotsSaving || !data}
+                  style={{
+                    padding: '8px 16px',
+                    border: `2px solid ${data?.excludeBots !== false ? '#059669' : '#94a3b8'}`,
+                    background: data?.excludeBots !== false ? '#ecfdf5' : '#f1f5f9',
+                    borderRadius: 8,
+                    cursor: excludeBotsSaving || !data ? 'not-allowed' : 'pointer',
+                    fontWeight: 600,
+                    color: data?.excludeBots !== false ? '#047857' : '#64748b',
+                  }}
+                >
+                  {excludeBotsSaving ? '…' : data?.excludeBots !== false ? 'Exclure crawlers / bots des stats : Activé' : 'Exclure crawlers / bots des stats : Désactivé'}
+                </button>
+                <button
+                  type="button"
+                  onClick={excludeBotsMass}
+                  disabled={excludeBotsMassLoading || !data}
+                  style={{ padding: '8px 16px', background: excludeBotsMassLoading || !data ? '#f1f5f9' : '#fef3c7', color: excludeBotsMassLoading || !data ? '#94a3b8' : '#92400e', border: '1px solid #fcd34d', borderRadius: 8, cursor: excludeBotsMassLoading || !data ? 'not-allowed' : 'pointer', fontWeight: 500 }}
+                >
+                  {excludeBotsMassLoading ? 'Chargement…' : 'Exclure en masse les bots'}
+                </button>
+                <button
+                  type="button"
+                  onClick={purgeBotsOnly}
+                  disabled={purgeBotsLoading || !data}
+                  style={{ padding: '8px 16px', background: purgeBotsLoading || !data ? '#f1f5f9' : '#dc2626', color: purgeBotsLoading || !data ? '#94a3b8' : '#fff', border: 'none', borderRadius: 8, cursor: purgeBotsLoading || !data ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+                >
+                  {purgeBotsLoading ? 'Purge en cours…' : 'Purger uniquement les traces bots'}
+                </button>
+                {purgeBotsResult && (
+                  <span style={{ fontSize: 12, color: purgeBotsResult.startsWith('Erreur') ? '#dc2626' : '#059669' }}>{purgeBotsResult}</span>
+                )}
+              </div>
             </div>
 
             {/* IP Filter */}

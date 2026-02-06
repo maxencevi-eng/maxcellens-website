@@ -17,3 +17,9 @@ ALTER TABLE public.analytics_sessions
   ADD COLUMN IF NOT EXISTS ip text;
 
 COMMENT ON COLUMN public.analytics_sessions.ip IS 'Client IP for admin visitor list and exclude; only visible to admin API.';
+
+-- 3. Colonne user_agent (détection bots / filtrage stats / purge bots)
+ALTER TABLE public.analytics_sessions
+  ADD COLUMN IF NOT EXISTS user_agent text;
+
+COMMENT ON COLUMN public.analytics_sessions.user_agent IS 'HTTP User-Agent for bot detection and purge; used when analytics_exclude_bots is enabled.';

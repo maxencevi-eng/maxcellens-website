@@ -29,6 +29,7 @@ export async function POST(req: Request) {
     const ip = getClientIp(req.headers);
     const ip_hash = hashIp(ip);
     const { country, city } = getGeoFromHeaders(req.headers);
+    const userAgent = req.headers.get('user-agent')?.trim() ?? null;
 
     let referrerValue: string | null = null;
     let includeReferrerInRow = false;
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
     };
     if (includeReferrerInRow) sessionRow.referrer = referrerValue;
     sessionRow.ip = ip ?? null;
+    sessionRow.user_agent = userAgent;
 
     let { error: sessionError } = await supabaseAdmin
       .from('analytics_sessions')
@@ -72,6 +74,13 @@ export async function POST(req: Request) {
 
     if (sessionError && /column.*ip/i.test(sessionError.message)) {
       delete sessionRow.ip;
+      const retry = await supabaseAdmin
+        .from('analytics_sessions')
+        .upsert(sessionRow, { onConflict: 'session_id', ignoreDuplicates: false });
+      sessionError = retry.error;
+    }
+    if (sessionError && /column.*user_agent/i.test(sessionError.message)) {
+      delete sessionRow.user_agent;
       const retry = await supabaseAdmin
         .from('analytics_sessions')
         .upsert(sessionRow, { onConflict: 'session_id', ignoreDuplicates: false });

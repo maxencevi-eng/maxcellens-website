@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 import { parseIpFilter, hashedIpList } from '../../../../lib/analytics';
+import { isLikelyBot } from '../../../../lib/bot-detection';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,9 +66,17 @@ export async function GET(req: Request) {
     ].filter(Boolean);
     const excludeHashesOrNull = excludeHashes.length ? excludeHashes : null;
 
+    const { data: excludeBotsRow } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'analytics_exclude_bots').maybeSingle();
+    const excludeBots = (() => {
+      const v = (excludeBotsRow as { value?: string } | null)?.value;
+      if (v === 'false' || v === '0') return false;
+      if (v === 'true' || v === '1') return true;
+      return true;
+    })();
+
     let sessionsRes = await supabaseAdmin
       .from('analytics_sessions')
-      .select('id, session_id, ip_hash, country, city, referrer, browser, created_at')
+      .select('id, session_id, ip_hash, country, city, referrer, browser, created_at, user_agent')
       .gte('created_at', sinceStr)
       .lte('created_at', untilStr)
       .or('is_authenticated.is.null,is_authenticated.eq.false');
@@ -75,14 +84,14 @@ export async function GET(req: Request) {
     if (sessionsRes.error && /does not exist|column.*is_authenticated/i.test(sessionsRes.error.message)) {
       sessionsRes = await supabaseAdmin
         .from('analytics_sessions')
-        .select('id, session_id, ip_hash, country, city, referrer, browser, created_at')
+        .select('id, session_id, ip_hash, country, city, referrer, browser, created_at, user_agent')
         .gte('created_at', sinceStr)
         .lte('created_at', untilStr);
     }
     if (sessionsRes.error && /column.*referrer/i.test(sessionsRes.error.message)) {
       sessionsRes = await supabaseAdmin
         .from('analytics_sessions')
-        .select('id, session_id, ip_hash, country, city, browser, created_at')
+        .select('id, session_id, ip_hash, country, city, browser, created_at, user_agent')
         .gte('created_at', sinceStr)
         .lte('created_at', untilStr)
         .or('is_authenticated.is.null,is_authenticated.eq.false');
@@ -90,35 +99,53 @@ export async function GET(req: Request) {
     if (sessionsRes.error && /column.*browser/i.test(sessionsRes.error.message)) {
       sessionsRes = await supabaseAdmin
         .from('analytics_sessions')
-        .select('id, session_id, ip_hash, country, city, referrer, created_at')
+        .select('id, session_id, ip_hash, country, city, referrer, created_at, user_agent')
+        .gte('created_at', sinceStr)
+        .lte('created_at', untilStr)
+        .or('is_authenticated.is.null,is_authenticated.eq.false');
+    }
+    if (sessionsRes.error && /column.*user_agent/i.test(sessionsRes.error.message)) {
+      sessionsRes = await supabaseAdmin
+        .from('analytics_sessions')
+        .select('id, session_id, ip_hash, country, city, referrer, browser, created_at')
         .gte('created_at', sinceStr)
         .lte('created_at', untilStr)
         .or('is_authenticated.is.null,is_authenticated.eq.false');
     }
     if (sessionsRes.error) return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
-    let sessions = (sessionsRes.data || []) as { id: string; session_id: string; ip_hash: string | null; country: string | null; city: string | null; referrer?: string | null; browser?: string | null; created_at: string; ip?: string | null }[];
+    let sessions = (sessionsRes.data || []) as { id: string; session_id: string; ip_hash: string | null; country: string | null; city: string | null; referrer?: string | null; browser?: string | null; created_at: string; ip?: string | null; user_agent?: string | null }[];
 
     if (includeHashes?.length) sessions = sessions.filter((s) => s.ip_hash && includeHashes.includes(s.ip_hash));
     if (excludeHashesOrNull?.length) sessions = sessions.filter((s) => !s.ip_hash || !excludeHashesOrNull.includes(s.ip_hash));
+    if (excludeBots) sessions = sessions.filter((s) => !isLikelyBot(s.user_agent));
 
     let visitors: { ip: string | null; ip_hash: string | null; country: string; city: string; sessionCount: number }[] = [];
     try {
       let visitorsRes = await supabaseAdmin
         .from('analytics_sessions')
-        .select('session_id, ip_hash, ip, country, city')
+        .select('session_id, ip_hash, ip, country, city, user_agent')
         .gte('created_at', sinceStr)
         .lte('created_at', untilStr)
         .or('is_authenticated.is.null,is_authenticated.eq.false');
       if (visitorsRes.error && /column.*ip/i.test(visitorsRes.error.message)) {
         visitorsRes = await supabaseAdmin
           .from('analytics_sessions')
-          .select('session_id, ip_hash, country, city')
+          .select('session_id, ip_hash, country, city, user_agent')
+          .gte('created_at', sinceStr)
+          .lte('created_at', untilStr)
+          .or('is_authenticated.is.null,is_authenticated.eq.false');
+      }
+      if (visitorsRes.error && /column.*user_agent/i.test(visitorsRes.error.message)) {
+        visitorsRes = await supabaseAdmin
+          .from('analytics_sessions')
+          .select('session_id, ip_hash, ip, country, city')
           .gte('created_at', sinceStr)
           .lte('created_at', untilStr)
           .or('is_authenticated.is.null,is_authenticated.eq.false');
       }
       if (!visitorsRes.error && visitorsRes.data?.length) {
-        const allSessions = (visitorsRes.data || []) as { session_id: string; ip_hash: string | null; ip?: string | null; country: string | null; city: string | null }[];
+        let allSessions = (visitorsRes.data || []) as { session_id: string; ip_hash: string | null; ip?: string | null; country: string | null; city: string | null; user_agent?: string | null }[];
+        if (excludeBots) allSessions = allSessions.filter((s) => !isLikelyBot(s.user_agent));
         const byHash = new Map<string, { ip: string | null; ip_hash: string | null; country: string; city: string; count: number }>();
         allSessions.forEach((s) => {
           const key = s.ip_hash ?? '';
@@ -362,6 +389,7 @@ export async function GET(req: Request) {
       visitsByPage,
       visitors,
       filterApplied: { include: !!includeHashes?.length, exclude: !!excludeHashes?.length },
+      excludeBots,
     });
   } catch (err: any) {
     console.error('admin analytics error', err);

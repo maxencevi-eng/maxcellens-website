@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../../lib/supabaseAdmin';
 import { hashIp } from '../../../../../lib/analytics';
+import { isLikelyBot } from '../../../../../lib/bot-detection';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
     if (!isCron && !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const purgeAll = url.searchParams.get('all') === '1' || url.searchParams.get('all') === 'true';
+    const purgeBotsOnly = url.searchParams.get('bots') === '1' || url.searchParams.get('bots') === 'true';
     const olderThan1Month = url.searchParams.get('olderThan') === '1month';
     let purgeIps = url.searchParams.getAll('ip').map((s) => s.trim()).filter(Boolean);
     if (purgeIps.length === 0) {
@@ -62,6 +64,41 @@ export async function POST(req: Request) {
     }
 
     let deleted: { id: string }[] = [];
+
+    if (purgeBotsOnly) {
+      let sessionsRes = await supabaseAdmin
+        .from('analytics_sessions')
+        .select('id, session_id, user_agent');
+      if (sessionsRes.error && /column.*user_agent/i.test(sessionsRes.error.message)) {
+        return NextResponse.json({ error: 'Colonne user_agent absente. Exécutez la migration analytics (user_agent).' }, { status: 400 });
+      }
+      if (sessionsRes.error) {
+        console.error('analytics purge bots fetch error', sessionsRes.error);
+        return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
+      }
+      const allSessions = (sessionsRes.data || []) as { id: string; session_id: string; user_agent?: string | null }[];
+      const botSessionIds = allSessions.filter((s) => isLikelyBot(s.user_agent)).map((s) => s.session_id);
+      const botIds = allSessions.filter((s) => isLikelyBot(s.user_agent)).map((s) => s.id);
+      if (botSessionIds.length === 0) {
+        return NextResponse.json({ ok: true, deleted: 0, bots: true });
+      }
+      const BATCH = 100;
+      for (let i = 0; i < botSessionIds.length; i += BATCH) {
+        const chunk = botSessionIds.slice(i, i + BATCH);
+        await supabaseAdmin.from('analytics_events').delete().in('session_id', chunk);
+      }
+      const { data: delData, error: delError } = await supabaseAdmin
+        .from('analytics_sessions')
+        .delete()
+        .in('id', botIds)
+        .select('id');
+      if (delError) {
+        console.error('analytics purge bots delete error', delError);
+        return NextResponse.json({ error: delError.message }, { status: 500 });
+      }
+      deleted = delData ?? [];
+      return NextResponse.json({ ok: true, deleted: deleted.length, bots: true });
+    }
 
     if (purgeHashes.length > 0) {
       const { data, error } = await supabaseAdmin
