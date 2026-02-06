@@ -419,13 +419,6 @@ function ToolbarPlugin() {
         </button>
         <button
           type="button"
-          onClick={() => editor.dispatchCommand(INSERT_LINE_BREAK_COMMAND, false)}
-          title="Retour à la ligne (sans nouveau paragraphe)"
-        >
-          ↵
-        </button>
-        <button
-          type="button"
           onClick={() => editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined)}
           title="Retirer liste (puces ou numérotation)"
         >
@@ -437,6 +430,13 @@ function ToolbarPlugin() {
         <button type="button" onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left')} title="Aligner à gauche">≡</button>
         <button type="button" onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center')} title="Centrer">≡</button>
         <button type="button" onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')} title="Aligner à droite">≡</button>
+        <button
+          type="button"
+          onClick={() => editor.dispatchCommand(INSERT_LINE_BREAK_COMMAND, false)}
+          title="Retour à la ligne (sans nouveau paragraphe)"
+        >
+          ↵
+        </button>
       </div>
       <div style={{ width: 1, height: 24, background: 'rgba(0,0,0,0.08)' }} />
       <select
