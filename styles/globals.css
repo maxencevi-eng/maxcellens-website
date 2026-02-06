@@ -127,7 +127,7 @@ body.has-admin-sidebar {
 #admin-sidebar {
   position: fixed;
   left: 0;
-  top: 0;
+  top: calc(var(--site-logo-height) + 36px); /* logo height + spacing */
   bottom: 0;
   width: var(--admin-sidebar-width);
   max-width: 380px;
