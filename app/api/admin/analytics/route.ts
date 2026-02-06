@@ -184,14 +184,16 @@ export async function GET(req: Request) {
             allSessions = allSessions.filter((s) => {
               const sessionDuration = sessionDurations.get(s.session_id) || 0;
               const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde
-              return s.human_validated === true || 
-                     s.is_bot !== true || 
-                     !isBotByDuration;
+              // Garder seulement si (validé humain OU pas bot) ET (pas < 1s)
+              return (s.human_validated === true || 
+                      s.is_bot !== true) && 
+                      !isBotByDuration;
             });
           } else {
             allSessions = allSessions.filter((s) => {
               const sessionDuration = sessionDurations.get(s.session_id) || 0;
               const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde
+              // Garder seulement si (pas bot par UA) ET (pas < 1s)
               return !isLikelyBot(s.user_agent) && !isBotByDuration;
             });
           }
@@ -244,14 +246,16 @@ export async function GET(req: Request) {
         sessions = sessions.filter((s) => {
           const sessionDuration = sessionDurations.get(s.session_id) || 0;
           const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde
-          return (s as SessionRow).human_validated === true || 
-                 (s as SessionRow).is_bot !== true || 
-                 !isBotByDuration;
+          // Garder seulement si (validé humain OU pas bot) ET (pas < 1s)
+          return ((s as SessionRow).human_validated === true || 
+                  (s as SessionRow).is_bot !== true) && 
+                  !isBotByDuration;
         });
       } else {
         sessions = sessions.filter((s) => {
           const sessionDuration = sessionDurations.get(s.session_id) || 0;
           const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde
+          // Garder seulement si (pas bot par UA) ET (pas < 1s)
           return !isLikelyBot(s.user_agent) && !isBotByDuration;
         });
       }
