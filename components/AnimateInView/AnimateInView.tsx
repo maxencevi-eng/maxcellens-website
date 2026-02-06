@@ -3,7 +3,8 @@
 import React from "react";
 import { motion, type Variants } from "framer-motion";
 
-const viewport = { once: true, amount: 0.15 };
+/** Déclenche l’animation quand ~40 % du bloc est visible + 80px déjà entrés en bas, pour bien voir l’effet */
+const viewport = { once: true, amount: 0.4, margin: "0px 0px -80px 0px" };
 const transition = { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const };
 
 export const variants: Record<string, Variants> = {
