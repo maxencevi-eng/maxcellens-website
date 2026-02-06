@@ -14,7 +14,15 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
-  const [grid, setGrid] = useState<{ columns: number; itemWidth: number; rowGap: number; colGap: number; heightRatio: number }>(() => ({ columns: 5, itemWidth: 120, rowGap: 12, colGap: 8, heightRatio: 0.5 }));
+  const [grid, setGrid] = useState<{ columns: number; itemWidth: number; rowGap: number; colGap: number; heightRatio: number; cloudMode?: boolean; rows?: number }>(() => ({
+    columns: 5,
+    itemWidth: 120,
+    rowGap: 12,
+    colGap: 8,
+    heightRatio: 0.5,
+    cloudMode: true,
+    rows: 3,
+  }));
 
   useEffect(() => {
     let mounted = true;
@@ -52,6 +60,8 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
                 rowGap: Number(parsed.rowGap) || prev.rowGap,
                 colGap: Number(parsed.colGap) || prev.colGap,
                 heightRatio: typeof parsed.heightRatio !== 'undefined' ? Number(parsed.heightRatio) : prev.heightRatio,
+                cloudMode: typeof parsed.cloudMode === 'boolean' ? parsed.cloudMode : (typeof prev.cloudMode === 'boolean' ? prev.cloudMode : true),
+                rows: parsed.rows != null ? (Number(parsed.rows) || prev.rows || 3) : (prev.rows ?? 3),
               }));
             }
           } catch (_) {}
@@ -205,7 +215,7 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
           </div>
 
           <div>
-            <label style={{ fontSize: 13, color: 'var(--muted)' }}>Disposition (grille)</label>
+            <label style={{ fontSize: 13, color: 'var(--muted)' }}>Disposition (desktop)</label>
             <div style={{ marginTop: 8, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 8 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 12, color: 'var(--muted)' }}>Colonnes</label>
@@ -227,6 +237,34 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
                 <label style={{ fontSize: 12, color: 'var(--muted)' }}>Hauteur relative (ratio)</label>
                 <input type="number" min={0.2} max={1} step={0.05} value={grid.heightRatio} onChange={(e) => setGrid(g => ({ ...g, heightRatio: Math.max(0.2, Math.min(1, Number(e.target.value || 0.5))) }))} />
               </div>
+            </div>
+
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--muted)' }}>
+                <input
+                  type="checkbox"
+                  checked={!!grid.cloudMode}
+                  onChange={(e) => setGrid(g => ({ ...g, cloudMode: e.target.checked }))}
+                />
+                <span>Activer le mode « nuage » en desktop (lignes équilibrées, comme en mobile)</span>
+              </label>
+
+              {grid.cloudMode && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 24 }}>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>Nombre de lignes (desktop)</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={6}
+                    value={grid.rows ?? 3}
+                    onChange={(e) => {
+                      const n = Number(e.target.value || 3);
+                      setGrid(g => ({ ...g, rows: Math.max(1, Math.min(6, n || 3)) }));
+                    }}
+                    style={{ width: 70 }}
+                  />
+                </div>
+              )}
             </div>
 
             <div style={{ marginTop: 10 }}>

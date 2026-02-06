@@ -13,24 +13,44 @@
   color: #333;
 }
 .grid {
-  /* Desktop : nuage de logos (comme le mobile, mais plus large) */
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  /* Mode grille classique (desktop) */
+  display: grid;
+  grid-template-columns: repeat(var(--clients-columns, 5), var(--clients-item-width, 120px));
+  gap: var(--clients-row-gap, 12px) var(--clients-col-gap, 8px);
   align-items: center;
-  gap: 1.5rem 2rem;
+  justify-content: center;
   max-width: 1100px;
   margin: 0 auto;
 }
+
+/* Mode nuage desktop : lignes équilibrées, déclenché via classe .gridCloud */
+.gridCloud {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.cloudRow {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem 2rem;
+}
+
 .item {
-  width: auto;
-  min-width: 100px;
-  max-width: 180px;
+  width: var(--clients-item-width, 120px);
   height: var(--clients-item-height, 60px);
   min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.cloudItem {
+  width: auto;
+  min-width: 100px;
+  max-width: 180px;
 }
 .item img {
   max-width: 100%;
@@ -44,9 +64,10 @@
   transform: translateY(-4px);
 }
 
-/* Mobile : mode nuage (disposition libre, pas 2 colonnes) */
+/* Mobile : mode nuage (disposition libre) quel que soit le mode desktop */
 @media (max-width: 900px) {
-  .section .grid {
+  .section .grid,
+  .section .gridCloud {
     display: flex !important;
     flex-wrap: wrap;
     justify-content: center;
@@ -54,7 +75,8 @@
     gap: 1.25rem 1.5rem;
     max-width: none;
   }
-  .section .grid .item {
+  .section .grid .item,
+  .section .gridCloud .item {
     width: auto !important;
     min-width: 80px;
     max-width: 140px;
@@ -67,10 +89,12 @@
   .section .grid .item:nth-child(5n + 5) { max-width: 140px; }
 }
 @media (max-width: 600px) {
-  .section .grid {
+  .section .grid,
+  .section .gridCloud {
     gap: 1rem 1.25rem;
   }
-  .section .grid .item {
+  .section .grid .item,
+  .section .gridCloud .item {
     min-width: 70px;
     max-width: 120px !important;
     height: 48px !important;
@@ -85,7 +109,8 @@
   .title {
     font-size: 1.1rem;
   }
-  .section .grid .item {
+  .section .grid .item,
+  .section .gridCloud .item {
     min-width: 65px;
     max-width: 100px !important;
   }

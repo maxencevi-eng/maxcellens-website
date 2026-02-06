@@ -43,7 +43,15 @@ export default function Clients({ logos, title }: Props) {
   const blockWidthClass = blockWidthModes['clients'] === 'max1600' ? 'block-width-1600' : '';
 
   // grid settings (from site-settings `clients_grid`)
-  const [gridSettings, setGridSettings] = useState<{ columns: number; itemWidth: number; rowGap: number; colGap: number; heightRatio: number }>(() => ({ columns: 5, itemWidth: 120, rowGap: 12, colGap: 8, heightRatio: 0.5 }));
+  const [gridSettings, setGridSettings] = useState<{ columns: number; itemWidth: number; rowGap: number; colGap: number; heightRatio: number; cloudMode?: boolean; rows?: number }>(() => ({
+    columns: 5,
+    itemWidth: 120,
+    rowGap: 12,
+    colGap: 8,
+    heightRatio: 0.5,
+    cloudMode: true,
+    rows: 3,
+  }));
 
   useEffect(() => {
     let mounted = true;
@@ -86,6 +94,8 @@ export default function Clients({ logos, title }: Props) {
                 rowGap: Number(g.rowGap) || prev.rowGap,
                 colGap: Number(g.colGap) || prev.colGap,
                 heightRatio: typeof g.heightRatio !== 'undefined' ? Number(g.heightRatio) : prev.heightRatio,
+                cloudMode: typeof g.cloudMode === 'boolean' ? g.cloudMode : (typeof prev.cloudMode === 'boolean' ? prev.cloudMode : true),
+                rows: g.rows != null ? (Number(g.rows) || prev.rows || 3) : (prev.rows ?? 3),
               }));
             }
           } catch (_) {}
@@ -106,6 +116,27 @@ export default function Clients({ logos, title }: Props) {
   }, []);
 
   if (hide) return null;
+
+  const logosList = (itemsObjects.length ? itemsObjects : items.map(u => ({ url: u })));
+
+  const cloudMode = !!gridSettings.cloudMode;
+  const cloudRows = Math.max(1, gridSettings.rows ?? 3);
+
+  // Construction de lignes équilibrées pour le mode nuage :
+  // les premières lignes ont au plus 1 logo de plus que les suivantes.
+  let cloudRowsContent: Array<Array<{ url: string; path?: string }>> = [];
+  if (cloudMode && logosList.length) {
+    const total = logosList.length;
+    const base = Math.floor(total / cloudRows);
+    const extra = total % cloudRows;
+    let index = 0;
+    for (let r = 0; r < cloudRows; r++) {
+      const size = base + (r < extra ? 1 : 0);
+      if (size <= 0) continue;
+      cloudRowsContent.push(logosList.slice(index, index + size));
+      index += size;
+    }
+  }
 
   return (
     <section
@@ -132,24 +163,46 @@ export default function Clients({ logos, title }: Props) {
             ) : null}
           </div>
 
-          <div className={styles.grid}>
-            {(itemsObjects.length ? itemsObjects : items.map(u => ({ url: u }))).map((it, i) => (
-              <div key={i} className={styles.item}>
-                <img
-                  src={it.url}
-                  alt={`client-${i}`}
-                  loading="lazy"
-                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                  onError={(e) => {
-                    const el = e.currentTarget as HTMLImageElement;
-                    // fallback to an inline SVG data URI to avoid external requests
-                    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='60'><rect fill='%23f3f4f6' width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='14'>Logo</text></svg>`;
-                    el.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-                    el.onerror = null;
-                  }}
-                />
-              </div>
-            ))}
+          <div className={cloudMode ? styles.gridCloud : styles.grid}>
+            {cloudMode
+              ? cloudRowsContent.map((row, rowIndex) => (
+                  <div key={`row-${rowIndex}`} className={styles.cloudRow}>
+                    {row.map((it, i) => (
+                      <div key={`${rowIndex}-${i}`} className={`${styles.item} ${styles.cloudItem}`}>
+                        <img
+                          src={it.url}
+                          alt={`client-${rowIndex}-${i}`}
+                          loading="lazy"
+                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                          onError={(e) => {
+                            const el = e.currentTarget as HTMLImageElement;
+                            // fallback to an inline SVG data URI to avoid external requests
+                            const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='60'><rect fill='%23f3f4f6' width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='14'>Logo</text></svg>`;
+                            el.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+                            el.onerror = null;
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ))
+              : logosList.map((it, i) => (
+                  <div key={i} className={styles.item}>
+                    <img
+                      src={it.url}
+                      alt={`client-${i}`}
+                      loading="lazy"
+                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                      onError={(e) => {
+                        const el = e.currentTarget as HTMLImageElement;
+                        // fallback to an inline SVG data URI to avoid external requests
+                        const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='60'><rect fill='%23f3f4f6' width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='14'>Logo</text></svg>`;
+                        el.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+                        el.onerror = null;
+                      }}
+                    />
+                  </div>
+                ))}
           </div>
         </div>
       </div>
