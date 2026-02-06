@@ -13,16 +13,19 @@
   color: #333;
 }
 .grid {
-  display: grid;
-  grid-template-columns: repeat(var(--clients-columns, 5), var(--clients-item-width, 120px));
-  gap: var(--clients-row-gap, 12px) var(--clients-col-gap, 8px);
-  align-items: center;
+  /* Desktop : nuage de logos (comme le mobile, mais plus large) */
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
+  gap: 1.5rem 2rem;
   max-width: 1100px;
   margin: 0 auto;
 }
 .item {
-  width: var(--clients-item-width, 120px);
+  width: auto;
+  min-width: 100px;
+  max-width: 180px;
   height: var(--clients-item-height, 60px);
   min-width: 0;
   display: flex;
