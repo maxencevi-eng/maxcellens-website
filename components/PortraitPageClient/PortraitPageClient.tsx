@@ -21,16 +21,34 @@ export default function PortraitPageClient() {
   const { hiddenBlocks, blockWidthModes, blockOrderPortrait, isAdmin } = useBlockVisibility();
   const hide = (id: string) => !isAdmin && hiddenBlocks.includes(id);
   const blockWidthClass = (id: string) => (blockWidthModes[id] === "max1600" ? "block-width-1600" : "");
-  const [activeGallery, setActiveGallery] = useState<PortraitGalleryId>("lifestyle");
+
+  const [activeGallery, setActiveGallery] = useState<PortraitGalleryId>(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.slice(1).toLowerCase();
+      const validIds = PORTRAIT_GALLERIES.map((g) => g.id);
+      if (hash && validIds.includes(hash as PortraitGalleryId)) {
+        return hash as PortraitGalleryId;
+      }
+    }
+    return "lifestyle";
+  });
   const activeConfig = PORTRAIT_GALLERIES.find((g) => g.id === activeGallery) ?? PORTRAIT_GALLERIES[0];
 
-  // Lire le hash au chargement (ex. /portrait#lifestyle) pour ouvrir la bonne galerie depuis la home
+  // Synchroniser avec le hash de l’URL (ex. /portrait#lifestyle), y compris sur changement de hash
   useEffect(() => {
-    const hash = typeof window !== "undefined" ? window.location.hash.slice(1).toLowerCase() : "";
+    if (typeof window === "undefined") return;
     const validIds = PORTRAIT_GALLERIES.map((g) => g.id);
-    if (hash && validIds.includes(hash as PortraitGalleryId)) {
-      setActiveGallery(hash as PortraitGalleryId);
+
+    function syncFromHash() {
+      const hash = window.location.hash.slice(1).toLowerCase();
+      if (hash && validIds.includes(hash as PortraitGalleryId)) {
+        setActiveGallery(hash as PortraitGalleryId);
+      }
     }
+
+    syncFromHash();
+    window.addEventListener("hashchange", syncFromHash);
+    return () => window.removeEventListener("hashchange", syncFromHash);
   }, []);
 
   // Mettre à jour le hash quand on change d’onglet (URL partageable)
