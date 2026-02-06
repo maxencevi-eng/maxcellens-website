@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import styles from './Modal.module.css';
 
-export default function Modal({ title, onClose, children, footer }: { title?: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode }) {
+export default function Modal({ title, onClose, children, footer, bodyClassName }: { title?: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode; bodyClassName?: string }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -21,7 +21,7 @@ export default function Modal({ title, onClose, children, footer }: { title?: st
           <div style={{ fontWeight: 700 }}>{title}</div>
           <button onClick={onClose} aria-label="Fermer" style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>✕</button>
         </div>
-        <div className={styles.body}>{children}</div>
+        <div className={[styles.body, bodyClassName].filter(Boolean).join(' ')}>{children}</div>
         {footer ? <div className={styles.footer}>{footer}</div> : null}
       </div>
     </div>,

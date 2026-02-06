@@ -621,6 +621,27 @@ a:active { color: var(--color-link-active, var(--color-link-hover, var(--color-a
 .lexical-content-editable .lexical-h5,
 .lexical-content-editable h5 { font-family: var(--font-h5-family) !important; font-size: var(--font-h5-size) !important; font-weight: var(--font-h5-weight) !important; margin: 0 0 0.4rem; }
 
+/* Modal Édition Intro : même rendu que le site (couleur, typo, liens) */
+.rich-text-modal-body .lexical-content-editable,
+.rich-text-modal-body .richtext-content,
+.rich-text-modal-body .tiptap-editor {
+  color: var(--color-text) !important;
+  background-color: var(--bg-color) !important;
+}
+.rich-text-modal-body .lexical-content-editable h1,
+.rich-text-modal-body .lexical-content-editable h2,
+.rich-text-modal-body .lexical-content-editable h3,
+.rich-text-modal-body .lexical-content-editable h4,
+.rich-text-modal-body .lexical-content-editable h5 {
+  color: var(--color-text) !important;
+}
+.rich-text-modal-body .lexical-content-editable a {
+  color: var(--color-primary) !important;
+}
+.rich-text-modal-body .lexical-content-editable a:hover {
+  color: var(--color-link-hover, var(--color-accent)) !important;
+}
+
 /* Éditeur RichText en modal — mobile : toolbar qui wrap, zone de contenu lisible */
 @media (max-width: 768px) {
   .modal .tiptap-editor,

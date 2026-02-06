@@ -1,3 +1,8 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 let supabaseHostname = '';
@@ -23,7 +28,49 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
+      {
+        source: '/favicon.svg',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/og-image.jpg',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/robots.txt',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, s-maxage=86400' },
+        ],
+      },
+      {
+        source: '/sitemap.xml',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, s-maxage=86400' },
+        ],
+      },
     ];
+  },
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
+  },
+  // Stub @tiptap/react (projet migré sur Lexical) pour éviter erreurs HMR / chunks fantômes
+  turbopack: {
+    resolveAlias: {
+      '@tiptap/react': path.resolve(__dirname, 'lib/stub-tiptap-react.ts'),
+      '@tiptap/react/dist/index.js': path.resolve(__dirname, 'lib/stub-tiptap-react.ts'),
+      'node_modules/@tiptap/react/dist/index.js': path.resolve(__dirname, 'lib/stub-tiptap-react.ts'),
+    },
+  },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve?.alias,
+      '@tiptap/react': path.resolve(__dirname, 'lib/stub-tiptap-react.ts'),
+    };
+    return config;
   },
   async redirects() {
     return [

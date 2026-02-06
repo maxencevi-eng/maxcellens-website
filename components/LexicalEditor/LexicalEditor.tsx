@@ -1,3 +1,4 @@
+"use no memo";
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
@@ -36,16 +37,16 @@ import { editorTheme } from './theme';
 const nodes = [ParagraphNode, TextNode, LineBreakNode, HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode];
 
 /** Pages du site pour le lien interne (path + libellé) */
-const SITE_PAGES: { path: string; label: string }[] = [
+const SITE_PAGES: { path: string; label: string; group?: string }[] = [
   { path: '/', label: 'Accueil' },
   { path: '/contact', label: 'Contact' },
   { path: '/realisation', label: 'Réalisation' },
   { path: '/production', label: 'Production' },
-  { path: '/portrait', label: 'Portrait (toutes les galeries)' },
-  { path: '/portrait?tab=lifestyle', label: 'Portrait – Lifestyle' },
-  { path: '/portrait?tab=entreprise', label: 'Portrait – Entreprise' },
-  { path: '/portrait?tab=studio', label: 'Portrait – Studio' },
-  { path: '/portrait?tab=couple', label: 'Portrait – Couple' },
+  { path: '/portrait', label: 'Portrait (toutes les galeries)', group: 'Portrait' },
+  { path: '/portrait?tab=lifestyle', label: 'Lifestyle', group: 'Portrait' },
+  { path: '/portrait?tab=entreprise', label: 'Entreprise', group: 'Portrait' },
+  { path: '/portrait?tab=studio', label: 'Studio', group: 'Portrait' },
+  { path: '/portrait?tab=couple', label: 'Couple', group: 'Portrait' },
   { path: '/corporate', label: 'Corporate' },
   { path: '/evenement', label: 'Événement' },
   { path: '/animation', label: 'Animation' },
@@ -253,6 +254,12 @@ function ToolbarPlugin() {
     setShowLinkInput(false);
   };
 
+  const linkSelectValue = (() => {
+    const normalized = linkUrl ? linkUrl.replace(/\/$/, '') : '';
+    const found = SITE_PAGES.find((page) => page.path === linkUrl || (normalized && (normalized === page.path || linkUrl === page.path)));
+    return found?.path ?? '';
+  })();
+
   return (
     <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -327,7 +334,7 @@ function ToolbarPlugin() {
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#fff', border: '1px solid rgba(0,0,0,0.2)', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.12)', flexWrap: 'wrap' }}>
               {linkExternal ? (
                 <input
-                  ref={linkInputRef}
+                  ref={(el) => { linkInputRef.current = el; }}
                   type="url"
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
@@ -341,21 +348,28 @@ function ToolbarPlugin() {
               ) : (
                 <>
                   <select
-                    value={SITE_PAGES.find((p) => p.path === linkUrl)?.path ?? ''}
+                    value={linkSelectValue}
                     onChange={(e) => {
                       const v = e.target.value;
                       setLinkUrl(v);
                     }}
-                    style={{ padding: '4px 8px', fontSize: 14, border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4, minWidth: 160 }}
-                    title="Choisir une page du site"
+                    style={{ padding: '4px 8px', fontSize: 14, border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4, minWidth: 180 }}
+                    title="Choisir une page (Portrait = galerie ciblée au chargement)"
                   >
                     <option value="">Choisir une page...</option>
-                    {SITE_PAGES.map((p) => (
-                      <option key={p.path} value={p.path}>{p.label}</option>
+                    {(Array.from(new Set(SITE_PAGES.map((page) => page.group).filter(Boolean))) as string[]).map((group) => (
+                      <optgroup key={group} label={group}>
+                        {SITE_PAGES.filter((page) => page.group === group).map((page) => (
+                          <option key={page.path} value={page.path}>{page.label}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                    {SITE_PAGES.filter((page) => !page.group).map((page) => (
+                      <option key={page.path} value={page.path}>{page.label}</option>
                     ))}
                   </select>
                   <input
-                    ref={linkInputRef}
+                    ref={(el) => { linkInputRef.current = el; }}
                     type="text"
                     value={linkUrl}
                     onChange={(e) => setLinkUrl(e.target.value)}
@@ -538,7 +552,7 @@ function ToolbarPlugin() {
           style={{ width: 24, height: 24, padding: 0, border: '1px solid rgba(0,0,0,0.2)', cursor: 'pointer' }}
         />
       </span>
-      <span ref={emojiPanelRef} style={{ position: 'relative' }}>
+      <span ref={(el) => { emojiPanelRef.current = el; }} style={{ position: 'relative' }}>
         <button type="button" onClick={(e) => { e.stopPropagation(); setShowEmoji((s) => !s); }} title="Insérer un emoji">😀</button>
         {showEmoji && (
           <div
@@ -617,9 +631,10 @@ export default function LexicalEditor({
       <RichTextPlugin
         contentEditable={
           <ContentEditable
-            className="lexical-content-editable"
-            style={{ minHeight: 120, padding: 12, border: '1px solid #e6e6e6', borderRadius: 6, outline: 'none' }}
+            className="lexical-content-editable richtext-content tiptap-editor"
+            style={{ minHeight: 200, padding: 12, border: '1px solid #e6e6e6', borderRadius: 6, outline: 'none', color: 'var(--color-text)', background: 'var(--bg-color)' }}
             aria-placeholder="Saisir ici..."
+            spellCheck={false}
             placeholder={<div style={{ position: 'absolute', top: 12, left: 12, color: 'var(--muted)', pointerEvents: 'none' }}>Saisir ici...</div>}
           />
         }
