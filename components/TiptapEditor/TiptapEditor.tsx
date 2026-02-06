@@ -18,6 +18,11 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
   console.debug('[TiptapEditor] initializing', { initialContent });
 
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+  const linkInputRef = useRef<HTMLInputElement>(null);
+  /** Plage à lier, figée à l'ouverture du champ URL (sinon elle est écrasée quand l'input prend le focus). */
+  const linkRangeRef = useRef<{ from: number; to: number } | null>(null);
   const [fontFamily, setFontFamily] = useState<string>('inherit');
   const FONT_SIZE_MIN = 8;
   const FONT_SIZE_MAX = 72;
@@ -181,6 +186,14 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
 
   if (!editor) return <div style={{ padding: 12, color: 'var(--muted)' }}>Initialisation de l'éditeur...</div>;
 
+  // Focus l'input URL quand on ouvre la zone lien
+  useEffect(() => {
+    if (showLinkInput) {
+      linkInputRef.current?.focus();
+      linkInputRef.current?.select();
+    }
+  }, [showLinkInput]);
+
   const insertEmoji = (emoji: string) => editor.chain().focus().insertContent(emoji).run();
 
   /** Restaure la sélection depuis lastSelectionRef si la sélection actuelle est vide (après clic sur la barre d'outils). */
@@ -189,6 +202,32 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
     if (!sel.empty || !lastSelectionRef.current) return;
     const { from, to } = lastSelectionRef.current;
     editor.chain().focus().setTextSelection({ from, to }).run();
+  }
+
+  /** Applique le lien sur la plage sauvegardée dans linkRangeRef (utilisée après ouverture du champ URL). */
+  function applyLinkToSavedRange(href: string) {
+    const range = linkRangeRef.current;
+    if (!range || range.from === range.to) return;
+    editor
+      .chain()
+      .focus()
+      .setTextSelection({ from: range.from, to: range.to })
+      .setLink({ href })
+      .run();
+    linkRangeRef.current = null;
+  }
+
+  /** Retire le lien sur la plage sauvegardée dans linkRangeRef. */
+  function unsetLinkOnSavedRange() {
+    const range = linkRangeRef.current;
+    if (!range) return;
+    editor
+      .chain()
+      .focus()
+      .setTextSelection({ from: range.from, to: range.to })
+      .unsetLink()
+      .run();
+    linkRangeRef.current = null;
   }
 
   /** Applique l'alignement uniquement au paragraphe (ou titre) contenant le curseur / la dernière sélection, sans modifier la sélection visible. */
@@ -439,33 +478,115 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
           <button onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'active' : ''} title="Gras"> <strong>B</strong> </button>
           <button onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'active' : ''} title="Italique"> <em>I</em> </button>
           <button id="rte-underline-btn" onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'active' : ''} title="Souligné"> <span style={{ textDecoration: 'underline' }}>U</span> </button>
-          {/* Lien : sélectionner du texte puis cliquer pour ajouter/modifier un lien (onMouseDown évite la perte de focus) */}
-          <button
-            type="button"
-            title={editor.isActive('link') ? 'Modifier le lien' : 'Insérer un lien'}
-            className={editor.isActive('link') ? 'active' : ''}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => {
-              restoreSelectionIfNeeded();
-              if (editor.isActive('link')) {
-                const href = editor.getAttributes('link').href || '';
-                const url = window.prompt('URL du lien', href);
-                if (url !== null) {
-                  if (url.trim()) editor.chain().focus().setLink({ href: url.trim() }).run();
-                  else editor.chain().focus().unsetLink().run();
+          {/* Lien : sélectionner du texte puis cliquer pour ouvrir la zone de saisie d'URL (onMouseDown évite la perte de focus) */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <button
+              type="button"
+              title={editor.isActive('link') ? 'Modifier le lien' : 'Insérer un lien'}
+              className={editor.isActive('link') ? 'active' : ''}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                restoreSelectionIfNeeded();
+                let sel = editor.state.selection;
+                // Si sélection vide mais curseur dans un lien, étendre la sélection au lien pour pouvoir le modifier
+                if (sel.empty && editor.isActive('link')) {
+                  try {
+                    (editor.commands as any).extendMarkRange?.('link');
+                    sel = editor.state.selection;
+                  } catch (_) {}
                 }
-              } else {
-                const url = window.prompt('URL du lien (ex. https://…)');
-                if (url !== null && url.trim()) editor.chain().focus().setLink({ href: url.trim() }).run();
-              }
-            }}
-            style={{ padding: 6, cursor: 'pointer' }}
-          >
-            🔗
-          </button>
-          {editor.isActive('link') && (
-            <button type="button" title="Retirer le lien" onMouseDown={(e) => e.preventDefault()} onClick={() => editor.chain().focus().unsetLink().run()} style={{ padding: 6, cursor: 'pointer' }}>🔗✕</button>
-          )}
+                const range = sel.empty && lastSelectionRef.current
+                  ? lastSelectionRef.current
+                  : { from: sel.from, to: sel.to };
+                if (range.from === range.to) return; // pas de sélection
+                linkRangeRef.current = range;
+                const href = editor.isActive('link') ? (editor.getAttributes('link').href || '') : '';
+                setLinkUrl(href);
+                setShowLinkInput(true);
+              }}
+              style={{ padding: 6, cursor: 'pointer' }}
+            >
+              🔗
+            </button>
+            {showLinkInput && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 8px',
+                  background: 'var(--color-bg, #f5f5f5)',
+                  border: '1px solid rgba(0,0,0,0.12)',
+                  borderRadius: 6,
+                }}
+              >
+                <input
+                  ref={linkInputRef}
+                  type="url"
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (linkUrl.trim()) applyLinkToSavedRange(linkUrl.trim());
+                      setShowLinkInput(false);
+                    }
+                    if (e.key === 'Escape') {
+                      linkRangeRef.current = null;
+                      setShowLinkInput(false);
+                    }
+                  }}
+                  placeholder="https://..."
+                  style={{
+                    width: 220,
+                    padding: '4px 8px',
+                    border: '1px solid rgba(0,0,0,0.2)',
+                    borderRadius: 4,
+                    fontSize: 14,
+                  }}
+                />
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    if (linkUrl.trim()) applyLinkToSavedRange(linkUrl.trim());
+                    setShowLinkInput(false);
+                  }}
+                  style={{ padding: '4px 10px', cursor: 'pointer', fontSize: 13 }}
+                >
+                  Appliquer
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    linkRangeRef.current = null;
+                    setShowLinkInput(false);
+                  }}
+                  style={{ padding: '4px 8px', cursor: 'pointer', fontSize: 13 }}
+                >
+                  Annuler
+                </button>
+                {editor.isActive('link') && (
+                  <button
+                    type="button"
+                    title="Retirer le lien"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      unsetLinkOnSavedRange();
+                      setShowLinkInput(false);
+                    }}
+                    style={{ padding: '4px 8px', cursor: 'pointer', fontSize: 13 }}
+                  >
+                    Retirer
+                  </button>
+                )}
+              </span>
+            )}
+            {!showLinkInput && editor.isActive('link') && (
+              <button type="button" title="Retirer le lien" onMouseDown={(e) => e.preventDefault()} onClick={() => editor.chain().focus().unsetLink().run()} style={{ padding: 6, cursor: 'pointer' }}>🔗✕</button>
+            )}
+          </div>
           {/* Text color: pick color first (swatch), then click A to apply to selection (Word-like flow) */}
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {(() => {

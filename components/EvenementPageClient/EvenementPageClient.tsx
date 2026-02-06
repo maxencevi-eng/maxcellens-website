@@ -39,7 +39,7 @@ export default function EvenementPageClient() {
         </div>
       )}
       <AnimateInView variant="slideUp" viewportSoon>
-        <EditableVideoGallery keyName="videos_evenement" initial={evenementVideos} />
+        <EditableVideoGallery key="videos_evenement" keyName="videos_evenement" initial={evenementVideos} />
       </AnimateInView>
     </div>
   );

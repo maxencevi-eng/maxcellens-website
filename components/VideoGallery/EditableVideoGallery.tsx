@@ -20,7 +20,8 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
     const columns: 1 | 2 | 3 | 4 = (cols >= 1 && cols <= 4) ? (cols as 1 | 2 | 3 | 4) : 1;
     return { url: String(o.url || ''), columns, cover: o.cover };
   });
-  const [videos, setVideos] = useState<VideoItem[]>(normalize(initial));
+  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [hasFetched, setHasFetched] = useState(false);
   const [editing, setEditing] = useState(false);
   const [singleUrl, setSingleUrl] = useState('');
   const [saving, setSaving] = useState(false);
@@ -51,15 +52,25 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
 
   useEffect(() => {
     let mounted = true;
+    setHasFetched(false);
     async function load() {
       try {
         const resp = await fetch(`/api/admin/site-settings?keys=${encodeURIComponent(keyName)}`);
-        if (!resp.ok) return;
+        if (!mounted) return;
+        if (!resp.ok) {
+          setHasFetched(true);
+          setVideos(normalize(initial));
+          return;
+        }
         const j = await resp.json().catch(() => ({}));
         const s = j?.settings || {};
         const raw = s[keyName];
         if (!mounted) return;
-        if (!raw) return;
+        setHasFetched(true);
+        if (!raw) {
+          setVideos(normalize(initial));
+          return;
+        }
         try {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
@@ -73,17 +84,19 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
               }
               return { url: String(el || ''), columns: 1 as 1 | 2 | 3 | 4 };
             }).filter((x: any) => x.url) as VideoItem[];
-            // Ne pas écraser par une liste vide si on a des initial (évite galeries vides sur Réalisation/Évènement)
-            if (list.length > 0 || !(initial && initial.length)) setVideos(list);
+            setVideos(list.length > 0 ? list : normalize(initial));
             return;
           }
         } catch (_) {
           // fall through to parse as newline/comma list
         }
         const arr = String(raw).split(/\r?\n|,/).map((x) => x.trim()).filter(Boolean);
-        if (arr.length) setVideos(arr.map((u) => ({ url: u, columns: 1 })));
+        setVideos(arr.length > 0 ? arr.map((u) => ({ url: u, columns: 1 })) : normalize(initial));
       } catch (_) {
-        // ignore
+        if (mounted) {
+          setHasFetched(true);
+          setVideos(normalize(initial));
+        }
       }
     }
     load();
@@ -183,7 +196,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
         </div>
       ) : null}
 
-      <VideoGallery videos={videos} className={undefined} />
+      <VideoGallery videos={hasFetched ? videos : []} className={undefined} />
 
       {editing ? (
         <div className={`modal-overlay-mobile ${styles.modalOverlay}`} style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', zIndex: 9999, padding: 16 }}>

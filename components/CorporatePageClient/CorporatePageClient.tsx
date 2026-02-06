@@ -39,7 +39,7 @@ export default function CorporatePageClient() {
         </div>
       )}
       <AnimateInView variant="slideUp" viewportSoon>
-        <EditableVideoGallery keyName="videos_corporate" initial={corporateVideos} />
+        <EditableVideoGallery key="videos_corporate" keyName="videos_corporate" initial={corporateVideos} />
       </AnimateInView>
     </div>
   );
