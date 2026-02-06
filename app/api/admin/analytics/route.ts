@@ -234,7 +234,7 @@ export async function GET(req: Request) {
 
     // Calculer la durée totale par session pour filtrer les bots
     const sessionDurations = new Map<string, number>();
-    const pageviews = events.filter((e) => e.event_type === 'pageview');
+    let pageviews = events.filter((e) => e.event_type === 'pageview');
     pageviews.forEach((pv) => {
       const current = sessionDurations.get(pv.session_id) || 0;
       sessionDurations.set(pv.session_id, current + (pv.duration ?? 0));
@@ -261,7 +261,15 @@ export async function GET(req: Request) {
       }
     }
 
-    const clicks = events.filter((e) => e.event_type === 'click');
+    // IMPORTANT: Refiltrer les events pour ne garder que ceux des sessions valides (post-filtre durée)
+    // Cela garantit que tous les onglets (Contenu, Géo, Sources, Clics) respectent le filtre < 1sec
+    const validSessionIds = new Set(sessions.map((s) => s.session_id));
+    const filteredEvents = events.filter((e) => validSessionIds.has(e.session_id));
+    const filteredPageviews = filteredEvents.filter((e) => e.event_type === 'pageview');
+    const filteredClicks = filteredEvents.filter((e) => e.event_type === 'click');
+
+    let clicks = filteredClicks;
+    pageviews = filteredPageviews;
     const totalViews = pageviews.length;
     const uniqueVisitors = new Set(sessions.map((s) => s.session_id)).size;
     const totalDuration = pageviews.reduce((acc, e) => acc + (e.duration ?? 0), 0);
