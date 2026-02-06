@@ -6,9 +6,9 @@ const parseNumber = (v: any, def: number) => {
   return isNaN(n) ? def : n;
 };
 
-const safeJsonParse = <T>(v: string, def: T): T => {
+function safeJsonParse<T>(v: string, def: T): T {
   try {
-    return JSON.parse(v);
+    return JSON.parse(v) as T;
   } catch {
     return def;
   }
