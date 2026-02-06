@@ -3,15 +3,15 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import FooterEditModal from '../FooterEditModal/FooterEditModal';
+import MenuEditModal from '../MenuEditModal/MenuEditModal';
+import MobileMenuEditModal from '../MobileMenuEditModal/MobileMenuEditModal';
+import SocialLinksEditor from '../SocialLinksEditor/SocialLinksEditor';
+import HeaderSettings from '../HeaderSettings/HeaderSettings';
+import SeoCommandCenterModal from '../SeoCommandCenter/SeoCommandCenterModal';
+import PageLayoutModal from '../PageLayoutModal/PageLayoutModal';
+import StatisticsModal from '../Analytics/StatisticsModal';
+import MaintenanceModal from '../Analytics/MaintenanceModal';
 import dynamic from 'next/dynamic';
-const MenuEditModal = dynamic(() => import('../MenuEditModal/MenuEditModal'), { ssr: false });
-const MobileMenuEditModal = dynamic(() => import('../MobileMenuEditModal/MobileMenuEditModal'), { ssr: false });
-const SocialLinksEditor = dynamic(() => import('../SocialLinksEditor/SocialLinksEditor'), { ssr: false });
-const HeaderSettings = dynamic(() => import('../HeaderSettings/HeaderSettings'), { ssr: false });
-const SeoCommandCenterModal = dynamic(() => import('../SeoCommandCenter/SeoCommandCenterModal'), { ssr: false });
-const PageLayoutModal = dynamic(() => import('../PageLayoutModal/PageLayoutModal'), { ssr: false });
-const StatisticsModal = dynamic(() => import('../Analytics/StatisticsModal'), { ssr: false });
-const MaintenanceModal = dynamic(() => import('../Analytics/MaintenanceModal'), { ssr: false });
 
 const PUBLIC_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
