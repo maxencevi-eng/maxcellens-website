@@ -104,15 +104,14 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
           ))}
         </ul>
       </nav>
-      <AnimateInView variant="slideUp">
-        <EditablePortraitGallery
-          key={activeGallery}
-          items={[]}
-          settingsKey={activeConfig.settingsKey}
-          uploadFolder={activeConfig.uploadFolder}
-          galleryLabel={activeConfig.label}
-        />
-      </AnimateInView>
+      {/* Galerie : pas d'animation pour qu'elle s'affiche immédiatement sans interaction */}
+      <EditablePortraitGallery
+        key={activeGallery}
+        items={[]}
+        settingsKey={activeConfig.settingsKey}
+        uploadFolder={activeConfig.uploadFolder}
+        galleryLabel={activeConfig.label}
+      />
     </div>
   );
 
