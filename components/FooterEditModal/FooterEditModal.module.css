@@ -119,13 +119,13 @@
 }
 
 .visiblePanel {
-  position: absolute;
-  bottom: 24px;
-  right: 24px;
-  background: #f7f8f9;
-  padding: 12px;
+  margin-top: 20px;
+  padding: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
   border-radius: 8px;
-  max-width: 280px;
+  background: #f7f8f9;
+  box-sizing: border-box;
 }
 
 .visiblePanelTitle {

@@ -23,6 +23,9 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
   const linkInputRef = useRef<HTMLInputElement>(null);
   /** Plage à lier, figée à l'ouverture du champ URL (sinon elle est écrasée quand l'input prend le focus). */
   const linkRangeRef = useRef<{ from: number; to: number } | null>(null);
+  /** Position du curseur quand on ouvre le lien sans sélection (pour lier le mot au curseur). */
+  const linkCursorPosRef = useRef<number | null>(null);
+  const linkButtonRef = useRef<HTMLButtonElement>(null);
   const [fontFamily, setFontFamily] = useState<string>('inherit');
   const FONT_SIZE_MIN = 8;
   const FONT_SIZE_MAX = 72;
@@ -53,7 +56,7 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit,
+      StarterKit.configure({ hardBreak: false }),
       TextStyle,
       Color,
       // Add attributes to the textStyle mark so we can set fontSize/fontFamily/lineHeight/background reliably
@@ -98,8 +101,6 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
       Placeholder.configure({ placeholder: 'Saisir ici...' }),
       Image,
       HardBreak,
-      // Enter = nouveau paragraphe (comportement par défaut) pour que alignement / listes s'appliquent par ligne
-      // Shift+Enter = saut de ligne (<br>) dans le paragraphe
     ],
     content: initialContent || '',
     onUpdate: ({ editor }) => {
@@ -166,6 +167,31 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
         };
         document.addEventListener('mouseup', captureSelectionFromDOM);
         document.addEventListener('keyup', captureSelectionFromDOM);
+        // Capture sélection au mousedown sur le bouton lien (phase capture, avant blur) sans bloquer le clic
+        const onLinkButtonMouseDownCapture = (e: MouseEvent) => {
+          const btn = linkButtonRef.current;
+          if (!btn || !editor) return;
+          const target = e.target as Node;
+          if (!btn.contains(target)) return;
+          try {
+            let sel = editor.state.selection;
+            if (sel.empty && editor.isActive('link')) {
+              try {
+                (editor.commands as any).extendMarkRange?.('link');
+                sel = editor.state.selection;
+              } catch (_) {}
+            }
+            const range = sel.empty ? lastSelectionRef.current : { from: sel.from, to: sel.to };
+            if (range && range.from !== range.to) {
+              linkRangeRef.current = range;
+              linkCursorPosRef.current = null;
+            } else {
+              linkRangeRef.current = null;
+              linkCursorPosRef.current = (range?.from ?? sel.from) ?? 0;
+            }
+          } catch (_) {}
+        };
+        document.addEventListener('mousedown', onLinkButtonMouseDownCapture, true);
         onReady?.();
       } catch (err) {
         console.error('[TiptapEditor] onReady handler threw', err);
@@ -175,8 +201,9 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
     return () => {
       try {
         console.debug('[TiptapEditor] destroying editor');
-        document.removeEventListener('mouseup', () => {});
-        document.removeEventListener('keyup', () => {});
+        document.removeEventListener('mouseup', captureSelectionFromDOM);
+        document.removeEventListener('keyup', captureSelectionFromDOM);
+        document.removeEventListener('mousedown', onLinkButtonMouseDownCapture, true);
         editor?.destroy();
       } catch (err) {
         console.error('[TiptapEditor] destroy error', err);
@@ -204,17 +231,58 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
     editor.chain().focus().setTextSelection({ from, to }).run();
   }
 
-  /** Applique le lien sur la plage sauvegardée dans linkRangeRef (utilisée après ouverture du champ URL). */
+  /** Retourne les bornes du mot à la position pos (pour lier le mot au curseur quand il n’y a pas de sélection). */
+  function getWordBoundsAt(pos: number): { from: number; to: number } | null {
+    try {
+      const doc = editor.state.doc;
+      const size = doc.content.size;
+      if (size === 0 || pos < 0 || pos > size) return null;
+      const from = Math.max(0, pos - 80);
+      const to = Math.min(size, pos + 80);
+      const text = doc.textBetween(from, to, '\u0000');
+      const local = pos - from;
+      const isWordChar = (c: string) => /[\p{L}\p{N}_-]/u.test(c) || /[a-zA-Z0-9À-ÿ_-]/.test(c);
+      let start = local;
+      while (start > 0 && isWordChar(text[start - 1])) start--;
+      let end = local;
+      while (end < text.length && isWordChar(text[end])) end++;
+      if (start >= end) return null;
+      return { from: from + start, to: from + end };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /** Applique le lien sur la plage sauvegardée (linkRangeRef) ou sur le mot au curseur (linkCursorPosRef). */
   function applyLinkToSavedRange(href: string) {
     const range = linkRangeRef.current;
-    if (!range || range.from === range.to) return;
-    editor
-      .chain()
-      .focus()
-      .setTextSelection({ from: range.from, to: range.to })
-      .setLink({ href })
-      .run();
-    linkRangeRef.current = null;
+    if (range && range.from !== range.to) {
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from: range.from, to: range.to })
+        .setLink({ href })
+        .run();
+      linkRangeRef.current = null;
+      linkCursorPosRef.current = null;
+      return;
+    }
+    const cursorPos = linkCursorPosRef.current;
+    if (cursorPos != null) {
+      const word = getWordBoundsAt(cursorPos);
+      if (word && word.from !== word.to) {
+        editor
+          .chain()
+          .focus()
+          .setTextSelection({ from: word.from, to: word.to })
+          .setLink({ href })
+          .run();
+      } else {
+        const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+        editor.chain().focus().insertContent(`<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(href)}</a>`).run();
+      }
+      linkCursorPosRef.current = null;
+    }
   }
 
   /** Retire le lien sur la plage sauvegardée dans linkRangeRef. */
@@ -481,43 +549,34 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
           {/* Lien : sélectionner du texte puis cliquer pour ouvrir la zone de saisie d'URL (onMouseDown évite la perte de focus) */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <button
+              ref={linkButtonRef}
               type="button"
               title={editor.isActive('link') ? 'Modifier le lien' : 'Insérer un lien'}
               className={editor.isActive('link') ? 'active' : ''}
-              onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
-                restoreSelectionIfNeeded();
-                let sel = editor.state.selection;
-                // Si sélection vide mais curseur dans un lien, étendre la sélection au lien pour pouvoir le modifier
-                if (sel.empty && editor.isActive('link')) {
-                  try {
-                    (editor.commands as any).extendMarkRange?.('link');
-                    sel = editor.state.selection;
-                  } catch (_) {}
-                }
-                const range = sel.empty && lastSelectionRef.current
-                  ? lastSelectionRef.current
-                  : { from: sel.from, to: sel.to };
-                if (range.from === range.to) return; // pas de sélection
-                linkRangeRef.current = range;
                 const href = editor.isActive('link') ? (editor.getAttributes('link').href || '') : '';
                 setLinkUrl(href);
                 setShowLinkInput(true);
               }}
-              style={{ padding: 6, cursor: 'pointer' }}
+              style={{ padding: 6, cursor: 'pointer', opacity: 1 }}
             >
               🔗
             </button>
             {showLinkInput && (
               <span
+                role="group"
+                aria-label="Saisie de l’URL du lien"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6,
-                  padding: '4px 8px',
-                  background: 'var(--color-bg, #f5f5f5)',
-                  border: '1px solid rgba(0,0,0,0.12)',
+                  padding: '6px 10px',
+                  background: '#fff',
+                  border: '1px solid rgba(0,0,0,0.2)',
                   borderRadius: 6,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                  position: 'relative',
+                  zIndex: 10,
                 }}
               >
                 <input
@@ -533,6 +592,7 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
                     }
                     if (e.key === 'Escape') {
                       linkRangeRef.current = null;
+                      linkCursorPosRef.current = null;
                       setShowLinkInput(false);
                     }
                   }}
@@ -561,6 +621,7 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     linkRangeRef.current = null;
+                    linkCursorPosRef.current = null;
                     setShowLinkInput(false);
                   }}
                   style={{ padding: '4px 8px', cursor: 'pointer', fontSize: 13 }}

@@ -277,9 +277,16 @@ body.has-admin-sidebar {
 .richtext-content li p {
   margin: 0; /* avoid nested paragraph margins inside list items */
 }
-/* ensure <br> shows as line break with no extra margin */
+/* ensure <br> shows as line break like in the editor (visible line break on site) */
 .tiptap-editor br,
-.richtext-content br { display: block; content: ""; line-height: var(--base-line-height); margin: 0; padding: 0; }
+.richtext-content br {
+  display: block;
+  content: "";
+  margin: 0;
+  padding: 0;
+  line-height: var(--base-line-height, 1.25);
+  min-height: 1em;
+}
 
 
 #admin-sidebar li {

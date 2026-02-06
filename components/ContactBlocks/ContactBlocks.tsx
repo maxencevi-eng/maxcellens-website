@@ -117,7 +117,7 @@ export default function ContactBlocks() {
         <div className={styles.card}>
           <div className={styles.cardHeader}>{contactHandle || '@maxcellens'}</div>
           <div className={styles.cardBody}>
-            <div className={styles.cardBodyInner} dangerouslySetInnerHTML={{ __html: (html || fallbackHtml) }} />
+            <div className={`${styles.cardBodyInner} richtext-content`} dangerouslySetInnerHTML={{ __html: (html || fallbackHtml) }} />
         </div>
       </div>
       </div>
@@ -151,7 +151,7 @@ export default function ContactBlocks() {
                 const fs = zones?.qg?.titleFontSize != null && zones.qg.titleFontSize >= 8 && zones.qg.titleFontSize <= 72 ? zones.qg.titleFontSize : undefined;
                 return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.qg?.title ?? 'QG'}</Tag>;
               })()}
-              <div className={styles.colBody} dangerouslySetInnerHTML={{ __html: zones?.qg?.text ?? '<p>Basé à Clamart (92). Point de départ de mes missions en Île-de-France.</p>' }} />
+              <div className={`${styles.colBody} richtext-content`} dangerouslySetInnerHTML={{ __html: zones?.qg?.text ?? '<p>Basé à Clamart (92). Point de départ de mes missions en Île-de-France.</p>' }} />
               {(zones?.qg?.phone ?? '06 74 96 64 58') && (
                 <div style={{ marginTop: '0.5rem' }}>📞 {zones?.qg?.phone ?? '06 74 96 64 58'}</div>
               )}
@@ -165,7 +165,7 @@ export default function ContactBlocks() {
                 const fs = zones?.paris?.titleFontSize != null && zones.paris.titleFontSize >= 8 && zones.paris.titleFontSize <= 72 ? zones.paris.titleFontSize : undefined;
                 return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.paris?.title ?? 'Paris & Alentours'}</Tag>;
               })()}
-              <div className={styles.colBody} dangerouslySetInnerHTML={{ __html: zones?.paris?.text ?? '<p>Priorité aux transports en commun. Voiture possible pour la banlieue proche — frais kilométriques.</p>' }} />
+              <div className={`${styles.colBody} richtext-content`} dangerouslySetInnerHTML={{ __html: zones?.paris?.text ?? '<p>Priorité aux transports en commun. Voiture possible pour la banlieue proche — frais kilométriques.</p>' }} />
             </div>
           </AnimateStaggerItem>
           <AnimateStaggerItem>
@@ -176,7 +176,7 @@ export default function ContactBlocks() {
                 const fs = zones?.france?.titleFontSize != null && zones.france.titleFontSize >= 8 && zones.france.titleFontSize <= 72 ? zones.france.titleFontSize : undefined;
                 return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.france?.title ?? 'France & Monde'}</Tag>;
               })()}
-              <div className={styles.colBody} dangerouslySetInnerHTML={{ __html: zones?.france?.text ?? '<p>Déplacements réguliers en train pour des missions partout en France et parfois à l\'étranger — frais de déplacement.</p>' }} />
+              <div className={`${styles.colBody} richtext-content`} dangerouslySetInnerHTML={{ __html: zones?.france?.text ?? '<p>Déplacements réguliers en train pour des missions partout en France et parfois à l\'étranger — frais de déplacement.</p>' }} />
             </div>
           </AnimateStaggerItem>
         </AnimateInView>

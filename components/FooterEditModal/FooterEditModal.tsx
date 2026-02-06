@@ -322,18 +322,18 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
               </div>
             </div>
 
-          </div>
-        </div>
+            <div className={styles.visiblePanel}>
+              <div className={styles.visiblePanelTitle}>Éléments visibles</div>
+              <div className={styles.visiblePanelGrid}>
+                {(['realisation','evenement','corporate','portrait','animation','galleries','contact','admin'] as (keyof MenuVisible)[]).map((k) => (
+                  <label key={k} className={styles.visiblePanelLabel}>
+                    <input type="checkbox" checked={!!menuVisible?.[k]} onChange={() => toggleKey(k)} />
+                    <span>{k}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
 
-        <div className={styles.visiblePanel}>
-          <div className={styles.visiblePanelTitle}>Éléments visibles</div>
-          <div className={styles.visiblePanelGrid}>
-            {(['realisation','evenement','corporate','portrait','animation','galleries','contact','admin'] as (keyof MenuVisible)[]).map((k) => (
-              <label key={k} className={styles.visiblePanelLabel}>
-                <input type="checkbox" checked={!!menuVisible?.[k]} onChange={() => toggleKey(k)} />
-                <span>{k}</span>
-              </label>
-            ))}
           </div>
         </div>
         </div>
