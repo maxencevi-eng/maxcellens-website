@@ -16,6 +16,29 @@ import type {
 } from "./homeDefaults";
 import { TITLE_FONT_SIZE_MIN, TITLE_FONT_SIZE_MAX } from "./homeDefaults";
 
+/** Pages du site pour le lien interne (path + libellé) - Copié depuis LexicalEditor */
+const SITE_PAGES: { path: string; label: string; group?: string }[] = [
+  { path: '/', label: 'Accueil' },
+  { path: '/contact', label: 'Contact' },
+  { path: '/realisation', label: 'Réalisation (Film & Photo)', group: 'Réalisation' },
+  { path: '/realisation?tab=film', label: 'Réalisation - Film', group: 'Réalisation' },
+  { path: '/realisation?tab=photo', label: 'Réalisation - Photo', group: 'Réalisation' },
+  { path: '/production', label: 'Production' },
+  { path: '/portrait', label: 'Portrait (toutes les galeries)', group: 'Portrait' },
+  { path: '/portrait?tab=lifestyle', label: 'Lifestyle', group: 'Portrait' },
+  { path: '/portrait?tab=studio', label: 'Studio', group: 'Portrait' },
+  { path: '/portrait?tab=couple', label: 'Couple', group: 'Portrait' },
+  { path: '/corporate', label: 'Corporate (Film & Photo)', group: 'Corporate' },
+  { path: '/corporate?tab=film', label: 'Corporate - Film', group: 'Corporate' },
+  { path: '/corporate?tab=photo', label: 'Corporate - Photo', group: 'Corporate' },
+  { path: '/evenement', label: 'Événement (Film & Photo)', group: 'Événement' },
+  { path: '/evenement?tab=film', label: 'Événement - Film', group: 'Événement' },
+  { path: '/evenement?tab=photo', label: 'Événement - Photo', group: 'Événement' },
+  { path: '/animation', label: 'Animation' },
+  { path: '/galeries', label: 'Galeries' },
+  { path: '/projects', label: 'Projets' },
+];
+
 const clampTitleFontSize = (n: number) => Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(n) || 16));
 
 const getValidTitleStyle = (s: any, def: TitleStyleKey = "h2"): TitleStyleKey => {
@@ -122,7 +145,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [portraitBlockTitleFontSize, setPortraitBlockTitleFontSize] = useState<number | "">(22);
   const [portraitCtaLabel, setPortraitCtaLabel] = useState("");
   const [portraitCtaHref, setPortraitCtaHref] = useState("");
-  const [portraitSlides, setPortraitSlides] = useState<{ title: string; text: string; image?: { url: string; path?: string; focus?: { x: number; y: number } } | null; image2?: { url: string; path?: string; focus?: { x: number; y: number } } | null; titleStyle?: TitleStyleKey; titleFontSize?: number }[]>([]);
+  const [portraitSlides, setPortraitSlides] = useState<{ title: string; text: string; image?: { url: string; path?: string; focus?: { x: number; y: number } } | null; image2?: { url: string; path?: string; focus?: { x: number; y: number } } | null; titleStyle?: TitleStyleKey; titleFontSize?: number; href?: string; linkExternal?: boolean }[]>([]);
   const [portraitCarouselSpeed, setPortraitCarouselSpeed] = useState(5000);
   const [portraitBackgroundColor, setPortraitBackgroundColor] = useState("");
   const [editingSlideIndex, setEditingSlideIndex] = useState<number | null>(null);
@@ -221,20 +244,21 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setPortraitCarouselSpeed(typeof d.carouselSpeed === "number" && d.carouselSpeed >= 2000 ? d.carouselSpeed : 5000);
       setPortraitBackgroundColor(d.backgroundColor ?? "");
       if (Array.isArray(d.slides) && d.slides.length) {
-        setPortraitSlides(d.slides.map((s: any) => ({
+        setPortraitSlides(d.slides.slice(0, 4).map((s: any) => ({
           title: s.title ?? "",
           text: s.text ?? "",
           image: s.image ? { ...s.image, focus: s.image.focus ?? { x: 50, y: 50 } } : null,
           image2: s.image2 ? { ...s.image2, focus: s.image2.focus ?? { x: 50, y: 50 } } : null,
           titleStyle: getValidTitleStyle(s.titleStyle, "h3"),
           titleFontSize: isValidFontSize(s.titleFontSize) ? s.titleFontSize : undefined,
+          href: s.href ?? "",
         })));
       } else {
         setPortraitSlides([
-          { title: "Lifestyle", text: "", image: null, image2: null, titleStyle: "h3" },
-          { title: "Studio", text: "", image: null, image2: null, titleStyle: "h3" },
-          { title: "Entreprise", text: "", image: null, image2: null, titleStyle: "h3" },
-          { title: "Couple", text: "", image: null, image2: null, titleStyle: "h3" },
+          { title: "Lifestyle", text: "", image: null, image2: null, titleStyle: "h3", href: "/portrait?tab=lifestyle" },
+          { title: "Studio", text: "", image: null, image2: null, titleStyle: "h3", href: "/portrait?tab=studio" },
+          { title: "Entreprise", text: "", image: null, image2: null, titleStyle: "h3", href: "/portrait?tab=entreprise" },
+          { title: "Couple", text: "", image: null, image2: null, titleStyle: "h3", href: "/portrait?tab=couple" },
         ]);
       }
     }
@@ -751,6 +775,59 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                     <label style={{ fontSize: 12, color: "var(--muted)" }}>Texte</label>
                     <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: slideHtmlContent }} />
                     <button type="button" className="btn-ghost" style={{ marginTop: 4 }} onClick={() => setEditingSlideIndex(i)}>Éditer le texte</button>
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ fontSize: 12, color: "var(--muted)" }}>Lien du bouton "Découvrir les photos"</label>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
+                      {(slide as any).linkExternal ? (
+                        <input
+                          type="url"
+                          value={slide.href || ""}
+                          onChange={(e) => setPortraitSlides((prev) => prev.map((s, j) => (j === i ? { ...s, href: e.target.value } : s)))}
+                          placeholder="https://..."
+                          style={{ ...inputStyle, flex: 1, minWidth: 200 }}
+                        />
+                      ) : (
+                        <>
+                          <select
+                            value={(() => {
+                              const normalized = (slide.href || "").replace(/\/$/, "");
+                              const found = SITE_PAGES.find((page) => page.path === slide.href || (normalized && normalized === page.path));
+                              return found?.path ?? "";
+                            })()}
+                            onChange={(e) => setPortraitSlides((prev) => prev.map((s, j) => (j === i ? { ...s, href: e.target.value } : s)))}
+                            style={{ ...inputStyle, minWidth: 180 }}
+                          >
+                            <option value="">Choisir une page...</option>
+                            {(Array.from(new Set(SITE_PAGES.map((page) => page.group).filter(Boolean))) as string[]).map((group) => (
+                              <optgroup key={group} label={group}>
+                                {SITE_PAGES.filter((page) => page.group === group).map((page) => (
+                                  <option key={page.path} value={page.path}>{page.label}</option>
+                                ))}
+                              </optgroup>
+                            ))}
+                            {SITE_PAGES.filter((page) => !page.group).map((page) => (
+                              <option key={page.path} value={page.path}>{page.label}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            value={slide.href || ""}
+                            onChange={(e) => setPortraitSlides((prev) => prev.map((s, j) => (j === i ? { ...s, href: e.target.value } : s)))}
+                            placeholder="ou saisir un chemin"
+                            style={{ ...inputStyle, flex: 1, minWidth: 120 }}
+                          />
+                        </>
+                      )}
+                      <select
+                        value={(slide as any).linkExternal ? "external" : "internal"}
+                        onChange={(e) => setPortraitSlides((prev) => prev.map((s, j) => (j === i ? { ...s, linkExternal: e.target.value === "external" } : s)))}
+                        style={{ ...inputStyle, width: 140, fontSize: 13 }}
+                      >
+                        <option value="internal">Interne</option>
+                        <option value="external">Externe</option>
+                      </select>
+                    </div>
                   </div>
                   <div style={{ marginBottom: 8 }}>
                     <label style={{ fontSize: 12, color: "var(--muted)" }}>Photo principale</label>

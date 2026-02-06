@@ -4,7 +4,7 @@ import JsonLdScript from '../../components/SeoCommandCenter/JsonLdScript';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import PortraitPageClient from '../../components/PortraitPageClient/PortraitPageClient';
 
-const PORTRAIT_TAB_IDS = ['lifestyle', 'entreprise', 'studio', 'couple'] as const;
+const PORTRAIT_TAB_IDS = ['lifestyle', 'studio', 'couple'] as const;
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo('portrait');

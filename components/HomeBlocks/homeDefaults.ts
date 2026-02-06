@@ -54,6 +54,8 @@ export type HomePortraitSlide = {
   image2?: { url: string; path?: string; focus?: FocusPoint } | null;
   titleStyle?: TitleStyleKey;
   titleFontSize?: number;
+  /** URL du bouton "Découvrir les photos" pour ce thème */
+  href?: string;
 };
 
 export type HomePortraitBlockData = {
@@ -126,14 +128,14 @@ export const DEFAULT_STATS: HomeStatsData = {
 
 export const DEFAULT_PORTRAIT: HomePortraitBlockData = {
   blockTitle: "Portrait",
-  ctaLabel: "Découvrir le portrait",
+  ctaLabel: "Découvrir les portraits",
   ctaHref: "/portrait",
   carouselSpeed: 5000,
   slides: [
-    { title: "Lifestyle", text: "Portraits en situation, en extérieur ou dans votre environnement. Une approche naturelle et spontanée.", image: null, image2: null, titleStyle: "h3" },
-    { title: "Studio", text: "Séances en studio avec lumière maîtrisée. Idéal pour les portraits professionnels et les visuels corporate.", image: null, image2: null, titleStyle: "h3" },
-    { title: "Entreprise", text: "Portraits pour vos équipes et votre communication. Headshots et reportages en entreprise.", image: null, image2: null, titleStyle: "h3" },
-    { title: "Couple", text: "Séances duo pour couples, associés ou binômes. Des images qui racontent votre complicité.", image: null, image2: null, titleStyle: "h3" },
+    { title: "Lifestyle", text: "Portraits en situation, en extérieur ou dans votre environnement. Une approche naturelle et spontanée.", image: null, image2: null, titleStyle: "h3", href: "/portrait?tab=lifestyle" },
+    { title: "Studio", text: "Séances en studio avec lumière maîtrisée. Idéal pour les portraits professionnels et les visuels corporate.", image: null, image2: null, titleStyle: "h3", href: "/portrait?tab=studio" },
+    { title: "Entreprise", text: "Portraits pour vos équipes et votre communication. Headshots et reportages en entreprise.", image: null, image2: null, titleStyle: "h3", href: "/portrait?tab=entreprise" },
+    { title: "Couple", text: "Séances duo pour couples, associés ou binômes. Des images qui racontent votre complicité.", image: null, image2: null, titleStyle: "h3", href: "/portrait?tab=couple" },
   ],
 };
 

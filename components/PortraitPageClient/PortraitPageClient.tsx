@@ -11,7 +11,6 @@ const btnWrapStyle: React.CSSProperties = { display: "flex", gap: 8, alignItems:
 
 const PORTRAIT_GALLERIES = [
   { id: "lifestyle", label: "Lifestyle", settingsKey: "portrait_gallery", uploadFolder: "Portrait/Galerie1" },
-  { id: "entreprise", label: "Entreprise", settingsKey: "portrait_gallery_entreprise", uploadFolder: "Portrait/Entreprise" },
   { id: "studio", label: "Studio", settingsKey: "portrait_gallery_studio", uploadFolder: "Portrait/Studio" },
   { id: "couple", label: "Couple", settingsKey: "portrait_gallery_couple", uploadFolder: "Portrait/Couple" },
 ] as const;

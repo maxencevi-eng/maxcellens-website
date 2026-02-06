@@ -212,9 +212,8 @@ export default function HomePageClient() {
 
   const portraitIndex = Math.max(0, Math.min(currentPortraitSlide, portraitSlides.length - 1));
   const activePortraitSlide = portraitSlides[portraitIndex] || portraitSlides[0];
-  // Ordre des slides home = ordre par défaut : Lifestyle, Studio, Entreprise, Couple → hash pour page Portrait
-  const portraitGalleryIds = ["lifestyle", "studio", "entreprise", "couple"] as const;
-  const portraitGalleryHash = portraitGalleryIds[Math.min(portraitIndex, portraitGalleryIds.length - 1)] ?? "lifestyle";
+  // Use slide-specific href or fallback to default URL with tab parameter
+  const portraitSlideHref = (activePortraitSlide as any)?.href || `/portrait?tab=${["lifestyle", "studio", "entreprise", "couple"][Math.min(portraitIndex, 3)] || "lifestyle"}`;
 
   const safeQuoteIndex = Math.max(0, Math.min(currentQuoteIndex, quoteList.length - 1));
   const visibleQuoteIndices = [0, 1, 2].map((i) => (safeQuoteIndex + i) % quoteList.length);
@@ -375,7 +374,7 @@ export default function HomePageClient() {
               <div className={`${styles.portraitCarouselContent} ${styles.portraitContentFade}`}>
                 {activePortraitSlide?.title ? (() => { const Tag = (activePortraitSlide as any).titleStyle || "h3"; const fs = (activePortraitSlide as any).titleFontSize; return <Tag className={`${styles.portraitSlideTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{activePortraitSlide.title}</Tag>; })() : null}
                 {activePortraitSlide?.text ? <div className={styles.portraitSlideText} dangerouslySetInnerHTML={{ __html: activePortraitSlide.text }} /> : null}
-                <Link href={`${(portraitBlock as any).ctaHref || "/portrait"}#${portraitGalleryHash}`} className={`${styles.portraitCta} btn-site-${(portraitBlock as any).ctaButtonStyle || "1"}`} data-analytics-id="Accueil|CTA Portrait">
+                <Link href={portraitSlideHref} className={`${styles.portraitCta} btn-site-${(portraitBlock as any).ctaButtonStyle || "1"}`} data-analytics-id="Accueil|CTA Portrait">
                   {(portraitBlock as any).ctaLabel || "Découvrir le portrait"}
                 </Link>
                 <div className={styles.portraitNav}>
