@@ -1,6 +1,39 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 
+const parseNumber = (v: any, def: number) => {
+  const n = Number(v);
+  return isNaN(n) ? def : n;
+};
+
+const safeJsonParse = <T>(v: string, def: T): T => {
+  try {
+    return JSON.parse(v);
+  } catch {
+    return def;
+  }
+};
+
+const getStorage = (key: string) => {
+  try {
+    return typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setStorage = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+};
+
+const setCssVar = (key: string, value: string) => {
+  try {
+    document.documentElement.style.setProperty(key, value);
+  } catch {}
+};
+
 type MenuVisible = {
   realisation?: boolean;
   evenement?: boolean;
@@ -18,27 +51,13 @@ export default function MenuEditModal({ onClose, onSaved }: { onClose: () => voi
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const [fontFamily, setFontFamily] = useState<string>(() => {
-    try { return typeof window !== 'undefined' ? (localStorage.getItem('navFontFamily') || '') : ''; } catch(_) { return ''; }
-  });
-  const [fontSize, setFontSize] = useState<number>(() => {
-    try { return typeof window !== 'undefined' ? Number(localStorage.getItem('navFontSize') || '16') : 16; } catch(_) { return 16; }
-  });
-  const [fontWeight, setFontWeight] = useState<number>(() => {
-    try { return typeof window !== 'undefined' ? Number(localStorage.getItem('navFontWeight') || '600') : 600; } catch(_) { return 600; }
-  });
-  const [textColor, setTextColor] = useState<string>(() => {
-    try { return typeof window !== 'undefined' ? (localStorage.getItem('navTextColor') || '') : ''; } catch(_) { return ''; }
-  });
-  const [hoverColor, setHoverColor] = useState<string>(() => {
-    try { return typeof window !== 'undefined' ? (localStorage.getItem('navHoverTextColor') || '') : ''; } catch(_) { return ''; }
-  });
-  const [activeColor, setActiveColor] = useState<string>(() => {
-    try { return typeof window !== 'undefined' ? (localStorage.getItem('navActiveTextColor') || '') : ''; } catch(_) { return ''; }
-  });
-  const [bgColor, setBgColor] = useState<string>(() => {
-    try { return typeof window !== 'undefined' ? (localStorage.getItem('navBgColor') || '') : ''; } catch(_) { return ''; }
-  });
+  const [fontFamily, setFontFamily] = useState<string>(() => getStorage('navFontFamily') || '');
+  const [fontSize, setFontSize] = useState<number>(() => parseNumber(getStorage('navFontSize'), 16));
+  const [fontWeight, setFontWeight] = useState<number>(() => parseNumber(getStorage('navFontWeight'), 600));
+  const [textColor, setTextColor] = useState<string>(() => getStorage('navTextColor') || '');
+  const [hoverColor, setHoverColor] = useState<string>(() => getStorage('navHoverTextColor') || '');
+  const [activeColor, setActiveColor] = useState<string>(() => getStorage('navActiveTextColor') || '');
+  const [bgColor, setBgColor] = useState<string>(() => getStorage('navBgColor') || '');
 
   useEffect(() => {
     let mounted = true;
@@ -49,14 +68,15 @@ export default function MenuEditModal({ onClose, onSaved }: { onClose: () => voi
         const j = await resp.json();
         const s = j?.settings || {};
         if (!mounted) return;
-        if (s.navFontFamily) { setFontFamily(String(s.navFontFamily)); try { localStorage.setItem('navFontFamily', String(s.navFontFamily)); } catch(_){} }
-        if (s.navFontSize) { const v = Number(s.navFontSize) || 16; setFontSize(v); try{ localStorage.setItem('navFontSize', String(v)); }catch(_){} }
-        if (s.navFontWeight) { const w = Number(s.navFontWeight) || 600; setFontWeight(w); try{ localStorage.setItem('navFontWeight', String(w)); }catch(_){} }
-        if (s.navTextColor) { setTextColor(String(s.navTextColor)); try{ localStorage.setItem('navTextColor', String(s.navTextColor)); }catch(_){} }
-        if (s.navHoverTextColor) { setHoverColor(String(s.navHoverTextColor)); try{ localStorage.setItem('navHoverTextColor', String(s.navHoverTextColor)); }catch(_){} }
-        if (s.navActiveTextColor) { setActiveColor(String(s.navActiveTextColor)); try{ localStorage.setItem('navActiveTextColor', String(s.navActiveTextColor)); }catch(_){} }
-        if (s.navBgColor) { setBgColor(String(s.navBgColor)); try{ localStorage.setItem('navBgColor', String(s.navBgColor)); }catch(_){} }
-        if (s.navMenuVisible) { try { setMenuVisible(JSON.parse(String(s.navMenuVisible))); } catch(_) {} }
+
+        if (s.navFontFamily) { setFontFamily(String(s.navFontFamily)); setStorage('navFontFamily', String(s.navFontFamily)); }
+        if (s.navFontSize) { const v = parseNumber(s.navFontSize, 16); setFontSize(v); setStorage('navFontSize', String(v)); }
+        if (s.navFontWeight) { const w = parseNumber(s.navFontWeight, 600); setFontWeight(w); setStorage('navFontWeight', String(w)); }
+        if (s.navTextColor) { setTextColor(String(s.navTextColor)); setStorage('navTextColor', String(s.navTextColor)); }
+        if (s.navHoverTextColor) { setHoverColor(String(s.navHoverTextColor)); setStorage('navHoverTextColor', String(s.navHoverTextColor)); }
+        if (s.navActiveTextColor) { setActiveColor(String(s.navActiveTextColor)); setStorage('navActiveTextColor', String(s.navActiveTextColor)); }
+        if (s.navBgColor) { setBgColor(String(s.navBgColor)); setStorage('navBgColor', String(s.navBgColor)); }
+        if (s.navMenuVisible) { setMenuVisible(safeJsonParse(String(s.navMenuVisible), { realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, admin: true })); }
       } catch (_) {}
     }
     load();
@@ -68,20 +88,21 @@ export default function MenuEditModal({ onClose, onSaved }: { onClose: () => voi
   }
 
   function applyLocalAndCss() {
-    try { document.documentElement.style.setProperty('--nav-font-family', fontFamily || ''); } catch(_){}
-    try { document.documentElement.style.setProperty('--nav-font-size', `${fontSize}px`); } catch(_){}
-    try { document.documentElement.style.setProperty('--nav-font-weight', String(fontWeight)); } catch(_){}
-    try { document.documentElement.style.setProperty('--nav-text-color', textColor || ''); } catch(_){}
-    try { document.documentElement.style.setProperty('--nav-hover-text-color', hoverColor || ''); } catch(_){}
-    try { document.documentElement.style.setProperty('--nav-active-text-color', activeColor || ''); } catch(_){ }
-    try { document.documentElement.style.setProperty('--nav-bg-color', bgColor || ''); } catch(_){ }
-    try { localStorage.setItem('navFontFamily', fontFamily || ''); } catch(_){ }
-    try { localStorage.setItem('navFontSize', String(fontSize)); } catch(_){ }
-    try { localStorage.setItem('navFontWeight', String(fontWeight)); } catch(_){ }
-    try { localStorage.setItem('navTextColor', textColor || ''); } catch(_){ }
-    try { localStorage.setItem('navHoverTextColor', hoverColor || ''); } catch(_){ }
-    try { localStorage.setItem('navActiveTextColor', activeColor || ''); } catch(_){ }
-    try { localStorage.setItem('navBgColor', bgColor || ''); } catch(_){}
+    setCssVar('--nav-font-family', fontFamily || '');
+    setCssVar('--nav-font-size', `${fontSize}px`);
+    setCssVar('--nav-font-weight', String(fontWeight));
+    setCssVar('--nav-text-color', textColor || '');
+    setCssVar('--nav-hover-text-color', hoverColor || '');
+    setCssVar('--nav-active-text-color', activeColor || '');
+    setCssVar('--nav-bg-color', bgColor || '');
+    
+    setStorage('navFontFamily', fontFamily || '');
+    setStorage('navFontSize', String(fontSize));
+    setStorage('navFontWeight', String(fontWeight));
+    setStorage('navTextColor', textColor || '');
+    setStorage('navHoverTextColor', hoverColor || '');
+    setStorage('navActiveTextColor', activeColor || '');
+    setStorage('navBgColor', bgColor || '');
   }
 
   async function saveAll() {
@@ -109,7 +130,7 @@ export default function MenuEditModal({ onClose, onSaved }: { onClose: () => voi
         }
       }
 
-      try { localStorage.setItem('navMenuVisible', JSON.stringify(menuVisible)); } catch(_){}
+      try { setStorage('navMenuVisible', JSON.stringify(menuVisible)); } catch(_){}
       try { window.dispatchEvent(new CustomEvent('site-settings-updated')); } catch(_){}
 
       setSuccess('Sauvegardé');

@@ -1,3 +1,4 @@
+"use no memo";
 "use client";
 
 import React, { Fragment, useEffect, useState } from 'react';
@@ -10,7 +11,7 @@ import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrder
 import AnimateInView, { AnimateStaggerItem } from '../AnimateInView/AnimateInView';
 
 const ContactEditModal = dynamic(() => import('./ContactEditModal'), { ssr: false });
-const ContactZonesEditModal = dynamic(() => import('./ContactZonesEditModal'), { ssr: false });
+import ContactZonesEditModal from './ContactZonesEditModal';
 const ContactKitEditModal = dynamic(() => import('./ContactKitEditModal'), { ssr: false });
 
 export default function ContactBlocks() {
@@ -125,6 +126,12 @@ export default function ContactBlocks() {
       </div>
   );
 
+  const qgText = zones?.qg?.text ?? '<p>Basé à Clamart (92). Point de départ de mes missions en Île-de-France.</p>';
+  const qgPhone = zones?.qg?.phone ?? '06 74 96 64 58';
+  const parisText = zones?.paris?.text ?? '<p>Priorité aux transports en commun. Voiture possible pour la banlieue proche — frais kilométriques.</p>';
+  const franceText = zones?.france?.text ?? '<p>Déplacements réguliers en train pour des missions partout en France et parfois à l\'étranger — frais de déplacement.</p>';
+  const mapQueryVal = zones?.mapQuery?.trim() || '92140 Clamart';
+
   const zonesSection = hide('contact_zones') ? null : (
       <div className={`${styles.blockInner} ${styles.blockFullWidthBg} ${blockWidthClass('contact_zones')}`.trim()} style={{ position: 'relative', marginTop: '2rem', ...(zones?.backgroundColor ? { backgroundColor: zones.backgroundColor } : {}) }}>
         {isAdmin && (
@@ -151,9 +158,9 @@ export default function ContactBlocks() {
                 const fs = zones?.qg?.titleFontSize != null && zones.qg.titleFontSize >= 8 && zones.qg.titleFontSize <= 72 ? zones.qg.titleFontSize : undefined;
                 return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.qg?.title ?? 'QG'}</Tag>;
               })()}
-              <div className={`${styles.colBody} richtext-content`} dangerouslySetInnerHTML={{ __html: zones?.qg?.text ?? '<p>Basé à Clamart (92). Point de départ de mes missions en Île-de-France.</p>' }} />
-              {(zones?.qg?.phone ?? '06 74 96 64 58') && (
-                <div style={{ marginTop: '0.5rem' }}>📞 {zones?.qg?.phone ?? '06 74 96 64 58'}</div>
+              <div className={`${styles.colBody} richtext-content`} dangerouslySetInnerHTML={{ __html: qgText }} />
+              {qgPhone && (
+                <div style={{ marginTop: '0.5rem' }}>📞 {qgPhone}</div>
               )}
             </div>
           </AnimateStaggerItem>
@@ -165,7 +172,7 @@ export default function ContactBlocks() {
                 const fs = zones?.paris?.titleFontSize != null && zones.paris.titleFontSize >= 8 && zones.paris.titleFontSize <= 72 ? zones.paris.titleFontSize : undefined;
                 return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.paris?.title ?? 'Paris & Alentours'}</Tag>;
               })()}
-              <div className={`${styles.colBody} richtext-content`} dangerouslySetInnerHTML={{ __html: zones?.paris?.text ?? '<p>Priorité aux transports en commun. Voiture possible pour la banlieue proche — frais kilométriques.</p>' }} />
+              <div className={`${styles.colBody} richtext-content`} dangerouslySetInnerHTML={{ __html: parisText }} />
             </div>
           </AnimateStaggerItem>
           <AnimateStaggerItem>
@@ -176,7 +183,7 @@ export default function ContactBlocks() {
                 const fs = zones?.france?.titleFontSize != null && zones.france.titleFontSize >= 8 && zones.france.titleFontSize <= 72 ? zones.france.titleFontSize : undefined;
                 return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.france?.title ?? 'France & Monde'}</Tag>;
               })()}
-              <div className={`${styles.colBody} richtext-content`} dangerouslySetInnerHTML={{ __html: zones?.france?.text ?? '<p>Déplacements réguliers en train pour des missions partout en France et parfois à l\'étranger — frais de déplacement.</p>' }} />
+              <div className={`${styles.colBody} richtext-content`} dangerouslySetInnerHTML={{ __html: franceText }} />
             </div>
           </AnimateStaggerItem>
         </AnimateInView>
@@ -184,7 +191,7 @@ export default function ContactBlocks() {
         <div className={styles.mapContainer}>
           <iframe
             className={styles.mapIframe}
-            src={`https://www.google.com/maps?q=${encodeURIComponent(zones?.mapQuery?.trim() || '92140 Clamart')}&output=embed`}
+            src={`https://www.google.com/maps?q=${encodeURIComponent(mapQueryVal)}&output=embed`}
             title="Carte"
             loading="lazy"
           />

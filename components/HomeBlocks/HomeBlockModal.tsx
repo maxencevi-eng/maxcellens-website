@@ -1,3 +1,4 @@
+"use no memo";
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -16,6 +17,14 @@ import type {
 import { TITLE_FONT_SIZE_MIN, TITLE_FONT_SIZE_MAX } from "./homeDefaults";
 
 const clampTitleFontSize = (n: number) => Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(n) || 16));
+
+const getValidTitleStyle = (s: any, def: TitleStyleKey = "h2"): TitleStyleKey => {
+  return ["h1", "h2", "h3", "h4", "h5", "p"].includes(s) ? s : def;
+};
+
+const parseFontSize = (v: string): number | "" => (v === "" ? "" : clampTitleFontSize(Number(v)));
+
+const DEFAULT_PORTRAIT_TITLES = ["Lifestyle", "Studio", "Entreprise", "Couple"];
 
 const TITLE_STYLE_OPTIONS: { value: TitleStyleKey; label: string }[] = [
   { value: "p", label: "Paragraphe" },
@@ -156,35 +165,43 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   // Portrait CTA button style
   const [portraitCtaButtonStyle, setPortraitCtaButtonStyle] = useState<"1" | "2">("1");
 
+  const computeAnimationBgValue = () => {
+    const r = animationBackgroundColor?.trim() || "";
+    const ok = /^#?[0-9A-Fa-f]{6}$/.test(r);
+    return ok ? (r.startsWith("#") ? r : "#" + r) : "#0f0f12";
+  };
+
   useEffect(() => {
     const d = initialData as any;
+    const isValidFontSize = (fs: any) => fs != null && fs >= TITLE_FONT_SIZE_MIN && fs <= TITLE_FONT_SIZE_MAX;
+    const getFontSize = (fs: any) => isValidFontSize(fs) ? fs : "";
+
     if (blockKey === "home_intro") {
       setIntroTitle(d.title ?? "");
       setIntroSubtitle(d.subtitle ?? "");
-      setIntroTitleStyle(d.titleStyle === "h1" || d.titleStyle === "h2" || d.titleStyle === "h3" || d.titleStyle === "h4" || d.titleStyle === "h5" || d.titleStyle === "p" ? d.titleStyle : "h1");
-      setIntroSubtitleStyle(d.subtitleStyle === "h1" || d.subtitleStyle === "h2" || d.subtitleStyle === "h3" || d.subtitleStyle === "h4" || d.subtitleStyle === "h5" || d.subtitleStyle === "p" ? d.subtitleStyle : "p");
-      setIntroTitleFontSize(d.titleFontSize != null && d.titleFontSize >= TITLE_FONT_SIZE_MIN && d.titleFontSize <= TITLE_FONT_SIZE_MAX ? d.titleFontSize : "");
-      setIntroSubtitleFontSize(d.subtitleFontSize != null && d.subtitleFontSize >= TITLE_FONT_SIZE_MIN && d.subtitleFontSize <= TITLE_FONT_SIZE_MAX ? d.subtitleFontSize : "");
+      setIntroTitleStyle(getValidTitleStyle(d.titleStyle, "h1"));
+      setIntroSubtitleStyle(getValidTitleStyle(d.subtitleStyle, "p"));
+      setIntroTitleFontSize(getFontSize(d.titleFontSize));
+      setIntroSubtitleFontSize(getFontSize(d.subtitleFontSize));
       setIntroHtml(d.html ?? "");
       setIntroBackgroundColor(d.backgroundColor ?? "");
     }
     if (blockKey === "home_services") {
       setServicesBlockTitle(d.blockTitle ?? "Services");
       setServicesBlockSubtitle(d.blockSubtitle ?? "Réalisation, événementiel et corporate — des prestations sur mesure.");
-      setServicesBlockTitleStyle(d.blockTitleStyle === "h1" || d.blockTitleStyle === "h2" || d.blockTitleStyle === "h3" || d.blockTitleStyle === "h4" || d.blockTitleStyle === "h5" || d.blockTitleStyle === "p" ? d.blockTitleStyle : "h2");
-      setServicesBlockSubtitleStyle(d.blockSubtitleStyle === "h1" || d.blockSubtitleStyle === "h2" || d.blockSubtitleStyle === "h3" || d.blockSubtitleStyle === "h4" || d.blockSubtitleStyle === "h5" || d.blockSubtitleStyle === "p" ? d.blockSubtitleStyle : "p");
-      setServicesBlockTitleFontSize(d.blockTitleFontSize != null && d.blockTitleFontSize >= TITLE_FONT_SIZE_MIN && d.blockTitleFontSize <= TITLE_FONT_SIZE_MAX ? d.blockTitleFontSize : "");
-      setServicesBlockSubtitleFontSize(d.blockSubtitleFontSize != null && d.blockSubtitleFontSize >= TITLE_FONT_SIZE_MIN && d.blockSubtitleFontSize <= TITLE_FONT_SIZE_MAX ? d.blockSubtitleFontSize : "");
+      setServicesBlockTitleStyle(getValidTitleStyle(d.blockTitleStyle, "h2"));
+      setServicesBlockSubtitleStyle(getValidTitleStyle(d.blockSubtitleStyle, "p"));
+      setServicesBlockTitleFontSize(getFontSize(d.blockTitleFontSize));
+      setServicesBlockSubtitleFontSize(getFontSize(d.blockSubtitleFontSize));
       if (d.items) {
-        const style = (s: string) => (s === "h1" || s === "h2" || s === "h3" || s === "h4" || s === "h5" || s === "p" ? s : undefined);
         const items = d.items.map((it: any) => ({
           title: it.title ?? "",
           description: it.description ?? "",
           href: it.href ?? "",
           image: it.image ?? null,
-          titleStyle: style(it.titleStyle) ?? "h3",
-          descriptionStyle: style(it.descriptionStyle) ?? "p",
-          titleFontSize: it.titleFontSize != null && it.titleFontSize >= TITLE_FONT_SIZE_MIN && it.titleFontSize <= TITLE_FONT_SIZE_MAX ? it.titleFontSize : undefined,
+          titleStyle: getValidTitleStyle(it.titleStyle, "h3"),
+          descriptionStyle: getValidTitleStyle(it.descriptionStyle, "p"),
+          titleFontSize: isValidFontSize(it.titleFontSize) ? it.titleFontSize : undefined,
         }));
         setServiceItems(items.length ? items : [{ title: "", description: "", href: "", image: null, titleStyle: "h3", descriptionStyle: "p" }]);
       }
@@ -196,22 +213,21 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     }
     if (blockKey === "home_portrait") {
       setPortraitBlockTitle(d.blockTitle ?? "Portrait");
-      setPortraitBlockTitleStyle(d.blockTitleStyle === "h1" || d.blockTitleStyle === "h2" || d.blockTitleStyle === "h3" || d.blockTitleStyle === "h4" || d.blockTitleStyle === "h5" || d.blockTitleStyle === "p" ? d.blockTitleStyle : "h2");
-      setPortraitBlockTitleFontSize(d.blockTitleFontSize != null && d.blockTitleFontSize >= TITLE_FONT_SIZE_MIN && d.blockTitleFontSize <= TITLE_FONT_SIZE_MAX ? d.blockTitleFontSize : "");
+      setPortraitBlockTitleStyle(getValidTitleStyle(d.blockTitleStyle, "h2"));
+      setPortraitBlockTitleFontSize(getFontSize(d.blockTitleFontSize));
       setPortraitCtaLabel(d.ctaLabel ?? "Découvrir le portrait");
       setPortraitCtaHref(d.ctaHref ?? "/portrait");
       setPortraitCtaButtonStyle(d.ctaButtonStyle === "2" ? "2" : "1");
       setPortraitCarouselSpeed(typeof d.carouselSpeed === "number" && d.carouselSpeed >= 2000 ? d.carouselSpeed : 5000);
       setPortraitBackgroundColor(d.backgroundColor ?? "");
       if (Array.isArray(d.slides) && d.slides.length) {
-        const slideStyle = (s: string) => (s === "h1" || s === "h2" || s === "h3" || s === "h4" || s === "h5" || s === "p" ? s : "h3");
         setPortraitSlides(d.slides.map((s: any) => ({
           title: s.title ?? "",
           text: s.text ?? "",
           image: s.image ? { ...s.image, focus: s.image.focus ?? { x: 50, y: 50 } } : null,
           image2: s.image2 ? { ...s.image2, focus: s.image2.focus ?? { x: 50, y: 50 } } : null,
-          titleStyle: slideStyle(s.titleStyle),
-          titleFontSize: s.titleFontSize != null && s.titleFontSize >= TITLE_FONT_SIZE_MIN && s.titleFontSize <= TITLE_FONT_SIZE_MAX ? s.titleFontSize : undefined,
+          titleStyle: getValidTitleStyle(s.titleStyle, "h3"),
+          titleFontSize: isValidFontSize(s.titleFontSize) ? s.titleFontSize : undefined,
         })));
       } else {
         setPortraitSlides([
@@ -224,8 +240,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     }
     if (blockKey === "home_cadreur") {
       setCadreurTitle(d.title ?? "");
-      setCadreurTitleStyle(d.titleStyle === "h1" || d.titleStyle === "h2" || d.titleStyle === "h3" || d.titleStyle === "h4" || d.titleStyle === "h5" || d.titleStyle === "p" ? d.titleStyle : "h2");
-      setCadreurTitleFontSize(d.titleFontSize != null && d.titleFontSize >= TITLE_FONT_SIZE_MIN && d.titleFontSize <= TITLE_FONT_SIZE_MAX ? d.titleFontSize : "");
+      setCadreurTitleStyle(getValidTitleStyle(d.titleStyle, "h2"));
+      setCadreurTitleFontSize(getFontSize(d.titleFontSize));
       setCadreurHtml(d.html ?? "");
       setCadreurImage(d.image ? { ...d.image, focus: (d.image as any).focus ?? { x: 50, y: 50 } } : null);
       setCadreurBackgroundColor(d.backgroundColor ?? "");
@@ -233,31 +249,29 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     if (blockKey === "home_animation") {
       setAnimationBlockTitle(d.blockTitle ?? "Animation");
       setAnimationBlockSubtitle(d.blockSubtitle ?? "");
-      setAnimationBlockTitleStyle(d.blockTitleStyle === "h1" || d.blockTitleStyle === "h2" || d.blockTitleStyle === "h3" || d.blockTitleStyle === "h4" || d.blockTitleStyle === "h5" || d.blockTitleStyle === "p" ? d.blockTitleStyle : "h2");
-      setAnimationBlockSubtitleStyle(d.blockSubtitleStyle === "h1" || d.blockSubtitleStyle === "h2" || d.blockSubtitleStyle === "h3" || d.blockSubtitleStyle === "h4" || d.blockSubtitleStyle === "h5" || d.blockSubtitleStyle === "p" ? d.blockSubtitleStyle : "p");
-      setAnimationBlockTitleFontSize(d.blockTitleFontSize != null && d.blockTitleFontSize >= TITLE_FONT_SIZE_MIN && d.blockTitleFontSize <= TITLE_FONT_SIZE_MAX ? d.blockTitleFontSize : "");
-      setAnimationBlockSubtitleFontSize(d.blockSubtitleFontSize != null && d.blockSubtitleFontSize >= TITLE_FONT_SIZE_MIN && d.blockSubtitleFontSize <= TITLE_FONT_SIZE_MAX ? d.blockSubtitleFontSize : "");
+      setAnimationBlockTitleStyle(getValidTitleStyle(d.blockTitleStyle, "h2"));
+      setAnimationBlockSubtitleStyle(getValidTitleStyle(d.blockSubtitleStyle, "p"));
+      setAnimationBlockTitleFontSize(getFontSize(d.blockTitleFontSize));
+      setAnimationBlockSubtitleFontSize(getFontSize(d.blockSubtitleFontSize));
       setAnimationImage(d.image ?? null);
       setAnimationBackgroundColor(d.backgroundColor ?? "");
     }
     if (blockKey === "home_quote") {
       if (Array.isArray(d.quotes) && d.quotes.length) {
-        const style = (s: string) => (s === "h1" || s === "h2" || s === "h3" || s === "h4" || s === "h5" || s === "p" ? s : "p");
         setQuoteItems(d.quotes.map((q: any) => ({
           text: q.text ?? "",
           author: q.author ?? "",
           role: q.role ?? "",
-          authorStyle: style(q.authorStyle) ?? "p",
-          roleStyle: style(q.roleStyle) ?? "p",
+          authorStyle: getValidTitleStyle(q.authorStyle, "p"),
+          roleStyle: getValidTitleStyle(q.roleStyle, "p"),
         })));
       } else if (d.text != null || d.author != null) {
-        const style = (s: string) => (s === "h1" || s === "h2" || s === "h3" || s === "h4" || s === "h5" || s === "p" ? s : "p");
         setQuoteItems([{
           text: d.text ?? "",
           author: d.author ?? "",
           role: d.role ?? "",
-          authorStyle: style(d.authorStyle) ?? "p",
-          roleStyle: style(d.roleStyle) ?? "p",
+          authorStyle: getValidTitleStyle(d.authorStyle, "p"),
+          roleStyle: getValidTitleStyle(d.roleStyle, "p"),
         }]);
       } else {
         setQuoteItems([
@@ -271,8 +285,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     }
     if (blockKey === "home_cta") {
       setCtaTitle(d.title ?? "");
-      setCtaTitleStyle(d.titleStyle === "h1" || d.titleStyle === "h2" || d.titleStyle === "h3" || d.titleStyle === "h4" || d.titleStyle === "h5" || d.titleStyle === "p" ? d.titleStyle : "h2");
-      setCtaTitleFontSize(d.titleFontSize != null && d.titleFontSize >= TITLE_FONT_SIZE_MIN && d.titleFontSize <= TITLE_FONT_SIZE_MAX ? d.titleFontSize : "");
+      setCtaTitleStyle(getValidTitleStyle(d.titleStyle, "h2"));
+      setCtaTitleFontSize(getFontSize(d.titleFontSize));
       setCtaButtonLabel(d.buttonLabel ?? "");
       setCtaButtonHref(d.buttonHref ?? "");
       setCtaButtonStyle(d.buttonStyle === "2" ? "2" : "1");
@@ -475,6 +489,18 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     }
   }
 
+  const introBgValue = introBackgroundColor || "#fafaf9";
+  const servicesBgValue = servicesBackgroundColor || "#fafaf9";
+  const statsBgValue = statBackgroundColor || "#213431";
+  const portraitBgValue = portraitBackgroundColor || "#fafaf9";
+  const cadreurBgValue = cadreurBackgroundColor || "#fafaf9";
+  const quoteBgValue = quoteBackgroundColor || "#fafaf9";
+  const ctaBgValue = ctaBackgroundColor || "#213431";
+  const animationBgComputed = computeAnimationBgValue();
+
+  const introHtmlContent = introHtml || "<p style='color:#999'>Aucun</p>";
+  const cadreurHtmlContent = cadreurHtml || "<p style='color:#999'>Aucun</p>";
+
   const overlayStyle: React.CSSProperties = {
     position: "fixed",
     inset: 0,
@@ -517,7 +543,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={introTitleStyle} onChange={(e) => setIntroTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={introTitleFontSize === "" ? "" : introTitleFontSize} onChange={(e) => setIntroTitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={introTitleFontSize === "" ? "" : introTitleFontSize} onChange={(e) => setIntroTitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -527,18 +553,18 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={introSubtitleStyle} onChange={(e) => setIntroSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={introSubtitleFontSize === "" ? "" : introSubtitleFontSize} onChange={(e) => setIntroSubtitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={introSubtitleFontSize === "" ? "" : introSubtitleFontSize} onChange={(e) => setIntroSubtitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte</label>
-                <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: introHtml || "<p style='color:#999'>Aucun</p>" }} />
+                <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: introHtmlContent }} />
                 <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingHtml(true)}>Éditer le texte</button>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="color" value={introBackgroundColor || "#fafaf9"} onChange={(e) => setIntroBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="color" value={introBgValue} onChange={(e) => setIntroBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
                   <input type="text" value={introBackgroundColor} onChange={(e) => setIntroBackgroundColor(e.target.value)} placeholder="ou hex (ex. #fafaf9)" style={{ ...inputStyle, width: 120 }} />
                   {introBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setIntroBackgroundColor("")}>Effacer</button> : null}
                 </div>
@@ -555,7 +581,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={servicesBlockTitleStyle} onChange={(e) => setServicesBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={servicesBlockTitleFontSize === "" ? "" : servicesBlockTitleFontSize} onChange={(e) => setServicesBlockTitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={servicesBlockTitleFontSize === "" ? "" : servicesBlockTitleFontSize} onChange={(e) => setServicesBlockTitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -565,10 +591,14 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={servicesBlockSubtitleStyle} onChange={(e) => setServicesBlockSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={servicesBlockSubtitleFontSize === "" ? "" : servicesBlockSubtitleFontSize} onChange={(e) => setServicesBlockSubtitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={servicesBlockSubtitleFontSize === "" ? "" : servicesBlockSubtitleFontSize} onChange={(e) => setServicesBlockSubtitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
                 </div>
               </div>
-              {serviceItems.map((item, i) => (
+              {serviceItems.map((item, i) => {
+                const itemTitleStyle = item.titleStyle ?? "h3";
+                const itemTitleFontSize = item.titleFontSize ?? "";
+                const itemDescriptionStyle = item.descriptionStyle ?? "p";
+                return (
                 <div key={i} style={{ marginBottom: 16, padding: 12, border: "1px solid #eee", borderRadius: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                     <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>Service {i + 1}</span>
@@ -595,17 +625,17 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                     <label style={{ fontSize: 12, color: "var(--muted)" }}>Titre</label>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
                       <input type="text" placeholder="Titre" value={item.title} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, title: e.target.value } : p)))} style={{ ...inputStyle, flex: 1, minWidth: 100 }} />
-                      <select value={item.titleStyle ?? "h3"} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, titleStyle: e.target.value as TitleStyleKey } : p)))} style={{ ...inputStyle, width: 120 }}>
+                      <select value={itemTitleStyle} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, titleStyle: e.target.value as TitleStyleKey } : p)))} style={{ ...inputStyle, width: 120 }}>
                         {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
-                      <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={item.titleFontSize ?? ""} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, titleFontSize: e.target.value === "" ? undefined : clampTitleFontSize(Number(e.target.value)) } : p)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                      <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={itemTitleFontSize} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, titleFontSize: parseFontSize(e.target.value) || undefined } : p)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
                     </div>
                   </div>
                   <div style={{ marginBottom: 8 }}>
                     <label style={{ fontSize: 12, color: "var(--muted)" }}>Description</label>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
                       <input type="text" placeholder="Description courte" value={item.description} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, description: e.target.value } : p)))} style={{ ...inputStyle, flex: 1 }} />
-                      <select value={item.descriptionStyle ?? "p"} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, descriptionStyle: e.target.value as TitleStyleKey } : p)))} style={{ ...inputStyle, width: 120 }}>
+                      <select value={itemDescriptionStyle} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, descriptionStyle: e.target.value as TitleStyleKey } : p)))} style={{ ...inputStyle, width: 120 }}>
                         {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
                     </div>
@@ -614,11 +644,12 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                     <input type="text" placeholder="Lien (ex. /realisation)" value={item.href} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, href: e.target.value } : p)))} style={inputStyle} />
                   </div>
                 </div>
-              ))}
+                );
+              })}
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="color" value={servicesBackgroundColor || "#fafaf9"} onChange={(e) => setServicesBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="color" value={servicesBgValue} onChange={(e) => setServicesBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
                   <input type="text" value={servicesBackgroundColor} onChange={(e) => setServicesBackgroundColor(e.target.value)} placeholder="ou hex" style={{ ...inputStyle, width: 120 }} />
                   {servicesBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setServicesBackgroundColor("")}>Effacer</button> : null}
                 </div>
@@ -629,16 +660,20 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
 
           {blockKey === "home_stats" && (
             <>
-              {statItems.map((item, i) => (
+              {statItems.map((item, i) => {
+                const statValue = item.value;
+                const statLabel = item.label;
+                return (
                 <div key={i} style={{ marginBottom: 12, display: "flex", gap: 8 }}>
-                  <input type="text" placeholder="Valeur (ex. 10+)" value={item.value} onChange={(e) => setStatItems((prev) => prev.map((p, j) => (j === i ? { ...p, value: e.target.value } : p)))} style={{ ...inputStyle, width: 100 }} />
-                  <input type="text" placeholder="Label (ex. ans d'expérience)" value={item.label} onChange={(e) => setStatItems((prev) => prev.map((p, j) => (j === i ? { ...p, label: e.target.value } : p)))} style={{ ...inputStyle, flex: 1 }} />
+                  <input type="text" placeholder="Valeur (ex. 10+)" value={statValue} onChange={(e) => setStatItems((prev) => prev.map((p, j) => (j === i ? { ...p, value: e.target.value } : p)))} style={{ ...inputStyle, width: 100 }} />
+                  <input type="text" placeholder="Label (ex. ans d'expérience)" value={statLabel} onChange={(e) => setStatItems((prev) => prev.map((p, j) => (j === i ? { ...p, label: e.target.value } : p)))} style={{ ...inputStyle, flex: 1 }} />
                 </div>
-              ))}
+                );
+              })}
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="color" value={statBackgroundColor || "#213431"} onChange={(e) => setStatBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="color" value={statsBgValue} onChange={(e) => setStatBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
                   <input type="text" value={statBackgroundColor} onChange={(e) => setStatBackgroundColor(e.target.value)} placeholder="ou hex" style={{ ...inputStyle, width: 120 }} />
                   {statBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setStatBackgroundColor("")}>Effacer</button> : null}
                 </div>
@@ -669,7 +704,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={portraitBlockTitleStyle} onChange={(e) => setPortraitBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={portraitBlockTitleFontSize === "" ? "" : portraitBlockTitleFontSize} onChange={(e) => setPortraitBlockTitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={portraitBlockTitleFontSize === "" ? "" : portraitBlockTitleFontSize} onChange={(e) => setPortraitBlockTitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -690,27 +725,31 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="color" value={portraitBackgroundColor || "#fafaf9"} onChange={(e) => setPortraitBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="color" value={portraitBgValue} onChange={(e) => setPortraitBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
                   <input type="text" value={portraitBackgroundColor} onChange={(e) => setPortraitBackgroundColor(e.target.value)} placeholder="ou hex" style={{ ...inputStyle, width: 120 }} />
                   {portraitBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setPortraitBackgroundColor("")}>Effacer</button> : null}
                 </div>
               </div>
               <div style={{ marginTop: 20, marginBottom: 8, fontWeight: 600, fontSize: 14 }}>4 slides (Lifestyle, Studio, Entreprise, Couple)</div>
-              {portraitSlides.map((slide, i) => (
+              {portraitSlides.map((slide, i) => {
+                const slideTitleStyle = slide.titleStyle ?? "h3";
+                const slideTitleFontSize = slide.titleFontSize ?? "";
+                const slideHtmlContent = slide.text || "<p style='color:#999'>Aucun</p>";
+                return (
                 <div key={i} style={{ marginBottom: 20, padding: 12, border: "1px solid #eee", borderRadius: 8 }}>
                   <div style={{ marginBottom: 8 }}>
                     <label style={{ fontSize: 12, color: "var(--muted)" }}>Slide {i + 1} — Titre</label>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
-                      <input type="text" value={slide.title} onChange={(e) => setPortraitSlides((prev) => prev.map((s, j) => (j === i ? { ...s, title: e.target.value } : s)))} style={{ ...inputStyle, flex: 1, minWidth: 100 }} placeholder={["Lifestyle", "Studio", "Entreprise", "Couple"][i]} />
-                      <select value={slide.titleStyle ?? "h3"} onChange={(e) => setPortraitSlides((prev) => prev.map((s, j) => (j === i ? { ...s, titleStyle: e.target.value as TitleStyleKey } : s)))} style={{ ...inputStyle, width: 120 }}>
+                      <input type="text" value={slide.title} onChange={(e) => setPortraitSlides((prev) => prev.map((s, j) => (j === i ? { ...s, title: e.target.value } : s)))} style={{ ...inputStyle, flex: 1, minWidth: 100 }} placeholder={DEFAULT_PORTRAIT_TITLES[i]} />
+                      <select value={slideTitleStyle} onChange={(e) => setPortraitSlides((prev) => prev.map((s, j) => (j === i ? { ...s, titleStyle: e.target.value as TitleStyleKey } : s)))} style={{ ...inputStyle, width: 120 }}>
                         {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
-                      <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={slide.titleFontSize ?? ""} onChange={(e) => setPortraitSlides((prev) => prev.map((s, j) => (j === i ? { ...s, titleFontSize: e.target.value === "" ? undefined : clampTitleFontSize(Number(e.target.value)) } : s)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                      <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={slideTitleFontSize} onChange={(e) => setPortraitSlides((prev) => prev.map((s, j) => (j === i ? { ...s, titleFontSize: parseFontSize(e.target.value) || undefined } : s)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
                     </div>
                   </div>
                   <div style={{ marginBottom: 8 }}>
                     <label style={{ fontSize: 12, color: "var(--muted)" }}>Texte</label>
-                    <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: slide.text || "<p style='color:#999'>Aucun</p>" }} />
+                    <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: slideHtmlContent }} />
                     <button type="button" className="btn-ghost" style={{ marginTop: 4 }} onClick={() => setEditingSlideIndex(i)}>Éditer le texte</button>
                   </div>
                   <div style={{ marginBottom: 8 }}>
@@ -779,7 +818,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                     ) : null}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </>
           )}
 
@@ -792,12 +832,12 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={cadreurTitleStyle} onChange={(e) => setCadreurTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={cadreurTitleFontSize === "" ? "" : cadreurTitleFontSize} onChange={(e) => setCadreurTitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={cadreurTitleFontSize === "" ? "" : cadreurTitleFontSize} onChange={(e) => setCadreurTitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte</label>
-                <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: cadreurHtml || "<p style='color:#999'>Aucun</p>" }} />
+                <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: cadreurHtmlContent }} />
                 <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingCadreurHtml(true)}>Éditer le texte</button>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -832,7 +872,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="color" value={cadreurBackgroundColor || "#fafaf9"} onChange={(e) => setCadreurBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="color" value={cadreurBgValue} onChange={(e) => setCadreurBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
                   <input type="text" value={cadreurBackgroundColor} onChange={(e) => setCadreurBackgroundColor(e.target.value)} placeholder="ou hex" style={{ ...inputStyle, width: 120 }} />
                   {cadreurBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setCadreurBackgroundColor("")}>Effacer</button> : null}
                 </div>
@@ -858,7 +898,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={animationBlockTitleStyle} onChange={(e) => setAnimationBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={animationBlockTitleFontSize === "" ? "" : animationBlockTitleFontSize} onChange={(e) => setAnimationBlockTitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={animationBlockTitleFontSize === "" ? "" : animationBlockTitleFontSize} onChange={(e) => setAnimationBlockTitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -868,7 +908,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={animationBlockSubtitleStyle} onChange={(e) => setAnimationBlockSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={animationBlockSubtitleFontSize === "" ? "" : animationBlockSubtitleFontSize} onChange={(e) => setAnimationBlockSubtitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={animationBlockSubtitleFontSize === "" ? "" : animationBlockSubtitleFontSize} onChange={(e) => setAnimationBlockSubtitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -876,11 +916,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <input
                     type="color"
-                    value={(() => {
-                      const r = animationBackgroundColor?.trim() || "";
-                      const ok = /^#?[0-9A-Fa-f]{6}$/.test(r);
-                      return ok ? (r.startsWith("#") ? r : "#" + r) : "#0f0f12";
-                    })()}
+                    value={animationBgComputed}
                     onChange={(e) => setAnimationBackgroundColor(e.target.value)}
                     style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }}
                   />
@@ -911,7 +947,13 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 <button type="button" className="btn-ghost" onClick={() => setQuoteItems((prev) => [...prev, { text: "", author: "", role: "", authorStyle: "p", roleStyle: "p" }])}>+ Ajouter une citation</button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {quoteItems.map((q, i) => (
+                {quoteItems.map((q, i) => {
+                  const qAuthorStyle = q.authorStyle ?? "p";
+                  const qRoleStyle = q.roleStyle ?? "p";
+                  const qText = q.text;
+                  const qAuthor = q.author;
+                  const qRole = q.role ?? "";
+                  return (
                   <div key={i} style={{ border: "1px solid #e6e6e6", borderRadius: 8, padding: 12, background: "#fafafa" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                       <span style={{ fontWeight: 600, fontSize: 13 }}>Citation {i + 1}</span>
@@ -921,13 +963,13 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                     </div>
                     <div style={{ marginBottom: 8 }}>
                       <label style={{ display: "block", fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Texte</label>
-                      <textarea value={q.text} onChange={(e) => setQuoteItems((prev) => prev.map((item, j) => (j === i ? { ...item, text: e.target.value } : item)))} style={{ ...inputStyle, minHeight: 60, width: "100%" }} rows={2} />
+                      <textarea value={qText} onChange={(e) => setQuoteItems((prev) => prev.map((item, j) => (j === i ? { ...item, text: e.target.value } : item)))} style={{ ...inputStyle, minHeight: 60, width: "100%" }} rows={2} />
                     </div>
                     <div style={{ marginBottom: 8 }}>
                       <label style={{ display: "block", fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Auteur</label>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <input type="text" value={q.author} onChange={(e) => setQuoteItems((prev) => prev.map((item, j) => (j === i ? { ...item, author: e.target.value } : item)))} style={{ ...inputStyle, flex: 1 }} />
-                        <select value={q.authorStyle ?? "p"} onChange={(e) => setQuoteItems((prev) => prev.map((item, j) => (j === i ? { ...item, authorStyle: e.target.value as TitleStyleKey } : item)))} style={{ ...inputStyle, width: 100 }}>
+                        <input type="text" value={qAuthor} onChange={(e) => setQuoteItems((prev) => prev.map((item, j) => (j === i ? { ...item, author: e.target.value } : item)))} style={{ ...inputStyle, flex: 1 }} />
+                        <select value={qAuthorStyle} onChange={(e) => setQuoteItems((prev) => prev.map((item, j) => (j === i ? { ...item, authorStyle: e.target.value as TitleStyleKey } : item)))} style={{ ...inputStyle, width: 100 }}>
                           {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
                       </div>
@@ -935,19 +977,20 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                     <div>
                       <label style={{ display: "block", fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Rôle (optionnel)</label>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <input type="text" value={q.role ?? ""} onChange={(e) => setQuoteItems((prev) => prev.map((item, j) => (j === i ? { ...item, role: e.target.value } : item)))} style={{ ...inputStyle, flex: 1 }} />
-                        <select value={q.roleStyle ?? "p"} onChange={(e) => setQuoteItems((prev) => prev.map((item, j) => (j === i ? { ...item, roleStyle: e.target.value as TitleStyleKey } : item)))} style={{ ...inputStyle, width: 100 }}>
+                        <input type="text" value={qRole} onChange={(e) => setQuoteItems((prev) => prev.map((item, j) => (j === i ? { ...item, role: e.target.value } : item)))} style={{ ...inputStyle, flex: 1 }} />
+                        <select value={qRoleStyle} onChange={(e) => setQuoteItems((prev) => prev.map((item, j) => (j === i ? { ...item, roleStyle: e.target.value as TitleStyleKey } : item)))} style={{ ...inputStyle, width: 100 }}>
                           {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                         </select>
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="color" value={quoteBackgroundColor || "#fafaf9"} onChange={(e) => setQuoteBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="color" value={quoteBgValue} onChange={(e) => setQuoteBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
                   <input type="text" value={quoteBackgroundColor} onChange={(e) => setQuoteBackgroundColor(e.target.value)} placeholder="ou hex" style={{ ...inputStyle, width: 120 }} />
                   {quoteBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteBackgroundColor("")}>Effacer</button> : null}
                 </div>
@@ -964,7 +1007,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={ctaTitleStyle} onChange={(e) => setCtaTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={ctaTitleFontSize === "" ? "" : ctaTitleFontSize} onChange={(e) => setCtaTitleFontSize(e.target.value === "" ? "" : clampTitleFontSize(Number(e.target.value)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={ctaTitleFontSize === "" ? "" : ctaTitleFontSize} onChange={(e) => setCtaTitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -985,7 +1028,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="color" value={ctaBackgroundColor || "#213431"} onChange={(e) => setCtaBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="color" value={ctaBgValue} onChange={(e) => setCtaBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
                   <input type="text" value={ctaBackgroundColor} onChange={(e) => setCtaBackgroundColor(e.target.value)} placeholder="ou hex" style={{ ...inputStyle, width: 120 }} />
                   {ctaBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setCtaBackgroundColor("")}>Effacer</button> : null}
                 </div>

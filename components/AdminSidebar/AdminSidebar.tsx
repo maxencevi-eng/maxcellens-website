@@ -15,6 +15,25 @@ const MaintenanceModal = dynamic(() => import('../Analytics/MaintenanceModal'), 
 
 const PUBLIC_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
+const getStorage = (key: string) => {
+  try {
+    return typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setStorage = (key: string, value: string) => {
+  try {
+    if (typeof window !== 'undefined') localStorage.setItem(key, value);
+  } catch {}
+};
+
+const parseNumber = (val: any, def: number) => {
+  const n = Number(val);
+  return isNaN(n) ? def : n;
+};
+
 export default function AdminSidebar() {
   const [user, setUser] = useState<any>(null);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -73,12 +92,12 @@ export default function AdminSidebar() {
   useEffect(() => {
     const logoPublic = `${PUBLIC_BASE}/storage/v1/object/public/site-assets/logos/site-logo.webp`;
     const faviconPublic = `${PUBLIC_BASE}/storage/v1/object/public/site-assets/favicons/favicon.webp`;
-    const v = typeof window !== 'undefined' ? (localStorage.getItem('siteLogoVersion') || '') : '';
+    const v = getStorage('siteLogoVersion') || '';
     setLogoPreview(v ? `${logoPublic}?t=${v}` : logoPublic);
     setFaviconPreview(v ? `${faviconPublic}?t=${v}` : faviconPublic);
 
     // footer preview/version
-    const fv = typeof window !== 'undefined' ? (localStorage.getItem('siteFooterLogoVersion') || '') : '';
+    const fv = getStorage('siteFooterLogoVersion') || '';
     const footerPublic = `${PUBLIC_BASE}/storage/v1/object/public/site-assets/logos/footer-logo.webp`;
     setFooterPreview(fv ? `${footerPublic}?t=${fv}` : footerPublic);
 
@@ -92,36 +111,36 @@ export default function AdminSidebar() {
         if (s.siteLogoVersion) {
           const logoUrlWith = `${logoPublic}?t=${s.siteLogoVersion}`;
           setLogoPreview(logoUrlWith);
-          try { localStorage.setItem('siteLogoVersion', s.siteLogoVersion); } catch(_){}
+          setStorage('siteLogoVersion', s.siteLogoVersion);
         }
         if (s.siteFooterLogoVersion) {
           const footerUrlWith = `${footerPublic}?t=${s.siteFooterLogoVersion}`;
           setFooterPreview(footerUrlWith);
-          try { localStorage.setItem('siteFooterLogoVersion', s.siteFooterLogoVersion); } catch(_){}
+          setStorage('siteFooterLogoVersion', s.siteFooterLogoVersion);
         }
         if (s.siteLogoHeight) {
-          const h = Number(s.siteLogoHeight) || 36;
+          const h = parseNumber(s.siteLogoHeight, 36);
           setLogoSize(h);
           document.documentElement.style.setProperty('--site-logo-height', `${h}px`);
-          try { localStorage.setItem('siteLogoHeight', String(h)); } catch(_){}
+          setStorage('siteLogoHeight', String(h));
         }
         if (s.siteFooterLogoHeight) {
-          const fh = Number(s.siteFooterLogoHeight) || 36;
+          const fh = parseNumber(s.siteFooterLogoHeight, 36);
           setFooterSize(fh);
           document.documentElement.style.setProperty('--site-footer-logo-height', `${fh}px`);
-          try { localStorage.setItem('siteFooterLogoHeight', String(fh)); } catch(_){}
+          setStorage('siteFooterLogoHeight', String(fh));
         }
         if (s.navHeight) {
-          const nh = Number(s.navHeight) || 64;
+          const nh = parseNumber(s.navHeight, 64);
           setNavHeight(nh);
           try { document.documentElement.style.setProperty('--nav-height', `${nh}px`); } catch(_) {}
-          try { localStorage.setItem('navHeight', String(nh)); } catch(_) {}
+          setStorage('navHeight', String(nh));
         }
         if (s.navGap) {
-          const ng = Number(s.navGap) || 6;
+          const ng = parseNumber(s.navGap, 6);
           setNavGap(ng);
           try { document.documentElement.style.setProperty('--nav-gap', `${ng / 10}rem`); } catch(_) {}
-          try { localStorage.setItem('navGap', String(ng)); } catch(_) {}
+          setStorage('navGap', String(ng));
         }
       } catch (e) {
         // ignore
@@ -129,18 +148,18 @@ export default function AdminSidebar() {
     }
 
     try {
-      const saved = localStorage.getItem('siteLogoHeight');
+      const saved = getStorage('siteLogoHeight');
       if (saved) {
-        const v = Number(saved) || 36;
+        const v = parseNumber(saved, 36);
         setLogoSize(v);
         document.documentElement.style.setProperty('--site-logo-height', `${v}px`);
       } else {
         document.documentElement.style.setProperty('--site-logo-height', `36px`);
       }
 
-      const savedFooter = localStorage.getItem('siteFooterLogoHeight');
+      const savedFooter = getStorage('siteFooterLogoHeight');
       if (savedFooter) {
-        const fvNum = Number(savedFooter) || 36;
+        const fvNum = parseNumber(savedFooter, 36);
         setFooterSize(fvNum);
         document.documentElement.style.setProperty('--site-footer-logo-height', `${fvNum}px`);
       } else {
@@ -149,17 +168,17 @@ export default function AdminSidebar() {
     } catch (_) {}
 
     try {
-      const nhSaved = localStorage.getItem('navHeight');
+      const nhSaved = getStorage('navHeight');
       if (nhSaved) {
-        const n = Number(nhSaved) || 64;
+        const n = parseNumber(nhSaved, 64);
         setNavHeight(n);
         document.documentElement.style.setProperty('--nav-height', `${n}px`);
       } else {
         document.documentElement.style.setProperty('--nav-height', `64px`);
       }
-      const ngSaved = localStorage.getItem('navGap');
+      const ngSaved = getStorage('navGap');
       if (ngSaved) {
-        const g = Number(ngSaved) || 6;
+        const g = parseNumber(ngSaved, 6);
         setNavGap(g);
         document.documentElement.style.setProperty('--nav-gap', `${g / 10}rem`);
       } else {
@@ -206,14 +225,14 @@ export default function AdminSidebar() {
   function handleNavHeightChange(v: number) {
     setNavHeight(v);
     try { document.documentElement.style.setProperty('--nav-height', `${v}px`); } catch(_){}
-    try { localStorage.setItem('navHeight', String(v)); } catch(_){}
+    setStorage('navHeight', String(v));
     try { fetch('/api/admin/site-settings', { method: 'POST', body: JSON.stringify({ key: 'navHeight', value: String(v) }), headers: { 'Content-Type':'application/json' } }); } catch(_){}
   }
 
   function handleNavGapChange(v: number) {
     setNavGap(v);
     try { document.documentElement.style.setProperty('--nav-gap', `${v/10}rem`); } catch(_){}
-    try { localStorage.setItem('navGap', String(v)); } catch(_){}
+    setStorage('navGap', String(v));
     try { fetch('/api/admin/site-settings', { method: 'POST', body: JSON.stringify({ key: 'navGap', value: String(v) }), headers: { 'Content-Type':'application/json' } }); } catch(_){}
   }
 
@@ -238,7 +257,7 @@ export default function AdminSidebar() {
       if (!res.ok) throw new Error(json?.error || 'Upload failed');
       // get version from server and save for cache-bust
       const v = String(json?.version || Date.now());
-      try { localStorage.setItem('siteLogoVersion', v); } catch (_) {}
+      setStorage('siteLogoVersion', v);
       // persist to server
       try { await fetch('/api/admin/site-settings', { method: 'POST', body: JSON.stringify({ key: 'siteLogoVersion', value: v }), headers: { 'Content-Type':'application/json' } }); } catch(_) {}
       const logoPublic = json?.webp || null;
@@ -263,7 +282,7 @@ export default function AdminSidebar() {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || 'Upload failed');
       const v = String(json?.version || Date.now());
-      try { localStorage.setItem('siteLogoVersion', v); } catch (_) {}
+      setStorage('siteLogoVersion', v);
       try { await fetch('/api/admin/site-settings', { method: 'POST', body: JSON.stringify({ key: 'siteLogoVersion', value: v }), headers: { 'Content-Type':'application/json' } }); } catch(_) {}
       const favPublic = json?.webp || null;
       setFaviconPreview(favPublic ? `${favPublic}?t=${v}` : null);
@@ -288,7 +307,7 @@ export default function AdminSidebar() {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || 'Upload failed');
       const v = String(json?.version || Date.now());
-      try { localStorage.setItem('siteFooterLogoVersion', v); } catch (_) {}
+      setStorage('siteFooterLogoVersion', v);
       try { await fetch('/api/admin/site-settings', { method: 'POST', body: JSON.stringify({ key: 'siteFooterLogoVersion', value: v }), headers: { 'Content-Type':'application/json' } }); } catch(_) {}
       const favPublic = json?.webp || null;
       const previewUrl = favPublic ? `${favPublic}?t=${v}` : null;
@@ -304,14 +323,14 @@ export default function AdminSidebar() {
   function handleLogoSizeChange(v: number) {
     setLogoSize(v);
     try { document.documentElement.style.setProperty('--site-logo-height', `${v}px`); } catch (_) {}
-    try { localStorage.setItem('siteLogoHeight', String(v)); } catch (_) {}
+    setStorage('siteLogoHeight', String(v));
     try { fetch('/api/admin/site-settings', { method: 'POST', body: JSON.stringify({ key: 'siteLogoHeight', value: String(v) }), headers: { 'Content-Type':'application/json' } }); } catch(_) {}
   }
 
   function handleFooterSizeChange(v: number) {
     setFooterSize(v);
     try { document.documentElement.style.setProperty('--site-footer-logo-height', `${v}px`); } catch (_) {}
-    try { localStorage.setItem('siteFooterLogoHeight', String(v)); } catch (_) {}
+    setStorage('siteFooterLogoHeight', String(v));
     try { fetch('/api/admin/site-settings', { method: 'POST', body: JSON.stringify({ key: 'siteFooterLogoHeight', value: String(v) }), headers: { 'Content-Type':'application/json' } }); } catch(_) {}
   }
 

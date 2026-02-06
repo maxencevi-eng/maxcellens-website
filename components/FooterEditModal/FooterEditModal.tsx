@@ -15,6 +15,33 @@ type MenuVisible = {
 
 import dynamic from 'next/dynamic';
 
+const parseNumber = (v: any, def: number = 0) => {
+  const n = Number(v);
+  return isNaN(n) ? def : n;
+};
+
+const safeJsonParse = <T>(v: string, def: T): T => {
+  try {
+    return JSON.parse(v);
+  } catch {
+    return def;
+  }
+};
+
+const getStorage = (key: string) => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const setStorage = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+};
+
 const RichTextModal = dynamic(() => import('../RichTextModal/RichTextModal'), { ssr: false });
 
 export default function FooterEditModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
@@ -38,52 +65,69 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
 
   useEffect(() => {
     let mounted = true;
+    
+    const parseBanner = (val: string | null) => {
+      if (!val) return null;
+      const parsed = safeJsonParse(val, null);
+      if (parsed && typeof parsed === 'object' && (parsed.url || parsed.path)) {
+        return { banner: { url: parsed.url, path: parsed.path }, original: parsed.path || null };
+      }
+      // If parsing failed or result is not the expected object, treat as simple string URL
+      // But we need to distinguish if safeJsonParse returned null due to error or actual null
+      // Re-implement logic slightly to match original behavior
+      try {
+        const p = JSON.parse(val);
+        if (p && (p.url || p.path)) return { banner: { url: p.url, path: p.path }, original: p.path || null };
+        if (typeof p === 'string') return { banner: { url: p }, original: null };
+      } catch {}
+      return { banner: { url: val }, original: null };
+    };
+
     async function load() {
-      // prefer server settings, fallback to localStorage
       try {
         const resp = await fetch('/api/admin/site-settings?keys=footerColumn1,footerBottomText,footerMenuVisible,footerBanner,footerBannerFocal,footerBannerHeight');
         if (resp.ok) {
           const j = await resp.json();
           const s = j?.settings || {};
-          if (mounted) {
-            if (s.footerColumn1) setCol1(String(s.footerColumn1)); else {
-              try { const v = localStorage.getItem('footerColumn1'); if (v) setCol1(v); } catch(_){}
-            }
-            if (s.footerBottomText) setBottomText(String(s.footerBottomText)); else { try { const v = localStorage.getItem('footerBottomText'); if (v) setBottomText(v); } catch(_){} }
-            if (s.footerMenuVisible) {
-              try { setMenuVisible(JSON.parse(String(s.footerMenuVisible))); } catch(_) {}
-            } else {
-              try { const v = localStorage.getItem('footerMenuVisible'); if (v) setMenuVisible(JSON.parse(v)); } catch(_) {}
-            }
+          if (!mounted) return;
 
-            if (s.footerBanner) {
-              try {
-                const parsed = JSON.parse(String(s.footerBanner));
-                if (parsed && (parsed.url || parsed.path)) { setBanner({ url: parsed.url, path: parsed.path }); setOriginalBannerPath(parsed.path || null); }
-                else if (typeof parsed === 'string') { setBanner({ url: parsed }); setOriginalBannerPath(null); }
-              } catch (e) { setBanner({ url: String(s.footerBanner) }); setOriginalBannerPath(null); }
-            } else {
-              try { const vb = localStorage.getItem('footerBanner'); if (vb) { const parsed = JSON.parse(vb); if (parsed && (parsed.url || parsed.path)) { setBanner({ url: parsed.url, path: parsed.path }); setOriginalBannerPath(parsed.path || null); } else { setBanner({ url: String(vb) }); setOriginalBannerPath(null); } } } catch(_){}
-            }
-            if (s.footerBannerFocal) {
-              try { const f = JSON.parse(String(s.footerBannerFocal)); if (f && typeof f.x === 'number' && typeof f.y === 'number') setBannerFocal({ x: Number(f.x), y: Number(f.y) }); } catch(_) {}
-            } else {
-              try { const vf = localStorage.getItem('footerBannerFocal'); if (vf) { const p = JSON.parse(vf); if (p && typeof p.x === 'number' && typeof p.y === 'number') setBannerFocal({ x: Number(p.x), y: Number(p.y) }); } } catch(_) {}
-            }
+          setCol1(String(s.footerColumn1 || getStorage('footerColumn1') || ''));
+          setBottomText(String(s.footerBottomText || getStorage('footerBottomText') || ''));
+          
+          const menuVis = s.footerMenuVisible || getStorage('footerMenuVisible');
+          if (menuVis) setMenuVisible(safeJsonParse(String(menuVis), { realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, admin: true }));
 
-            if (s.footerBannerHeight) {
-              try { setBannerHeight(Number(s.footerBannerHeight)); } catch(_) {}
-            } else {
-              try { const vh = localStorage.getItem('footerBannerHeight'); if (vh) setBannerHeight(Number(vh)); } catch(_) {}
-            }          }
+          const bannerVal = s.footerBanner || getStorage('footerBanner');
+          if (bannerVal) {
+            const res = parseBanner(String(bannerVal));
+            if (res) { setBanner(res.banner as any); setOriginalBannerPath(res.original); }
+          }
+
+          const focalVal = s.footerBannerFocal || getStorage('footerBannerFocal');
+          if (focalVal) {
+            const f = safeJsonParse(String(focalVal), null) as any;
+            if (f && typeof f.x === 'number' && typeof f.y === 'number') setBannerFocal({ x: parseNumber(f.x), y: parseNumber(f.y) });
+          }
+
+          const heightVal = s.footerBannerHeight || getStorage('footerBannerHeight');
+          if (heightVal) setBannerHeight(parseNumber(heightVal, 0) || null);
+          
           return;
         }
       } catch (_) {}
 
-      // fallback
-      try { const v = localStorage.getItem('footerColumn1'); if (v) setCol1(v); } catch(_){}
-      try { const b = localStorage.getItem('footerBottomText'); if (b) setBottomText(b); } catch(_){}
-      try { const m = localStorage.getItem('footerMenuVisible'); if (m) setMenuVisible(JSON.parse(m)); } catch(_){}      try { const vb = localStorage.getItem('footerBanner'); if (vb) { const parsed = JSON.parse(vb); if (parsed && (parsed.url || parsed.path)) { setBanner({ url: parsed.url, path: parsed.path }); setOriginalBannerPath(parsed.path || null); } else setBanner({ url: String(vb) }); } } catch(_){ }    }
+      // fallback if fetch fails
+      if (!mounted) return;
+      const v = getStorage('footerColumn1'); if (v) setCol1(v);
+      const b = getStorage('footerBottomText'); if (b) setBottomText(b);
+      const m = getStorage('footerMenuVisible'); if (m) setMenuVisible(safeJsonParse(m, { realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, admin: true }));
+      
+      const vb = getStorage('footerBanner');
+      if (vb) {
+        const res = parseBanner(vb);
+        if (res) { setBanner(res.banner as any); setOriginalBannerPath(res.original); }
+      }
+    }
     load();
     return () => { mounted = false; };
   }, []);
@@ -140,12 +184,12 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
       setOriginalBannerPath(banner?.path || null);
 
       // persist locally so UI updates immediately
-      try { localStorage.setItem('footerColumn1', String(payloadCol1 ?? '')); } catch(_){ }
-      try { localStorage.setItem('footerBottomText', String(payloadBottom ?? '')); } catch(_){ }
-      try { localStorage.setItem('footerMenuVisible', JSON.stringify(payloadMenu)); } catch(_){ }
-      try { localStorage.setItem('footerBanner', JSON.stringify(banner || '')); } catch(_){ }
-      try { localStorage.setItem('footerBannerFocal', JSON.stringify(bannerFocal || '')); } catch(_){ }
-      try { localStorage.setItem('footerBannerHeight', String(bannerHeight || '')); } catch(_){ }
+      setStorage('footerColumn1', String(payloadCol1 ?? ''));
+      setStorage('footerBottomText', String(payloadBottom ?? ''));
+      setStorage('footerMenuVisible', JSON.stringify(payloadMenu));
+      setStorage('footerBanner', JSON.stringify(banner || ''));
+      setStorage('footerBannerFocal', JSON.stringify(bannerFocal || ''));
+      setStorage('footerBannerHeight', String(bannerHeight || ''));
 
       // dispatch custom event so in-page components update immediately
       try { window.dispatchEvent(new CustomEvent('site-settings-updated')); } catch(_){ }
@@ -212,6 +256,11 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
   async function doSave() {
     await saveAll();
   }
+
+  const currentBannerHeight = bannerHeight ?? 160;
+  const bannerInputValue = bannerHeight ?? '';
+
+  const clampHeight = (v: number) => Math.max(MIN_BANNER_HEIGHT, Math.min(MAX_BANNER_HEIGHT, v));
 
   return (
     <div className={`${styles.overlay} modal-overlay-mobile`}>
@@ -292,26 +341,21 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
                   type="range"
                   min={MIN_BANNER_HEIGHT}
                   max={MAX_BANNER_HEIGHT}
-                  value={bannerHeight ?? 160}
-                  onChange={(e) => {
-                    const v = Number(e.target.value) || 0;
-                    const clamped = Math.max(MIN_BANNER_HEIGHT, Math.min(MAX_BANNER_HEIGHT, v));
-                    setBannerHeight(clamped);
-                  }}
+                  value={currentBannerHeight}
+                  onChange={(e) => setBannerHeight(clampHeight(Number(e.target.value) || 0))}
                   className={styles.bannerHeightSlider}
                 />
                 <input
                   type="number"
                   min={MIN_BANNER_HEIGHT}
                   max={MAX_BANNER_HEIGHT}
-                  value={bannerHeight ?? 160}
+                  value={bannerInputValue}
                   onChange={(e) => {
                     const raw = e.target.value;
                     if (raw === '') { setBannerHeight(null); return; }
                     const v = Number(raw);
                     if (Number.isNaN(v)) { setBannerHeight(null); return; }
-                    const clamped = Math.max(MIN_BANNER_HEIGHT, Math.min(MAX_BANNER_HEIGHT, v));
-                    setBannerHeight(clamped);
+                    setBannerHeight(clampHeight(v));
                   }}
                   className={styles.bannerHeightInput}
                 />

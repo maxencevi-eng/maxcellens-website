@@ -69,8 +69,8 @@ export default function AnalyticsCollector() {
       humanValidatedSentRef.current = true;
       sendHumanValidated();
       window.removeEventListener('mousemove', markHuman, { capture: true });
-      window.removeEventListener('scroll', markHuman, { capture: true, passive: true });
-      window.removeEventListener('touchstart', markHuman, { capture: true, passive: true });
+      window.removeEventListener('scroll', markHuman, { capture: true, passive: true } as EventListenerOptions);
+      window.removeEventListener('touchstart', markHuman, { capture: true, passive: true } as EventListenerOptions);
       if (tid) clearTimeout(tid);
     }
     const tid = setTimeout(markHuman, 1000);
@@ -80,8 +80,8 @@ export default function AnalyticsCollector() {
     return () => {
       if (!done && tid) clearTimeout(tid);
       window.removeEventListener('mousemove', markHuman, { capture: true });
-      window.removeEventListener('scroll', markHuman, { capture: true });
-      window.removeEventListener('touchstart', markHuman, { capture: true });
+      window.removeEventListener('scroll', markHuman, { capture: true, passive: true } as EventListenerOptions);
+      window.removeEventListener('touchstart', markHuman, { capture: true, passive: true } as EventListenerOptions);
     };
   }, [pathname, authChecked]);
 

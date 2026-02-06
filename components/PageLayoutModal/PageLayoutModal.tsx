@@ -60,6 +60,8 @@ export default function PageLayoutModal({ onClose, onSaved }: { onClose: () => v
     setMobile((s) => ({ ...s, [k]: v }));
   }
 
+  const parse = (v: string, def: number) => Number(v) || def;
+
   async function save() {
     setSaving(true);
     setMessage(null);
@@ -101,27 +103,27 @@ export default function PageLayoutModal({ onClose, onSaved }: { onClose: () => v
           <div style={{ display: 'grid', gap: 12 }}>
             <div>
               <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Largeur max. du corps de la page (px)</label>
-              <input type="number" min={800} max={2000} value={desktop.containerMaxWidth} onChange={(e) => updateDesktop('containerMaxWidth', Number(e.target.value) || 1200)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <input type="number" min={800} max={2000} value={desktop.containerMaxWidth} onChange={(e) => updateDesktop('containerMaxWidth', parse(e.target.value, 1200))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
             </div>
             <div>
               <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Largeur max. de la zone contenu / texte (px)</label>
-              <input type="number" min={560} max={2400} value={desktop.contentInnerMaxWidth} onChange={(e) => updateDesktop('contentInnerMaxWidth', Number(e.target.value) || 2000)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <input type="number" min={560} max={2400} value={desktop.contentInnerMaxWidth} onChange={(e) => updateDesktop('contentInnerMaxWidth', parse(e.target.value, 2000))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
             </div>
             <div>
               <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Hauteur min. de la zone contenu (px, 0 = pas de min)</label>
-              <input type="number" min={0} max={2000} value={desktop.contentInnerMinHeight} onChange={(e) => updateDesktop('contentInnerMinHeight', Math.max(0, Number(e.target.value) || 0))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <input type="number" min={0} max={2000} value={desktop.contentInnerMinHeight} onChange={(e) => updateDesktop('contentInnerMinHeight', Math.max(0, parse(e.target.value, 0)))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
             </div>
             <div>
               <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Marge intérieure des blocs (px)</label>
-              <input type="number" min={0} max={120} value={desktop.blockInnerPadding} onChange={(e) => updateDesktop('blockInnerPadding', Math.max(0, Number(e.target.value) ?? 24))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <input type="number" min={0} max={120} value={desktop.blockInnerPadding} onChange={(e) => updateDesktop('blockInnerPadding', Math.max(0, parse(e.target.value, 0)))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
             </div>
             <div>
               <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Marge horizontale (px)</label>
-              <input type="number" min={0} max={80} value={desktop.marginHorizontal} onChange={(e) => updateDesktop('marginHorizontal', Number(e.target.value) || 0)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <input type="number" min={0} max={80} value={desktop.marginHorizontal} onChange={(e) => updateDesktop('marginHorizontal', parse(e.target.value, 0))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
             </div>
             <div>
               <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Espace entre sections (px)</label>
-              <input type="number" min={0} max={120} value={desktop.sectionGap} onChange={(e) => updateDesktop('sectionGap', Number(e.target.value) || 0)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <input type="number" min={0} max={120} value={desktop.sectionGap} onChange={(e) => updateDesktop('sectionGap', parse(e.target.value, 0))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
             </div>
           </div>
         </section>
@@ -131,27 +133,27 @@ export default function PageLayoutModal({ onClose, onSaved }: { onClose: () => v
           <div style={{ display: 'grid', gap: 12 }}>
             <div>
               <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Largeur max. du corps de la page (px)</label>
-              <input type="number" min={280} max={1200} value={mobile.containerMaxWidth} onChange={(e) => updateMobile('containerMaxWidth', Number(e.target.value) || 1000)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <input type="number" min={280} max={1200} value={mobile.containerMaxWidth} onChange={(e) => updateMobile('containerMaxWidth', parse(e.target.value, 1000))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
             </div>
             <div>
               <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Largeur max. de la zone contenu / texte (px)</label>
-              <input type="number" min={280} max={1400} value={mobile.contentInnerMaxWidth} onChange={(e) => updateMobile('contentInnerMaxWidth', Number(e.target.value) || 1200)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <input type="number" min={280} max={1400} value={mobile.contentInnerMaxWidth} onChange={(e) => updateMobile('contentInnerMaxWidth', parse(e.target.value, 1200))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
             </div>
             <div>
               <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Hauteur min. de la zone contenu (px, 0 = pas de min)</label>
-              <input type="number" min={0} max={1200} value={mobile.contentInnerMinHeight} onChange={(e) => updateMobile('contentInnerMinHeight', Math.max(0, Number(e.target.value) || 0))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <input type="number" min={0} max={1200} value={mobile.contentInnerMinHeight} onChange={(e) => updateMobile('contentInnerMinHeight', Math.max(0, parse(e.target.value, 0)))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
             </div>
             <div>
               <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Marge intérieure des blocs (px)</label>
-              <input type="number" min={0} max={80} value={mobile.blockInnerPadding} onChange={(e) => updateMobile('blockInnerPadding', Math.max(0, Number(e.target.value) ?? 16))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <input type="number" min={0} max={80} value={mobile.blockInnerPadding} onChange={(e) => updateMobile('blockInnerPadding', Math.max(0, parse(e.target.value, 0)))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
             </div>
             <div>
               <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Marge horizontale (px)</label>
-              <input type="number" min={0} max={48} value={mobile.marginHorizontal} onChange={(e) => updateMobile('marginHorizontal', Number(e.target.value) || 0)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <input type="number" min={0} max={48} value={mobile.marginHorizontal} onChange={(e) => updateMobile('marginHorizontal', parse(e.target.value, 0))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
             </div>
             <div>
               <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Espace entre sections (px)</label>
-              <input type="number" min={0} max={80} value={mobile.sectionGap} onChange={(e) => updateMobile('sectionGap', Number(e.target.value) || 0)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+              <input type="number" min={0} max={80} value={mobile.sectionGap} onChange={(e) => updateMobile('sectionGap', parse(e.target.value, 0))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
             </div>
           </div>
         </section>
@@ -169,16 +171,22 @@ export default function PageLayoutModal({ onClose, onSaved }: { onClose: () => v
 function applyVars(desktop: LayoutSection, mobile: LayoutSection): void {
   const root = typeof document !== 'undefined' ? document.documentElement : null;
   if (!root) return;
+
+  const dMinHeight = desktop.contentInnerMinHeight ?? 0;
+  const dPadding = desktop.blockInnerPadding ?? 24;
+  const mMinHeight = mobile.contentInnerMinHeight ?? 0;
+  const mPadding = mobile.blockInnerPadding ?? 16;
+
   root.style.setProperty('--container-max-width-desktop', `${desktop.containerMaxWidth}px`);
   root.style.setProperty('--content-inner-max-width-desktop', `${desktop.contentInnerMaxWidth}px`);
-  root.style.setProperty('--content-inner-min-height-desktop', `${desktop.contentInnerMinHeight ?? 0}px`);
-  root.style.setProperty('--block-inner-padding-desktop', `${desktop.blockInnerPadding ?? 24}px`);
+  root.style.setProperty('--content-inner-min-height-desktop', `${dMinHeight}px`);
+  root.style.setProperty('--block-inner-padding-desktop', `${dPadding}px`);
   root.style.setProperty('--container-margin-x-desktop', `${desktop.marginHorizontal}px`);
   root.style.setProperty('--section-gap-desktop', `${desktop.sectionGap}px`);
   root.style.setProperty('--container-max-width-mobile', `${mobile.containerMaxWidth}px`);
   root.style.setProperty('--content-inner-max-width-mobile', `${mobile.contentInnerMaxWidth}px`);
-  root.style.setProperty('--content-inner-min-height-mobile', `${mobile.contentInnerMinHeight ?? 0}px`);
-  root.style.setProperty('--block-inner-padding-mobile', `${mobile.blockInnerPadding ?? 16}px`);
+  root.style.setProperty('--content-inner-min-height-mobile', `${mMinHeight}px`);
+  root.style.setProperty('--block-inner-padding-mobile', `${mPadding}px`);
   root.style.setProperty('--container-margin-x-mobile', `${mobile.marginHorizontal}px`);
   root.style.setProperty('--section-gap-mobile', `${mobile.sectionGap}px`);
 }

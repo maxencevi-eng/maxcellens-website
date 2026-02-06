@@ -1,6 +1,39 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 
+const parseNumber = (v: any, def: number) => {
+  const n = Number(v);
+  return isNaN(n) ? def : n;
+};
+
+const safeJsonParse = <T>(v: string, def: T): T => {
+  try {
+    return JSON.parse(v);
+  } catch {
+    return def;
+  }
+};
+
+const getStorage = (key: string) => {
+  try {
+    return typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setStorage = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+};
+
+const setCssVar = (key: string, value: string) => {
+  try {
+    document.documentElement.style.setProperty(key, value);
+  } catch {}
+};
+
 type MenuVisible = {
   realisation?: boolean;
   evenement?: boolean;
@@ -18,27 +51,13 @@ export default function MobileMenuEditModal({ onClose, onSaved }: { onClose: () 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const [fontFamily, setFontFamily] = useState<string>(() => {
-    try { return typeof window !== 'undefined' ? (localStorage.getItem('navMobileFontFamily') || '') : ''; } catch(_) { return ''; }
-  });
-  const [fontSize, setFontSize] = useState<number>(() => {
-    try { return typeof window !== 'undefined' ? Number(localStorage.getItem('navMobileFontSize') || '16') : 16; } catch(_) { return 16; }
-  });
-  const [fontWeight, setFontWeight] = useState<number>(() => {
-    try { return typeof window !== 'undefined' ? Number(localStorage.getItem('navMobileFontWeight') || '600') : 600; } catch(_) { return 600; }
-  });
-  const [textColor, setTextColor] = useState<string>(() => {
-    try { return typeof window !== 'undefined' ? (localStorage.getItem('navMobileTextColor') || '') : ''; } catch(_) { return ''; }
-  });
-  const [hoverColor, setHoverColor] = useState<string>(() => {
-    try { return typeof window !== 'undefined' ? (localStorage.getItem('navMobileHoverTextColor') || '') : ''; } catch(_) { return ''; }
-  });
-  const [activeColor, setActiveColor] = useState<string>(() => {
-    try { return typeof window !== 'undefined' ? (localStorage.getItem('navMobileActiveTextColor') || '') : ''; } catch(_) { return ''; }
-  });
-  const [bgColor, setBgColor] = useState<string>(() => {
-    try { return typeof window !== 'undefined' ? (localStorage.getItem('navMobileBgColor') || '') : ''; } catch(_) { return ''; }
-  });
+  const [fontFamily, setFontFamily] = useState<string>(() => getStorage('navMobileFontFamily') || '');
+  const [fontSize, setFontSize] = useState<number>(() => parseNumber(getStorage('navMobileFontSize'), 16));
+  const [fontWeight, setFontWeight] = useState<number>(() => parseNumber(getStorage('navMobileFontWeight'), 600));
+  const [textColor, setTextColor] = useState<string>(() => getStorage('navMobileTextColor') || '');
+  const [hoverColor, setHoverColor] = useState<string>(() => getStorage('navMobileHoverTextColor') || '');
+  const [activeColor, setActiveColor] = useState<string>(() => getStorage('navMobileActiveTextColor') || '');
+  const [bgColor, setBgColor] = useState<string>(() => getStorage('navMobileBgColor') || '');
 
   useEffect(() => {
     let mounted = true;
@@ -49,14 +68,15 @@ export default function MobileMenuEditModal({ onClose, onSaved }: { onClose: () 
         const j = await resp.json();
         const s = j?.settings || {};
         if (!mounted) return;
-        if (s.navMobileFontFamily) { setFontFamily(String(s.navMobileFontFamily)); try { localStorage.setItem('navMobileFontFamily', String(s.navMobileFontFamily)); } catch(_){} }
-        if (s.navMobileFontSize) { const v = Number(s.navMobileFontSize) || 16; setFontSize(v); try{ localStorage.setItem('navMobileFontSize', String(v)); }catch(_){} }
-        if (s.navMobileFontWeight) { const w = Number(s.navMobileFontWeight) || 600; setFontWeight(w); try{ localStorage.setItem('navMobileFontWeight', String(w)); }catch(_){} }
-        if (s.navMobileTextColor) { setTextColor(String(s.navMobileTextColor)); try{ localStorage.setItem('navMobileTextColor', String(s.navMobileTextColor)); }catch(_){} }
-        if (s.navMobileHoverTextColor) { setHoverColor(String(s.navMobileHoverTextColor)); try{ localStorage.setItem('navMobileHoverTextColor', String(s.navMobileHoverTextColor)); }catch(_){} }
-        if (s.navMobileActiveTextColor) { setActiveColor(String(s.navMobileActiveTextColor)); try{ localStorage.setItem('navMobileActiveTextColor', String(s.navMobileActiveTextColor)); }catch(_){} }
-        if (s.navMobileBgColor) { setBgColor(String(s.navMobileBgColor)); try{ localStorage.setItem('navMobileBgColor', String(s.navMobileBgColor)); }catch(_){} }
-        if (s.navMobileMenuVisible) { try { setMenuVisible(JSON.parse(String(s.navMobileMenuVisible))); } catch(_) {} }
+
+        if (s.navMobileFontFamily) { setFontFamily(String(s.navMobileFontFamily)); setStorage('navMobileFontFamily', String(s.navMobileFontFamily)); }
+        if (s.navMobileFontSize) { const v = parseNumber(s.navMobileFontSize, 16); setFontSize(v); setStorage('navMobileFontSize', String(v)); }
+        if (s.navMobileFontWeight) { const w = parseNumber(s.navMobileFontWeight, 600); setFontWeight(w); setStorage('navMobileFontWeight', String(w)); }
+        if (s.navMobileTextColor) { setTextColor(String(s.navMobileTextColor)); setStorage('navMobileTextColor', String(s.navMobileTextColor)); }
+        if (s.navMobileHoverTextColor) { setHoverColor(String(s.navMobileHoverTextColor)); setStorage('navMobileHoverTextColor', String(s.navMobileHoverTextColor)); }
+        if (s.navMobileActiveTextColor) { setActiveColor(String(s.navMobileActiveTextColor)); setStorage('navMobileActiveTextColor', String(s.navMobileActiveTextColor)); }
+        if (s.navMobileBgColor) { setBgColor(String(s.navMobileBgColor)); setStorage('navMobileBgColor', String(s.navMobileBgColor)); }
+        if (s.navMobileMenuVisible) { setMenuVisible(safeJsonParse(String(s.navMobileMenuVisible), { realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, admin: true })); }
       } catch (_) {}
     }
     load();
@@ -68,20 +88,21 @@ export default function MobileMenuEditModal({ onClose, onSaved }: { onClose: () 
   }
 
   function applyLocalAndCss() {
-    try { document.documentElement.style.setProperty('--nav-mobile-font-family', fontFamily || ''); } catch(_){ }
-    try { document.documentElement.style.setProperty('--nav-mobile-font-size', `${fontSize}px`); } catch(_){ }
-    try { document.documentElement.style.setProperty('--nav-mobile-font-weight', String(fontWeight)); } catch(_){ }
-    try { document.documentElement.style.setProperty('--nav-mobile-text-color', textColor || ''); } catch(_){ }
-    try { document.documentElement.style.setProperty('--nav-mobile-hover-text-color', hoverColor || ''); } catch(_){ }
-    try { document.documentElement.style.setProperty('--nav-mobile-active-text-color', activeColor || ''); } catch(_){ }
-    try { document.documentElement.style.setProperty('--nav-mobile-bg-color', bgColor || ''); } catch(_){ }
-    try { localStorage.setItem('navMobileFontFamily', fontFamily || ''); } catch(_){ }
-    try { localStorage.setItem('navMobileFontSize', String(fontSize)); } catch(_){ }
-    try { localStorage.setItem('navMobileFontWeight', String(fontWeight)); } catch(_){ }
-    try { localStorage.setItem('navMobileTextColor', textColor || ''); } catch(_){ }
-    try { localStorage.setItem('navMobileHoverTextColor', hoverColor || ''); } catch(_){ }
-    try { localStorage.setItem('navMobileActiveTextColor', activeColor || ''); } catch(_){ }
-    try { localStorage.setItem('navMobileBgColor', bgColor || ''); } catch(_){ }
+    setCssVar('--nav-mobile-font-family', fontFamily || '');
+    setCssVar('--nav-mobile-font-size', `${fontSize}px`);
+    setCssVar('--nav-mobile-font-weight', String(fontWeight));
+    setCssVar('--nav-mobile-text-color', textColor || '');
+    setCssVar('--nav-mobile-hover-text-color', hoverColor || '');
+    setCssVar('--nav-mobile-active-text-color', activeColor || '');
+    setCssVar('--nav-mobile-bg-color', bgColor || '');
+    
+    setStorage('navMobileFontFamily', fontFamily || '');
+    setStorage('navMobileFontSize', String(fontSize));
+    setStorage('navMobileFontWeight', String(fontWeight));
+    setStorage('navMobileTextColor', textColor || '');
+    setStorage('navMobileHoverTextColor', hoverColor || '');
+    setStorage('navMobileActiveTextColor', activeColor || '');
+    setStorage('navMobileBgColor', bgColor || '');
   }
 
   async function saveAll() {
@@ -109,8 +130,8 @@ export default function MobileMenuEditModal({ onClose, onSaved }: { onClose: () 
         }
       }
 
-      try { localStorage.setItem('navMobileMenuVisible', JSON.stringify(menuVisible)); } catch(_){ }
-      try { window.dispatchEvent(new CustomEvent('site-settings-updated')); } catch(_){ }
+      try { setStorage('navMobileMenuVisible', JSON.stringify(menuVisible)); } catch(_){}
+      try { window.dispatchEvent(new CustomEvent('site-settings-updated')); } catch(_){}
 
       setSuccess('Sauvegardé');
       if (onSaved) onSaved();

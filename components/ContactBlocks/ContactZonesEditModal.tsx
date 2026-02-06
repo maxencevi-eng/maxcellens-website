@@ -1,3 +1,4 @@
+"use no memo";
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -133,6 +134,22 @@ export default function ContactZonesEditModal({
     );
   }
 
+  const qgTitleStyle = zones.qg?.titleStyle ?? "h3";
+  const qgTitleFontSize = zones.qg?.titleFontSize ?? "";
+  const qgTitle = zones.qg?.title ?? "";
+  const qgPhone = zones.qg?.phone ?? "";
+  
+  const parisTitleStyle = zones.paris?.titleStyle ?? "h3";
+  const parisTitleFontSize = zones.paris?.titleFontSize ?? "";
+  const parisTitle = zones.paris?.title ?? "";
+
+  const franceTitleStyle = zones.france?.titleStyle ?? "h3";
+  const franceTitleFontSize = zones.france?.titleFontSize ?? "";
+  const franceTitle = zones.france?.title ?? "";
+
+  const mapQuery = zones.mapQuery ?? "";
+  const backgroundColor = zones.backgroundColor ?? "";
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
       <div style={{ background: "#fff", color: "#000", padding: 20, width: 560, maxWidth: "98%", maxHeight: "90vh", overflowY: "auto", borderRadius: 10 }}>
@@ -147,15 +164,15 @@ export default function ContactZonesEditModal({
             <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
               <input
-                type="text"
-                value={zones.qg?.title ?? ""}
-                onChange={(e) => setZones((z) => ({ ...z, qg: { ...z.qg, title: e.target.value } }))}
-                style={{ flex: 1, minWidth: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
-              />
-              <select value={zones.qg?.titleStyle ?? "h3"} onChange={(e) => setZones((z) => ({ ...z, qg: { ...z.qg, titleStyle: e.target.value as TitleStyleKey } }))} style={{ width: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }}>
+              type="text"
+              value={qgTitle}
+              onChange={(e) => setZones((z) => ({ ...z, qg: { ...z.qg, title: e.target.value } }))}
+              style={{ flex: 1, minWidth: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
+            />
+              <select value={qgTitleStyle} onChange={(e) => setZones((z) => ({ ...z, qg: { ...z.qg, titleStyle: e.target.value as TitleStyleKey } }))} style={{ width: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }}>
                 {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
-              <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={zones.qg?.titleFontSize ?? ""} onChange={(e) => { const v = e.target.value === "" ? undefined : Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(e.target.value))); setZones((z) => ({ ...z, qg: { ...z.qg, titleFontSize: v } })); }} placeholder="px" style={{ width: 64, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }} title="Taille titre (8–72 px)" />
+              <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={qgTitleFontSize} onChange={(e) => { const v = e.target.value === "" ? undefined : Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(e.target.value))); setZones((z) => ({ ...z, qg: { ...z.qg, titleFontSize: v } })); }} placeholder="px" style={{ width: 64, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }} title="Taille titre (8–72 px)" />
             </div>
           </div>
           <div style={{ marginBottom: 12 }}>
@@ -169,7 +186,7 @@ export default function ContactZonesEditModal({
             <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Téléphone</label>
             <input
               type="text"
-              value={zones.qg?.phone ?? ""}
+              value={qgPhone}
               onChange={(e) => setZones((z) => ({ ...z, qg: { ...z.qg, phone: e.target.value } }))}
               style={{ width: "100%", padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
               placeholder="06 74 96 64 58"
@@ -183,15 +200,15 @@ export default function ContactZonesEditModal({
             <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
               <input
-                type="text"
-                value={zones.paris?.title ?? ""}
-                onChange={(e) => setZones((z) => ({ ...z, paris: { ...z.paris, title: e.target.value } }))}
-                style={{ flex: 1, minWidth: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
-              />
-              <select value={zones.paris?.titleStyle ?? "h3"} onChange={(e) => setZones((z) => ({ ...z, paris: { ...z.paris, titleStyle: e.target.value as TitleStyleKey } }))} style={{ width: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }}>
+              type="text"
+              value={parisTitle}
+              onChange={(e) => setZones((z) => ({ ...z, paris: { ...z.paris, title: e.target.value } }))}
+              style={{ flex: 1, minWidth: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
+            />
+              <select value={parisTitleStyle} onChange={(e) => setZones((z) => ({ ...z, paris: { ...z.paris, titleStyle: e.target.value as TitleStyleKey } }))} style={{ width: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }}>
                 {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
-              <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={zones.paris?.titleFontSize ?? ""} onChange={(e) => { const v = e.target.value === "" ? undefined : Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(e.target.value))); setZones((z) => ({ ...z, paris: { ...z.paris, titleFontSize: v } })); }} placeholder="px" style={{ width: 64, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }} title="Taille titre (8–72 px)" />
+              <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={parisTitleFontSize} onChange={(e) => { const v = e.target.value === "" ? undefined : Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(e.target.value))); setZones((z) => ({ ...z, paris: { ...z.paris, titleFontSize: v } })); }} placeholder="px" style={{ width: 64, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }} title="Taille titre (8–72 px)" />
             </div>
           </div>
           <div style={{ marginBottom: 12 }}>
@@ -209,15 +226,15 @@ export default function ContactZonesEditModal({
             <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
               <input
-                type="text"
-                value={zones.france?.title ?? ""}
-                onChange={(e) => setZones((z) => ({ ...z, france: { ...z.france, title: e.target.value } }))}
-                style={{ flex: 1, minWidth: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
-              />
-              <select value={zones.france?.titleStyle ?? "h3"} onChange={(e) => setZones((z) => ({ ...z, france: { ...z.france, titleStyle: e.target.value as TitleStyleKey } }))} style={{ width: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }}>
+              type="text"
+              value={franceTitle}
+              onChange={(e) => setZones((z) => ({ ...z, france: { ...z.france, title: e.target.value } }))}
+              style={{ flex: 1, minWidth: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
+            />
+              <select value={franceTitleStyle} onChange={(e) => setZones((z) => ({ ...z, france: { ...z.france, titleStyle: e.target.value as TitleStyleKey } }))} style={{ width: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }}>
                 {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
-              <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={zones.france?.titleFontSize ?? ""} onChange={(e) => { const v = e.target.value === "" ? undefined : Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(e.target.value))); setZones((z) => ({ ...z, france: { ...z.france, titleFontSize: v } })); }} placeholder="px" style={{ width: 64, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }} title="Taille titre (8–72 px)" />
+              <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={franceTitleFontSize} onChange={(e) => { const v = e.target.value === "" ? undefined : Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(e.target.value))); setZones((z) => ({ ...z, france: { ...z.france, titleFontSize: v } })); }} placeholder="px" style={{ width: 64, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }} title="Taille titre (8–72 px)" />
             </div>
           </div>
           <div style={{ marginBottom: 12 }}>
@@ -235,7 +252,7 @@ export default function ContactZonesEditModal({
             <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Adresse ou recherche (ex. 92140 Clamart)</label>
             <input
               type="text"
-              value={zones.mapQuery ?? ""}
+              value={mapQuery}
               onChange={(e) => setZones((z) => ({ ...z, mapQuery: e.target.value }))}
               style={{ width: "100%", padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
               placeholder="92140 Clamart"
@@ -250,18 +267,18 @@ export default function ContactZonesEditModal({
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
               <input
                 type="color"
-                value={zones.backgroundColor || "#fafaf9"}
+                value={backgroundColor || "#fafaf9"}
                 onChange={(e) => setZones((z) => ({ ...z, backgroundColor: e.target.value }))}
                 style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }}
               />
               <input
                 type="text"
-                value={zones.backgroundColor ?? ""}
+                value={backgroundColor}
                 onChange={(e) => setZones((z) => ({ ...z, backgroundColor: e.target.value }))}
                 placeholder="ou hex"
                 style={{ width: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
               />
-              {(zones.backgroundColor ?? "") && (
+              {backgroundColor && (
                 <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setZones((z) => ({ ...z, backgroundColor: undefined }))}>Effacer</button>
               )}
             </div>

@@ -84,7 +84,7 @@ export async function POST(req: Request) {
       is_authenticated: false,
       updated_at: new Date().toISOString(),
       is_bot: !!is_bot,
-      human_validated: human_validated === true ? true : null,
+      human_validated: body.human_validated === true ? true : null,
     };
     if (includeReferrerInRow) sessionRow.referrer = referrerValue;
     sessionRow.ip = ip ?? null;

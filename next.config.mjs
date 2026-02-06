@@ -54,15 +54,17 @@ const nextConfig = {
       },
     ];
   },
+  reactCompiler: false,
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
   // Stub @tiptap/react (projet migré sur Lexical) pour éviter erreurs HMR / chunks fantômes
+  // Turbopack n'accepte pas les chemins absolus Windows → chemins relatifs au projet
   turbopack: {
+    root: __dirname,
     resolveAlias: {
-      '@tiptap/react': path.resolve(__dirname, 'lib/stub-tiptap-react.ts'),
-      '@tiptap/react/dist/index.js': path.resolve(__dirname, 'lib/stub-tiptap-react.ts'),
-      'node_modules/@tiptap/react/dist/index.js': path.resolve(__dirname, 'lib/stub-tiptap-react.ts'),
+      '@tiptap/react': './lib/stub-tiptap-react.ts',
+      '@tiptap/react/dist/index.js': './lib/stub-tiptap-react.ts',
     },
   },
   webpack: (config) => {

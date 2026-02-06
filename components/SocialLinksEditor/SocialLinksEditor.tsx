@@ -9,6 +9,20 @@ type Socials = {
   linkedin?: string;
 };
 
+const getStorage = (key: string) => {
+  try {
+    return typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setStorage = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+};
+
 export default function SocialLinksEditor({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
   const [links, setLinks] = useState<Socials>({});
   const [iconStyle, setIconStyle] = useState<string>('style-outline');
@@ -27,15 +41,16 @@ export default function SocialLinksEditor({ onClose, onSaved }: { onClose: () =>
         const s = j?.settings || {};
         if (!mounted) return;
         setLinks({
-          instagram: s.socialInstagram || (typeof window !== 'undefined' ? localStorage.getItem('socialInstagram') || '' : ''),
-          facebook: s.socialFacebook || (typeof window !== 'undefined' ? localStorage.getItem('socialFacebook') || '' : ''),
-          youtube: s.socialYouTube || (typeof window !== 'undefined' ? localStorage.getItem('socialYouTube') || '' : ''),
-          tiktok: s.socialTikTok || (typeof window !== 'undefined' ? localStorage.getItem('socialTikTok') || '' : ''),
-          linkedin: s.socialLinkedIn || (typeof window !== 'undefined' ? localStorage.getItem('socialLinkedIn') || '' : ''),
+          instagram: s.socialInstagram || getStorage('socialInstagram') || '',
+          facebook: s.socialFacebook || getStorage('socialFacebook') || '',
+          youtube: s.socialYouTube || getStorage('socialYouTube') || '',
+          tiktok: s.socialTikTok || getStorage('socialTikTok') || '',
+          linkedin: s.socialLinkedIn || getStorage('socialLinkedIn') || '',
         });
         if (s.socialIconStyle) setIconStyle(String(s.socialIconStyle));
         else {
-          try { const v = typeof window !== 'undefined' ? localStorage.getItem('socialIconStyle') || '' : ''; if (v) setIconStyle(v); } catch(_){}
+          const v = getStorage('socialIconStyle');
+          if (v) setIconStyle(v);
         }
 
         // load custom icon URLs if present
@@ -47,16 +62,15 @@ export default function SocialLinksEditor({ onClose, onSaved }: { onClose: () =>
           if (s.socialIcon_linkedin) { const v = String(s.socialIcon_linkedin); setIconFiles(prev => ({ ...prev, linkedin: v })); if (v.startsWith('http')) setSavedRemote(prev => ({ ...prev, linkedin: true })); }
         } catch(_) {}
       } catch (_) {
-        try {
-          setLinks({
-            instagram: typeof window !== 'undefined' ? localStorage.getItem('socialInstagram') || '' : '',
-            facebook: typeof window !== 'undefined' ? localStorage.getItem('socialFacebook') || '' : '',
-            youtube: typeof window !== 'undefined' ? localStorage.getItem('socialYouTube') || '' : '',
-            tiktok: typeof window !== 'undefined' ? localStorage.getItem('socialTikTok') || '' : '',
-            linkedin: typeof window !== 'undefined' ? localStorage.getItem('socialLinkedIn') || '' : '',
-          });
-        } catch (_) {}
-        try { const v = typeof window !== 'undefined' ? localStorage.getItem('socialIconStyle') || '' : ''; if (v) setIconStyle(v); } catch(_){}
+        setLinks({
+          instagram: getStorage('socialInstagram') || '',
+          facebook: getStorage('socialFacebook') || '',
+          youtube: getStorage('socialYouTube') || '',
+          tiktok: getStorage('socialTikTok') || '',
+          linkedin: getStorage('socialLinkedIn') || '',
+        });
+        const v = getStorage('socialIconStyle');
+        if (v) setIconStyle(v);
       }
     }
     load();
@@ -119,29 +133,23 @@ export default function SocialLinksEditor({ onClose, onSaved }: { onClose: () =>
   // keep iconFiles in sync with any persisted remote icons (localStorage or server) so modal shows uploaded icons after saving
   useEffect(() => {
     function refreshSavedIcons() {
-      try {
-        const networks = ['instagram','facebook','youtube','tiktok','linkedin'];
-        setIconFiles(prev => {
-          const copy = { ...prev };
-          for (const n of networks) {
-            try {
-              const v = typeof window !== 'undefined' ? localStorage.getItem(`socialIcon_${n}`) : null;
-              if (v) copy[n] = v;
-            } catch(_) {}
-          }
-          return copy;
-        });
-        setSavedRemote(prev => {
-          const copy = { ...prev };
-          for (const n of ['instagram','facebook','youtube','tiktok','linkedin']) {
-            try {
-              const v = typeof window !== 'undefined' ? localStorage.getItem(`socialIcon_${n}`) : null;
-              copy[n] = Boolean(v && (v.startsWith('http://') || v.startsWith('https://')));
-            } catch(_) { copy[n] = false; }
-          }
-          return copy;
-        });
-      } catch(_) {}
+      const networks = ['instagram','facebook','youtube','tiktok','linkedin'];
+      setIconFiles(prev => {
+        const copy = { ...prev };
+        for (const n of networks) {
+          const v = getStorage(`socialIcon_${n}`);
+          if (v) copy[n] = v;
+        }
+        return copy;
+      });
+      setSavedRemote(prev => {
+        const copy = { ...prev };
+        for (const n of networks) {
+          const v = getStorage(`socialIcon_${n}`);
+          copy[n] = Boolean(v && (v.startsWith('http://') || v.startsWith('https://')));
+        }
+        return copy;
+      });
     }
     window.addEventListener('site-settings-updated', refreshSavedIcons as EventListener);
     // also run once on mount
@@ -209,7 +217,7 @@ export default function SocialLinksEditor({ onClose, onSaved }: { onClose: () =>
         }
 
         // update localStorage and refresh authoritative values
-        try { if (url && (url.startsWith('http://') || url.startsWith('https://'))) localStorage.setItem(`socialIcon_${network}`, url); } catch(_){}
+        if (url && (url.startsWith('http://') || url.startsWith('https://'))) setStorage(`socialIcon_${network}`, url);
         try { await fetchSavedIcons(); } catch(_){}
       }
     } catch (err:any) {
@@ -246,7 +254,7 @@ export default function SocialLinksEditor({ onClose, onSaved }: { onClose: () =>
   async function applyUploadedUrl(network: string, url: string | null) {
     if (!url) return false;
     const key = `socialIcon_${network}`;
-    try { localStorage.setItem(key, url); } catch(_){ }
+    setStorage(key, url);
 
     // persist to server and verify it saved
     try {
@@ -292,19 +300,19 @@ export default function SocialLinksEditor({ onClose, onSaved }: { onClose: () =>
       const s = j?.settings || {};
       setIconFiles(prev => ({
         ...prev,
-        instagram: s.socialIcon_instagram || prev.instagram || (typeof window !== 'undefined' ? localStorage.getItem('socialIcon_instagram') || '' : ''),
-        facebook: s.socialIcon_facebook || prev.facebook || (typeof window !== 'undefined' ? localStorage.getItem('socialIcon_facebook') || '' : ''),
-        youtube: s.socialIcon_youtube || prev.youtube || (typeof window !== 'undefined' ? localStorage.getItem('socialIcon_youtube') || '' : ''),
-        tiktok: s.socialIcon_tiktok || prev.tiktok || (typeof window !== 'undefined' ? localStorage.getItem('socialIcon_tiktok') || '' : ''),
-        linkedin: s.socialIcon_linkedin || prev.linkedin || (typeof window !== 'undefined' ? localStorage.getItem('socialIcon_linkedin') || '' : ''),
+        instagram: s.socialIcon_instagram || prev.instagram || getStorage('socialIcon_instagram') || '',
+        facebook: s.socialIcon_facebook || prev.facebook || getStorage('socialIcon_facebook') || '',
+        youtube: s.socialIcon_youtube || prev.youtube || getStorage('socialIcon_youtube') || '',
+        tiktok: s.socialIcon_tiktok || prev.tiktok || getStorage('socialIcon_tiktok') || '',
+        linkedin: s.socialIcon_linkedin || prev.linkedin || getStorage('socialIcon_linkedin') || '',
       }));
       setSavedRemote(prev => ({
         ...prev,
-        instagram: Boolean(s.socialIcon_instagram || (typeof window !== 'undefined' ? localStorage.getItem('socialIcon_instagram') : null)),
-        facebook: Boolean(s.socialIcon_facebook || (typeof window !== 'undefined' ? localStorage.getItem('socialIcon_facebook') : null)),
-        youtube: Boolean(s.socialIcon_youtube || (typeof window !== 'undefined' ? localStorage.getItem('socialIcon_youtube') : null)),
-        tiktok: Boolean(s.socialIcon_tiktok || (typeof window !== 'undefined' ? localStorage.getItem('socialIcon_tiktok') : null)),
-        linkedin: Boolean(s.socialIcon_linkedin || (typeof window !== 'undefined' ? localStorage.getItem('socialIcon_linkedin') : null)),
+        instagram: Boolean(s.socialIcon_instagram || getStorage('socialIcon_instagram')),
+        facebook: Boolean(s.socialIcon_facebook || getStorage('socialIcon_facebook')),
+        youtube: Boolean(s.socialIcon_youtube || getStorage('socialIcon_youtube')),
+        tiktok: Boolean(s.socialIcon_tiktok || getStorage('socialIcon_tiktok')),
+        linkedin: Boolean(s.socialIcon_linkedin || getStorage('socialIcon_linkedin')),
       }));
 
       setSavedError(prev => ({
@@ -364,13 +372,16 @@ export default function SocialLinksEditor({ onClose, onSaved }: { onClose: () =>
         }
       }
 
-      try { localStorage.setItem('socialInstagram', links.instagram || ''); } catch(_){ }
-      try { localStorage.setItem('socialFacebook', links.facebook || ''); } catch(_){ }
-      try { localStorage.setItem('socialYouTube', links.youtube || ''); } catch(_){ }
-      try { localStorage.setItem('socialTikTok', links.tiktok || ''); } catch(_){ }
-      try { localStorage.setItem('socialLinkedIn', links.linkedin || ''); } catch(_){ }
-      try { localStorage.setItem('socialIconStyle', iconStyle || ''); } catch(_){ }
-      try { Object.keys(iconFiles).forEach(k => { try { const v = iconFiles[k]; if (v && (v.startsWith('http://') || v.startsWith('https://'))) localStorage.setItem(`socialIcon_${k}`, v); } catch(_){} }); } catch(_){ }
+      setStorage('socialInstagram', links.instagram || '');
+      setStorage('socialFacebook', links.facebook || '');
+      setStorage('socialYouTube', links.youtube || '');
+      setStorage('socialTikTok', links.tiktok || '');
+      setStorage('socialLinkedIn', links.linkedin || '');
+      setStorage('socialIconStyle', iconStyle || '');
+      Object.keys(iconFiles).forEach(k => {
+        const v = iconFiles[k];
+        if (v && (v.startsWith('http://') || v.startsWith('https://'))) setStorage(`socialIcon_${k}`, v);
+      });
       // refresh authoritative saved icon urls from server before notifying listeners
       try { await fetchSavedIcons(); } catch(_){}
       try { window.dispatchEvent(new CustomEvent('site-settings-updated')); } catch(_){}

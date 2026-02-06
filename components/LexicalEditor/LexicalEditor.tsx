@@ -161,7 +161,7 @@ function ToolbarPlugin() {
   const [bgColor, setBgColor] = useState<string>('#ffffff');
   const [isUppercase, setIsUppercase] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
-  const emojiPanelRef = useRef<HTMLDivElement>(null);
+  const emojiPanelRef = useRef<HTMLElement | null>(null);
   const { style: siteStyle } = useSiteStyle();
   const siteFonts = (siteStyle?.fonts) || [];
   const typo = siteStyle?.typography || {};

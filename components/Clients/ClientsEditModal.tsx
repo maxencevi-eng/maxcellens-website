@@ -1,3 +1,4 @@
+"use no memo";
 "use client";
 
 import React, { useEffect, useState } from 'react';

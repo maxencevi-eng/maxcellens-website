@@ -93,24 +93,24 @@ export default function SeoCommandCenterModal({
           return;
         }
         setForm({
-          meta_title: seo.meta_title ?? "",
-          meta_description: seo.meta_description ?? "",
-          h1: seo.h1 ?? "",
-          canonical_url: seo.canonical_url ?? "",
+          meta_title: seo.meta_title || "",
+          meta_description: seo.meta_description || "",
+          h1: seo.h1 || "",
+          canonical_url: seo.canonical_url || "",
           robots_index: seo.robots_index !== false,
           robots_follow: seo.robots_follow !== false,
-          og_title: seo.og_title ?? "",
-          og_description: seo.og_description ?? "",
-          og_image_path: seo.og_image_path ?? "",
-          og_image_url: seo.og_image_url ?? "",
-          og_type: seo.og_type ?? "website",
-          og_site_name: seo.og_site_name ?? "",
-          twitter_card: seo.twitter_card ?? "summary_large_image",
-          twitter_title: seo.twitter_title ?? "",
-          twitter_description: seo.twitter_description ?? "",
-          twitter_image_path: seo.twitter_image_path ?? "",
-          twitter_image_url: seo.twitter_image_url ?? "",
-          json_ld: seo.json_ld ?? "",
+          og_title: seo.og_title || "",
+          og_description: seo.og_description || "",
+          og_image_path: seo.og_image_path || "",
+          og_image_url: seo.og_image_url || "",
+          og_type: seo.og_type || "website",
+          og_site_name: seo.og_site_name || "",
+          twitter_card: seo.twitter_card || "summary_large_image",
+          twitter_title: seo.twitter_title || "",
+          twitter_description: seo.twitter_description || "",
+          twitter_image_path: seo.twitter_image_path || "",
+          twitter_image_url: seo.twitter_image_url || "",
+          json_ld: seo.json_ld || "",
         });
       } catch {
         if (mounted) setForm(emptyForm());
@@ -136,14 +136,14 @@ export default function SeoCommandCenterModal({
       if (form.og_image_path) fd.append("old_path", form.og_image_path);
       const resp = await fetch("/api/admin/upload-seo-image", { method: "POST", body: fd });
       const json = await resp.json();
-      if (!resp.ok) throw new Error(json?.error ?? "Upload échoué");
+      if (!resp.ok) throw new Error(json?.error || "Upload échoué");
       setForm((prev) => ({
         ...prev,
-        og_image_path: json.path ?? "",
-        og_image_url: json.url ?? "",
+        og_image_path: json.path || "",
+        og_image_url: json.url || "",
       }));
     } catch (e: any) {
-      setError(e?.message ?? "Erreur upload OG");
+      setError(e?.message || "Erreur upload OG");
     } finally {
       setOgUploading(false);
     }
