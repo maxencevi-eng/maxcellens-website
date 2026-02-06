@@ -74,9 +74,12 @@ export async function GET(req: Request) {
       return true;
     })();
 
+    let useBotColumns = true;
+    const sessionSelectWithBot = 'id, session_id, ip_hash, country, city, referrer, browser, created_at, user_agent, is_bot, human_validated';
+    const sessionSelectFallback = 'id, session_id, ip_hash, country, city, referrer, browser, created_at, user_agent';
     let sessionsRes = await supabaseAdmin
       .from('analytics_sessions')
-      .select('id, session_id, ip_hash, country, city, referrer, browser, created_at, user_agent')
+      .select(sessionSelectWithBot)
       .gte('created_at', sinceStr)
       .lte('created_at', untilStr)
       .or('is_authenticated.is.null,is_authenticated.eq.false');
@@ -84,14 +87,23 @@ export async function GET(req: Request) {
     if (sessionsRes.error && /does not exist|column.*is_authenticated/i.test(sessionsRes.error.message)) {
       sessionsRes = await supabaseAdmin
         .from('analytics_sessions')
-        .select('id, session_id, ip_hash, country, city, referrer, browser, created_at, user_agent')
+        .select(sessionSelectWithBot)
         .gte('created_at', sinceStr)
         .lte('created_at', untilStr);
+    }
+    if (sessionsRes.error && /column.*(is_bot|human_validated)/i.test(sessionsRes.error.message)) {
+      useBotColumns = false;
+      sessionsRes = await supabaseAdmin
+        .from('analytics_sessions')
+        .select(sessionSelectFallback)
+        .gte('created_at', sinceStr)
+        .lte('created_at', untilStr)
+        .or('is_authenticated.is.null,is_authenticated.eq.false');
     }
     if (sessionsRes.error && /column.*referrer/i.test(sessionsRes.error.message)) {
       sessionsRes = await supabaseAdmin
         .from('analytics_sessions')
-        .select('id, session_id, ip_hash, country, city, browser, created_at, user_agent')
+        .select(useBotColumns ? 'id, session_id, ip_hash, country, city, browser, created_at, user_agent, is_bot, human_validated' : 'id, session_id, ip_hash, country, city, browser, created_at, user_agent')
         .gte('created_at', sinceStr)
         .lte('created_at', untilStr)
         .or('is_authenticated.is.null,is_authenticated.eq.false');
@@ -113,24 +125,43 @@ export async function GET(req: Request) {
         .or('is_authenticated.is.null,is_authenticated.eq.false');
     }
     if (sessionsRes.error) return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
-    let sessions = (sessionsRes.data || []) as { id: string; session_id: string; ip_hash: string | null; country: string | null; city: string | null; referrer?: string | null; browser?: string | null; created_at: string; ip?: string | null; user_agent?: string | null }[];
+    type SessionRow = { id: string; session_id: string; ip_hash: string | null; country: string | null; city: string | null; referrer?: string | null; browser?: string | null; created_at: string; ip?: string | null; user_agent?: string | null; is_bot?: boolean | null; human_validated?: boolean | null };
+    let sessions = (sessionsRes.data || []) as SessionRow[];
 
     if (includeHashes?.length) sessions = sessions.filter((s) => s.ip_hash && includeHashes.includes(s.ip_hash));
     if (excludeHashesOrNull?.length) sessions = sessions.filter((s) => !s.ip_hash || !excludeHashesOrNull.includes(s.ip_hash));
-    if (excludeBots) sessions = sessions.filter((s) => !isLikelyBot(s.user_agent));
+    if (excludeBots) {
+      if (useBotColumns) {
+        sessions = sessions.filter((s) => (s as SessionRow).human_validated === true || (s as SessionRow).is_bot !== true);
+      } else {
+        sessions = sessions.filter((s) => !isLikelyBot(s.user_agent));
+      }
+    }
 
     let visitors: { ip: string | null; ip_hash: string | null; country: string; city: string; sessionCount: number }[] = [];
     try {
-      let visitorsRes = await supabaseAdmin
+      const visitorSelectWithBot = 'session_id, ip_hash, ip, country, city, user_agent, is_bot, human_validated';
+    const visitorSelectFallback = 'session_id, ip_hash, ip, country, city, user_agent';
+    let visitorsUseBotColumns = true;
+    let visitorsRes = await supabaseAdmin
         .from('analytics_sessions')
-        .select('session_id, ip_hash, ip, country, city, user_agent')
+        .select(visitorSelectWithBot)
         .gte('created_at', sinceStr)
         .lte('created_at', untilStr)
         .or('is_authenticated.is.null,is_authenticated.eq.false');
+    if (visitorsRes.error && /column.*(is_bot|human_validated)/i.test(visitorsRes.error.message)) {
+      visitorsUseBotColumns = false;
+      visitorsRes = await supabaseAdmin
+          .from('analytics_sessions')
+          .select(visitorSelectFallback)
+          .gte('created_at', sinceStr)
+          .lte('created_at', untilStr)
+          .or('is_authenticated.is.null,is_authenticated.eq.false');
+    }
       if (visitorsRes.error && /column.*ip/i.test(visitorsRes.error.message)) {
         visitorsRes = await supabaseAdmin
           .from('analytics_sessions')
-          .select('session_id, ip_hash, country, city, user_agent')
+          .select(visitorsUseBotColumns ? 'session_id, ip_hash, country, city, user_agent, is_bot, human_validated' : 'session_id, ip_hash, country, city, user_agent')
           .gte('created_at', sinceStr)
           .lte('created_at', untilStr)
           .or('is_authenticated.is.null,is_authenticated.eq.false');
@@ -138,14 +169,18 @@ export async function GET(req: Request) {
       if (visitorsRes.error && /column.*user_agent/i.test(visitorsRes.error.message)) {
         visitorsRes = await supabaseAdmin
           .from('analytics_sessions')
-          .select('session_id, ip_hash, ip, country, city')
+          .select(visitorsUseBotColumns ? 'session_id, ip_hash, ip, country, city, is_bot, human_validated' : 'session_id, ip_hash, ip, country, city')
           .gte('created_at', sinceStr)
           .lte('created_at', untilStr)
           .or('is_authenticated.is.null,is_authenticated.eq.false');
       }
       if (!visitorsRes.error && visitorsRes.data?.length) {
-        let allSessions = (visitorsRes.data || []) as { session_id: string; ip_hash: string | null; ip?: string | null; country: string | null; city: string | null; user_agent?: string | null }[];
-        if (excludeBots) allSessions = allSessions.filter((s) => !isLikelyBot(s.user_agent));
+        type VisitorRow = { session_id: string; ip_hash: string | null; ip?: string | null; country: string | null; city: string | null; user_agent?: string | null; is_bot?: boolean | null; human_validated?: boolean | null };
+        let allSessions = (visitorsRes.data || []) as VisitorRow[];
+        if (excludeBots) {
+          if (visitorsUseBotColumns) allSessions = allSessions.filter((s) => s.human_validated === true || s.is_bot !== true);
+          else allSessions = allSessions.filter((s) => !isLikelyBot(s.user_agent));
+        }
         const byHash = new Map<string, { ip: string | null; ip_hash: string | null; country: string; city: string; count: number }>();
         allSessions.forEach((s) => {
           const key = s.ip_hash ?? '';

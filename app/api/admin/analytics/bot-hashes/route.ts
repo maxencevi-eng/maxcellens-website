@@ -30,18 +30,25 @@ export async function GET(req: Request) {
 
     let res = await supabaseAdmin
       .from('analytics_sessions')
-      .select('ip_hash, user_agent')
+      .select('ip_hash, user_agent, is_bot')
       .not('ip_hash', 'is', null);
 
     if (res.error && /column.*user_agent/i.test(res.error.message)) {
       return NextResponse.json({ hashes: [], message: 'Colonne user_agent absente. Exécutez la migration analytics (user_agent).' });
     }
+    if (res.error && /column.*is_bot/i.test(res.error.message)) {
+      res = await supabaseAdmin
+        .from('analytics_sessions')
+        .select('ip_hash, user_agent')
+        .not('ip_hash', 'is', null);
+    }
     if (res.error) return NextResponse.json({ error: res.error.message }, { status: 500 });
 
-    const rows = (res.data || []) as { ip_hash: string; user_agent?: string | null }[];
+    const rows = (res.data || []) as { ip_hash: string; user_agent?: string | null; is_bot?: boolean | null }[];
+    const hasBotColumn = rows.length > 0 && 'is_bot' in rows[0];
     const hashes = [...new Set(
       rows
-        .filter((r) => isLikelyBot(r.user_agent))
+        .filter((r) => (hasBotColumn && r.is_bot === true) || (!hasBotColumn && isLikelyBot(r.user_agent)))
         .map((r) => r.ip_hash)
         .filter(Boolean)
     )];

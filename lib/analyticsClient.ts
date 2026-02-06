@@ -68,6 +68,14 @@ export function sendToCollect(payload: Record<string, unknown>, useBeacon = fals
   fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'application/json' }, keepalive: true }).catch(() => {});
 }
 
+/** Envoie un ping léger pour marquer la session comme visite humaine (après interaction ou délai > 1s). */
+export function sendHumanValidated() {
+  const { session_id } = getSessionPayload();
+  if (!session_id) return;
+  const payload = { session_id, human_validated: true };
+  sendToCollect(payload, true);
+}
+
 function getReferrer(): string {
   if (typeof document === 'undefined') return '';
   try {

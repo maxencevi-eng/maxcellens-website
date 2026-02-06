@@ -10,6 +10,7 @@ import {
   getTimeOnPageSeconds,
   sendToCollect,
   buildPageviewPayload,
+  sendHumanValidated,
 } from '../../lib/analyticsClient';
 
 export default function AnalyticsCollector() {
@@ -42,6 +43,8 @@ export default function AnalyticsCollector() {
     };
   }, []);
 
+  // Validation humaine : après interaction (souris, scroll, touch) ou délai > 1s, on marque la visite comme humaine (une fois par session)
+  const humanValidatedSentRef = useRef(false);
   useEffect(() => {
     if (typeof window === 'undefined' || !authChecked) return;
     if (isAuthenticatedRef.current) return;
@@ -56,6 +59,30 @@ export default function AnalyticsCollector() {
     setPageEnterTime();
     pathRef.current = path;
     trackPageview(path, undefined, false);
+
+    // Détection comportementale passive : valider comme humaine après première interaction ou 1s
+    if (humanValidatedSentRef.current) return;
+    let done = false;
+    function markHuman() {
+      if (done) return;
+      done = true;
+      humanValidatedSentRef.current = true;
+      sendHumanValidated();
+      window.removeEventListener('mousemove', markHuman, { capture: true });
+      window.removeEventListener('scroll', markHuman, { capture: true, passive: true });
+      window.removeEventListener('touchstart', markHuman, { capture: true, passive: true });
+      if (tid) clearTimeout(tid);
+    }
+    const tid = setTimeout(markHuman, 1000);
+    window.addEventListener('mousemove', markHuman, { capture: true, once: true });
+    window.addEventListener('scroll', markHuman, { capture: true, passive: true, once: true });
+    window.addEventListener('touchstart', markHuman, { capture: true, passive: true, once: true });
+    return () => {
+      if (!done && tid) clearTimeout(tid);
+      window.removeEventListener('mousemove', markHuman, { capture: true });
+      window.removeEventListener('scroll', markHuman, { capture: true });
+      window.removeEventListener('touchstart', markHuman, { capture: true });
+    };
   }, [pathname, authChecked]);
 
   useEffect(() => {

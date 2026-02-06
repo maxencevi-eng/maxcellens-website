@@ -68,17 +68,24 @@ export async function POST(req: Request) {
     if (purgeBotsOnly) {
       let sessionsRes = await supabaseAdmin
         .from('analytics_sessions')
-        .select('id, session_id, user_agent');
+        .select('id, session_id, user_agent, is_bot');
       if (sessionsRes.error && /column.*user_agent/i.test(sessionsRes.error.message)) {
         return NextResponse.json({ error: 'Colonne user_agent absente. Exécutez la migration analytics (user_agent).' }, { status: 400 });
+      }
+      if (sessionsRes.error && /column.*is_bot/i.test(sessionsRes.error.message)) {
+        sessionsRes = await supabaseAdmin
+          .from('analytics_sessions')
+          .select('id, session_id, user_agent');
       }
       if (sessionsRes.error) {
         console.error('analytics purge bots fetch error', sessionsRes.error);
         return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
       }
-      const allSessions = (sessionsRes.data || []) as { id: string; session_id: string; user_agent?: string | null }[];
-      const botSessionIds = allSessions.filter((s) => isLikelyBot(s.user_agent)).map((s) => s.session_id);
-      const botIds = allSessions.filter((s) => isLikelyBot(s.user_agent)).map((s) => s.id);
+      const allSessions = (sessionsRes.data || []) as { id: string; session_id: string; user_agent?: string | null; is_bot?: boolean | null }[];
+      const hasBotColumn = allSessions.length > 0 && 'is_bot' in allSessions[0];
+      const isBotSession = (s: typeof allSessions[0]) => (hasBotColumn && s.is_bot === true) || (!hasBotColumn && isLikelyBot(s.user_agent));
+      const botSessionIds = allSessions.filter(isBotSession).map((s) => s.session_id);
+      const botIds = allSessions.filter(isBotSession).map((s) => s.id);
       if (botSessionIds.length === 0) {
         return NextResponse.json({ ok: true, deleted: 0, bots: true });
       }
