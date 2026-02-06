@@ -89,7 +89,7 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
       }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Underline,
-      Link,
+      Link.configure({ openOnClick: false, HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' } }),
       Placeholder.configure({ placeholder: 'Saisir ici...' }),
       Image,
       HardBreak,
@@ -439,6 +439,33 @@ export default function TiptapEditor({ initialContent = '', onChange, onReady, o
           <button onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'active' : ''} title="Gras"> <strong>B</strong> </button>
           <button onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive('italic') ? 'active' : ''} title="Italique"> <em>I</em> </button>
           <button id="rte-underline-btn" onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive('underline') ? 'active' : ''} title="Souligné"> <span style={{ textDecoration: 'underline' }}>U</span> </button>
+          {/* Lien : sélectionner du texte puis cliquer pour ajouter/modifier un lien (onMouseDown évite la perte de focus) */}
+          <button
+            type="button"
+            title={editor.isActive('link') ? 'Modifier le lien' : 'Insérer un lien'}
+            className={editor.isActive('link') ? 'active' : ''}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              restoreSelectionIfNeeded();
+              if (editor.isActive('link')) {
+                const href = editor.getAttributes('link').href || '';
+                const url = window.prompt('URL du lien', href);
+                if (url !== null) {
+                  if (url.trim()) editor.chain().focus().setLink({ href: url.trim() }).run();
+                  else editor.chain().focus().unsetLink().run();
+                }
+              } else {
+                const url = window.prompt('URL du lien (ex. https://…)');
+                if (url !== null && url.trim()) editor.chain().focus().setLink({ href: url.trim() }).run();
+              }
+            }}
+            style={{ padding: 6, cursor: 'pointer' }}
+          >
+            🔗
+          </button>
+          {editor.isActive('link') && (
+            <button type="button" title="Retirer le lien" onMouseDown={(e) => e.preventDefault()} onClick={() => editor.chain().focus().unsetLink().run()} style={{ padding: 6, cursor: 'pointer' }}>🔗✕</button>
+          )}
           {/* Text color: pick color first (swatch), then click A to apply to selection (Word-like flow) */}
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {(() => {

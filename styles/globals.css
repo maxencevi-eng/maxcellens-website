@@ -495,9 +495,10 @@ body.has-admin-sidebar {
 .style-h4 { font-family: var(--font-h4-family); font-size: var(--font-h4-size); font-weight: var(--font-h4-weight); margin: 0 0 0.5rem; }
 .style-h5 { font-family: var(--font-h5-family); font-size: var(--font-h5-size); font-weight: var(--font-h5-weight); margin: 0 0 0.5rem; }
 
-/* Primary color used for links & accents */
-a { color: var(--color-primary); }
-a:hover, a:focus { color: var(--color-accent); }
+/* Liens : couleurs configurables dans Style du site > Couleurs (sinon primary / accent) */
+a { color: var(--color-link, var(--color-primary)); }
+a:hover, a:focus { color: var(--color-link-hover, var(--color-accent)); }
+a:active { color: var(--color-link-active, var(--color-link-hover, var(--color-accent))); }
 
 /* menu items should highlight using primary color on hover */
 .menu-item:hover, .menu-item:focus { color: var(--color-primary); }

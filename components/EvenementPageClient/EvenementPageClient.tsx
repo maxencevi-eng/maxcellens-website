@@ -38,7 +38,7 @@ export default function EvenementPageClient() {
           <BlockOrderButtons page="evenement" blockId="evenement_videos" />
         </div>
       )}
-      <AnimateInView variant="slideUp">
+      <AnimateInView variant="slideUp" viewportSoon>
         <EditableVideoGallery keyName="videos_evenement" initial={evenementVideos} />
       </AnimateInView>
     </div>
@@ -49,9 +49,15 @@ export default function EvenementPageClient() {
     evenement_videos: videosSection,
   };
 
+  const defaultOrderEvenement = ['evenement_intro', 'evenement_videos'];
+  const orderEvenement = blockOrderEvenement?.length ? blockOrderEvenement : defaultOrderEvenement;
+  const order = orderEvenement.includes('evenement_videos')
+    ? orderEvenement
+    : [...orderEvenement, 'evenement_videos'];
+
   return (
     <section>
-      {blockOrderEvenement.map((blockId) => (
+      {order.map((blockId) => (
         <Fragment key={blockId}>{sections[blockId] ?? null}</Fragment>
       ))}
     </section>

@@ -38,7 +38,7 @@ export default function ProductionPageClient() {
           <BlockOrderButtons page="realisation" blockId="production_videos" />
         </div>
       )}
-      <AnimateInView variant="slideUp">
+      <AnimateInView variant="slideUp" viewportSoon>
         <EditableVideoGallery keyName="videos_production" initial={productionVideos} />
       </AnimateInView>
     </div>
@@ -49,9 +49,15 @@ export default function ProductionPageClient() {
     production_videos: videosSection,
   };
 
+  const defaultOrderRealisation = ['production_intro', 'production_videos'];
+  const orderRealisation = blockOrderRealisation?.length ? blockOrderRealisation : defaultOrderRealisation;
+  const order = orderRealisation.includes('production_videos')
+    ? orderRealisation
+    : [...orderRealisation, 'production_videos'];
+
   return (
     <section>
-      {blockOrderRealisation.map((blockId) => (
+      {order.map((blockId) => (
         <Fragment key={blockId}>{sections[blockId] ?? null}</Fragment>
       ))}
     </section>

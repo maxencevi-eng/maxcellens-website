@@ -73,7 +73,8 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
               }
               return { url: String(el || ''), columns: 1 as 1 | 2 | 3 | 4 };
             }).filter((x: any) => x.url) as VideoItem[];
-            setVideos(list);
+            // Ne pas écraser par une liste vide si on a des initial (évite galeries vides sur Réalisation/Évènement)
+            if (list.length > 0 || !(initial && initial.length)) setVideos(list);
             return;
           }
         } catch (_) {
@@ -245,8 +246,16 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                           const thumb = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
                           const onThumbError = (e: React.SyntheticEvent<HTMLImageElement>) => {
                             const el = e.target as HTMLImageElement;
-                            if (el.src.includes('sddefault')) el.src = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
-                            else if (el.src.includes('maxresdefault')) el.src = `https://img.youtube.com/vi/${id}/sddefault.jpg`;
+                            const src = el.src || '';
+                            if (src.includes('maxresdefault')) {
+                              el.src = `https://img.youtube.com/vi/${id}/sddefault.jpg`;
+                            } else if (src.includes('sddefault')) {
+                              el.src = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+                            } else {
+                              const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='90' role='img' aria-label='Vidéo YouTube'><rect fill='%23111111' width='100%' height='100%'/><circle cx='50%' cy='50%' r='24' fill='rgba(0,0,0,0.55)'/><polygon points='75,45 75,35 90,45 75,55' fill='%23f5f5f5'/></svg>`;
+                              el.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+                              el.onerror = null;
+                            }
                           };
                           return <img src={thumb} alt="miniature" style={{ width: '100%', height: 'auto', borderRadius: 6, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.06)' }} onError={onThumbError} />;
                         }

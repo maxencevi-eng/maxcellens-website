@@ -41,21 +41,27 @@ function isYouTubeShort(url: string) {
   }
 }
 
+/** Miniature YouTube simple (hqdefault) + fallback inline en cas d’erreur */
 const YOUTUBE_THUMB_QUALITIES = ['maxresdefault', 'sddefault', 'hqdefault'] as const;
 
-function getThumbnailUrl(id: string, quality: (typeof YOUTUBE_THUMB_QUALITIES)[number] = 'maxresdefault') {
-  if (!id) return '';
+function getYouTubeThumb(id: string, quality: (typeof YOUTUBE_THUMB_QUALITIES)[number] = 'maxresdefault') {
+  if (!id) return "";
   return `https://img.youtube.com/vi/${id}/${quality}.jpg`;
 }
 
-function getNextThumbnailFallback(currentSrc: string, id: string): string {
-  if (!id) return '';
+function getNextThumbFallback(currentSrc: string, id: string): string {
+  if (!id) return "";
   for (let i = 0; i < YOUTUBE_THUMB_QUALITIES.length - 1; i++) {
-    if (currentSrc.includes(`/${YOUTUBE_THUMB_QUALITIES[i]}.jpg`)) {
-      return getThumbnailUrl(id, YOUTUBE_THUMB_QUALITIES[i + 1]);
-    }
+    if (currentSrc.includes(`/${YOUTUBE_THUMB_QUALITIES[i]}.jpg`))
+      return getYouTubeThumb(id, YOUTUBE_THUMB_QUALITIES[i + 1]);
   }
-  return getThumbnailUrl(id, 'hqdefault');
+  return getInlineThumb("Vidéo YouTube");
+}
+
+function getInlineThumb(label: string) {
+  const safeLabel = label || "Vidéo";
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='480' height='270' role='img' aria-label='${safeLabel}'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='%23000000'/><stop offset='100%' stop-color='%23111111'/></linearGradient></defs><rect fill='url(%23g)' width='100%' height='100%'/><circle cx='50%' cy='50%' r='38' fill='rgba(0,0,0,0.55)'/><polygon points='210,135 210,115 240,135 210,155' fill='%23f5f5f5'/></svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
 export default function VideoGallery({ videos, className }: Props) {
@@ -141,11 +147,10 @@ export default function VideoGallery({ videos, className }: Props) {
                 const id = getYouTubeId(item.url);
                 const isShort = isYouTubeShort(item.url);
                 const paddingTop = isShort ? '177.78%' : '56.25%';
-                const thumbUrl = id ? getThumbnailUrl(id) : '';
-                const coverSrc = item.cover?.url || thumbUrl;
+                const coverSrc = item.cover?.url || (id ? getYouTubeThumb(id) : getInlineThumb("Vidéo"));
                 const widthPercent = `${100 / count}%`;
                 const myIndex = globalIndex++;
-                if (!id && !item.cover?.url) return <div key={j} style={{ width: widthPercent }} />;
+                if (!item.url && !item.cover?.url) return <div key={j} style={{ width: widthPercent }} />;
                 return (
                   <div key={j} style={{ width: widthPercent }}>
                     <button
@@ -158,11 +163,14 @@ export default function VideoGallery({ videos, className }: Props) {
                       <img
                         src={coverSrc}
                         alt=""
+                        loading="lazy"
                         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                         onError={(e) => {
-                          if (!item.cover?.url && id) {
-                            const next = getNextThumbnailFallback((e.target as HTMLImageElement).src, id);
-                            if (next) (e.target as HTMLImageElement).src = next;
+                          if (!item.cover?.url) {
+                            const img = e.currentTarget as HTMLImageElement;
+                            const next = getNextThumbFallback(img.src || '', id);
+                            img.src = next;
+                            if (next.startsWith('data:')) img.onerror = null;
                           }
                         }}
                       />
@@ -193,11 +201,10 @@ export default function VideoGallery({ videos, className }: Props) {
         const id = getYouTubeId(item.url);
         const isShort = isYouTubeShort(item.url);
         const paddingTop = isShort ? '177.78%' : '56.25%';
-        const thumbUrl = id ? getThumbnailUrl(id) : '';
-        const coverSrc = item.cover?.url || thumbUrl;
+        const coverSrc = item.cover?.url || (id ? getYouTubeThumb(id) : getInlineThumb("Vidéo"));
         const myIndex = globalIndex++;
 
-        if (!id && !item.cover?.url) {
+        if (!item.url && !item.cover?.url) {
           return <div key={idx} style={{ marginBottom: '2rem' }} />;
         }
 
@@ -216,11 +223,14 @@ export default function VideoGallery({ videos, className }: Props) {
                   <img
                     src={coverSrc}
                     alt=""
+                    loading="lazy"
                     style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                     onError={(e) => {
-                      if (!item.cover?.url && id) {
-                        const next = getNextThumbnailFallback((e.target as HTMLImageElement).src, id);
-                        if (next) (e.target as HTMLImageElement).src = next;
+                      if (!item.cover?.url) {
+                        const img = e.currentTarget as HTMLImageElement;
+                        const next = getNextThumbFallback(img.src || '', id);
+                        img.src = next;
+                        if (next.startsWith('data:')) img.onerror = null;
                       }
                     }}
                   />
@@ -256,11 +266,14 @@ export default function VideoGallery({ videos, className }: Props) {
               <img
                 src={coverSrc}
                 alt=""
+                loading="lazy"
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                 onError={(e) => {
-                  if (!item.cover?.url && id) {
-                    const next = getNextThumbnailFallback((e.target as HTMLImageElement).src, id);
-                    if (next) (e.target as HTMLImageElement).src = next;
+                  if (!item.cover?.url) {
+                    const img = e.currentTarget as HTMLImageElement;
+                    const next = getNextThumbFallback(img.src || '', id);
+                    img.src = next;
+                    if (next.startsWith('data:')) img.onerror = null;
                   }
                 }}
               />

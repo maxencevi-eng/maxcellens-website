@@ -38,7 +38,7 @@ export default function CorporatePageClient() {
           <BlockOrderButtons page="corporate" blockId="corporate_videos" />
         </div>
       )}
-      <AnimateInView variant="slideUp">
+      <AnimateInView variant="slideUp" viewportSoon>
         <EditableVideoGallery keyName="videos_corporate" initial={corporateVideos} />
       </AnimateInView>
     </div>

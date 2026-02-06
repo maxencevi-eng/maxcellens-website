@@ -11,6 +11,10 @@ type ColorSettings = {
   secondary?: string;
   accent?: string;
   text?: string;
+  /** Liens hypertextes : par défaut, au survol, au clic */
+  link?: string;
+  linkHover?: string;
+  linkActive?: string;
   /** Style 1 et 2 pour les boutons du site */
   button1?: ButtonStyleSettings;
   button2?: ButtonStyleSettings;
@@ -93,6 +97,9 @@ export default function SiteStyleProvider({ children }: { children: React.ReactN
           // map to legacy variable used across the site
           root.style.setProperty('--fg', c.text);
         }
+        if (c.link) root.style.setProperty('--color-link', c.link);
+        if (c.linkHover) root.style.setProperty('--color-link-hover', c.linkHover);
+        if (c.linkActive) root.style.setProperty('--color-link-active', c.linkActive);
         if (c.button1?.bg) root.style.setProperty('--button-1-bg', c.button1.bg);
         if (c.button1?.color) root.style.setProperty('--button-1-color', c.button1.color);
         if (c.button2?.bg) root.style.setProperty('--button-2-bg', c.button2.bg);

@@ -15,7 +15,7 @@ export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
   useEffect(() => setLocal(style ?? {}), [style]);
 
   // Garantir des valeurs string pour les inputs contrôlés (éviter controlled/uncontrolled)
-  const colorKeys = ['bgColor', 'blockBgColor', 'primary', 'secondary', 'text'] as const;
+  const colorKeys = ['bgColor', 'blockBgColor', 'primary', 'secondary', 'text', 'link', 'linkHover', 'linkActive'] as const;
   const safeColor = (key: typeof colorKeys[number]) => {
     const v = local?.colors?.[key];
     return typeof v === 'string' ? v : undefined;
@@ -105,6 +105,19 @@ export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
             <div className={styles.colorRow}>
               <label>Couleur du texte</label>
               <input type="color" value={fallback(safeColor('text'), '#111111')} onChange={(e) => updateColors({ text: e.target.value })} />
+            </div>
+            <h4 style={{ margin: '16px 0 8px' }}>Liens hypertextes</h4>
+            <div className={styles.colorRow}>
+              <label>Liens (couleur par défaut)</label>
+              <input type="color" value={fallback(safeColor('link'), '#0070f3')} onChange={(e) => updateColors({ link: e.target.value })} />
+            </div>
+            <div className={styles.colorRow}>
+              <label>Liens au survol</label>
+              <input type="color" value={fallback(safeColor('linkHover'), '#005bb5')} onChange={(e) => updateColors({ linkHover: e.target.value })} />
+            </div>
+            <div className={styles.colorRow}>
+              <label>Liens au clic</label>
+              <input type="color" value={fallback(safeColor('linkActive'), '#004080')} onChange={(e) => updateColors({ linkActive: e.target.value })} />
             </div>
           </div>
           <div>
