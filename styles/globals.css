@@ -127,7 +127,7 @@ body.has-admin-sidebar {
 #admin-sidebar {
   position: fixed;
   left: 0;
-  top: 72px; /* logo height (36px) + spacing (36px) */
+  top: 100px; /* plus d'espacement sous le logo */
   bottom: 0;
   width: var(--admin-sidebar-width);
   max-width: 380px;
@@ -385,15 +385,19 @@ body.has-admin-sidebar {
 .admin-toggle-btn {
   position: fixed;
   left: 40px; /* align with header content gutter */
-  top: 72px;  /* place under the logo */
+  top: 122px;  /* align with sidebar content (100px + 22px padding) */
   transform: none;
   z-index: 999999;
   width: 44px;
-  height: 44px;
+  height: 60px; /* augmenté de 44px à 60px */
   border-radius: 8px;
   background: linear-gradient(180deg,#0f1720,#081018);
   color: #fff;
   border: none;
+  font-size: 18px; /* augmenté pour une meilleure visibilité */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Global button primitives used in admin modals */

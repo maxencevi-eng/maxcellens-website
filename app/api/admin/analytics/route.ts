@@ -174,12 +174,27 @@ export async function GET(req: Request) {
           .lte('created_at', untilStr)
           .or('is_authenticated.is.null,is_authenticated.eq.false');
       }
+      
+      // Traiter les visiteurs après le calcul des durées
       if (!visitorsRes.error && visitorsRes.data?.length) {
         type VisitorRow = { session_id: string; ip_hash: string | null; ip?: string | null; country: string | null; city: string | null; user_agent?: string | null; is_bot?: boolean | null; human_validated?: boolean | null };
         let allSessions = (visitorsRes.data || []) as VisitorRow[];
         if (excludeBots) {
-          if (visitorsUseBotColumns) allSessions = allSessions.filter((s) => s.human_validated === true || s.is_bot !== true);
-          else allSessions = allSessions.filter((s) => !isLikelyBot(s.user_agent));
+          if (visitorsUseBotColumns) {
+            allSessions = allSessions.filter((s) => {
+              const sessionDuration = sessionDurations.get(s.session_id) || 0;
+              const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde
+              return s.human_validated === true || 
+                     s.is_bot !== true || 
+                     !isBotByDuration;
+            });
+          } else {
+            allSessions = allSessions.filter((s) => {
+              const sessionDuration = sessionDurations.get(s.session_id) || 0;
+              const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde
+              return !isLikelyBot(s.user_agent) && !isBotByDuration;
+            });
+          }
         }
         const byHash = new Map<string, { ip: string | null; ip_hash: string | null; country: string; city: string; count: number }>();
         allSessions.forEach((s) => {
@@ -215,7 +230,33 @@ export async function GET(req: Request) {
     if (eventsRes.error) return NextResponse.json({ error: eventsRes.error.message }, { status: 500 });
     const events = (eventsRes.data || []) as { session_id: string; event_type: string; path: string | null; element_id: string | null; duration: number | null; created_at: string }[];
 
+    // Calculer la durée totale par session pour filtrer les bots
+    const sessionDurations = new Map<string, number>();
     const pageviews = events.filter((e) => e.event_type === 'pageview');
+    pageviews.forEach((pv) => {
+      const current = sessionDurations.get(pv.session_id) || 0;
+      sessionDurations.set(pv.session_id, current + (pv.duration ?? 0));
+    });
+
+    // Filtrer les sessions de moins d'1 seconde si excludeBots est actif
+    if (excludeBots) {
+      if (useBotColumns) {
+        sessions = sessions.filter((s) => {
+          const sessionDuration = sessionDurations.get(s.session_id) || 0;
+          const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde
+          return (s as SessionRow).human_validated === true || 
+                 (s as SessionRow).is_bot !== true || 
+                 !isBotByDuration;
+        });
+      } else {
+        sessions = sessions.filter((s) => {
+          const sessionDuration = sessionDurations.get(s.session_id) || 0;
+          const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde
+          return !isLikelyBot(s.user_agent) && !isBotByDuration;
+        });
+      }
+    }
+
     const clicks = events.filter((e) => e.event_type === 'click');
     const totalViews = pageviews.length;
     const uniqueVisitors = new Set(sessions.map((s) => s.session_id)).size;
