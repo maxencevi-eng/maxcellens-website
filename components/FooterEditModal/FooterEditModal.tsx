@@ -20,13 +20,13 @@ const parseNumber = (v: any, def: number = 0) => {
   return isNaN(n) ? def : n;
 };
 
-const safeJsonParse = <T>(v: string, def: T): T => {
+function safeJsonParse<T>(v: string, def: T): T {
   try {
-    return JSON.parse(v);
+    return JSON.parse(v) as T;
   } catch {
     return def;
   }
-};
+}
 
 const getStorage = (key: string) => {
   try {
