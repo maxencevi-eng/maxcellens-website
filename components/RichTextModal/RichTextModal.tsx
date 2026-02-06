@@ -4,8 +4,8 @@ import dynamic from 'next/dynamic';
 import Modal from '../Modal/Modal';
 import ErrorBoundary from '../ErrorBoundary/ErrorBoundary';
 
-// Use TipTap editor instead of react-quill
-const TiptapEditor = dynamic(() => import('../TiptapEditor/TiptapEditor'), { ssr: false });
+// Lexical rich text editor (remplace TipTap)
+const LexicalEditor = dynamic(() => import('../LexicalEditor/LexicalEditor'), { ssr: false });
 
 export default function RichTextModal({ title = 'Éditeur', initial = '', onClose, onSave } : { title?: string; initial?: string; onClose: () => void; onSave: (html: string) => void }) {
   const [value, setValue] = useState(initial);
@@ -15,13 +15,13 @@ export default function RichTextModal({ title = 'Éditeur', initial = '', onClos
 
 
 
-  // For TipTap we'll first ensure the package can be imported, then wait for the editor instance
+  // For Lexical we'll first ensure the package can be imported, then wait for the editor instance
   const readyTimer = React.useRef<number | null>(null);
 
   async function attemptLoad() {
     try {
-      await import('@tiptap/react');
-      console.debug('[RichTextModal] TipTap package available');
+      await import('@lexical/react/LexicalComposer');
+      console.debug('[RichTextModal] Lexical package available');
       // start a timeout that will mark loadError if the editor instance doesn't report ready
       if (readyTimer.current) {
         clearTimeout(readyTimer.current);
@@ -32,7 +32,7 @@ export default function RichTextModal({ title = 'Éditeur', initial = '', onClos
         readyTimer.current = null;
       }, 8000) as unknown as number;
     } catch (err: any) {
-      console.warn('[RichTextModal] TipTap failed to load', err);
+      console.warn('[RichTextModal] Lexical failed to load', err);
       setLoadError(String(err?.message || err));
     }
   }
@@ -40,7 +40,7 @@ export default function RichTextModal({ title = 'Éditeur', initial = '', onClos
   useEffect(() => {
     console.debug('[RichTextModal] mounting, setting up global error listeners');
     // delay rendering the editor until the modal is painted and in its final DOM container
-    // this avoids TipTap being initialized inside a node that is then moved by a portal
+    // this avoids the editor being initialized inside a node that is then moved by a portal
     requestAnimationFrame(() => {
       // small additional delay to allow modal animation/portal mounting
       setTimeout(() => setRenderEditor(true), 50);
@@ -81,7 +81,7 @@ export default function RichTextModal({ title = 'Éditeur', initial = '', onClos
     };
   }, []);
 
-  // Allow TiptapEditor to signal readiness via onReady prop instead of DOM probing
+  // Allow LexicalEditor to signal readiness via onReady prop instead of DOM probing
   function handleEditorReady() {
     // clear pending timer to avoid a late timeout turning on the error UI
     if (readyTimer.current) { clearTimeout(readyTimer.current); readyTimer.current = null; }
@@ -92,7 +92,7 @@ export default function RichTextModal({ title = 'Éditeur', initial = '', onClos
 
 
   function handleEditorError(err: any) {
-    console.warn('[RichTextModal] TipTap editor error', err);
+    console.warn('[RichTextModal] Lexical editor error', err);
     setLoadError(String(err?.message || err));
     setEditorReady(false);
   }
@@ -118,7 +118,7 @@ export default function RichTextModal({ title = 'Éditeur', initial = '', onClos
           {/* Always render the component so it can initialize and call onReady */}
           {!loadError && renderEditor ? (
             <ErrorBoundary onError={handleEditorError}>
-              <TiptapEditor initialContent={value} onChange={(html) => setValue(html)} onReady={handleEditorReady} onError={handleEditorError} />
+              <LexicalEditor initialContent={value} onChange={(html) => setValue(html)} onReady={handleEditorReady} onError={handleEditorError} />
             </ErrorBoundary>
           ) : null}
 

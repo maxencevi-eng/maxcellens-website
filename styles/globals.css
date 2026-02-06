@@ -584,10 +584,38 @@ a:active { color: var(--color-link-active, var(--color-link-hover, var(--color-a
 .tiptap-editor ul, .tiptap-editor ol { margin: 0 0 0 18px; }
 .tiptap-editor img { max-width: 100%; height: auto; }
 
+/* Lexical editor content area (remplace TipTap dans le modal) */
+.lexical-content-editable {
+  min-height: 160px;
+  padding: 12px;
+  font-family: var(--font-body-family);
+  color: var(--color-text);
+  line-height: var(--base-line-height);
+  font-size: var(--font-body-size);
+  background-color: var(--bg-color);
+}
+.lexical-content-editable .lexical-p,
+.lexical-content-editable p { margin: 0 0 0.4rem; }
+.lexical-content-editable .lexical-ul,
+.lexical-content-editable .lexical-ol,
+.lexical-content-editable ul,
+.lexical-content-editable ol { margin: 0 0 0 18px; padding-left: 1.25rem; }
+.lexical-content-editable .lexical-li,
+.lexical-content-editable li { margin: 0; }
+.lexical-content-editable .lexical-link,
+.lexical-content-editable a { color: var(--color-primary); text-decoration: underline; }
+.lexical-content-editable .lexical-bold,
+.lexical-content-editable strong { font-weight: 700; }
+.lexical-content-editable .lexical-italic,
+.lexical-content-editable em { font-style: italic; }
+.lexical-content-editable .lexical-underline { text-decoration: underline; }
+
 /* Éditeur RichText en modal — mobile : toolbar qui wrap, zone de contenu lisible */
 @media (max-width: 768px) {
   .modal .tiptap-editor,
-  [class*="modal"] .tiptap-editor {
+  .modal .lexical-content-editable,
+  [class*="modal"] .tiptap-editor,
+  [class*="modal"] .lexical-content-editable {
     min-height: 140px;
     padding: 10px;
     word-wrap: break-word;
