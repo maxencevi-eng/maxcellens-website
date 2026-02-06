@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import dynamic from 'next/dynamic';
 // @ts-ignore - Import dynamic pour contourner l'erreur TypeScript
 import FooterEditModal from '../FooterEditModal/FooterEditModal';
 // @ts-ignore - Import dynamic pour contourner l'erreur TypeScript
