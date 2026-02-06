@@ -4,15 +4,15 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import dynamic from 'next/dynamic';
 
-const FooterEditModal = dynamic(() => import('../FooterEditModal/FooterEditModal'), { ssr: false });
-const MenuEditModal = dynamic(() => import('../MenuEditModal/MenuEditModal'), { ssr: false });
-const MobileMenuEditModal = dynamic(() => import('../MobileMenuEditModal/MobileMenuEditModal'), { ssr: false });
-const SocialLinksEditor = dynamic(() => import('../SocialLinksEditor/SocialLinksEditor'), { ssr: false });
-const HeaderSettings = dynamic(() => import('../HeaderSettings/HeaderSettings'), { ssr: false });
-const SeoCommandCenterModal = dynamic(() => import('../SeoCommandCenter/SeoCommandCenterModal'), { ssr: false });
-const PageLayoutModal = dynamic(() => import('../PageLayoutModal/PageLayoutModal'), { ssr: false });
-const StatisticsModal = dynamic(() => import('../Analytics/StatisticsModal'), { ssr: false });
-const MaintenanceModal = dynamic(() => import('../Analytics/MaintenanceModal'), { ssr: false });
+const FooterEditModal = dynamic(() => import('../FooterEditModal/FooterEditModal').then(mod => ({ default: mod.default })), { ssr: false });
+const MenuEditModal = dynamic(() => import('../MenuEditModal/MenuEditModal').then(mod => ({ default: mod.default })), { ssr: false });
+const MobileMenuEditModal = dynamic(() => import('../MobileMenuEditModal/MobileMenuEditModal').then(mod => ({ default: mod.default })), { ssr: false });
+const SocialLinksEditor = dynamic(() => import('../SocialLinksEditor/SocialLinksEditor').then(mod => ({ default: mod.default })), { ssr: false });
+const HeaderSettings = dynamic(() => import('../HeaderSettings/HeaderSettings').then(mod => ({ default: mod.default })), { ssr: false });
+const SeoCommandCenterModal = dynamic(() => import('../SeoCommandCenter/SeoCommandCenterModal').then(mod => ({ default: mod.default })), { ssr: false });
+const PageLayoutModal = dynamic(() => import('../PageLayoutModal/PageLayoutModal').then(mod => ({ default: mod.default })), { ssr: false });
+const StatisticsModal = dynamic(() => import('../Analytics/StatisticsModal').then(mod => ({ default: mod.default })), { ssr: false });
+const MaintenanceModal = dynamic(() => import('../Analytics/MaintenanceModal').then(mod => ({ default: mod.default })), { ssr: false });
 
 const PUBLIC_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 
