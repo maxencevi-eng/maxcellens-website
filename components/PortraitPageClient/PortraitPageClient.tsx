@@ -17,13 +17,13 @@ const PORTRAIT_GALLERIES = [
 ] as const;
 type PortraitGalleryId = (typeof PORTRAIT_GALLERIES)[number]["id"];
 
-export default function PortraitPageClient() {
+export default function PortraitPageClient({ initialTab = "lifestyle" }: { initialTab?: PortraitGalleryId }) {
   const { hiddenBlocks, blockWidthModes, blockOrderPortrait, isAdmin } = useBlockVisibility();
   const hide = (id: string) => !isAdmin && hiddenBlocks.includes(id);
   const blockWidthClass = (id: string) => (blockWidthModes[id] === "max1600" ? "block-width-1600" : "");
 
-  // Toujours "lifestyle" au premier rendu (serveur + client) pour éviter un hydration mismatch
-  const [activeGallery, setActiveGallery] = useState<PortraitGalleryId>("lifestyle");
+  // État initial = prop du serveur (?tab=) → bonne galerie dès le premier rendu
+  const [activeGallery, setActiveGallery] = useState<PortraitGalleryId>(initialTab);
   const activeConfig = PORTRAIT_GALLERIES.find((g) => g.id === activeGallery) ?? PORTRAIT_GALLERIES[0];
 
   // Synchroniser avec le hash de l’URL (ex. /portrait#lifestyle), y compris sur changement de hash
@@ -31,23 +31,36 @@ export default function PortraitPageClient() {
   useEffect(() => {
     const validIds = PORTRAIT_GALLERIES.map((g) => g.id);
 
-    function syncFromHash() {
+    function syncFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab")?.toLowerCase();
+      if (tab && validIds.includes(tab as PortraitGalleryId)) {
+        setActiveGallery(tab as PortraitGalleryId);
+        return;
+      }
       const hash = window.location.hash.slice(1).toLowerCase();
       if (hash && validIds.includes(hash as PortraitGalleryId)) {
         setActiveGallery(hash as PortraitGalleryId);
       }
     }
 
-    syncFromHash();
-    window.addEventListener("hashchange", syncFromHash);
-    return () => window.removeEventListener("hashchange", syncFromHash);
+    syncFromUrl();
+    window.addEventListener("hashchange", syncFromUrl);
+    window.addEventListener("popstate", syncFromUrl);
+    return () => {
+      window.removeEventListener("hashchange", syncFromUrl);
+      window.removeEventListener("popstate", syncFromUrl);
+    };
   }, []);
 
   // Mettre à jour le hash quand on change d’onglet (URL partageable)
   function setActiveGalleryWithHash(id: PortraitGalleryId) {
     setActiveGallery(id);
     if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", `${window.location.pathname}#${id}`);
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", id);
+      url.hash = "";
+      window.history.replaceState(null, "", url.pathname + "?" + url.searchParams.toString());
     }
   }
 

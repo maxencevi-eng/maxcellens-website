@@ -3,8 +3,8 @@
 import React from "react";
 import { motion, type Variants } from "framer-motion";
 
-/** Défaut : déclenche quand ~40 % du bloc est visible + 80px déjà entrés en bas */
-const defaultViewport = { once: true, amount: 0.4, margin: "0px 0px -80px 0px" };
+/** Défaut : déclenche dès qu’une partie du bloc est visible (20 % + marge réduite), pour que l’intro s’anime sur mobile sans forcer à scroller */
+const defaultViewport = { once: true, amount: 0.2, margin: "0px 0px -40px 0px" };
 /** Galeries / blocs longs : déclenche dès qu’un peu du bloc est visible (évite bloc invisible) */
 const soonViewport = { once: true, amount: 0.05, margin: "0px" };
 const transition = { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const };
