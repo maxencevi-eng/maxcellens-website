@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "next dev",
+    "dev:fresh": "node -e \"const fs=require('fs');const p='.next';if(fs.existsSync(p)){fs.rmSync(p,{recursive:true});console.log('.next supprimé');}\" && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

@@ -10,7 +10,7 @@ import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
-import { $getRoot, $insertNodes, $getSelection, COMMAND_PRIORITY_LOW } from 'lexical';
+import { $getRoot, $insertNodes, $getSelection, $findMatchingParent, $isElementNode, COMMAND_PRIORITY_LOW } from 'lexical';
 import { $generateNodesFromDOM, $generateHtmlFromNodes } from '@lexical/html';
 import { mergeRegister } from '@lexical/utils';
 import {
@@ -20,19 +20,34 @@ import {
   UNDO_COMMAND,
   REDO_COMMAND,
   SELECTION_CHANGE_COMMAND,
+  INSERT_LINE_BREAK_COMMAND,
 } from 'lexical';
-import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND, REMOVE_LIST_COMMAND } from '@lexical/list';
+import { INSERT_UNORDERED_LIST_COMMAND, INSERT_ORDERED_LIST_COMMAND, REMOVE_LIST_COMMAND, $isListNode, $isListItemNode, ListNode, ListItemNode } from '@lexical/list';
 import { $isLinkNode, $toggleLink, TOGGLE_LINK_COMMAND } from '@lexical/link';
 import { $createHeadingNode, $createQuoteNode, $isHeadingNode, $isQuoteNode, HeadingNode, QuoteNode } from '@lexical/rich-text';
-import { ListNode, ListItemNode } from '@lexical/list';
 import { LinkNode } from '@lexical/link';
-import { ParagraphNode, TextNode, LineBreakNode } from 'lexical';
+import { $createParagraphNode, $createTextNode, ParagraphNode, TextNode, LineBreakNode } from 'lexical';
+import { $setBlocksType, $patchStyleText, $getSelectionStyleValueForProperty } from '@lexical/selection';
 import { registerRichText } from '@lexical/rich-text';
 import { registerList } from '@lexical/list';
 import { useSiteStyle } from '../SiteStyle/SiteStyleProvider';
 import { editorTheme } from './theme';
 
 const nodes = [ParagraphNode, TextNode, LineBreakNode, HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode];
+
+/** Pages du site pour le lien interne (path + libellé) */
+const SITE_PAGES: { path: string; label: string }[] = [
+  { path: '/', label: 'Accueil' },
+  { path: '/contact', label: 'Contact' },
+  { path: '/realisation', label: 'Réalisation' },
+  { path: '/production', label: 'Production' },
+  { path: '/portrait', label: 'Portrait' },
+  { path: '/corporate', label: 'Corporate' },
+  { path: '/evenement', label: 'Événement' },
+  { path: '/animation', label: 'Animation' },
+  { path: '/galeries', label: 'Galeries' },
+  { path: '/projects', label: 'Projets' },
+];
 
 function RegisterRichTextPlugin() {
   const [editor] = useLexicalComposerContext();
@@ -134,16 +149,35 @@ function ToolbarPlugin() {
   /** true = externe (nouvel onglet), false = interne (même onglet) */
   const [linkExternal, setLinkExternal] = useState(true);
   const linkInputRef = useRef<HTMLInputElement>(null);
+  const [blockFormat, setBlockFormat] = useState<string>('paragraph');
+  const [fontFamily, setFontFamily] = useState<string>('inherit');
+  const [lineHeight, setLineHeight] = useState<string>('1.25');
+  const [textColor, setTextColor] = useState<string>('#000000');
+  const [bgColor, setBgColor] = useState<string>('#ffffff');
+  const [isUppercase, setIsUppercase] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const emojiPanelRef = useRef<HTMLDivElement>(null);
   const { style: siteStyle } = useSiteStyle();
   const siteFonts = (siteStyle?.fonts) || [];
+  const typo = siteStyle?.typography || {};
+  const quoteFamily = (f: string) => (!f ? f : /^["'].*["']$/.test(f) ? f : /[\s,]/.test(f) ? `'${f}'` : f);
+  const typoFonts: { label: string; value: string }[] = [];
+  if (typo.p?.family) typoFonts.push({ label: 'Corps (style site)', value: quoteFamily(typo.p.family) });
+  if (typo.h1?.family) typoFonts.push({ label: 'Titre 1 (style site)', value: quoteFamily(typo.h1.family) });
+  if (typo.h2?.family) typoFonts.push({ label: 'Titre 2 (style site)', value: quoteFamily(typo.h2.family) });
+  if (typo.h3?.family) typoFonts.push({ label: 'Titre 3 (style site)', value: quoteFamily(typo.h3.family) });
+  if (typo.h4?.family) typoFonts.push({ label: 'Titre 4 (style site)', value: quoteFamily(typo.h4.family) });
+  if (typo.h5?.family) typoFonts.push({ label: 'Titre 5 (style site)', value: quoteFamily(typo.h5.family) });
   const availableFonts = [
+    { label: 'Police par défaut', value: 'inherit' },
+    ...typoFonts,
     { label: 'Helvetica', value: "'Helvetica Neue', Helvetica, Arial, sans-serif" },
     { label: 'Georgia', value: "'Georgia', serif" },
     { label: 'Times', value: "'Times New Roman', Times, serif" },
     { label: 'Courier', value: "'Courier New', Courier, monospace" },
     ...siteFonts.map((f: { name?: string }) => ({
       label: String(f.name || '').trim(),
-      value: /[\s,]/.test(String(f.name || '')) ? `'${f.name}'` : String(f.name || ''),
+      value: quoteFamily(String(f.name || '')),
     })),
   ].filter((f) => f.label);
 
@@ -157,6 +191,22 @@ function ToolbarPlugin() {
       const node = selection.anchor.getNode();
       const parent = node.getParent();
       setIsLink($isLinkNode(parent) || $isLinkNode(node));
+      const block = $findMatchingParent(node, (n) => $isElementNode(n) && !(n as import('lexical').ElementNode).isInline());
+      if (block && $isHeadingNode(block)) {
+        setBlockFormat((block as HeadingNode).getTag());
+      } else {
+        setBlockFormat('paragraph');
+      }
+      const ff = $getSelectionStyleValueForProperty(selection, 'font-family', 'inherit');
+      setFontFamily(ff || 'inherit');
+      const lh = $getSelectionStyleValueForProperty(selection, 'line-height', '1.25');
+      setLineHeight(lh || '1.25');
+      const col = $getSelectionStyleValueForProperty(selection, 'color', '#000000');
+      setTextColor(col || '#000000');
+      const bg = $getSelectionStyleValueForProperty(selection, 'background-color', '#ffffff');
+      setBgColor(bg || '#ffffff');
+      const tt = $getSelectionStyleValueForProperty(selection, 'text-transform', 'none');
+      setIsUppercase(tt === 'uppercase');
     });
   }, [editor]);
 
@@ -178,10 +228,20 @@ function ToolbarPlugin() {
     if (showLinkInput) linkInputRef.current?.focus();
   }, [showLinkInput]);
 
+  useEffect(() => {
+    if (!showEmoji) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (emojiPanelRef.current && !emojiPanelRef.current.contains(e.target as Node)) setShowEmoji(false);
+    };
+    document.addEventListener('click', onDocClick, true);
+    return () => document.removeEventListener('click', onDocClick, true);
+  }, [showEmoji]);
+
   const applyLink = () => {
-    if (!linkUrl.trim()) return;
+    const url = linkUrl.trim();
+    if (!url) return;
     editor.dispatchCommand(TOGGLE_LINK_COMMAND, {
-      url: linkUrl.trim(),
+      url: linkExternal ? url : (url.startsWith('/') ? url : `/${url}`),
       target: linkExternal ? '_blank' : '_self',
       rel: linkExternal ? 'noopener noreferrer' : null,
     });
@@ -221,6 +281,21 @@ function ToolbarPlugin() {
         >
           <span style={{ textDecoration: 'underline' }}>U</span>
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            editor.update(() => {
+              const selection = $getSelection();
+              if (!$isRangeSelection(selection)) return;
+              const next = isUppercase ? null : 'uppercase';
+              $patchStyleText(selection, { 'text-transform': next });
+            });
+          }}
+          className={isUppercase ? 'active' : ''}
+          title="Majuscules"
+        >
+          <span style={{ textTransform: 'uppercase', fontSize: '0.85em' }}>Aa</span>
+        </button>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <button
             type="button"
@@ -246,18 +321,49 @@ function ToolbarPlugin() {
           </button>
           {showLinkInput && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#fff', border: '1px solid rgba(0,0,0,0.2)', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.12)', flexWrap: 'wrap' }}>
-              <input
-                ref={linkInputRef}
-                type="url"
-                value={linkUrl}
-                onChange={(e) => setLinkUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); applyLink(); }
-                  if (e.key === 'Escape') setShowLinkInput(false);
-                }}
-                placeholder="/page ou https://..."
-                style={{ width: 200, padding: '4px 8px', border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4, fontSize: 14 }}
-              />
+              {linkExternal ? (
+                <input
+                  ref={linkInputRef}
+                  type="url"
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); applyLink(); }
+                    if (e.key === 'Escape') setShowLinkInput(false);
+                  }}
+                  placeholder="https://..."
+                  style={{ width: 200, padding: '4px 8px', border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4, fontSize: 14 }}
+                />
+              ) : (
+                <>
+                  <select
+                    value={SITE_PAGES.find((p) => p.path === linkUrl)?.path ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setLinkUrl(v);
+                    }}
+                    style={{ padding: '4px 8px', fontSize: 14, border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4, minWidth: 160 }}
+                    title="Choisir une page du site"
+                  >
+                    <option value="">Choisir une page...</option>
+                    {SITE_PAGES.map((p) => (
+                      <option key={p.path} value={p.path}>{p.label}</option>
+                    ))}
+                  </select>
+                  <input
+                    ref={linkInputRef}
+                    type="text"
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); applyLink(); }
+                      if (e.key === 'Escape') setShowLinkInput(false);
+                    }}
+                    placeholder="ou saisir un chemin (ex. /galeries)"
+                    style={{ width: 180, padding: '4px 8px', border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4, fontSize: 14 }}
+                  />
+                </>
+              )}
               <select
                 value={linkExternal ? 'external' : 'internal'}
                 onChange={(e) => setLinkExternal(e.target.value === 'external')}
@@ -275,9 +381,56 @@ function ToolbarPlugin() {
       </div>
       <div style={{ width: 1, height: 24, background: 'rgba(0,0,0,0.08)' }} />
       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <button type="button" onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)} title="Liste à puces">•</button>
-        <button type="button" onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)} title="Liste numérotée">1.</button>
-        <button type="button" onClick={() => editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined)} title="Retirer liste">↩</button>
+        <button
+          type="button"
+          onClick={() => {
+            let shouldRemove = false;
+            editor.getEditorState().read(() => {
+              const selection = $getSelection();
+              if (!$isRangeSelection(selection)) return;
+              const listItem = $findMatchingParent(selection.anchor.getNode(), $isListItemNode);
+              const list = listItem?.getParent();
+              if (list && $isListNode(list) && list.getListType() === 'bullet') shouldRemove = true;
+            });
+            if (shouldRemove) editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
+            else editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+          }}
+          title="Liste à puces (recliquer pour annuler)"
+        >
+          •
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            let shouldRemove = false;
+            editor.getEditorState().read(() => {
+              const selection = $getSelection();
+              if (!$isRangeSelection(selection)) return;
+              const listItem = $findMatchingParent(selection.anchor.getNode(), $isListItemNode);
+              const list = listItem?.getParent();
+              if (list && $isListNode(list) && list.getListType() === 'number') shouldRemove = true;
+            });
+            if (shouldRemove) editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
+            else editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+          }}
+          title="Liste numérotée (recliquer pour annuler)"
+        >
+          1.
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.dispatchCommand(INSERT_LINE_BREAK_COMMAND, false)}
+          title="Retour à la ligne (sans nouveau paragraphe)"
+        >
+          ↵
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined)}
+          title="Retirer liste (puces ou numérotation)"
+        >
+          ↩
+        </button>
       </div>
       <div style={{ width: 1, height: 24, background: 'rgba(0,0,0,0.08)' }} />
       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -287,26 +440,21 @@ function ToolbarPlugin() {
       </div>
       <div style={{ width: 1, height: 24, background: 'rgba(0,0,0,0.08)' }} />
       <select
-        style={{ padding: '6px 8px' }}
+        style={{ padding: '6px 8px', minWidth: 100 }}
+        value={blockFormat}
         onChange={(e) => {
           const v = e.target.value;
           editor.update(() => {
             const selection = $getSelection();
             if (!$isRangeSelection(selection)) return;
             if (v === 'paragraph') {
-              selection.getNodes().forEach((n) => {
-                const p = n.getParent();
-                if (p && ($isHeadingNode(p) || $isQuoteNode(p))) {
-                  // Simplification: on ne change pas le type de bloc ici pour éviter les imports lourds
-                }
-              });
-            } else if (/^h[1-6]$/.test(v)) {
-              const level = parseInt(v.slice(1), 10) as 1 | 2 | 3 | 4 | 5 | 6;
-              const heading = $createHeadingNode(`h${level}` as 'h1');
-              // Insert/format would go here
+              $setBlocksType(selection, $createParagraphNode);
+            } else if (/^h[1-5]$/.test(v)) {
+              $setBlocksType(selection, () => $createHeadingNode(v as 'h1' | 'h2' | 'h3' | 'h4' | 'h5'));
             }
           });
         }}
+        title="Style de bloc (Paragraphe / Titres)"
       >
         <option value="paragraph">Paragraphe</option>
         <option value="h1">Titre 1</option>
@@ -315,12 +463,119 @@ function ToolbarPlugin() {
         <option value="h4">Titre 4</option>
         <option value="h5">Titre 5</option>
       </select>
-      <select style={{ padding: '6px 8px' }}>
-        <option value="inherit">Police par défaut</option>
+      <select
+        style={{ padding: '6px 8px', minWidth: 100 }}
+        value={availableFonts.some((f) => f.value === fontFamily) ? fontFamily : 'inherit'}
+        onChange={(e) => {
+          const v = e.target.value;
+          editor.update(() => {
+            const selection = $getSelection();
+            if (!$isRangeSelection(selection)) return;
+            $patchStyleText(selection, { 'font-family': v === 'inherit' ? null : v });
+          });
+        }}
+        title="Police (style du site)"
+      >
         {availableFonts.map((f) => (
           <option key={f.label} value={f.value}>{f.label}</option>
         ))}
       </select>
+      <select
+        style={{ padding: '6px 8px', width: 56 }}
+        value={['1', '1.15', '1.25', '1.4', '1.6', '2', 'normal'].includes(lineHeight) ? lineHeight : '1.25'}
+        onChange={(e) => {
+          const v = e.target.value;
+          setLineHeight(v);
+          editor.update(() => {
+            const selection = $getSelection();
+            if (!$isRangeSelection(selection)) return;
+            $patchStyleText(selection, { 'line-height': v });
+          });
+        }}
+        title="Hauteur de ligne"
+      >
+        <option value="1">1</option>
+        <option value="1.15">1.15</option>
+        <option value="1.25">1.25</option>
+        <option value="1.4">1.4</option>
+        <option value="1.6">1.6</option>
+        <option value="2">2</option>
+        <option value="normal">normal</option>
+      </select>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title="Couleur du texte">
+        <input
+          type="color"
+          value={textColor}
+          onChange={(e) => {
+            const v = e.target.value;
+            setTextColor(v);
+            editor.update(() => {
+              const selection = $getSelection();
+              if (!$isRangeSelection(selection)) return;
+              $patchStyleText(selection, { color: v });
+            });
+          }}
+          style={{ width: 24, height: 24, padding: 0, border: '1px solid rgba(0,0,0,0.2)', cursor: 'pointer' }}
+        />
+      </span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title="Couleur de fond">
+        <input
+          type="color"
+          value={bgColor}
+          onChange={(e) => {
+            const v = e.target.value;
+            setBgColor(v);
+            editor.update(() => {
+              const selection = $getSelection();
+              if (!$isRangeSelection(selection)) return;
+              $patchStyleText(selection, { 'background-color': v });
+            });
+          }}
+          style={{ width: 24, height: 24, padding: 0, border: '1px solid rgba(0,0,0,0.2)', cursor: 'pointer' }}
+        />
+      </span>
+      <span ref={emojiPanelRef} style={{ position: 'relative' }}>
+        <button type="button" onClick={(e) => { e.stopPropagation(); setShowEmoji((s) => !s); }} title="Insérer un emoji">😀</button>
+        {showEmoji && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              marginTop: 4,
+              padding: 8,
+              background: '#fff',
+              border: '1px solid rgba(0,0,0,0.15)',
+              borderRadius: 6,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              maxHeight: 200,
+              overflowY: 'auto',
+              zIndex: 100,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(8, 1fr)',
+              gap: 4,
+            }}
+          >
+            {['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😍','🥰','😘','😗','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🤧','🥵','🥶','👍','👎','👏','🙌','👋','🤚','🖐','✋','❤️','🧡','💛','💚','💙','💜','🖤','💯','✨','🔥','⭐','🌟'].map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                style={{ fontSize: 18, padding: 4, cursor: 'pointer', border: 'none', background: 'transparent' }}
+                onClick={() => {
+                  editor.update(() => {
+                    const selection = $getSelection();
+                    if (!$isRangeSelection(selection)) return;
+                    $insertNodes([$createTextNode(emoji)]);
+                  });
+                  setShowEmoji(false);
+                }}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
+      </span>
     </div>
   );
 }
