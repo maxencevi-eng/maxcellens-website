@@ -131,7 +131,7 @@ export async function POST(req: Request) {
       const botIds = sessionsToDelete.map((s) => s.id);
       
       if (botSessionIds.length === 0) {
-        return NextResponse.json({ ok: true, deleted: 0, bots: true, message: 'Aucun bot ou session courte (< 1s) trouvé.' });
+        return NextResponse.json({ ok: true, deleted: 0, bots: true, message: 'Aucun bot ou session courte (< 1.5s) trouvé.' });
       }
       const BATCH = 100;
       for (let i = 0; i < botSessionIds.length; i += BATCH) {
