@@ -83,11 +83,43 @@ export async function POST(req: Request) {
       }
       const allSessions = (sessionsRes.data || []) as { id: string; session_id: string; user_agent?: string | null; is_bot?: boolean | null }[];
       const hasBotColumn = allSessions.length > 0 && 'is_bot' in allSessions[0];
-      const isBotSession = (s: typeof allSessions[0]) => (hasBotColumn && s.is_bot === true) || (!hasBotColumn && isLikelyBot(s.user_agent));
-      const botSessionIds = allSessions.filter(isBotSession).map((s) => s.session_id);
-      const botIds = allSessions.filter(isBotSession).map((s) => s.id);
+      const isBotByUa = (s: typeof allSessions[0]) => (hasBotColumn && s.is_bot === true) || (!hasBotColumn && isLikelyBot(s.user_agent));
+      
+      // Filtrer par User-Agent d'abord
+      const botByUaSessions = allSessions.filter(isBotByUa);
+      const botByUaSessionIds = botByUaSessions.map((s) => s.session_id);
+      
+      // Calculer les durées pour ces sessions bot
+      const sessionDurations = new Map<string, number>();
+      if (botByUaSessionIds.length > 0) {
+        const BATCH = 100;
+        for (let i = 0; i < botByUaSessionIds.length; i += BATCH) {
+          const chunk = botByUaSessionIds.slice(i, i + BATCH);
+          const eventsRes = await supabaseAdmin
+            .from('analytics_events')
+            .select('session_id, event_type, duration')
+            .in('session_id', chunk)
+            .eq('event_type', 'pageview');
+          if (eventsRes.data) {
+            for (const e of eventsRes.data) {
+              const current = sessionDurations.get(e.session_id) || 0;
+              sessionDurations.set(e.session_id, current + (e.duration ?? 0));
+            }
+          }
+        }
+      }
+      
+      // Garder uniquement les bots avec durée < 1000ms
+      const shortDurationBotSessions = botByUaSessions.filter((s) => {
+        const duration = sessionDurations.get(s.session_id) || 0;
+        return duration < 1000;
+      });
+      
+      const botSessionIds = shortDurationBotSessions.map((s) => s.session_id);
+      const botIds = shortDurationBotSessions.map((s) => s.id);
+      
       if (botSessionIds.length === 0) {
-        return NextResponse.json({ ok: true, deleted: 0, bots: true });
+        return NextResponse.json({ ok: true, deleted: 0, bots: true, message: 'Aucun bot avec durée < 1 seconde trouvé.' });
       }
       const BATCH = 100;
       for (let i = 0; i < botSessionIds.length; i += BATCH) {
