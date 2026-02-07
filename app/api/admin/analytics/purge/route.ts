@@ -84,22 +84,43 @@ export async function POST(req: Request) {
       const allSessions = (sessionsRes.data || []) as { id: string; session_id: string; user_agent?: string | null; is_bot?: boolean | null; human_validated?: boolean | null }[];
       const hasBotColumn = allSessions.length > 0 && 'is_bot' in allSessions[0];
       
-      // 1. Calculer les durées pour TOUTES les sessions
+      // 1. Calculer les durées pour TOUTES les sessions (comme le filtre principal)
       const allSessionIds = allSessions.map((s) => s.session_id);
       const sessionDurations = new Map<string, number>();
       if (allSessionIds.length > 0) {
         const BATCH = 100;
         for (let i = 0; i < allSessionIds.length; i += BATCH) {
           const chunk = allSessionIds.slice(i, i + BATCH);
+          
+          // Récupérer tous les événements avec timestamps (comme le dashboard)
           const eventsRes = await supabaseAdmin
             .from('analytics_events')
-            .select('session_id, event_type, duration')
+            .select('session_id, created_at, event_type, duration')
             .in('session_id', chunk)
-            .eq('event_type', 'pageview');
+            .order('created_at', { ascending: true });
+            
           if (eventsRes.data) {
+            // Grouper les événements par session
+            const eventsBySession = new Map<string, any[]>();
             for (const e of eventsRes.data) {
-              const current = sessionDurations.get(e.session_id) || 0;
-              sessionDurations.set(e.session_id, current + (e.duration ?? 0));
+              if (!eventsBySession.has(e.session_id)) {
+                eventsBySession.set(e.session_id, []);
+              }
+              eventsBySession.get(e.session_id)!.push(e);
+            }
+            
+            // Calculer la durée de chaque session (comme le dashboard)
+            for (const [sessionId, events] of eventsBySession) {
+              let duration = 0;
+              
+              // Utiliser les timestamps (premier -> dernier événement)
+              if (events.length >= 2) {
+                const firstEvent = new Date(events[0].created_at);
+                const lastEvent = new Date(events[events.length - 1].created_at);
+                duration = lastEvent.getTime() - firstEvent.getTime();
+              }
+              
+              sessionDurations.set(sessionId, duration);
             }
           }
         }
