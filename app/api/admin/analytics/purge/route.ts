@@ -105,17 +105,16 @@ export async function POST(req: Request) {
         }
       }
       
-      // 2. Filtrer : bot UA OU durée < 1s (mais garder humains validés)
+      // 2. Filtrer : bot UA OU durée < 1s (sans vérifier human_validated)
       const isBotByUa = (s: typeof allSessions[0]) => (hasBotColumn && s.is_bot === true) || (!hasBotColumn && isLikelyBot(s.user_agent));
       
       const sessionsToDelete = allSessions.filter((s) => {
         const duration = sessionDurations.get(s.session_id) || 0;
         const isShortDuration = duration < 1000;
         const isBot = isBotByUa(s);
-        const isHumanValidated = s.human_validated === true;
         
-        // Supprimer si (bot OU short duration) ET pas humain validé
-        return (isBot || isShortDuration) && !isHumanValidated;
+        // Supprimer si bot OU durée < 1s (ignorer human_validated)
+        return isBot || isShortDuration;
       });
       
       const botSessionIds = sessionsToDelete.map((s) => s.session_id);
