@@ -128,14 +128,91 @@ export async function GET(req: Request) {
     type SessionRow = { id: string; session_id: string; ip_hash: string | null; country: string | null; city: string | null; referrer?: string | null; browser?: string | null; created_at: string; ip?: string | null; user_agent?: string | null; is_bot?: boolean | null; human_validated?: boolean | null };
     let sessions = (sessionsRes.data || []) as SessionRow[];
 
-    if (includeHashes?.length) sessions = sessions.filter((s) => s.ip_hash && includeHashes.includes(s.ip_hash));
-    if (excludeHashesOrNull?.length) sessions = sessions.filter((s) => !s.ip_hash || !excludeHashesOrNull.includes(s.ip_hash));
+    // Calculer les durées des sessions AVANT les filtres
+    const sessionIds = sessions.map((s) => s.session_id);
+    const sessionDurations = new Map<string, number>(); // durée totale de la session
+    if (sessionIds.length > 0) {
+      const BATCH = 100;
+      for (let i = 0; i < sessionIds.length; i += BATCH) {
+        const chunk = sessionIds.slice(i, i + BATCH);
+        const eventsRes = await supabaseAdmin
+          .from('analytics_events')
+          .select('session_id, created_at')
+          .in('session_id', chunk)
+          .order('created_at', { ascending: true });
+        if (eventsRes.data) {
+          // Grouper les événements par session
+          const eventsBySession = new Map<string, any[]>();
+          for (const e of eventsRes.data) {
+            if (!eventsBySession.has(e.session_id)) {
+              eventsBySession.set(e.session_id, []);
+            }
+            eventsBySession.get(e.session_id)!.push(e);
+          }
+          
+          // Calculer la durée de chaque session (premier -> dernier événement)
+          for (const [sessionId, events] of eventsBySession) {
+            if (events.length >= 2) {
+              const firstEvent = new Date(events[0].created_at);
+              const lastEvent = new Date(events[events.length - 1].created_at);
+              const duration = lastEvent.getTime() - firstEvent.getTime();
+              sessionDurations.set(sessionId, duration);
+            }
+          }
+        }
+      }
+    }
+    
+    // DEBUG: Afficher les durées calculées
+    console.log('[DEBUG] Session durations:');
+    sessions.forEach(s => {
+      const duration = sessionDurations.get(s.session_id) || 0;
+      console.log(`  ${s.session_id}: ${duration}ms (${Math.round(duration/1000)}s)`);
+    });
+
+    // Appliquer les filtres dans l'ordre correct
+    // 1. Filtre bots (si activé) - EXCLURE les bots et sessions courtes
+    console.log(`[DEBUG] Total sessions before filters: ${sessions.length}`);
+    console.log(`[DEBUG] excludeBots: ${excludeBots}, useBotColumns: ${useBotColumns}`);
+    
     if (excludeBots) {
       if (useBotColumns) {
-        sessions = sessions.filter((s) => (s as SessionRow).human_validated === true || (s as SessionRow).is_bot !== true);
+        const beforeFilter = sessions.length;
+        sessions = sessions.filter((s) => {
+          const sessionDuration = sessionDurations.get(s.session_id) || 0;
+          const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde totale
+          const isBot = (s as SessionRow).is_bot === true;
+          const keep = !isBot && !isBotByDuration;
+          if (!keep) {
+            console.log(`[DEBUG] Filtered session: ${s.session_id}, sessionDuration: ${sessionDuration}ms (${Math.round(sessionDuration/1000)}s), is_bot: ${isBot}, isBotByDuration: ${isBotByDuration}`);
+          }
+          return keep;
+        });
+        console.log(`[DEBUG] Sessions after bot filter: ${sessions.length} (removed ${beforeFilter - sessions.length})`);
       } else {
-        sessions = sessions.filter((s) => !isLikelyBot(s.user_agent));
+        const beforeFilter = sessions.length;
+        sessions = sessions.filter((s) => {
+          const sessionDuration = sessionDurations.get(s.session_id) || 0;
+          const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde totale
+          const isBotByUa = isLikelyBot(s.user_agent);
+          const keep = !isBotByUa && !isBotByDuration;
+          if (!keep) {
+            console.log(`[DEBUG] Filtered session: ${s.session_id}, sessionDuration: ${sessionDuration}ms (${Math.round(sessionDuration/1000)}s), isBotByUa: ${isBotByUa}, isBotByDuration: ${isBotByDuration}, UA: ${s.user_agent}`);
+          }
+          return keep;
+        });
+        console.log(`[DEBUG] Sessions after bot filter: ${sessions.length} (removed ${beforeFilter - sessions.length})`);
       }
+    }
+    
+    // 2. Filtre IP exclusion
+    if (excludeHashesOrNull?.length) {
+      sessions = sessions.filter((s) => !s.ip_hash || !excludeHashesOrNull.includes(s.ip_hash));
+    }
+    
+    // 3. Filtre IP inclusion (si activé)
+    if (includeHashes?.length) {
+      sessions = sessions.filter((s) => s.ip_hash && includeHashes.includes(s.ip_hash));
     }
 
     let visitors: { ip: string | null; ip_hash: string | null; country: string; city: string; sessionCount: number }[] = [];
@@ -183,18 +260,18 @@ export async function GET(req: Request) {
           if (visitorsUseBotColumns) {
             allSessions = allSessions.filter((s) => {
               const sessionDuration = sessionDurations.get(s.session_id) || 0;
-              const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde
-              // Garder seulement si (validé humain OU pas bot) ET (pas < 1s)
-              return (s.human_validated === true || 
-                      s.is_bot !== true) && 
-                      !isBotByDuration;
+              const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde totale
+              const isBot = s.is_bot === true;
+              // Garder seulement si pas bot ET durée > 1s
+              return !isBot && !isBotByDuration;
             });
           } else {
             allSessions = allSessions.filter((s) => {
               const sessionDuration = sessionDurations.get(s.session_id) || 0;
-              const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde
-              // Garder seulement si (pas bot par UA) ET (pas < 1s)
-              return !isLikelyBot(s.user_agent) && !isBotByDuration;
+              const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde totale
+              const isBotByUa = isLikelyBot(s.user_agent);
+              // Garder seulement si pas bot par UA ET durée > 1s
+              return !isBotByUa && !isBotByDuration;
             });
           }
         }
@@ -221,55 +298,24 @@ export async function GET(req: Request) {
       }
     } catch (_) {}
 
-    const sessionIds = sessions.map((s) => s.session_id);
-
     const eventsRes = await supabaseAdmin
       .from('analytics_events')
       .select('id, session_id, event_type, path, element_id, duration, created_at')
-      .in('session_id', sessionIds.length ? sessionIds : ['__none__'])
+      .in('session_id', sessions.length ? sessions.map((s) => s.session_id) : ['__none__'])
       .gte('created_at', sinceStr)
       .lte('created_at', untilStr);
     if (eventsRes.error) return NextResponse.json({ error: eventsRes.error.message }, { status: 500 });
     const events = (eventsRes.data || []) as { session_id: string; event_type: string; path: string | null; element_id: string | null; duration: number | null; created_at: string }[];
 
-    // Calculer la durée totale par session pour filtrer les bots
-    const sessionDurations = new Map<string, number>();
-    let pageviews = events.filter((e) => e.event_type === 'pageview');
-    pageviews.forEach((pv) => {
-      const current = sessionDurations.get(pv.session_id) || 0;
-      sessionDurations.set(pv.session_id, current + (pv.duration ?? 0));
-    });
-
-    // Filtrer les sessions de moins d'1 seconde si excludeBots est actif
-    if (excludeBots) {
-      if (useBotColumns) {
-        sessions = sessions.filter((s) => {
-          const sessionDuration = sessionDurations.get(s.session_id) || 0;
-          const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde
-          // Garder seulement si (validé humain OU pas bot) ET (pas < 1s)
-          return ((s as SessionRow).human_validated === true || 
-                  (s as SessionRow).is_bot !== true) && 
-                  !isBotByDuration;
-        });
-      } else {
-        sessions = sessions.filter((s) => {
-          const sessionDuration = sessionDurations.get(s.session_id) || 0;
-          const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde
-          // Garder seulement si (pas bot par UA) ET (pas < 1s)
-          return !isLikelyBot(s.user_agent) && !isBotByDuration;
-        });
-      }
-    }
-
-    // IMPORTANT: Refiltrer les events pour ne garder que ceux des sessions valides (post-filtre durée)
-    // Cela garantit que tous les onglets (Contenu, Géo, Sources, Clics) respectent le filtre < 1sec
+    // IMPORTANT: Refiltrer les events pour ne garder que ceux des sessions valides (post-filtre)
+    // Cela garantit que tous les onglets (Contenu, Géo, Sources, Clics) respectent tous les filtres
     const validSessionIds = new Set(sessions.map((s) => s.session_id));
     const filteredEvents = events.filter((e) => validSessionIds.has(e.session_id));
     const filteredPageviews = filteredEvents.filter((e) => e.event_type === 'pageview');
     const filteredClicks = filteredEvents.filter((e) => e.event_type === 'click');
 
     let clicks = filteredClicks;
-    pageviews = filteredPageviews;
+    let pageviews = filteredPageviews;
     const totalViews = pageviews.length;
     const uniqueVisitors = new Set(sessions.map((s) => s.session_id)).size;
     const totalDuration = pageviews.reduce((acc, e) => acc + (e.duration ?? 0), 0);
