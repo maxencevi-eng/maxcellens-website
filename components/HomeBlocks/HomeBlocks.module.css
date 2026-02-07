@@ -728,6 +728,7 @@
   max-width: 340px;
   text-align: center;
   padding: 1rem 0.5rem;
+  box-sizing: border-box;
 }
 
 .quoteText {
@@ -750,6 +751,52 @@
   font-size: 0.8rem;
   color: var(--muted, #6b7280);
   margin: 0.25rem 0 0;
+}
+
+/* Mobile: Quote carousel adjustments */
+@media (max-width: 767px) {
+  .quoteMarqueeGroup {
+    gap: 1rem 1.5rem;
+  }
+  .quoteCard {
+    min-width: 260px;
+    max-width: 300px;
+    padding: 0.75rem 0.5rem;
+  }
+  .quoteText {
+    font-size: clamp(0.9rem, 4vw, 1.1rem);
+    line-height: 1.4;
+    margin: 0 0 0.5rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  .quoteAuthor {
+    font-size: 0.85rem;
+  }
+  .quoteRole {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .quoteMarqueeGroup {
+    gap: 0.75rem 1rem;
+  }
+  .quoteCard {
+    min-width: 240px;
+    max-width: 280px;
+    padding: 0.5rem 0.25rem;
+  }
+  .quoteText {
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+  .quoteAuthor {
+    font-size: 0.8rem;
+  }
+  .quoteRole {
+    font-size: 0.7rem;
+  }
 }
 
 
