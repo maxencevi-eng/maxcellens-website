@@ -53,6 +53,7 @@ const BOT_UA_PATTERNS = [
   /\bcheck\s*url\b/i,
   /\bfeed\s*validator\b/i,
   /\bw3c\s*validator\b/i,
+  /\bscreenshot\b/i, // Ajouté : outils de capture d'écran
 ];
 
 /**

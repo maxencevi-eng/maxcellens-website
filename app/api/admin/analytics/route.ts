@@ -135,11 +135,14 @@ export async function GET(req: Request) {
       const BATCH = 100;
       for (let i = 0; i < sessionIds.length; i += BATCH) {
         const chunk = sessionIds.slice(i, i + BATCH);
+        
+        // Récupérer tous les événements avec timestamps
         const eventsRes = await supabaseAdmin
           .from('analytics_events')
-          .select('session_id, created_at')
+          .select('session_id, created_at, event_type, duration')
           .in('session_id', chunk)
           .order('created_at', { ascending: true });
+          
         if (eventsRes.data) {
           // Grouper les événements par session
           const eventsBySession = new Map<string, any[]>();
@@ -150,58 +153,40 @@ export async function GET(req: Request) {
             eventsBySession.get(e.session_id)!.push(e);
           }
           
-          // Calculer la durée de chaque session (premier -> dernier événement)
+          // Calculer la durée de chaque session (comme le dashboard)
           for (const [sessionId, events] of eventsBySession) {
+            let duration = 0;
+            
+            // Utiliser uniquement les timestamps (premier -> dernier événement)
             if (events.length >= 2) {
               const firstEvent = new Date(events[0].created_at);
               const lastEvent = new Date(events[events.length - 1].created_at);
-              const duration = lastEvent.getTime() - firstEvent.getTime();
-              sessionDurations.set(sessionId, duration);
+              duration = lastEvent.getTime() - firstEvent.getTime();
             }
+            
+            sessionDurations.set(sessionId, duration);
           }
         }
       }
     }
     
-    // DEBUG: Afficher les durées calculées
-    console.log('[DEBUG] Session durations:');
-    sessions.forEach(s => {
-      const duration = sessionDurations.get(s.session_id) || 0;
-      console.log(`  ${s.session_id}: ${duration}ms (${Math.round(duration/1000)}s)`);
-    });
-
     // Appliquer les filtres dans l'ordre correct
     // 1. Filtre bots (si activé) - EXCLURE les bots et sessions courtes
-    console.log(`[DEBUG] Total sessions before filters: ${sessions.length}`);
-    console.log(`[DEBUG] excludeBots: ${excludeBots}, useBotColumns: ${useBotColumns}`);
-    
     if (excludeBots) {
       if (useBotColumns) {
-        const beforeFilter = sessions.length;
         sessions = sessions.filter((s) => {
           const sessionDuration = sessionDurations.get(s.session_id) || 0;
-          const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde totale
+          const isBotByDuration = sessionDuration < 1500; // moins d'1.5 seconde totale
           const isBot = (s as SessionRow).is_bot === true;
-          const keep = !isBot && !isBotByDuration;
-          if (!keep) {
-            console.log(`[DEBUG] Filtered session: ${s.session_id}, sessionDuration: ${sessionDuration}ms (${Math.round(sessionDuration/1000)}s), is_bot: ${isBot}, isBotByDuration: ${isBotByDuration}`);
-          }
-          return keep;
+          return !isBot && !isBotByDuration;
         });
-        console.log(`[DEBUG] Sessions after bot filter: ${sessions.length} (removed ${beforeFilter - sessions.length})`);
       } else {
-        const beforeFilter = sessions.length;
         sessions = sessions.filter((s) => {
           const sessionDuration = sessionDurations.get(s.session_id) || 0;
-          const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde totale
+          const isBotByDuration = sessionDuration < 1500; // moins d'1.5 seconde totale
           const isBotByUa = isLikelyBot(s.user_agent);
-          const keep = !isBotByUa && !isBotByDuration;
-          if (!keep) {
-            console.log(`[DEBUG] Filtered session: ${s.session_id}, sessionDuration: ${sessionDuration}ms (${Math.round(sessionDuration/1000)}s), isBotByUa: ${isBotByUa}, isBotByDuration: ${isBotByDuration}, UA: ${s.user_agent}`);
-          }
-          return keep;
+          return !isBotByUa && !isBotByDuration;
         });
-        console.log(`[DEBUG] Sessions after bot filter: ${sessions.length} (removed ${beforeFilter - sessions.length})`);
       }
     }
     
@@ -260,7 +245,7 @@ export async function GET(req: Request) {
           if (visitorsUseBotColumns) {
             allSessions = allSessions.filter((s) => {
               const sessionDuration = sessionDurations.get(s.session_id) || 0;
-              const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde totale
+              const isBotByDuration = sessionDuration < 1500; // moins d'1.5 seconde totale
               const isBot = s.is_bot === true;
               // Garder seulement si pas bot ET durée > 1s
               return !isBot && !isBotByDuration;
@@ -268,7 +253,7 @@ export async function GET(req: Request) {
           } else {
             allSessions = allSessions.filter((s) => {
               const sessionDuration = sessionDurations.get(s.session_id) || 0;
-              const isBotByDuration = sessionDuration < 1000; // moins d'1 seconde totale
+              const isBotByDuration = sessionDuration < 1500; // moins d'1.5 seconde totale
               const isBotByUa = isLikelyBot(s.user_agent);
               // Garder seulement si pas bot par UA ET durée > 1s
               return !isBotByUa && !isBotByDuration;

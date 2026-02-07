@@ -53,32 +53,51 @@ export async function GET(req: Request) {
       const BATCH = 100;
       for (let i = 0; i < allSessionIds.length; i += BATCH) {
         const chunk = allSessionIds.slice(i, i + BATCH);
+        
+        // Récupérer tous les événements avec timestamps (comme le dashboard)
         const eventsRes = await supabaseAdmin
           .from('analytics_events')
-          .select('session_id, event_type, duration')
+          .select('session_id, created_at, event_type, duration')
           .in('session_id', chunk)
-          .eq('event_type', 'pageview');
+          .order('created_at', { ascending: true });
+          
         if (eventsRes.data) {
+          // Grouper les événements par session
+          const eventsBySession = new Map<string, any[]>();
           for (const e of eventsRes.data) {
-            const current = sessionDurations.get(e.session_id) || 0;
-            sessionDurations.set(e.session_id, current + (e.duration ?? 0));
+            if (!eventsBySession.has(e.session_id)) {
+              eventsBySession.set(e.session_id, []);
+            }
+            eventsBySession.get(e.session_id)!.push(e);
+          }
+          
+          // Calculer la durée de chaque session (comme le dashboard)
+          for (const [sessionId, events] of eventsBySession) {
+            let duration = 0;
+            
+            // Utiliser uniquement les timestamps (premier -> dernier événement)
+            if (events.length >= 2) {
+              const firstEvent = new Date(events[0].created_at);
+              const lastEvent = new Date(events[events.length - 1].created_at);
+              duration = lastEvent.getTime() - firstEvent.getTime();
+            }
+            
+            sessionDurations.set(sessionId, duration);
           }
         }
       }
     }
     
-    // 2. Filtrer comme le toggle : bot UA OU durée < 1s (mais garder humains validés)
+    // 2. Filtrer comme le toggle : bot UA OU durée < 1s (ignorer human_validated)
     const isBotByUa = (r: typeof rows[0]) => (hasBotColumn && r.is_bot === true) || (!hasBotColumn && isLikelyBot(r.user_agent));
     
     const filteredRows = rows.filter((r) => {
       const duration = sessionDurations.get(r.session_id) || 0;
-      const isShortDuration = duration < 1000;
+      const isShortDuration = duration < 1500;
       const isBot = isBotByUa(r);
-      const isHumanValidated = r.human_validated === true;
       
-      // Exclure si (bot OU short duration) ET pas humain validé
-      // C'est la même logique que le toggle d'affichage
-      return (isBot || isShortDuration) && !isHumanValidated;
+      // Exclure si bot OU durée courte (même logique que le toggle)
+      return isBot || isShortDuration;
     });
     
     const hashes = [...new Set(
