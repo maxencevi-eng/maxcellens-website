@@ -63,9 +63,10 @@ export async function POST(req: Request) {
       } catch (_) {}
     }
 
-    let deleted: { id: string }[] = [];
+    let deletedRecords: { id: string }[] = [];
 
     if (purgeBotsOnly) {
+      // Purge bots only
       let sessionsRes = await supabaseAdmin
         .from('analytics_sessions')
         .select('id, session_id, user_agent, is_bot, human_validated');
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
       if (sessionsRes.error && /column.*is_bot/i.test(sessionsRes.error.message)) {
         sessionsRes = await supabaseAdmin
           .from('analytics_sessions')
-          .select('id, session_id, user_agent, human_validated');
+          .select('id, session_id, user_agent, is_bot, human_validated');
       }
       if (sessionsRes.error) {
         console.error('analytics purge bots fetch error', sessionsRes.error);
@@ -134,29 +135,14 @@ export async function POST(req: Request) {
         const isShortDuration = duration < 1500; // 1.5s comme le filtre principal
         const isBot = isBotByUa(s);
         
-        // Garder seulement si pas bot ET durée >= 1.5s (même logique que le toggle)
-        return !(isBot || isShortDuration);
-      });
-      
-      // Inverser pour obtenir les sessions à supprimer
-      const botSessions = allSessions.filter((s) => {
-        const duration = sessionDurations.get(s.session_id) || 0;
-        const isShortDuration = duration < 1500;
-        const isBot = isBotByUa(s);
-        
         // Supprimer si bot OU durée courte (même logique que le toggle)
         return isBot || isShortDuration;
       });
-      
-      console.log('[DEBUG PURGE] Total sessions:', allSessions.length);
-      console.log('[DEBUG PURGE] Sessions to delete (bots):', sessionsToDelete.length);
-      console.log('[DEBUG PURGE] Bot session IDs:', sessionsToDelete.map(s => s.session_id).slice(0, 5));
       
       const botSessionIds = sessionsToDelete.map((s) => s.session_id);
       const botIds = sessionsToDelete.map((s) => s.id);
       
       if (botSessionIds.length === 0) {
-        console.log('[DEBUG PURGE] No bots to delete');
         return NextResponse.json({ ok: true, deleted: 0, bots: true, message: 'Aucun bot ou session courte (< 1.5s) trouvé.' });
       }
       const BATCH = 100;
@@ -173,92 +159,134 @@ export async function POST(req: Request) {
         console.error('analytics purge bots delete error', delError);
         return NextResponse.json({ error: delError.message }, { status: 500 });
       }
-      console.log('[DEBUG PURGE] Deleted sessions count:', delData?.length || 0);
-      deleted = delData ?? [];
-      return NextResponse.json({ ok: true, deleted: deleted.length, bots: true });
+      return NextResponse.json({ ok: true, deleted: delData.length, bots: true });
     }
 
     if (purgeHashes.length > 0) {
-      const { data, error } = await supabaseAdmin
+      const sessionsRes = await supabaseAdmin
+        .from('analytics_sessions')
+        .select('id, session_id')
+        .in('hash', purgeHashes);
+      if (sessionsRes.error) {
+        console.error('analytics purge hashes fetch error', sessionsRes.error);
+        return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
+      }
+      const sessionsToDelete = (sessionsRes.data || []) as { id: string; session_id: string }[];
+      const sessionIds = sessionsToDelete.map((s) => s.session_id);
+      const ids = sessionsToDelete.map((s) => s.id);
+      if (sessionIds.length === 0) {
+        return NextResponse.json({ ok: true, deleted: 0, message: 'Aucune session trouvée.' });
+      }
+      const BATCH = 100;
+      for (let i = 0; i < sessionIds.length; i += BATCH) {
+        const chunk = sessionIds.slice(i, i + BATCH);
+        await supabaseAdmin.from('analytics_events').delete().in('session_id', chunk);
+      }
+      const { data: delData, error: delError } = await supabaseAdmin
         .from('analytics_sessions')
         .delete()
-        .in('ip_hash', purgeHashes)
+        .in('id', ids)
         .select('id');
-      if (error) {
-        console.error('analytics purge by hash error', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+      if (delError) {
+        console.error('analytics purge hashes delete error', delError);
+        return NextResponse.json({ error: delError.message }, { status: 500 });
       }
-      deleted = data ?? [];
-      return NextResponse.json({ ok: true, deleted: deleted.length, byHash: true });
+      return NextResponse.json({ ok: true, deleted: delData.length });
     }
 
     if (purgeIps.length > 0) {
-      const hashes = purgeIps.map((ip) => hashIp(ip)).filter((h): h is string => !!h);
-      if (hashes.length === 0) {
-        return NextResponse.json({ error: 'Aucune IP valide' }, { status: 400 });
+      const sessionsRes = await supabaseAdmin
+        .from('analytics_sessions')
+        .select('id, session_id')
+        .in('ip', purgeIps);
+      if (sessionsRes.error) {
+        console.error('analytics purge ips fetch error', sessionsRes.error);
+        return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
       }
-      const { data, error } = await supabaseAdmin
+      const sessionsToDelete = (sessionsRes.data || []) as { id: string; session_id: string }[];
+      const sessionIds = sessionsToDelete.map((s) => s.session_id);
+      const ids = sessionsToDelete.map((s) => s.id);
+      if (sessionIds.length === 0) {
+        return NextResponse.json({ ok: true, deleted: 0, message: 'Aucune session trouvée.' });
+      }
+      const BATCH = 100;
+      for (let i = 0; i < sessionIds.length; i += BATCH) {
+        const chunk = sessionIds.slice(i, i + BATCH);
+        await supabaseAdmin.from('analytics_events').delete().in('session_id', chunk);
+      }
+      const { data: delData, error: delError } = await supabaseAdmin
         .from('analytics_sessions')
         .delete()
-        .in('ip_hash', hashes)
+        .in('id', ids)
         .select('id');
-      if (error) {
-        console.error('analytics purge by ip error', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+      if (delError) {
+        console.error('analytics purge ips delete error', delError);
+        return NextResponse.json({ error: delError.message }, { status: 500 });
       }
-      deleted = data ?? [];
-      return NextResponse.json({ ok: true, deleted: deleted.length, byIp: true });
+      return NextResponse.json({ ok: true, deleted: delData.length });
     }
 
     if (purgeAll) {
-      // Purge totale : toutes les sessions (les événements sont supprimés en CASCADE)
-      const { data, error } = await supabaseAdmin
+      const sessionsRes = await supabaseAdmin
+        .from('analytics_sessions')
+        .select('id, session_id');
+      if (sessionsRes.error) {
+        console.error('analytics purge all fetch error', sessionsRes.error);
+        return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
+      }
+      const sessionsToDelete = (sessionsRes.data || []) as { id: string; session_id: string }[];
+      const sessionIds = sessionsToDelete.map((s) => s.session_id);
+      const ids = sessionsToDelete.map((s) => s.id);
+      if (sessionIds.length === 0) {
+        return NextResponse.json({ ok: true, deleted: 0, message: 'Aucune session trouvée.' });
+      }
+      const BATCH = 100;
+      for (let i = 0; i < sessionIds.length; i += BATCH) {
+        const chunk = sessionIds.slice(i, i + BATCH);
+        await supabaseAdmin.from('analytics_events').delete().in('session_id', chunk);
+      }
+      const { data: delData, error: delError } = await supabaseAdmin
         .from('analytics_sessions')
         .delete()
-        .gte('created_at', '1970-01-01T00:00:00.000Z')
+        .in('id', ids)
         .select('id');
-      if (error) {
-        console.error('analytics purge all error', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+      if (delError) {
+        console.error('analytics purge all delete error', delError);
+        return NextResponse.json({ error: delError.message }, { status: 500 });
       }
-      deleted = data ?? [];
-    } else if (olderThan1Month) {
-      // Purge tout ce qui est avant le 1er du mois dernier (ex. le 5 fév. → avant le 1er janv.)
-      const now = new Date();
-      const cutoff = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-      const cutoffStr = cutoff.toISOString();
-
-      const { data, error } = await supabaseAdmin
-        .from('analytics_sessions')
-        .delete()
-        .lt('created_at', cutoffStr)
-        .select('id');
-
-      if (error) {
-        console.error('analytics purge olderThan1Month error', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-      deleted = data ?? [];
-    } else {
-      const cutoff = new Date();
-      cutoff.setMonth(cutoff.getMonth() - RETENTION_MONTHS);
-      const cutoffStr = cutoff.toISOString();
-
-      const { data, error } = await supabaseAdmin
-        .from('analytics_sessions')
-        .delete()
-        .lt('created_at', cutoffStr)
-        .select('id');
-
-      if (error) {
-        console.error('analytics purge error', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-      deleted = data ?? [];
+      return NextResponse.json({ ok: true, deleted: delData.length });
     }
 
-    const count = deleted?.length ?? 0;
-    return NextResponse.json({ ok: true, deleted: count, all: purgeAll, olderThan1Month: olderThan1Month });
+    // Purge par défaut (3 mois)
+    const sessionsRes = await supabaseAdmin
+      .from('analytics_sessions')
+      .select('id, session_id, created_at')
+      .lt('created_at', new Date(Date.now() - RETENTION_MONTHS * 30 * 24 * 60 * 60 * 1000));
+    if (sessionsRes.error) {
+      console.error('analytics purge default fetch error', sessionsRes.error);
+      return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
+    }
+    const sessionsToDelete = (sessionsRes.data || []) as { id: string; session_id: string; created_at: string }[];
+    const sessionIds = sessionsToDelete.map((s) => s.session_id);
+    const ids = sessionsToDelete.map((s) => s.id);
+    if (sessionIds.length === 0) {
+      return NextResponse.json({ ok: true, deleted: 0, message: 'Aucune session trouvée.' });
+    }
+    const BATCH = 100;
+    for (let i = 0; i < sessionIds.length; i += BATCH) {
+      const chunk = sessionIds.slice(i, i + BATCH);
+      await supabaseAdmin.from('analytics_events').delete().in('session_id', chunk);
+    }
+    const { data: delData, error: delError } = await supabaseAdmin
+      .from('analytics_sessions')
+      .delete()
+      .in('id', ids)
+      .select('id');
+    if (delError) {
+      console.error('analytics purge default delete error', delError);
+      return NextResponse.json({ error: delError.message }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, deleted: delData.length });
   } catch (err: unknown) {
     console.error('analytics purge error', err);
     return NextResponse.json(
