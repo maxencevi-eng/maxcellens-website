@@ -127,10 +127,15 @@ export async function POST(req: Request) {
         return isBot || isShortDuration;
       });
       
+      console.log('[DEBUG PURGE] Total sessions:', allSessions.length);
+      console.log('[DEBUG PURGE] Sessions to delete (bots):', sessionsToDelete.length);
+      console.log('[DEBUG PURGE] Bot session IDs:', sessionsToDelete.map(s => s.session_id).slice(0, 5));
+      
       const botSessionIds = sessionsToDelete.map((s) => s.session_id);
       const botIds = sessionsToDelete.map((s) => s.id);
       
       if (botSessionIds.length === 0) {
+        console.log('[DEBUG PURGE] No bots to delete');
         return NextResponse.json({ ok: true, deleted: 0, bots: true, message: 'Aucun bot ou session courte (< 1.5s) trouvé.' });
       }
       const BATCH = 100;
@@ -147,6 +152,7 @@ export async function POST(req: Request) {
         console.error('analytics purge bots delete error', delError);
         return NextResponse.json({ error: delError.message }, { status: 500 });
       }
+      console.log('[DEBUG PURGE] Deleted sessions count:', delData?.length || 0);
       deleted = delData ?? [];
       return NextResponse.json({ ok: true, deleted: deleted.length, bots: true });
     }
