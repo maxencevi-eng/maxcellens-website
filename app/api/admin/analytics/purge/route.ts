@@ -105,15 +105,25 @@ export async function POST(req: Request) {
         }
       }
       
-      // 2. Filtrer : bot UA OU durée < 1s (sans vérifier human_validated)
+      // 2. Filtrer : bot UA OU durée < 1.5s (ignorer human_validated)
       const isBotByUa = (s: typeof allSessions[0]) => (hasBotColumn && s.is_bot === true) || (!hasBotColumn && isLikelyBot(s.user_agent));
       
       const sessionsToDelete = allSessions.filter((s) => {
         const duration = sessionDurations.get(s.session_id) || 0;
-        const isShortDuration = duration < 1000;
+        const isShortDuration = duration < 1500; // 1.5s comme le filtre principal
         const isBot = isBotByUa(s);
         
-        // Supprimer si bot OU durée < 1s (ignorer human_validated)
+        // Garder seulement si pas bot ET durée >= 1.5s (même logique que le toggle)
+        return !(isBot || isShortDuration);
+      });
+      
+      // Inverser pour obtenir les sessions à supprimer
+      const botSessions = allSessions.filter((s) => {
+        const duration = sessionDurations.get(s.session_id) || 0;
+        const isShortDuration = duration < 1500;
+        const isBot = isBotByUa(s);
+        
+        // Supprimer si bot OU durée courte (même logique que le toggle)
         return isBot || isShortDuration;
       });
       
