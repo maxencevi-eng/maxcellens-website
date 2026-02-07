@@ -626,6 +626,21 @@ export default function StatisticsModal({
                 </button>
                 <button
                   type="button"
+                  onClick={() => setDataTab('visitsByPage')}
+                  style={{
+                    padding: '8px 16px',
+                    border: `2px solid ${dataTab === 'visitsByPage' ? '#2563eb' : '#cbd5e1'}`,
+                    background: dataTab === 'visitsByPage' ? '#eff6ff' : '#f8fafc',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    fontWeight: dataTab === 'visitsByPage' ? 600 : 500,
+                    color: dataTab === 'visitsByPage' ? '#1d4ed8' : '#475569',
+                  }}
+                >
+                  Visites par page
+                </button>
+                <button
+                  type="button"
                   onClick={() => setDataTab('clicks')}
                   style={{
                     padding: '8px 16px',
@@ -653,21 +668,6 @@ export default function StatisticsModal({
                   }}
                 >
                   Source
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDataTab('visitsByPage')}
-                  style={{
-                    padding: '8px 16px',
-                    border: `2px solid ${dataTab === 'visitsByPage' ? '#2563eb' : '#cbd5e1'}`,
-                    background: dataTab === 'visitsByPage' ? '#eff6ff' : '#f8fafc',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    fontWeight: dataTab === 'visitsByPage' ? 600 : 500,
-                    color: dataTab === 'visitsByPage' ? '#1d4ed8' : '#475569',
-                  }}
-                >
-                  Visites par page
                 </button>
                 <button
                   type="button"
