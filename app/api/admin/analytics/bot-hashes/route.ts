@@ -19,9 +19,9 @@ async function getAuthUser(req: Request) {
 
 /**
  * GET /api/admin/analytics/bot-hashes
- * Retourne la liste des ip_hash des sessions identifiées comme bots (User-Agent + durée < 1s).
+ * Retourne la liste des ip_hash des sessions identifiées comme bots ou faux humains (User-Agent suspect OU durée < 1s).
  * Utilisé pour "Exclure en masse les bots" (fusion avec le filtre d'exclusion).
- * Filtre : (is_bot === true OU User-Agent suspect) ET durée < 1 seconde
+ * Filtre : is_bot === true OU User-Agent suspect OU durée < 1 seconde
  */
 export async function GET(req: Request) {
   try {
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
 
     let res = await supabaseAdmin
       .from('analytics_sessions')
-      .select('id, session_id, ip_hash, user_agent, is_bot');
+      .select('id, session_id, ip_hash, user_agent, is_bot, human_validated');
 
     if (res.error && /column.*user_agent/i.test(res.error.message)) {
       return NextResponse.json({ hashes: [], message: 'Colonne user_agent absente. Exécutez la migration analytics (user_agent).' });
@@ -39,23 +39,20 @@ export async function GET(req: Request) {
     if (res.error && /column.*is_bot/i.test(res.error.message)) {
       res = await supabaseAdmin
         .from('analytics_sessions')
-        .select('id, session_id, ip_hash, user_agent');
+        .select('id, session_id, ip_hash, user_agent, human_validated');
     }
     if (res.error) return NextResponse.json({ error: res.error.message }, { status: 500 });
 
-    const rows = (res.data || []) as { id: string; session_id: string; ip_hash: string; user_agent?: string | null; is_bot?: boolean | null }[];
+    const rows = (res.data || []) as { id: string; session_id: string; ip_hash: string; user_agent?: string | null; is_bot?: boolean | null; human_validated?: boolean | null }[];
     const hasBotColumn = rows.length > 0 && 'is_bot' in rows[0];
     
-    // 1. Filtrer par User-Agent / is_bot
-    const botByUaRows = rows.filter((r) => (hasBotColumn && r.is_bot === true) || (!hasBotColumn && isLikelyBot(r.user_agent)));
-    const botSessionIds = botByUaRows.map((r) => r.session_id);
-    
-    // 2. Récupérer les événements pour calculer les durées
+    // 1. Récupérer les événements pour calculer les durées de TOUTES les sessions
+    const allSessionIds = rows.map((r) => r.session_id);
     const sessionDurations = new Map<string, number>();
-    if (botSessionIds.length > 0) {
+    if (allSessionIds.length > 0) {
       const BATCH = 100;
-      for (let i = 0; i < botSessionIds.length; i += BATCH) {
-        const chunk = botSessionIds.slice(i, i + BATCH);
+      for (let i = 0; i < allSessionIds.length; i += BATCH) {
+        const chunk = allSessionIds.slice(i, i + BATCH);
         const eventsRes = await supabaseAdmin
           .from('analytics_events')
           .select('session_id, event_type, duration')
@@ -70,15 +67,22 @@ export async function GET(req: Request) {
       }
     }
     
-    // 3. Garder uniquement ceux avec durée < 1000ms
-    const shortDurationBotSessionIds = botSessionIds.filter((sid) => {
-      const duration = sessionDurations.get(sid) || 0;
-      return duration < 1000;
+    // 2. Filtrer comme le toggle : bot UA OU durée < 1s (mais garder humains validés)
+    const isBotByUa = (r: typeof rows[0]) => (hasBotColumn && r.is_bot === true) || (!hasBotColumn && isLikelyBot(r.user_agent));
+    
+    const filteredRows = rows.filter((r) => {
+      const duration = sessionDurations.get(r.session_id) || 0;
+      const isShortDuration = duration < 1000;
+      const isBot = isBotByUa(r);
+      const isHumanValidated = r.human_validated === true;
+      
+      // Exclure si (bot OU short duration) ET pas humain validé
+      // C'est la même logique que le toggle d'affichage
+      return (isBot || isShortDuration) && !isHumanValidated;
     });
     
-    const shortDurationBotRows = botByUaRows.filter((r) => shortDurationBotSessionIds.includes(r.session_id));
     const hashes = [...new Set(
-      shortDurationBotRows.map((r) => r.ip_hash).filter(Boolean)
+      filteredRows.map((r) => r.ip_hash).filter(Boolean)
     )];
 
     return NextResponse.json({ hashes, count: hashes.length });

@@ -68,33 +68,29 @@ export async function POST(req: Request) {
     if (purgeBotsOnly) {
       let sessionsRes = await supabaseAdmin
         .from('analytics_sessions')
-        .select('id, session_id, user_agent, is_bot');
+        .select('id, session_id, user_agent, is_bot, human_validated');
       if (sessionsRes.error && /column.*user_agent/i.test(sessionsRes.error.message)) {
         return NextResponse.json({ error: 'Colonne user_agent absente. Exécutez la migration analytics (user_agent).' }, { status: 400 });
       }
       if (sessionsRes.error && /column.*is_bot/i.test(sessionsRes.error.message)) {
         sessionsRes = await supabaseAdmin
           .from('analytics_sessions')
-          .select('id, session_id, user_agent');
+          .select('id, session_id, user_agent, human_validated');
       }
       if (sessionsRes.error) {
         console.error('analytics purge bots fetch error', sessionsRes.error);
         return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
       }
-      const allSessions = (sessionsRes.data || []) as { id: string; session_id: string; user_agent?: string | null; is_bot?: boolean | null }[];
+      const allSessions = (sessionsRes.data || []) as { id: string; session_id: string; user_agent?: string | null; is_bot?: boolean | null; human_validated?: boolean | null }[];
       const hasBotColumn = allSessions.length > 0 && 'is_bot' in allSessions[0];
-      const isBotByUa = (s: typeof allSessions[0]) => (hasBotColumn && s.is_bot === true) || (!hasBotColumn && isLikelyBot(s.user_agent));
       
-      // Filtrer par User-Agent d'abord
-      const botByUaSessions = allSessions.filter(isBotByUa);
-      const botByUaSessionIds = botByUaSessions.map((s) => s.session_id);
-      
-      // Calculer les durées pour ces sessions bot
+      // 1. Calculer les durées pour TOUTES les sessions
+      const allSessionIds = allSessions.map((s) => s.session_id);
       const sessionDurations = new Map<string, number>();
-      if (botByUaSessionIds.length > 0) {
+      if (allSessionIds.length > 0) {
         const BATCH = 100;
-        for (let i = 0; i < botByUaSessionIds.length; i += BATCH) {
-          const chunk = botByUaSessionIds.slice(i, i + BATCH);
+        for (let i = 0; i < allSessionIds.length; i += BATCH) {
+          const chunk = allSessionIds.slice(i, i + BATCH);
           const eventsRes = await supabaseAdmin
             .from('analytics_events')
             .select('session_id, event_type, duration')
@@ -109,17 +105,24 @@ export async function POST(req: Request) {
         }
       }
       
-      // Garder uniquement les bots avec durée < 1000ms
-      const shortDurationBotSessions = botByUaSessions.filter((s) => {
+      // 2. Filtrer : bot UA OU durée < 1s (mais garder humains validés)
+      const isBotByUa = (s: typeof allSessions[0]) => (hasBotColumn && s.is_bot === true) || (!hasBotColumn && isLikelyBot(s.user_agent));
+      
+      const sessionsToDelete = allSessions.filter((s) => {
         const duration = sessionDurations.get(s.session_id) || 0;
-        return duration < 1000;
+        const isShortDuration = duration < 1000;
+        const isBot = isBotByUa(s);
+        const isHumanValidated = s.human_validated === true;
+        
+        // Supprimer si (bot OU short duration) ET pas humain validé
+        return (isBot || isShortDuration) && !isHumanValidated;
       });
       
-      const botSessionIds = shortDurationBotSessions.map((s) => s.session_id);
-      const botIds = shortDurationBotSessions.map((s) => s.id);
+      const botSessionIds = sessionsToDelete.map((s) => s.session_id);
+      const botIds = sessionsToDelete.map((s) => s.id);
       
       if (botSessionIds.length === 0) {
-        return NextResponse.json({ ok: true, deleted: 0, bots: true, message: 'Aucun bot avec durée < 1 seconde trouvé.' });
+        return NextResponse.json({ ok: true, deleted: 0, bots: true, message: 'Aucun bot ou session courte (< 1s) trouvé.' });
       }
       const BATCH = 100;
       for (let i = 0; i < botSessionIds.length; i += BATCH) {
