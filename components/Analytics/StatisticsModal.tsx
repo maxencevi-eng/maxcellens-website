@@ -611,21 +611,6 @@ export default function StatisticsModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setDataTab('geo')}
-                  style={{
-                    padding: '8px 16px',
-                    border: `2px solid ${dataTab === 'geo' ? '#2563eb' : '#cbd5e1'}`,
-                    background: dataTab === 'geo' ? '#eff6ff' : '#f8fafc',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    fontWeight: dataTab === 'geo' ? 600 : 500,
-                    color: dataTab === 'geo' ? '#1d4ed8' : '#475569',
-                  }}
-                >
-                  Par pays / Par ville
-                </button>
-                <button
-                  type="button"
                   onClick={() => setDataTab('visitsByPage')}
                   style={{
                     padding: '8px 16px',
@@ -638,6 +623,21 @@ export default function StatisticsModal({
                   }}
                 >
                   Visites par page
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDataTab('geo')}
+                  style={{
+                    padding: '8px 16px',
+                    border: `2px solid ${dataTab === 'geo' ? '#2563eb' : '#cbd5e1'}`,
+                    background: dataTab === 'geo' ? '#eff6ff' : '#f8fafc',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    fontWeight: dataTab === 'geo' ? 600 : 500,
+                    color: dataTab === 'geo' ? '#1d4ed8' : '#475569',
+                  }}
+                >
+                  Par pays / Par ville
                 </button>
                 <button
                   type="button"
