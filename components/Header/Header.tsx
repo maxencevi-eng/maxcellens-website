@@ -292,7 +292,7 @@ export default function Header() {
               <span style={{position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden'}}>Maxcellens</span>
             </Link>
 
-            <div data-site-social="icons" className={`${styles.social} ${styles[iconStyle] || ''} ${headerVisible ? '' : styles.hiddenUntilReady}`} aria-hidden={!headerVisible}>
+            <div data-site-social="icons" className={`${styles.social} ${styles[iconStyle] || ''} ${headerVisible ? '' : styles.hiddenUntilReady}`} aria-hidden={!headerVisible} style={{ opacity: socialLoaded ? 1 : 0, transition: 'opacity 0.3s ease' }}>
               <a href={socialLinks.instagram || 'https://instagram.com'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={styles.socialLink}>
                 {customIcons.instagram ? <img src={customIcons.instagram} alt="Instagram custom" className={styles.customIcon} width={24} height={24} /> : (
                   <svg className={styles.socialPlaceholder} viewBox="0 0 24 24" aria-hidden="true" role="img"><rect x="4" y="4" width="16" height="16" rx="4" ry="4"/><circle cx="12" cy="12" r="4" /></svg>

@@ -760,8 +760,8 @@ html.wf-loaded .containerInner {
 /* Social icons + menu: hidden until site-ready (fonts + short delay), then fade in like icons */
 html:not(.site-ready) [data-site-social="icons"],
 html:not(.site-ready) [data-site-nav="menu"] {
-  visibility: hidden;
-  opacity: 0;
+  visibility: hidden !important;
+  opacity: 0 !important;
 }
 html.site-ready [data-site-social="icons"],
 html.site-ready [data-site-nav="menu"] {
