@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   verification: {
-    google: 'd2e-Y2UZRYbMYMrN47LjcciNUFqoH_WWNO2fA4nhfTs',
+    google: 'HUxwDhQEcv6d8p6oFZvYIA6DX9hKEA8_Sxxn5uVexDI',
   },
   icons: supabaseUrl
     ? [
