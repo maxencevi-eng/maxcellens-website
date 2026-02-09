@@ -42,6 +42,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  verification: {
+    google: 'd2e-Y2UZRYbMYMrN47LjcciNUFqoH_WWNO2fA4nhfTs',
+  },
   icons: supabaseUrl
     ? [
         { url: `${supabaseUrl}/storage/v1/object/public/site-assets/favicons/favicon.webp`, type: 'image/webp', sizes: '32x32' },
