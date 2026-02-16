@@ -127,19 +127,22 @@ body.has-admin-sidebar {
 #admin-sidebar {
   position: fixed;
   left: 0;
-  top: 100px; /* plus d'espacement sous le logo */
+  top: 96px; 
   bottom: 0;
   width: var(--admin-sidebar-width);
   max-width: 380px;
-  background: linear-gradient(180deg,#081018 0%, #0f1720 100%);
+  background: rgba(8, 16, 24, 0.82); /* 80% opacity dark background */
+  backdrop-filter: blur(20px); /* Glassmorphism blur */
+  border-right: 1px solid rgba(255, 255, 255, 0.08); /* Subtle border */
   color: #fff;
-  box-shadow: 8px 0 28px rgba(2,6,23,0.55), 2px 0 6px rgba(0,0,0,0.25);
-  padding: 22px 16px;
+  box-shadow: 12px 0 40px rgba(0,0,0,0.3);
+  padding: 80px 24px 24px 24px; /* increased top padding for title/close btn space */
   display: flex;
   flex-direction: column;
   z-index: 9999;
-  box-sizing: border-box; /* ensure padding counted in width */
-  overflow-x: hidden; /* prevent horizontal scrollbar */
+  box-sizing: border-box;
+  overflow-x: hidden;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #admin-sidebar .admin-title {
@@ -194,22 +197,28 @@ body.has-admin-sidebar {
 /* Scoped admin sidebar submenu overrides - use site background and
    align submenu buttons with main menu buttons for consistency */
 #admin-sidebar .submenu {
-  /* Revert to the prior white panel look (photo 1) */
-  background: #ffffff;
-  border: 1px solid rgba(0,0,0,0.06);
-  color: var(--fg);
-  padding: 12px;
-  border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #eff6ff; /* Light text */
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); 
+  margin-bottom: 8px;
 }
 
 #admin-sidebar .submenu-row {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
-#admin-sidebar .submenu input[type="file"] { color: var(--fg); font-size: 0.92rem; }
+#admin-sidebar .submenu input[type="file"] { color: #eff6ff; font-size: 0.88rem; opacity: 0.9; }
+#admin-sidebar .submenu input[type="range"] { accent-color: var(--color-primary, #3b82f6); cursor: pointer; }
+#admin-sidebar .submenu .menu-item {
+    font-size: 0.9rem;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.05); /* Slight fill for submenu actions */
+}
 #admin-sidebar .submenu img { display: block; max-height: 56px; width: auto; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
 
 /* Make submenu buttons match main menu buttons */
@@ -297,36 +306,38 @@ body.has-admin-sidebar {
   width: 100%;
   text-align: left;
   background: transparent;
-  color: rgba(255,255,255,0.95);
-  border: none;
-  padding: 12px 10px;
-  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.85); /* Slightly muted white for elegance */
+  border: 1px solid transparent;
+  padding: 12px 16px;
+  border-radius: 12px; /* Softer rounding */
   cursor: pointer;
-  font-size: 0.98rem;
+  font-size: 0.95rem;
+  font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-sizing: border-box; /* ensure padding doesn't overflow */
-  white-space: normal; /* allow wrapping if label is long */
+  gap: 12px;
+  box-sizing: border-box;
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  margin-bottom: 2px;
 }
 
-/* main menu buttons: slightly darker surface so sub-sections read as lighter panels */
-#admin-sidebar button.menu-item {
-  background: linear-gradient(180deg, rgba(2,8,12,0.36), rgba(4,10,14,0.44));
-  box-shadow: 0 8px 22px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(255,255,255,0.02);
-  padding: 14px 12px;
+/* Hover state: Modern Glass highlight */
+#admin-sidebar button.menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  transform: translateX(4px);
+  border-color: rgba(255,255,255,0.05);
 }
 
+/* Active/Focus state */
+#admin-sidebar button.menu-item:active {
+  transform: scale(0.98) translateX(4px);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Remove old pseudo-elements (dots) */
 #admin-sidebar button.menu-item::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.06);
-  display: inline-block;
-  margin-right: 8px;
-  flex: 0 0 auto;
-  transition: background 160ms ease, transform 160ms ease;
+  display: none !important;
 }
 
 /* Remove the leading dot/pulse for buttons inside submenu panels */
@@ -336,45 +347,33 @@ body.has-admin-sidebar {
   content: none;
 }
 
-#admin-sidebar button.menu-item:hover {
-  background: linear-gradient(180deg, rgba(6,12,18,0.52), rgba(4,10,14,0.6));
-  transform: translateX(6px);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(255,255,255,0.02);
-}
-
-#admin-sidebar button.menu-item:active {
-  transform: translateX(3px);
-  box-shadow: 0 3px 8px rgba(2,6,23,0.10), inset 0 -1px 0 rgba(255,255,255,0.02);
-}
-
-#admin-sidebar button.menu-item:active { transform: translateX(2px); }
-
-#admin-sidebar button.menu-item .dot {
-  width: 8px;
-  height: 8px;
-  background: rgba(255,255,255,0.12);
-  border-radius: 50%;
-}
+/* Removed overlapping hover/active states */
 
 #admin-sidebar .signout {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255,255,255,0.04);
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
 
 #admin-sidebar button.signout-btn {
   width: 100%;
-  padding: 12px 10px;
-  border: none;
-  background: linear-gradient(180deg,#ef4444 0%, #dc2626 100%);
-  color: #fff;
-  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  background: rgba(220, 38, 38, 0.1);
+  color: #fca5a5;
+  border-radius: 12px;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(220,38,38,0.18), inset 0 -2px 0 rgba(0,0,0,0.08);
+  box-shadow: none;
   font-weight: 600;
+  transition: all 0.2s ease;
 }
 
-#admin-sidebar button.signout-btn:hover { filter: brightness(0.98); }
+#admin-sidebar button.signout-btn:hover {
+  background: rgba(220, 38, 38, 0.9);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(220,38,38,0.4);
+}
 
 /* smooth transitions */
 #admin-sidebar, #admin-sidebar button.menu-item, #admin-sidebar button.signout-btn { transition: all 180ms ease; }
@@ -391,9 +390,11 @@ body.has-admin-sidebar {
   width: 44px;
   height: 60px; /* augmenté de 44px à 60px */
   border-radius: 8px;
-  background: linear-gradient(180deg,#0f1720,#081018);
+  background: rgba(8, 16, 24, 0.82);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   color: #fff;
-  border: none;
   font-size: 18px; /* augmenté pour une meilleure visibilité */
   display: flex;
   align-items: center;

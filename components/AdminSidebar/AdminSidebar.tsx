@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import dynamic from 'next/dynamic';
 // @ts-ignore - Import dynamic pour contourner l'erreur TypeScript
@@ -360,6 +361,7 @@ export default function AdminSidebar() {
   }
 
   return (
+    <>
     <aside id="admin-sidebar" aria-label="Admin sidebar">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div className="admin-title">Admin</div>
@@ -576,47 +578,57 @@ export default function AdminSidebar() {
         <div style={{ fontSize: 13, marginBottom: 8 }}>{user.email}</div>
         <button className="signout-btn" onClick={signOut}>Déconnexion</button>
       </div>
-
-      {showFooterModal ? (
-        <FooterEditModal onClose={() => setShowFooterModal(false)} onSaved={() => { setMessage('Footer mis à jour'); }} />
-      ) : null}
-
-      {showMenuModal ? (
-        <MenuEditModal onClose={() => setShowMenuModal(false)} onSaved={() => { setMessage('Menu mis à jour'); }} />
-      ) : null}
-
-      {showSocialsModal ? (
-        <SocialLinksEditor onClose={() => setShowSocialsModal(false)} onSaved={() => { setMessage('Réseaux mis à jour'); }} />
-      ) : null}
-
-      {showMobileMenuModal ? (
-        <MobileMenuEditModal onClose={() => setShowMobileMenuModal(false)} onSaved={() => { setMessage('Menu mobile mis à jour'); }} />
-      ) : null}
-
-      {showSiteStyleModal ? (
-        <SiteStyleEditor onClose={() => setShowSiteStyleModal(false)} />
-      ) : null}
-
-      {showHeaderModal ? (
-        <HeaderSettings open={true} onClose={() => setShowHeaderModal(false)} />
-      ) : null}
-
-      {showSeoModal ? (
-        <SeoCommandCenterModal onClose={() => setShowSeoModal(false)} onSaved={() => { setMessage('SEO mis à jour'); }} />
-      ) : null}
-
-      {showPageLayoutModal ? (
-        <PageLayoutModal onClose={() => setShowPageLayoutModal(false)} onSaved={() => { setMessage('Mise en page enregistrée'); }} />
-      ) : null}
-
-      {showStatisticsModal ? (
-        <StatisticsModal onClose={() => setShowStatisticsModal(false)} />
-      ) : null}
-
-      {showMaintenanceModal ? (
-        <MaintenanceModal onClose={() => setShowMaintenanceModal(false)} />
-      ) : null}
-
     </aside>
+
+      {showFooterModal ? createPortal(
+        <FooterEditModal onClose={() => setShowFooterModal(false)} onSaved={() => { setMessage('Footer mis à jour'); }} />,
+        document.body
+      ) : null}
+
+      {showMenuModal ? createPortal(
+        <MenuEditModal onClose={() => setShowMenuModal(false)} onSaved={() => { setMessage('Menu mis à jour'); }} />,
+        document.body
+      ) : null}
+
+      {showSocialsModal ? createPortal(
+        <SocialLinksEditor onClose={() => setShowSocialsModal(false)} onSaved={() => { setMessage('Réseaux mis à jour'); }} />,
+        document.body
+      ) : null}
+
+      {showMobileMenuModal ? createPortal(
+        <MobileMenuEditModal onClose={() => setShowMobileMenuModal(false)} onSaved={() => { setMessage('Menu mobile mis à jour'); }} />,
+        document.body
+      ) : null}
+
+      {showSiteStyleModal ? createPortal(
+        <SiteStyleEditor onClose={() => setShowSiteStyleModal(false)} />,
+        document.body
+      ) : null}
+
+      {showHeaderModal ? createPortal(
+        <HeaderSettings open={true} onClose={() => setShowHeaderModal(false)} />,
+        document.body
+      ) : null}
+
+      {showSeoModal ? createPortal(
+        <SeoCommandCenterModal onClose={() => setShowSeoModal(false)} onSaved={() => { setMessage('SEO mis à jour'); }} />,
+        document.body
+      ) : null}
+
+      {showPageLayoutModal ? createPortal(
+        <PageLayoutModal onClose={() => setShowPageLayoutModal(false)} onSaved={() => { setMessage('Mise en page enregistrée'); }} />,
+        document.body
+      ) : null}
+
+      {showStatisticsModal ? createPortal(
+        <StatisticsModal onClose={() => setShowStatisticsModal(false)} />,
+        document.body
+      ) : null}
+
+      {showMaintenanceModal ? createPortal(
+        <MaintenanceModal onClose={() => setShowMaintenanceModal(false)} />,
+        document.body
+      ) : null}
+    </>
   );
 }

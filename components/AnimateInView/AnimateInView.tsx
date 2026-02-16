@@ -68,6 +68,10 @@ type Props = {
   delay?: number;
   /** Si true, déclenche l’animation dès qu’un peu du bloc est visible (pour galeries / longs blocs) */
   viewportSoon?: boolean;
+  /** Options de déclenchement viewport manuelles (ex. { once: true, amount: 0}) - écrase viewportSoon */
+  viewport?: any;
+  /** État initial de l’animation (ex. "visible" pour désactiver l'animation d'entrée) */
+  initial?: string | boolean | any;
 };
 
 export default function AnimateInView({
@@ -78,15 +82,17 @@ export default function AnimateInView({
   style,
   delay = 0,
   viewportSoon = false,
+  viewport: manualViewport,
+  initial = "hidden",
 }: Props) {
   const Component = motion[as] as typeof motion.div;
   const v = variants[variant];
   const isStagger = variant === "stagger";
-  const viewport = viewportSoon ? soonViewport : defaultViewport;
+  const viewport = manualViewport || (viewportSoon ? soonViewport : defaultViewport);
 
   return (
     <Component
-      initial="hidden"
+      initial={initial}
       whileInView="visible"
       viewport={viewport}
       variants={v}
