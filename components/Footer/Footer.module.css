@@ -18,14 +18,22 @@
   width: calc(100% - 80px);
   margin: 0 40px;
   height: var(--site-footer-banner-height, 160px);
-  background-size: cover;
-  background-position: center;
   box-sizing: border-box;
   position: relative;
+  overflow: hidden;
+}
+
+.bannerImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 
 @media (max-width: 640px) {
-  .bannerInner { width: calc(100% - 30px); margin: 0 15px; height: 110px; background-position: center top; }
+  .bannerInner { width: calc(100% - 30px); margin: 0 15px; height: 110px; }
+  .bannerImg { object-position: center top; }
 }
 
 .top {

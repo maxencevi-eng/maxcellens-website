@@ -71,6 +71,7 @@ export default function Footer() {
   const [footerBanner, setFooterBanner] = useState<{ url?: string; path?: string } | null>(null);
   const [footerBannerFocal, setFooterBannerFocal] = useState<{ x: number; y: number } | null>(null);
   const [footerBannerHeight, setFooterBannerHeight] = useState<number | null>(null);
+  const [bannerError, setBannerError] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -137,9 +138,9 @@ export default function Footer() {
           if (key === 'socialIcon_youtube' && (det as any).url) setCustomIcons(prev => ({ ...prev, youtube: String((det as any).url) }));
           if (key === 'socialIcon_tiktok' && (det as any).url) setCustomIcons(prev => ({ ...prev, tiktok: String((det as any).url) }));
           if (key === 'socialIcon_linkedin' && (det as any).url) setCustomIcons(prev => ({ ...prev, linkedin: String((det as any).url) }));
-          if (key === 'footerBanner' && (det as any).url) setFooterBanner({ url: String((det as any).url), path: (det as any).path || undefined });
+          if (key === 'footerBanner' && (det as any).url) { setFooterBanner({ url: String((det as any).url), path: (det as any).path || undefined }); setBannerError(false); }
           if (key === 'footerBanner' && (det as any).value) {
-            try { const p = JSON.parse(String((det as any).value)); if (p && (p.url || p.path)) setFooterBanner({ url: p.url, path: p.path }); } catch(_) {}
+            try { const p = JSON.parse(String((det as any).value)); if (p && (p.url || p.path)) { setFooterBanner({ url: p.url, path: p.path }); setBannerError(false); } } catch(_) {}
           }
           if (key === 'footerBannerFocal' && (det as any).value) {
             try { const f = JSON.parse(String((det as any).value)); if (f && typeof f.x === 'number' && typeof f.y === 'number') setFooterBannerFocal({ x: Number(f.x), y: Number(f.y) }); } catch(_) {}
@@ -316,18 +317,25 @@ export default function Footer() {
 
   return (
     <footer className={`${styles.footer} ${isMobileFooter ? styles.mobile : ''}`}>
-      {footerBanner?.url ? (
-        <div className={styles.banner} role="img" aria-label="Footer banner wrapper">
+      {footerBanner?.url && !bannerError ? (
+        <div className={styles.banner} aria-label="Footer banner wrapper">
           <div
             className={styles.bannerInner}
             style={{
-              backgroundImage: `url(${footerBanner.url})`,
-              backgroundPosition: footerBannerFocal ? `${footerBannerFocal.x}% ${footerBannerFocal.y}%` : 'center',
               height: footerBannerHeight ? `${footerBannerHeight}px` : undefined
             }}
-            role="img"
-            aria-label="Footer banner"
-          />
+          >
+            <img
+              src={footerBanner.url}
+              alt="Footer banner"
+              className={styles.bannerImg}
+              style={{
+                objectPosition: footerBannerFocal ? `${footerBannerFocal.x}% ${footerBannerFocal.y}%` : 'center'
+              }}
+              onError={() => setBannerError(true)}
+              onLoad={() => setBannerError(false)}
+            />
+          </div>
         </div>
       ) : null}
       <div className={styles.top}>

@@ -39,10 +39,11 @@ export async function POST(req: Request) {
       // helper: try different sizes and quality to get under MAX_BYTES
       async function generateWebpWithinSize(input: Buffer, maxBytes: number) {
         // Use more generous sizes/qualities for contact photos to keep them visually good
-        const widthCandidates = folder === 'contact'
+        const highQualityImage = folder === 'contact' || folder === 'footer-banner';
+        const widthCandidates = highQualityImage
           ? [2400, 2000, 1600, 1200, 900, 800, 600, 400, 200, 100]
           : [1600, 1200, 800, 400, 200, 100, 64, 48, 32, 24];
-        const qualityCandidates = folder === 'contact'
+        const qualityCandidates = highQualityImage
           ? [92, 86, 80, 72, 64, 56, 48, 40, 32, 24]
           : [82, 72, 62, 52, 42, 32, 22, 12, 8];
 
@@ -70,6 +71,9 @@ export async function POST(req: Request) {
       }
 
       const webpBuf = await generateWebpWithinSize(inputBuf, MAX_BYTES);
+      if (!webpBuf.length) {
+        return NextResponse.json({ error: 'Format d’image non pris en charge ou fichier invalide' }, { status: 400 });
+      }
 
       // Upload file to bucket 'site-assets'
       const bucket = 'site-assets';

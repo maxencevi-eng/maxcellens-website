@@ -221,10 +221,13 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
       const currentPath = banner?.path || originalBannerPath;
       if (currentPath) fd.append('old_path', currentPath);
       const resp = await fetch('/api/admin/upload-logo', { method: 'POST', body: fd });
-      if (!resp.ok) throw new Error('Erreur d\u2019upload');
-      const j = await resp.json();
+      const j = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(j?.error || `Erreur d\u2019upload (${resp.status})`);
+      }
       if (j?.webp) {
-        setBanner({ url: String(j.webp), path: String(j.path || '') });
+        const versionedUrl = `${String(j.webp)}?v=${j.version || Date.now()}`;
+        setBanner({ url: versionedUrl, path: String(j.path || '') });
         setOriginalBannerPath(j.path ? String(j.path) : null);
       } else {
         throw new Error('Upload: pas d\u2019URL retourn\u00e9e');
