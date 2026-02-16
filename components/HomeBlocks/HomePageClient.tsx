@@ -235,7 +235,7 @@ export default function HomePageClient() {
                 <BlockOrderButtons page="home" blockId="home_intro" />
               </div>
             )}
-            <AnimateInView variant="fadeUp">
+            <AnimateInView variant="fadeUp" viewport={{ once: true, amount: 0 }} initial="visible">
               {intro.title ? (() => { const Tag = (intro as any).titleStyle || "h2"; const fs = (intro as any).titleFontSize; return <Tag className={`${styles.introTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{intro.title}</Tag>; })() : null}
               {intro.subtitle ? (() => { const Tag = (intro as any).subtitleStyle || "p"; const fs = (intro as any).subtitleFontSize; return <Tag className={`${styles.introSubtitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{intro.subtitle}</Tag>; })() : null}
               {intro.html ? <div className={styles.introText} dangerouslySetInnerHTML={{ __html: intro.html }} /> : null}

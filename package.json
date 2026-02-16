@@ -13,6 +13,10 @@
     "start": "next start",
     "lint": "next lint"
   },
+  "browserslist": [
+    "defaults",
+    "not IE 11"
+  ],
   "keywords": [],
   "author": "",
   "license": "ISC",

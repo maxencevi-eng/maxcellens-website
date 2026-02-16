@@ -16,6 +16,8 @@ import { supabaseAdmin } from '../lib/supabaseAdmin';
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.maxcellens.com';
 const baseUrl = siteUrl.replace(/\/$/, '');
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+// Preconnect URL for Supabase
+const supabaseOrigin = supabaseUrl.replace(/^(https?:\/\/[^\/]+).*$/, '$1');
 
 export const metadata: Metadata = {
   title: {
@@ -56,6 +58,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // navigation CSS variables and avoids a visual jump when client JS runs
   let cssVars = '';
   let googleVerificationCode = '';
+  // Preload critical font/style resources if known
+  let fontLinks = '';
+
   try {
     if (supabaseAdmin) {
       const keys = ['navHeight','navGap','navFontFamily','navFontSize','navFontWeight','navTextColor','navHoverTextColor','navBgColor','siteLogoHeight','site_style','google_site_verification'];
@@ -76,6 +81,22 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       if (map.siteLogoHeight) cssVars += `--site-logo-height: ${Number(map.siteLogoHeight)}px;`;
       if (map.siteLogoVersion) cssVars += `--site-logo-version: ${map.siteLogoVersion};`;
       if (map.google_site_verification) googleVerificationCode = map.google_site_verification;
+
+      // Extract fonts from site_style to add preload/preconnect hints or css vars
+      if (map.site_style) {
+        try {
+          const style = JSON.parse(map.site_style);
+          if (style && style.fonts && Array.isArray(style.fonts)) {
+            // Provide font-face definitions server-side if needed, or at least hints
+            // Here we just prepare the font definitions to be injected into cssVars for immediate availability
+            style.fonts.forEach((f: any) => {
+               if (f.name && f.url) {
+                 cssVars += `@font-face { font-family: '${f.name}'; src: url('${f.url}') format('truetype'); font-display: swap; font-weight: ${f.weight || 'normal'}; font-style: ${f.style || 'normal'}; }`;
+               }
+            });
+          }
+        } catch (_) {}
+      }
 
       // If site_style saved, parse and include its CSS variables and @font-face rules
       if (map.site_style) {
@@ -226,7 +247,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // Google Search Console verification (dynamic from DB)
   const googleVerifMeta = googleVerificationCode ? `<meta name="google-site-verification" content="${googleVerificationCode.replace(/"/g, '&quot;')}" />` : '';
   // ensure a viewport meta is present so matchMedia reports expected widths on mobile devices
-  const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${googleVerifMeta}\n${faviconLinks}\n${fontNonBlocking}\n${styleTag}`;
+  // Added preconnect for supabase
+  const preconnectSupabase = supabaseUrl ? `<link rel="preconnect" href="${supabaseUrl.replace(/^(https?:\/\/[^\/]+).*$/, '$1')}" crossorigin="anonymous" />` : '';
+  const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${preconnectSupabase}\n${googleVerifMeta}\n${faviconLinks}\n${fontNonBlocking}\n${styleTag}`;
 
   return (
     <html lang="fr" className="wf-loading" suppressHydrationWarning>
