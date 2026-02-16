@@ -91,7 +91,7 @@ export default function PageLayoutModal({ onClose, onSaved }: { onClose: () => v
   }
 
   return (
-    <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50000 }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ background: '#fff', color: '#000', padding: 24, width: 560, maxWidth: 'calc(100% - 24px)', maxHeight: 'calc(100vh - 24px)', overflowY: 'auto', borderRadius: 12, boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }} onMouseDown={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h3 style={{ margin: 0, fontSize: 20 }}>Dimensions & mise en page</h3>

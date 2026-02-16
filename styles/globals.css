@@ -386,7 +386,7 @@ body.has-admin-sidebar {
   left: 40px; /* align with header content gutter */
   top: 122px;  /* align with sidebar content (100px + 22px padding) */
   transform: none;
-  z-index: 999999;
+  z-index: 9999;
   width: 44px;
   height: 60px; /* augmenté de 44px à 60px */
   border-radius: 8px;
