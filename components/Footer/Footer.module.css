@@ -1,6 +1,9 @@
 .footer {
   margin-top: 3rem;
   font-family: inherit;
+  /* Reserve minimum space to reduce CLS during hydration */
+  min-height: 180px;
+  contain: layout style;
 }
 
 /* Banner image that sits directly above the footer columns — managed via Footer settings
@@ -62,7 +65,14 @@
   margin: 0 0 0.5rem 0;
 }
 
-.logo img { height: var(--site-footer-logo-height, var(--site-logo-height, 36px)); width: auto; vertical-align: middle; margin-right: 8px; }
+.logo img {
+  height: var(--site-footer-logo-height, var(--site-logo-height, 36px));
+  width: auto;
+  vertical-align: middle;
+  margin-right: 8px;
+  /* Prevent CLS: explicit aspect-ratio so browser reserves space before load */
+  aspect-ratio: 160 / 60;
+}
 
 .contact p {
   margin: 0;  

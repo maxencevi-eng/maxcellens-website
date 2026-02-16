@@ -52,6 +52,33 @@
   padding: 4px 8px;
 }
 
+.seoTabs {
+  display: flex;
+  border-bottom: 1px solid #eee;
+  padding: 0 20px;
+}
+
+.seoTab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--muted, #888);
+  transition: color 120ms, border-color 120ms;
+}
+
+.seoTab:hover {
+  color: #333;
+}
+
+.seoTabActive {
+  color: #111;
+  border-bottom-color: #111;
+  font-weight: 600;
+}
+
 .seoPageSelect {
   padding: 12px 20px;
   border-bottom: 1px solid #eee;

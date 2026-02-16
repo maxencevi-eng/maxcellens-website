@@ -65,6 +65,7 @@ export default function SeoCommandCenterModal({
   onClose: () => void;
   onSaved?: () => void;
 }) {
+  const [activeTab, setActiveTab] = useState<'pages' | 'google'>('pages');
   const [slug, setSlug] = useState<PageSeoSlug>("home");
   const [form, setForm] = useState<SeoForm>(emptyForm());
   const [loading, setLoading] = useState(true);
@@ -73,6 +74,47 @@ export default function SeoCommandCenterModal({
   const [success, setSuccess] = useState<string | null>(null);
   const [ogUploading, setOgUploading] = useState(false);
   const [twitterUploading, setTwitterUploading] = useState(false);
+
+  // Google Search Console verification
+  const [googleVerification, setGoogleVerification] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleSaving, setGoogleSaving] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== 'google') return;
+    let mounted = true;
+    setGoogleLoading(true);
+    (async () => {
+      try {
+        const resp = await fetch('/api/admin/site-settings?keys=google_site_verification');
+        if (!resp.ok) return;
+        const j = await resp.json();
+        if (!mounted) return;
+        setGoogleVerification(String(j?.settings?.google_site_verification || ''));
+      } catch {} finally { if (mounted) setGoogleLoading(false); }
+    })();
+    return () => { mounted = false; };
+  }, [activeTab]);
+
+  async function saveGoogle() {
+    setGoogleSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const resp = await fetch('/api/admin/site-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'google_site_verification', value: googleVerification.trim() }),
+      });
+      const j = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(j?.error || 'Erreur');
+      setSuccess('Code de vérification Google enregistré');
+    } catch (e: any) {
+      setError(e?.message || 'Erreur');
+    } finally {
+      setGoogleSaving(false);
+    }
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -255,6 +297,36 @@ export default function SeoCommandCenterModal({
           </button>
         </div>
 
+        <div className={styles.seoTabs}>
+          <button type="button" className={`${styles.seoTab} ${activeTab === 'pages' ? styles.seoTabActive : ''}`} onClick={() => setActiveTab('pages')}>Pages SEO</button>
+          <button type="button" className={`${styles.seoTab} ${activeTab === 'google' ? styles.seoTabActive : ''}`} onClick={() => setActiveTab('google')}>Google Search</button>
+        </div>
+
+        {activeTab === 'google' ? (
+          <div className={styles.seoModalBody}>
+            <section className={styles.seoSection}>
+              <h3>Google Search Console</h3>
+              <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 12px' }}>Collez ici le code <code>content</code> de la balise meta de vérification Google.<br />Exemple : <code>Rvb_UeFw-wxGDaI7pap3W_8bMESV7WsIPNHLO-yW5Rs</code></p>
+              {googleLoading ? <div className={styles.seoLoading}>Chargement…</div> : (
+                <div className={styles.seoField}>
+                  <label className={styles.seoLabel}>Code de vérification (content)</label>
+                  <input
+                    type="text"
+                    value={googleVerification}
+                    onChange={(e) => setGoogleVerification(e.target.value)}
+                    className={styles.seoInput}
+                    placeholder="Rvb_UeFw-wxGDaI7pap3W_8bMESV7WsIPNHLO-yW5Rs"
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>Résultat : <code>&lt;meta name=&quot;google-site-verification&quot; content=&quot;{googleVerification || '…'}&quot; /&gt;</code></div>
+                </div>
+              )}
+            </section>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
+              <button type="button" className="btn-primary" onClick={saveGoogle} disabled={googleSaving}>{googleSaving ? 'Enregistrement…' : 'Enregistrer'}</button>
+            </div>
+          </div>
+        ) : (
+          <>
         <div className={styles.seoPageSelect}>
           <label className={styles.seoLabel}>Page</label>
           <select
@@ -497,17 +569,21 @@ export default function SeoCommandCenterModal({
             </section>
           </div>
         )}
+          </>
+        )}
 
         <div className={styles.seoModalFooter}>
           {error && <div className={styles.seoError}>{error}</div>}
           {success && <div className={styles.seoSuccess}>{success}</div>}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>
+            <button type="button" className="btn-secondary" onClick={onClose} disabled={saving || googleSaving}>
               Fermer
             </button>
-            <button type="button" className="btn-primary" onClick={save} disabled={saving || loading}>
-              {saving ? "Enregistrement…" : "Enregistrer"}
-            </button>
+            {activeTab === 'pages' && (
+              <button type="button" className="btn-primary" onClick={save} disabled={saving || loading}>
+                {saving ? "Enregistrement…" : "Enregistrer"}
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -49,5 +49,14 @@
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.0",
     "typescript": "^5.9.3"
-  }
+  },
+  "browserslist": [
+    "Chrome >= 87",
+    "Firefox >= 78",
+    "Safari >= 14",
+    "Edge >= 88",
+    "iOS >= 14",
+    "not dead",
+    "not op_mini all"
+  ]
 }

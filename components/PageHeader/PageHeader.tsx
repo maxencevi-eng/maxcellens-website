@@ -83,7 +83,7 @@ export default async function PageHeader({ title, subtitle, bgImage, page, bgIma
   return (
     <PageHeaderEntrance>
     <header className={styles.hero}>
-      {preloadUrl ? <link rel="preload" as="image" href={preloadUrl} /> : null}
+      {preloadUrl ? <link rel="preload" as="image" href={preloadUrl} fetchPriority="high" /> : null}
       <div className={styles.containerInner}>
         <div className={styles.heroBox}>
           {/* imageWrap margins are controlled by CSS (40px gutters) */}

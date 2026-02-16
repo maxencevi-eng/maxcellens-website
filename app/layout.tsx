@@ -42,9 +42,7 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  verification: {
-    google: 'HUxwDhQEcv6d8p6oFZvYIA6DX9hKEA8_Sxxn5uVexDI',
-  },
+  // verification is now rendered dynamically from DB (google_site_verification setting)
   icons: supabaseUrl
     ? [
         { url: `${supabaseUrl}/storage/v1/object/public/site-assets/favicons/favicon.webp`, type: 'image/webp', sizes: '32x32' },
@@ -57,9 +55,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // attempt to read server-side site settings so initial HTML contains
   // navigation CSS variables and avoids a visual jump when client JS runs
   let cssVars = '';
+  let googleVerificationCode = '';
   try {
     if (supabaseAdmin) {
-      const keys = ['navHeight','navGap','navFontFamily','navFontSize','navFontWeight','navTextColor','navHoverTextColor','navBgColor','siteLogoHeight','site_style'];
+      const keys = ['navHeight','navGap','navFontFamily','navFontSize','navFontWeight','navTextColor','navHoverTextColor','navBgColor','siteLogoHeight','site_style','google_site_verification'];
       const { data } = await supabaseAdmin.from('site_settings').select('key,value').in('key', keys as any);
       const map: Record<string,string> = {};
       (data || []).forEach((r: any) => { if (r && typeof r.key !== 'undefined') map[r.key] = String(r.value || ''); });
@@ -76,6 +75,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       if (map.navBgColor) cssVars += `--nav-bg-color: ${map.navBgColor};`;
       if (map.siteLogoHeight) cssVars += `--site-logo-height: ${Number(map.siteLogoHeight)}px;`;
       if (map.siteLogoVersion) cssVars += `--site-logo-version: ${map.siteLogoVersion};`;
+      if (map.google_site_verification) googleVerificationCode = map.google_site_verification;
 
       // If site_style saved, parse and include its CSS variables and @font-face rules
       if (map.site_style) {
@@ -220,9 +220,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     : '<link rel="icon" href="/favicon.svg" type="image/svg+xml" />';
 
   // Playfair Display : chargement non bloquant (évite render-blocking, améliore LCP mobile)
-  const fontNonBlocking = `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" media="print" onload="this.media='all'" /><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" /></noscript>`;
+  // Use dns-prefetch instead of preconnect to avoid Lighthouse "unused preconnect" warning
+  // when the font stylesheet loads asynchronously via media="print" trick
+  const fontNonBlocking = `<link rel="dns-prefetch" href="https://fonts.googleapis.com" /><link rel="dns-prefetch" href="https://fonts.gstatic.com" /><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" media="print" onload="this.media='all'" /><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" /></noscript>`;
+  // Google Search Console verification (dynamic from DB)
+  const googleVerifMeta = googleVerificationCode ? `<meta name="google-site-verification" content="${googleVerificationCode.replace(/"/g, '&quot;')}" />` : '';
   // ensure a viewport meta is present so matchMedia reports expected widths on mobile devices
-  const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${faviconLinks}\n${fontNonBlocking}\n${styleTag}`;
+  const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${googleVerifMeta}\n${faviconLinks}\n${fontNonBlocking}\n${styleTag}`;
 
   return (
     <html lang="fr" className="wf-loading" suppressHydrationWarning>
