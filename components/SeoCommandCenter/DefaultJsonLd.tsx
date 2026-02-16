@@ -2,7 +2,7 @@
  * Données structurées JSON-LD par défaut (Organization + WebSite) pour la page d'accueil.
  * Affiché quand page_seo n'a pas de json_ld en base, pour satisfaire les audits SEO (Alyze, Google).
  */
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://maxcellens-website.vercel.app';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.maxcellens.com';
 const baseUrl = siteUrl.replace(/\/$/, '');
 
 const organizationLd = {

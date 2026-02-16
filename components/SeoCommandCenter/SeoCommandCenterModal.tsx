@@ -101,14 +101,26 @@ export default function SeoCommandCenterModal({
     setError(null);
     setSuccess(null);
     try {
+      let value = googleVerification.trim();
+      // If user pasted full <meta> tag, extract content
+      if (value.includes('<meta') && value.includes('content=')) {
+        const match = value.match(/content=["']([^"']+)["']/i);
+        if (match && match[1]) {
+          value = match[1];
+        }
+      }
+      
       const resp = await fetch('/api/admin/site-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'google_site_verification', value: googleVerification.trim() }),
+        body: JSON.stringify({ key: 'google_site_verification', value }),
       });
-      const j = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(j?.error || 'Erreur');
+      if (!resp.ok) {
+        const j = await resp.json().catch(() => ({}));
+        throw new Error(j?.error || 'Erreur lors de l\'enregistrement');
+      }
       setSuccess('Code de vérification Google enregistré');
+      setGoogleVerification(value);
     } catch (e: any) {
       setError(e?.message || 'Erreur');
     } finally {

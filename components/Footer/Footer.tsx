@@ -266,7 +266,7 @@ export default function Footer() {
       <h3 className={styles.logo}>
         <Link href="/" aria-label="Accueil" data-analytics-id="Logo-pied de page">
           {!imgError ? (
-            <Image src={logoSrc} alt="Maxcellens" width={160} height={60} onError={() => setImgError(true)} onLoad={() => setImgError(false)} style={{ maxWidth: '100%', height: 'auto', aspectRatio: '160/60' }} />
+            <Image src={logoSrc} alt="Maxcellens" width={160} height={60} onError={() => setImgError(true)} onLoad={() => setImgError(false)} style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain', objectPosition: 'left' }} />
           ) : (
             <span style={{ fontWeight: 800, color: 'var(--fg)' }}>Maxcellens</span>
           )}
@@ -322,7 +322,7 @@ export default function Footer() {
           <div
             className={styles.bannerInner}
             style={{
-              height: footerBannerHeight ? `${footerBannerHeight}px` : undefined
+              height: (footerBannerHeight && !isMobileFooter) ? `${footerBannerHeight}px` : undefined
             }}
           >
             <img

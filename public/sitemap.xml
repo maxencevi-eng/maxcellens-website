@@ -1,39 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://maxcellens-website.vercel.app/</loc>
+    <loc>https://www.maxcellens.com/</loc>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://maxcellens-website.vercel.app/contact</loc>
+    <loc>https://www.maxcellens.com/contact</loc>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://maxcellens-website.vercel.app/portrait</loc>
+    <loc>https://www.maxcellens.com/portrait</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://maxcellens-website.vercel.app/corporate</loc>
+    <loc>https://www.maxcellens.com/corporate</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://maxcellens-website.vercel.app/evenement</loc>
+    <loc>https://www.maxcellens.com/evenement</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://maxcellens-website.vercel.app/realisation</loc>
+    <loc>https://www.maxcellens.com/realisation</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://maxcellens-website.vercel.app/animation</loc>
+    <loc>https://www.maxcellens.com/animation</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://maxcellens-website.vercel.app/galeries</loc>
+    <loc>https://www.maxcellens.com/galeries</loc>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://maxcellens-website.vercel.app/galleries</loc>
+    <loc>https://www.maxcellens.com/galleries</loc>
     <priority>0.7</priority>
   </url>
 </urlset>

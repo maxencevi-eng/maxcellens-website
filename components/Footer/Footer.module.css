@@ -35,8 +35,19 @@
 }
 
 @media (max-width: 640px) {
-  .bannerInner { width: calc(100% - 30px); margin: 0 15px; height: 110px; }
-  .bannerImg { object-position: center top; }
+  .bannerInner { 
+    width: calc(100% - 30px); 
+    margin: 0 15px; 
+    height: auto; 
+    min-height: 0;
+    display: block;
+  }
+  .bannerImg { 
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
+  }
 }
 
 .top {

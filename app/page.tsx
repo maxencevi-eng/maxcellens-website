@@ -5,7 +5,7 @@ import { getPageSeo, buildMetadataFromSeo } from '../lib/pageSeo';
 import JsonLdScript from '../components/SeoCommandCenter/JsonLdScript';
 import DefaultJsonLd from '../components/SeoCommandCenter/DefaultJsonLd';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://maxcellens-website.vercel.app';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.maxcellens.com';
 const baseUrl = siteUrl.replace(/\/$/, '');
 
 export async function generateMetadata(): Promise<Metadata> {
