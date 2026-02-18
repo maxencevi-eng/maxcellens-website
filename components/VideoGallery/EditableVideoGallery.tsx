@@ -256,51 +256,52 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
               </button>
               {settingsOpen && (
                 <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {/* Padding */}
+                  {/* Padding — Vertical & Horizontal */}
                   <fieldset style={{ border: '1px solid #eee', borderRadius: 8, padding: '10px 14px', margin: 0 }}>
-                    <legend style={{ fontSize: 13, fontWeight: 600, color: '#555', padding: '0 6px' }}>Marge intérieure (px)</legend>
-                    <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>Bureau (desktop)</div>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
-                      <label style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 100px' }}>
-                        <span style={{ fontSize: 11, color: '#888' }}>Vertical</span>
+                    <legend style={{ fontSize: 13, fontWeight: 600, color: '#555', padding: '0 6px' }}>Marge intérieure</legend>
+                    <div style={{ fontSize: 12, color: '#888', fontWeight: 600, marginBottom: 10 }}>📱 Bureau (desktop)</div>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 140px' }}>
+                        <span style={{ fontSize: 11, color: '#666' }}>Vertical</span>
                         <input
-                          type="number" min={0} max={200}
-                          value={gallerySettings.paddingVDesktop ?? 24}
-                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingVDesktop: Number(e.target.value) || 0 })}
-                          style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
+                          value={gallerySettings.paddingVDesktop || ''}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingVDesktop: e.target.value })}
+                          placeholder="ex: 1.5rem ou 24px"
+                          style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}
                         />
                       </label>
-                      <label style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 100px' }}>
-                        <span style={{ fontSize: 11, color: '#888' }}>Horizontal</span>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 140px' }}>
+                        <span style={{ fontSize: 11, color: '#666' }}>Horizontal</span>
                         <input
-                          type="number" min={0} max={200}
-                          value={gallerySettings.paddingHDesktop ?? 0}
-                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingHDesktop: Number(e.target.value) || 0 })}
-                          style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
+                          value={gallerySettings.paddingHDesktop || ''}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingHDesktop: e.target.value })}
+                          placeholder="ex: 0 ou 2rem"
+                          style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}
                         />
                       </label>
                     </div>
-                    <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>Mobile</div>
+                    <div style={{ fontSize: 12, color: '#888', fontWeight: 600, marginBottom: 10 }}>📱 Mobile</div>
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      <label style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 100px' }}>
-                        <span style={{ fontSize: 11, color: '#888' }}>Vertical</span>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 140px' }}>
+                        <span style={{ fontSize: 11, color: '#666' }}>Vertical</span>
                         <input
-                          type="number" min={0} max={200}
-                          value={gallerySettings.paddingVMobile ?? 16}
-                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingVMobile: Number(e.target.value) || 0 })}
-                          style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
+                          value={gallerySettings.paddingVMobile || ''}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingVMobile: e.target.value })}
+                          placeholder="ex: 1rem ou 16px"
+                          style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}
                         />
                       </label>
-                      <label style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 100px' }}>
-                        <span style={{ fontSize: 11, color: '#888' }}>Horizontal</span>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 140px' }}>
+                        <span style={{ fontSize: 11, color: '#666' }}>Horizontal</span>
                         <input
-                          type="number" min={0} max={200}
-                          value={gallerySettings.paddingHMobile ?? 0}
-                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingHMobile: Number(e.target.value) || 0 })}
-                          style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
+                          value={gallerySettings.paddingHMobile || ''}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingHMobile: e.target.value })}
+                          placeholder="ex: 0 ou 0.5rem"
+                          style={{ padding: 8, borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}
                         />
                       </label>
                     </div>
+                    <div style={{ fontSize: 10, color: '#999', marginTop: 8, fontStyle: 'italic' }}>Accepte: px, rem, em, %, vh, vw, etc.</div>
                   </fieldset>
 
                   {/* Gap + Border Radius */}

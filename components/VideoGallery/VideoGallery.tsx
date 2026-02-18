@@ -8,14 +8,10 @@ import styles from './VideoGallery.module.css';
 const VideoLightbox = dynamic(() => import('./VideoLightbox').then((m) => ({ default: m.default })), { ssr: false });
 
 export type GallerySettings = {
-  /** @deprecated Use paddingVDesktop/paddingHDesktop instead */
-  paddingDesktop?: string;
-  /** @deprecated Use paddingVMobile/paddingHMobile instead */
-  paddingMobile?: string;
-  paddingVDesktop?: number;
-  paddingHDesktop?: number;
-  paddingVMobile?: number;
-  paddingHMobile?: number;
+  paddingVDesktop?: string;  // e.g., '1.5rem' or '24px'
+  paddingHDesktop?: string;  // e.g., '0' or '2rem'
+  paddingVMobile?: string;   // e.g., '1rem' or '16px'
+  paddingHMobile?: string;   // e.g., '0' or '0.5rem'
   gap?: number;
   borderRadius?: number;
   shadow?: 'none' | 'light' | 'medium' | 'heavy';
@@ -213,14 +209,15 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
 
   let globalIndex = 0;
 
-  // Build padding values: prefer numeric fields, fall back to legacy string fields
-  const pVD = gs.paddingVDesktop ?? 24;
-  const pHD = gs.paddingHDesktop ?? 0;
+  // Build padding from vertical/horizontal components
+  const pVD = gs.paddingVDesktop || '1.5rem';
+  const pHD = gs.paddingHDesktop || '0';
+  const desktopPadding = `${pVD} ${pHD}`;
+  
   const pVM = gs.paddingVMobile;
   const pHM = gs.paddingHMobile;
-  const desktopPadding = gs.paddingDesktop || `${pVD}px ${pHD}px`;
-  const hasMobilePadding = pVM !== undefined || pHM !== undefined || !!gs.paddingMobile;
-  const mobilePadding = gs.paddingMobile || (hasMobilePadding ? `${pVM ?? pVD}px ${pHM ?? pHD}px` : undefined);
+  const hasMobilePadding = pVM !== undefined || pHM !== undefined;
+  const mobilePadding = hasMobilePadding ? `${pVM || pVD} ${pHM || pHD}` : undefined;
 
   return (
     <div
