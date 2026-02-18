@@ -30,7 +30,6 @@ export async function GET(req: Request) {
     }
 
     const map: Record<string, string> = {};
-    console.log('site-settings GET keys:', keys);
     try {
       // Query PostgREST and filter server-side
       const resp = await fetch(`${supabaseUrl.replace(/\/+$/,'')}/rest/v1/site_settings?select=key,value`, {

@@ -38,7 +38,6 @@ export async function POST(req: Request) {
       if (prevPath && prevPath !== storedPath) {
         const rem = await supabaseAdmin.storage.from('medias').remove([prevPath]);
         if (rem?.error) console.warn('Failed to delete old header image', rem.error, prevPath);
-        else console.info('Deleted previous header image', prevPath);
       }
     } catch (e) { console.warn('Error deleting previous header image', e); }
 

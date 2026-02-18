@@ -5,15 +5,14 @@ import { usePathname } from 'next/navigation';
 
 /**
  * InitialLoadSplash – Full-screen overlay that covers the page while
- * critical above-the-fold elements load (navbar, logo, header image).
+ * critical above-the-fold elements fully render (fonts loaded, CSS variables
+ * applied, nav bar styled, logo at correct size, icons visible).
  *
- * Works on:
- *   - Initial page load (hard refresh)
- *   - Client-side SPA navigations (route changes)
+ * Waits for the `site-ready` class on <html> (set by the font-loader script
+ * in layout.tsx after fonts are loaded + a settling delay).
+ * Also waits for header images (logo) to decode.
  *
- * Strategy: only wait for the header bar (nav, logo, icons) to be painted,
- * then reveal. The rest of the page loads underneath while the user
- * starts reading the header area.
+ * Works on initial load AND client-side SPA navigations.
  */
 export default function InitialLoadSplash() {
   const [visible, setVisible] = useState(true);
@@ -51,15 +50,31 @@ export default function InitialLoadSplash() {
     let cancelled = false;
 
     async function waitForCritical() {
-      // 1. Wait for fonts (fast if cached)
-      try {
-        await document.fonts.ready;
-      } catch { /* ignore */ }
+      const html = document.documentElement;
+
+      // 1. Wait for `site-ready` class (fonts loaded + CSS vars applied + settling delay)
+      //    The font-loader script in layout.tsx adds this class after fonts.ready + 180ms delay.
+      if (!html.classList.contains('site-ready')) {
+        await new Promise<void>((resolve) => {
+          // Poll for the class (MutationObserver on classList)
+          const observer = new MutationObserver(() => {
+            if (html.classList.contains('site-ready') || html.classList.contains('wf-loaded') || html.classList.contains('wf-failed')) {
+              observer.disconnect();
+              resolve();
+            }
+          });
+          observer.observe(html, { attributes: true, attributeFilter: ['class'] });
+          // Also resolve if already set (race)
+          if (html.classList.contains('site-ready') || html.classList.contains('wf-loaded') || html.classList.contains('wf-failed')) {
+            observer.disconnect();
+            resolve();
+          }
+        });
+      }
 
       if (cancelled) return;
 
-      // 2. Wait only for critical header-area images (logo, nav icons)
-      //    These are small and should load very fast.
+      // 2. Wait for header images (logo, icons) to be fully decoded
       try {
         const headerEl = document.querySelector('header');
         if (headerEl) {
@@ -71,8 +86,7 @@ export default function InitialLoadSplash() {
                   img.complete ? Promise.resolve() : img.decode().catch(() => {})
                 )
               ),
-              // Don't wait more than 600ms for header images
-              new Promise<void>((r) => setTimeout(r, 600)),
+              new Promise<void>((r) => setTimeout(r, 800)),
             ]);
           }
         }
@@ -80,16 +94,16 @@ export default function InitialLoadSplash() {
 
       if (cancelled) return;
 
-      // 3. Minimal paint frame
-      await new Promise<void>((r) => requestAnimationFrame(() => r()));
+      // 3. Wait one extra animation frame so the browser paints the styled header
+      await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
       if (!cancelled) reveal();
     }
 
-    // Hard safety: reveal after 1.2s max
+    // Hard safety: reveal after 2s max
     const safetyTimer = setTimeout(() => {
       if (!cancelled) reveal();
-    }, 1200);
+    }, 2000);
 
     waitForCritical();
 

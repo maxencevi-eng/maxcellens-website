@@ -89,17 +89,9 @@ export async function POST(req: Request) {
     }
 
     const { data, error: uploadError } = await supabaseAdmin.storage.from('site-assets').upload(path, buf, { contentType: (file as any).type, upsert: true });
-    console.log('upload result', { data, uploadError });
     if (uploadError) {
-      console.error('upload error', uploadError);
       return NextResponse.json({ url: null, uploadOk: false, uploadError: String(uploadError) }, { status: 500 });
     }
-
-    // list objects in icons/ to help diagnose presence
-    try {
-      const { data: listData, error: listErr } = await supabaseAdmin.storage.from('site-assets').list('icons');
-      console.log('post-upload list icons:', { listErr, listData });
-    } catch (e) { console.warn('list icons failed', e); }
 
     // getPublicUrl may return different shapes depending on supabase client version
     const gp = supabaseAdmin.storage.from('site-assets').getPublicUrl(path);
@@ -116,8 +108,6 @@ export async function POST(req: Request) {
       console.warn('getPublicUrl did not return a value, using fallbackPublicUrl', { fallbackPublicUrl });
       publicUrl = fallbackPublicUrl;
     }
-
-    console.log('getPublicUrl result', { path, publicUrl, raw: gp });
 
     // verify the public URL is accessible
     let publicUrlOk = false;

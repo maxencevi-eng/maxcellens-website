@@ -86,8 +86,6 @@ export async function POST(req: Request) {
     // instead (see guidance below). Only include `image_path` when it is
     // explicitly provided by the caller.
 
-    console.info('hero upsert payload', payload);
-
     // read the previous row so we can delete previous files after successful upsert
     let prevPaths: string[] = [];
     try {
@@ -192,7 +190,6 @@ export async function POST(req: Request) {
         try {
           const rem = await supabaseAdmin.storage.from('medias').remove(toRemove);
           if (rem?.error) console.warn('Failed to remove previous hero files', rem.error, toRemove);
-          else console.info('Removed previous hero files', toRemove);
         } catch (e) { console.warn('Error removing previous hero files', e); }
       }
     } catch (_) {}
@@ -205,8 +202,6 @@ export async function POST(req: Request) {
       if (del?.error) {
         // not fatal, just log
         console.warn('Failed to remove hero fallback from site_settings', del.error);
-      } else {
-        console.info('Removed hero fallback from site_settings', storeKey);
       }
     } catch (e) { console.warn('Error removing hero site_settings fallback', e); }
 

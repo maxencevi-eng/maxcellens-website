@@ -82,7 +82,6 @@ export async function POST(req: Request) {
         console.warn('delete-hero-media: remove error', rem.error);
         return NextResponse.json({ error: rem.error, removed: [] }, { status: 500 });
       }
-      console.info('delete-hero-media: removed', toDelete);
       return NextResponse.json({ ok: true, removed: toDelete });
     } catch (e) {
       console.warn('delete-hero-media: unexpected remove error', e);

@@ -7,10 +7,25 @@ import styles from './VideoGallery.module.css';
 
 const VideoLightbox = dynamic(() => import('./VideoLightbox').then((m) => ({ default: m.default })), { ssr: false });
 
-type VideoItem = { url: string; columns?: 1 | 2 | 3 | 4; cover?: { url: string; path?: string } };
+export type GallerySettings = {
+  paddingDesktop?: string;
+  paddingMobile?: string;
+  gap?: number;
+  borderRadius?: number;
+  shadow?: 'none' | 'light' | 'medium' | 'heavy';
+  glossy?: boolean;
+  showTitle?: boolean;
+  titleFontSize?: number;
+  titleColor?: string;
+  titleBg?: string;
+  titlePosition?: 'bottom' | 'top' | 'center';
+};
+
+type VideoItem = { url: string; columns?: 1 | 2 | 3 | 4; cover?: { url: string; path?: string }; title?: string };
 type Props = {
   videos?: Array<string | VideoItem>;
   className?: string;
+  gallerySettings?: GallerySettings;
 };
 
 function getYouTubeId(url: string) {
@@ -64,7 +79,15 @@ function getInlineThumb(label: string) {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export default function VideoGallery({ videos, className }: Props) {
+const SHADOW_PRESETS: Record<string, string> = {
+  none: 'none',
+  light: '0 2px 8px rgba(0,0,0,0.15)',
+  medium: '0 4px 16px rgba(0,0,0,0.25)',
+  heavy: '0 8px 30px rgba(0,0,0,0.4)',
+};
+
+export default function VideoGallery({ videos, className, gallerySettings }: Props) {
+  const gs = gallerySettings || {};
   const raw = videos ?? [];
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -77,7 +100,7 @@ export default function VideoGallery({ videos, className }: Props) {
       const obj = it as VideoItem;
       const cols = Number(obj.columns) || 1;
       const columns = cols >= 1 && cols <= 4 ? (cols as 1 | 2 | 3 | 4) : 1;
-      return { url: String(obj.url || ''), columns, cover: obj.cover };
+      return { url: String(obj.url || ''), columns, cover: obj.cover, title: obj.title };
     });
   }, [raw]);
 
@@ -133,16 +156,78 @@ export default function VideoGallery({ videos, className }: Props) {
 
   if (raw.length === 0) return null;
 
+  const gap = gs.gap ?? 12;
+  const borderRadius = gs.borderRadius ?? 0;
+  const shadowVal = SHADOW_PRESETS[gs.shadow || 'none'] || 'none';
+  const glossy = gs.glossy ?? false;
+  const showTitle = gs.showTitle ?? false;
+  const titleFontSize = gs.titleFontSize ?? 14;
+  const titleColor = gs.titleColor || '#ffffff';
+  const titleBg = gs.titleBg || 'rgba(0,0,0,0.6)';
+  const titlePosition = gs.titlePosition || 'bottom';
+
+  const cardStyle: React.CSSProperties = {
+    position: 'relative',
+    display: 'block',
+    width: '100%',
+    border: 'none',
+    cursor: 'pointer',
+    background: '#000',
+    overflow: 'hidden',
+    borderRadius: borderRadius > 0 ? borderRadius : undefined,
+    boxShadow: shadowVal !== 'none' ? shadowVal : undefined,
+  };
+
+  const titlePositionStyle: React.CSSProperties =
+    titlePosition === 'top'
+      ? { top: 0, left: 0, right: 0 }
+      : titlePosition === 'center'
+        ? { top: '50%', left: 0, right: 0, transform: 'translateY(-50%)' }
+        : { bottom: 0, left: 0, right: 0 };
+
+  function renderTitleOverlay(title?: string) {
+    if (!showTitle || !title) return null;
+    return (
+      <span
+        className={styles.titleOverlay}
+        style={{
+          position: 'absolute',
+          ...titlePositionStyle,
+          padding: '6px 10px',
+          fontSize: titleFontSize,
+          color: titleColor,
+          background: titleBg,
+          textAlign: 'center',
+          zIndex: 2,
+          pointerEvents: 'none',
+        }}
+      >
+        {title}
+      </span>
+    );
+  }
+
+  function renderGlossyOverlay() {
+    if (!glossy) return null;
+    return <span className={styles.glossyOverlay} />;
+  }
+
   let globalIndex = 0;
 
   return (
-    <div className={className ?? ''} style={{ padding: '1.5rem 0' }}>
+    <div
+      className={`${className ?? ''} ${styles.galleryResponsive}`}
+      style={{
+        padding: gs.paddingDesktop || '1.5rem 0',
+        '--gallery-padding-mobile': gs.paddingMobile || undefined,
+      } as React.CSSProperties}
+      data-padding-mobile={gs.paddingMobile ? '' : undefined}
+    >
       {rows.map((r, idx) => {
         if (Array.isArray(r) && r.length > 1) {
           const count = r.length;
-          const gap = 12;
           return (
-            <div key={idx} style={{ display: 'flex', gap, marginBottom: '2rem' }}>
+            <div key={idx} style={{ display: 'flex', gap, marginBottom: '2rem', justifyContent: 'center' }}>
               {r.map((item, j) => {
                 const id = getYouTubeId(item.url);
                 const isShort = isYouTubeShort(item.url);
@@ -158,7 +243,7 @@ export default function VideoGallery({ videos, className }: Props) {
                       onClick={() => openLightbox(myIndex)}
                       className={styles.cardButton}
                       aria-label="Vidéo galerie"
-                      style={{ position: 'relative', paddingTop, display: 'block', width: '100%', border: 'none', cursor: 'pointer', background: '#000', overflow: 'hidden' }}
+                      style={{ ...cardStyle, paddingTop }}
                     >
                       <img
                         src={coverSrc}
@@ -174,6 +259,8 @@ export default function VideoGallery({ videos, className }: Props) {
                           }
                         }}
                       />
+                      {renderGlossyOverlay()}
+                      {renderTitleOverlay(item.title)}
                       <span
                         aria-hidden
                         className={styles.playOverlay}
@@ -211,14 +298,14 @@ export default function VideoGallery({ videos, className }: Props) {
         if (count > 1) {
           const width = `${100 / count}%`;
           return (
-            <div key={idx} style={{ display: 'flex', justifyContent: 'flex-start', gap: 12, marginBottom: '2rem' }}>
+            <div key={idx} style={{ display: 'flex', justifyContent: 'center', gap, marginBottom: '2rem' }}>
               <div style={{ width }}>
                 <button
                   type="button"
                   onClick={() => openLightbox(myIndex)}
                   className={styles.cardButton}
                   aria-label="Vidéo galerie"
-                  style={{ position: 'relative', paddingTop, display: 'block', width: '100%', border: 'none', cursor: 'pointer', background: '#000', overflow: 'hidden' }}
+                  style={{ ...cardStyle, paddingTop }}
                 >
                   <img
                     src={coverSrc}
@@ -234,6 +321,8 @@ export default function VideoGallery({ videos, className }: Props) {
                       }
                     }}
                   />
+                  {renderGlossyOverlay()}
+                  {renderTitleOverlay(item.title)}
                   <span
                     aria-hidden
                     className={styles.playOverlay}
@@ -261,7 +350,7 @@ export default function VideoGallery({ videos, className }: Props) {
               onClick={() => openLightbox(myIndex)}
               className={styles.cardButton}
               aria-label="Vidéo galerie"
-              style={{ position: 'relative', paddingTop, display: 'block', width: '100%', border: 'none', cursor: 'pointer', background: '#000', overflow: 'hidden' }}
+              style={{ ...cardStyle, paddingTop }}
             >
               <img
                 src={coverSrc}
@@ -277,6 +366,8 @@ export default function VideoGallery({ videos, className }: Props) {
                   }
                 }}
               />
+              {renderGlossyOverlay()}
+              {renderTitleOverlay(item.title)}
               <span
                 aria-hidden
                 className={styles.playOverlay}

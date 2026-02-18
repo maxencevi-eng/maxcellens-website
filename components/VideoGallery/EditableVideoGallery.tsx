@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import VideoGallery from './VideoGallery';
+import type { GallerySettings } from './VideoGallery';
 import styles from './VideoGallery.module.css';
 
-type VideoItem = { url: string; columns?: 1 | 2 | 3 | 4; cover?: { url: string; path?: string } };
+type VideoItem = { url: string; columns?: 1 | 2 | 3 | 4; cover?: { url: string; path?: string }; title?: string };
 type Props = {
   keyName: string;
   initial?: Array<string | VideoItem>;
@@ -18,7 +19,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
     const o = it as VideoItem;
     const cols = Number(o.columns) || 1;
     const columns: 1 | 2 | 3 | 4 = (cols >= 1 && cols <= 4) ? (cols as 1 | 2 | 3 | 4) : 1;
-    return { url: String(o.url || ''), columns, cover: o.cover };
+    return { url: String(o.url || ''), columns, cover: o.cover, title: o.title };
   });
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [hasFetched, setHasFetched] = useState(false);
@@ -30,7 +31,12 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [editColumns, setEditColumns] = useState<1 | 2 | 3 | 4>(1);
+  const [editTitle, setEditTitle] = useState<string>('');
   const [uploadingCoverIndex, setUploadingCoverIndex] = useState<number | null>(null);
+  const [gallerySettings, setGallerySettings] = useState<GallerySettings>({});
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const settingsKey = `${keyName}_gallery_settings`;
 
   function extractYouTubeId(url: string) {
     try {
@@ -55,7 +61,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
     setHasFetched(false);
     async function load() {
       try {
-        const resp = await fetch(`/api/admin/site-settings?keys=${encodeURIComponent(keyName)}`);
+        const resp = await fetch(`/api/admin/site-settings?keys=${encodeURIComponent(`${keyName},${settingsKey}`)}`);
         if (!mounted) return;
         if (!resp.ok) {
           setHasFetched(true);
@@ -64,6 +70,16 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
         }
         const j = await resp.json().catch(() => ({}));
         const s = j?.settings || {};
+
+        // Load gallery settings
+        const rawSettings = s[settingsKey];
+        if (rawSettings) {
+          try {
+            const parsed = JSON.parse(rawSettings);
+            if (parsed && typeof parsed === 'object') setGallerySettings(parsed);
+          } catch (_) {}
+        }
+
         const raw = s[keyName];
         if (!mounted) return;
         setHasFetched(true);
@@ -80,7 +96,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                 const cols = Number(el.columns) || 1;
                 const columns: 1 | 2 | 3 | 4 = (cols >= 1 && cols <= 4) ? (cols as 1 | 2 | 3 | 4) : 1;
                 const cover = el.cover && (el.cover.url || el.cover.path) ? { url: String(el.cover.url || el.cover.path), path: el.cover.path } : undefined;
-                return { url: String(el.url || ''), columns, cover };
+                return { url: String(el.url || ''), columns, cover, title: el.title || undefined };
               }
               return { url: String(el || ''), columns: 1 as 1 | 2 | 3 | 4 };
             }).filter((x: any) => x.url) as VideoItem[];
@@ -164,10 +180,16 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
   async function save() {
     setSaving(true);
     try {
-      const list = videos.map((v) => ({ url: v.url, columns: v.columns || 1, cover: v.cover || undefined }));
+      const list = videos.map((v) => ({ url: v.url, columns: v.columns || 1, cover: v.cover || undefined, title: v.title || undefined }));
       const payload = { key: keyName, value: JSON.stringify(list) };
       const resp = await fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!resp.ok) throw new Error('Save failed');
+
+      // Save gallery settings
+      const settingsPayload = { key: settingsKey, value: JSON.stringify(gallerySettings) };
+      const resp2 = await fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settingsPayload) });
+      if (!resp2.ok) throw new Error('Save settings failed');
+
       try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: keyName, value: JSON.stringify(list) } })); } catch (_) {}
       setEditing(false);
     } catch (err) {
@@ -196,7 +218,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
         </div>
       ) : null}
 
-      <VideoGallery videos={hasFetched ? videos : []} className={undefined} />
+      <VideoGallery videos={hasFetched ? videos : []} className={undefined} gallerySettings={gallerySettings} />
 
       {editing ? (
         <div className={`modal-overlay-mobile ${styles.modalOverlay}`} style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', zIndex: 9999, padding: 16 }}>
@@ -220,6 +242,162 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSingleUrl(); } }}
               />
               <button className="btn-primary" onClick={addSingleUrl} style={{ whiteSpace: 'nowrap' }}>Ajouter</button>
+            </div>
+
+            {/* Gallery Settings Panel */}
+            <div style={{ marginTop: 16, border: '1px solid #e6e6e6', borderRadius: 10, overflow: 'hidden' }}>
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(!settingsOpen)}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f8f8f8', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: '#333' }}
+              >
+                <span>⚙ Style et mise en page</span>
+                <span style={{ transform: settingsOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>▼</span>
+              </button>
+              {settingsOpen && (
+                <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {/* Padding */}
+                  <fieldset style={{ border: '1px solid #eee', borderRadius: 8, padding: '10px 14px', margin: 0 }}>
+                    <legend style={{ fontSize: 13, fontWeight: 600, color: '#555', padding: '0 6px' }}>Marge intérieure</legend>
+                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 180px' }}>
+                        <span style={{ fontSize: 12, color: '#666' }}>Bureau (desktop)</span>
+                        <input
+                          value={gallerySettings.paddingDesktop || ''}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingDesktop: e.target.value })}
+                          placeholder="ex: 1.5rem 2rem"
+                          style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 180px' }}>
+                        <span style={{ fontSize: 12, color: '#666' }}>Mobile</span>
+                        <input
+                          value={gallerySettings.paddingMobile || ''}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingMobile: e.target.value })}
+                          placeholder="ex: 1rem 0.5rem"
+                          style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}
+                        />
+                      </label>
+                    </div>
+                  </fieldset>
+
+                  {/* Gap + Border Radius */}
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 120px' }}>
+                      <span style={{ fontSize: 12, color: '#666' }}>Espacement (px)</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={60}
+                        value={gallerySettings.gap ?? 12}
+                        onChange={(e) => setGallerySettings({ ...gallerySettings, gap: Number(e.target.value) || 0 })}
+                        style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
+                      />
+                    </label>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 120px' }}>
+                      <span style={{ fontSize: 12, color: '#666' }}>Arrondi des bords (px)</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={50}
+                        value={gallerySettings.borderRadius ?? 0}
+                        onChange={(e) => setGallerySettings({ ...gallerySettings, borderRadius: Number(e.target.value) || 0 })}
+                        style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Shadow */}
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <span style={{ fontSize: 12, color: '#666' }}>Ombre portée</span>
+                    <select
+                      value={gallerySettings.shadow || 'none'}
+                      onChange={(e) => setGallerySettings({ ...gallerySettings, shadow: e.target.value as GallerySettings['shadow'] })}
+                      style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, maxWidth: 220 }}
+                    >
+                      <option value="none">Aucune</option>
+                      <option value="light">Légère</option>
+                      <option value="medium">Moyenne</option>
+                      <option value="heavy">Forte</option>
+                    </select>
+                  </label>
+
+                  {/* Glossy */}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={gallerySettings.glossy ?? false}
+                      onChange={(e) => setGallerySettings({ ...gallerySettings, glossy: e.target.checked })}
+                    />
+                    <span style={{ fontSize: 13 }}>Effet glossy (reflet lumineux)</span>
+                  </label>
+
+                  {/* Title Settings */}
+                  <fieldset style={{ border: '1px solid #eee', borderRadius: 8, padding: '10px 14px', margin: 0 }}>
+                    <legend style={{ fontSize: 13, fontWeight: 600, color: '#555', padding: '0 6px' }}>Titres des vidéos</legend>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 10 }}>
+                      <input
+                        type="checkbox"
+                        checked={gallerySettings.showTitle ?? false}
+                        onChange={(e) => setGallerySettings({ ...gallerySettings, showTitle: e.target.checked })}
+                      />
+                      <span style={{ fontSize: 13 }}>Afficher les titres</span>
+                    </label>
+                    {(gallerySettings.showTitle) && (
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 100px' }}>
+                          <span style={{ fontSize: 11, color: '#888' }}>Position</span>
+                          <select
+                            value={gallerySettings.titlePosition || 'bottom'}
+                            onChange={(e) => setGallerySettings({ ...gallerySettings, titlePosition: e.target.value as GallerySettings['titlePosition'] })}
+                            style={{ padding: 5, borderRadius: 6, border: '1px solid #ddd', fontSize: 12 }}
+                          >
+                            <option value="top">Haut</option>
+                            <option value="center">Centre</option>
+                            <option value="bottom">Bas</option>
+                          </select>
+                        </label>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '0 0 80px' }}>
+                          <span style={{ fontSize: 11, color: '#888' }}>Taille (px)</span>
+                          <input
+                            type="number"
+                            min={8}
+                            max={40}
+                            value={gallerySettings.titleFontSize ?? 14}
+                            onChange={(e) => setGallerySettings({ ...gallerySettings, titleFontSize: Number(e.target.value) || 14 })}
+                            style={{ padding: 5, borderRadius: 6, border: '1px solid #ddd', fontSize: 12, width: '100%' }}
+                          />
+                        </label>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <span style={{ fontSize: 11, color: '#888' }}>Couleur texte</span>
+                          <input
+                            type="color"
+                            value={gallerySettings.titleColor || '#ffffff'}
+                            onChange={(e) => setGallerySettings({ ...gallerySettings, titleColor: e.target.value })}
+                            style={{ width: 36, height: 28, padding: 0, border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer' }}
+                          />
+                        </label>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <span style={{ fontSize: 11, color: '#888' }}>Fond titre</span>
+                          <input
+                            type="color"
+                            value={gallerySettings.titleBg || '#000000'}
+                            onChange={(e) => {
+                              // Convert hex to rgba with opacity
+                              const hex = e.target.value;
+                              const r = parseInt(hex.slice(1, 3), 16);
+                              const g = parseInt(hex.slice(3, 5), 16);
+                              const b = parseInt(hex.slice(5, 7), 16);
+                              setGallerySettings({ ...gallerySettings, titleBg: `rgba(${r},${g},${b},0.6)` });
+                            }}
+                            style={{ width: 36, height: 28, padding: 0, border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer' }}
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </fieldset>
+                </div>
+              )}
             </div>
 
             <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: '#fafafa', border: '1px solid #f0f0f0' }}>
@@ -304,25 +482,29 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                     <div className={styles.modalItemContent} style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {editIndex === i ? (
                         <div className={styles.modalItemEditRow} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                          <input value={editValue} onChange={(e) => setEditValue(e.target.value)} style={{ flex: '1 1 200px', minWidth: 0, padding: 6, borderRadius: 6, border: '1px solid #ddd' }} />
+                          <input value={editValue} onChange={(e) => setEditValue(e.target.value)} placeholder="URL YouTube" style={{ flex: '1 1 200px', minWidth: 0, padding: 6, borderRadius: 6, border: '1px solid #ddd' }} />
+                          <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Titre (optionnel)" style={{ flex: '1 1 140px', minWidth: 0, padding: 6, borderRadius: 6, border: '1px solid #ddd' }} />
                           <select value={editColumns} onChange={(e) => setEditColumns(Number(e.target.value) as 1 | 2 | 3 | 4)} style={{ padding: 6, borderRadius: 6 }}>
                             <option value={1}>1 colonne</option>
                             <option value={2}>2 colonnes</option>
                             <option value={3}>3 colonnes</option>
                             <option value={4}>4 colonnes</option>
                           </select>
-                          <button className="btn-primary" onClick={() => { const val = editValue.trim(); if (val) { setVideos(prev => { const copy = prev.slice(); copy[i] = { url: val, columns: editColumns }; return copy; }); setEditIndex(null); } }} style={{ padding: '6px 8px' }}>Save</button>
+                          <button className="btn-primary" onClick={() => { const val = editValue.trim(); if (val) { setVideos(prev => { const copy = prev.slice(); copy[i] = { ...copy[i], url: val, columns: editColumns, title: editTitle.trim() || undefined }; return copy; }); setEditIndex(null); } }} style={{ padding: '6px 8px' }}>Save</button>
                           <button className="btn-secondary" onClick={() => setEditIndex(null)} style={{ padding: '6px 8px' }}>Cancel</button>
                         </div>
                         ) : (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, minWidth: 0 }}>
-                          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.url}</div>
+                          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {v.url}
+                            {v.title ? <span style={{ marginLeft: 8, color: '#999', fontSize: 11 }}>"{v.title}"</span> : null}
+                          </div>
                           <div style={{ color: '#666', fontSize: 12, flexShrink: 0 }}>{v.columns === 1 ? '1-col' : v.columns === 2 ? '2-col' : v.columns === 3 ? '3-col' : '4-col'}</div>
                         </div>
                       )}
                     </div>
                     <div className={styles.modalItemActions} style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                      <button className="btn-secondary" onClick={() => { setEditIndex(i); setEditValue(v.url); setEditColumns(v.columns === 1 ? 1 : v.columns === 2 ? 2 : v.columns === 3 ? 3 : 4); }} style={{ padding: '6px 8px' }}>Éditer</button>
+                      <button className="btn-secondary" onClick={() => { setEditIndex(i); setEditValue(v.url); setEditColumns(v.columns === 1 ? 1 : v.columns === 2 ? 2 : v.columns === 3 ? 3 : 4); setEditTitle(v.title || ''); }} style={{ padding: '6px 8px' }}>Éditer</button>
                       <button className="btn-secondary" onClick={() => { if (i > 0) move(i, i - 1); }} disabled={i === 0} style={{ padding: '6px 8px' }}>▲</button>
                       <button className="btn-secondary" onClick={() => { if (i < videos.length - 1) move(i, i + 1); }} disabled={i === videos.length - 1} style={{ padding: '6px 8px' }}>▼</button>
                       <button className="btn-secondary" onClick={() => removeAt(i)} style={{ padding: '6px 8px' }}>Suppr</button>
