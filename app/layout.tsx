@@ -8,6 +8,7 @@ import SiteStyleProvider from '../components/SiteStyle/SiteStyleProvider';
 import DisableImageSave from '../components/DisableImageSave/DisableImageSave';
 import PageLayoutProvider from '../components/PageLayoutModal/PageLayoutProvider';
 import AnalyticsCollector from '../components/Analytics/AnalyticsCollector';
+import InitialLoadSplash from '../components/InitialLoadSplash/InitialLoadSplash';
 import { BlockVisibilityProvider } from '../components/BlockVisibility';
 import { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -255,6 +256,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <html lang="fr" className="wf-loading" suppressHydrationWarning>
       <head suppressHydrationWarning dangerouslySetInnerHTML={{ __html: headContent }} />
       <body>
+        <InitialLoadSplash />
         <SiteStyleProvider>
           <PageLayoutProvider>
             <BlockVisibilityProvider>

@@ -53,9 +53,22 @@ export async function GET(req: Request) {
     const periodParam = url.searchParams.get('period') as PeriodMode | null;
     const period: PeriodMode = periodParam === 'current_month' || periodParam === 'last_month' ? periodParam : 'days';
     const days = Math.min(90, Math.max(1, parseInt(url.searchParams.get('days') || String(DEFAULT_DAYS), 10) || DEFAULT_DAYS));
-    const { since, until } = getDateRange(period, days);
+
+    // Support single-day filter via ?date=YYYY-MM-DD
+    const dateParam = url.searchParams.get('date');
+    let since: Date, until: Date;
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      since = new Date(dateParam + 'T00:00:00.000Z');
+      until = new Date(dateParam + 'T23:59:59.999Z');
+    } else {
+      ({ since, until } = getDateRange(period, days));
+    }
     const sinceStr = since.toISOString();
     const untilStr = until.toISOString();
+
+    // Support visitor hash filter via ?visitorHashes=hash1,hash2,...
+    const visitorHashesParam = url.searchParams.get('visitorHashes');
+    const requestedVisitorHashes = visitorHashesParam ? visitorHashesParam.split(',').filter(Boolean) : null;
 
     const { data: filterRow } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'analytics_ip_filter').maybeSingle();
     const filter = parseIpFilter((filterRow as any)?.value);
@@ -200,6 +213,11 @@ export async function GET(req: Request) {
       sessions = sessions.filter((s) => s.ip_hash && includeHashes.includes(s.ip_hash));
     }
 
+    // 4. Filtre par visiteurs sélectionnés (temporaire, via query param)
+    if (requestedVisitorHashes?.length) {
+      sessions = sessions.filter((s) => s.ip_hash && requestedVisitorHashes.includes(s.ip_hash));
+    }
+
     let visitors: { ip: string | null; ip_hash: string | null; country: string; city: string; sessionCount: number }[] = [];
     try {
       const visitorSelectWithBot = 'session_id, ip_hash, ip, country, city, user_agent, is_bot, human_validated';
@@ -279,6 +297,10 @@ export async function GET(req: Request) {
         // Si filtre "inclure uniquement" : ne garder que les visiteurs dont l'IP/hash est dans la liste
         if (includeHashes?.length) {
           visitors = visitors.filter((v) => v.ip_hash && includeHashes.includes(v.ip_hash));
+        }
+        // Filtre par visiteurs sélectionnés (temporaire)
+        if (requestedVisitorHashes?.length) {
+          visitors = visitors.filter((v) => v.ip_hash && requestedVisitorHashes.includes(v.ip_hash));
         }
       }
     } catch (_) {}

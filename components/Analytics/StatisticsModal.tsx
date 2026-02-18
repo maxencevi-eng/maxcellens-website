@@ -69,8 +69,16 @@ export default function StatisticsModal({
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  type PeriodValue = '7d' | '30d' | '90d' | 'current_month' | 'last_month';
+  type PeriodValue = '7d' | '30d' | '90d' | 'current_month' | 'last_month' | 'day';
+  type TimeMode = 'period' | 'day';
+  const [timeMode, setTimeMode] = useState<TimeMode>('period');
   const [period, setPeriod] = useState<PeriodValue>('30d');
+  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [visitorFilterHashes, setVisitorFilterHashes] = useState<string[] | null>(null);
+  const [visitorFilterActive, setVisitorFilterActive] = useState(false);
+
+  // Derived: effective period used for API
+  const effectivePeriod: PeriodValue = timeMode === 'day' ? 'day' : period;
   const [ipFilter, setIpFilter] = useState<IpFilter>(defaultFilter);
   const [filterDirty, setFilterDirty] = useState(false);
   const [savingFilter, setSavingFilter] = useState(false);
@@ -105,11 +113,16 @@ export default function StatisticsModal({
         return;
       }
       const params = new URLSearchParams();
-      if (period === 'current_month' || period === 'last_month') {
-        params.set('period', period);
+      if (effectivePeriod === 'day') {
+        params.set('date', selectedDate);
+      } else if (effectivePeriod === 'current_month' || effectivePeriod === 'last_month') {
+        params.set('period', effectivePeriod);
       } else {
-        const daysNum = period === '7d' ? 7 : period === '90d' ? 90 : 30;
+        const daysNum = effectivePeriod === '7d' ? 7 : effectivePeriod === '90d' ? 90 : 30;
         params.set('days', String(daysNum));
+      }
+      if (visitorFilterHashes?.length) {
+        params.set('visitorHashes', visitorFilterHashes.join(','));
       }
       const res = await fetch(`/api/admin/analytics?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -144,7 +157,7 @@ export default function StatisticsModal({
     } finally {
       setLoading(false);
     }
-  }, [period]);
+  }, [effectivePeriod, selectedDate, visitorFilterHashes]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -505,18 +518,36 @@ export default function StatisticsModal({
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid #e5e7eb' }}>
           <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 700, color: '#111827' }}>Statistiques</h2>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value as PeriodValue)}
-              style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 500 }}
+              value={timeMode}
+              onChange={(e) => setTimeMode(e.target.value as TimeMode)}
+              style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${timeMode === 'day' ? '#2563eb' : '#cbd5e1'}`, color: timeMode === 'day' ? '#2563eb' : '#1e293b', fontWeight: 600, background: timeMode === 'day' ? '#eff6ff' : '#fff' }}
             >
-              <option value="7d">7 jours</option>
-              <option value="30d">30 jours</option>
-              <option value="90d">90 jours</option>
-              <option value="current_month">Mois en cours</option>
-              <option value="last_month">Mois dernier</option>
+              <option value="period">Période</option>
+              <option value="day">Journée</option>
             </select>
+            {timeMode === 'day' ? (
+              <input
+                type="date"
+                value={selectedDate}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #2563eb', color: '#1e293b', fontWeight: 500, fontSize: 14, background: '#eff6ff' }}
+              />
+            ) : (
+              <select
+                value={period}
+                onChange={(e) => setPeriod(e.target.value as PeriodValue)}
+                style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 500 }}
+              >
+                <option value="7d">7 jours</option>
+                <option value="30d">30 jours</option>
+                <option value="90d">90 jours</option>
+                <option value="current_month">Mois en cours</option>
+                <option value="last_month">Mois dernier</option>
+              </select>
+            )}
             <button
               type="button"
               onClick={onClose}
@@ -963,6 +994,30 @@ export default function StatisticsModal({
                       </p>
                       {visitorsData.length > 0 && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const hashes = Array.from(selectedVisitorHashes);
+                              if (hashes.length === 0) return;
+                              setVisitorFilterHashes(hashes);
+                              setVisitorFilterActive(true);
+                            }}
+                            disabled={selectedVisitorHashes.size === 0}
+                            style={{ padding: '6px 14px', fontSize: 13, background: selectedVisitorHashes.size ? '#2563eb' : '#f1f5f9', color: selectedVisitorHashes.size ? '#fff' : '#94a3b8', border: 'none', borderRadius: 6, cursor: selectedVisitorHashes.size ? 'pointer' : 'not-allowed', fontWeight: 600 }}
+                          >
+                            Filtrer ({selectedVisitorHashes.size})
+                          </button>
+                          {visitorFilterActive && (
+                            <span style={{ fontSize: 12, color: '#2563eb', fontWeight: 600, background: '#eff6ff', padding: '4px 10px', borderRadius: 6, border: '1px solid #bfdbfe', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              Filtre actif ({visitorFilterHashes?.length ?? 0})
+                              <button
+                                type="button"
+                                onClick={() => { setVisitorFilterHashes(null); setVisitorFilterActive(false); }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontWeight: 700, fontSize: 13, lineHeight: 1, padding: 0 }}
+                                title="Retirer le filtre visiteurs"
+                              >✕</button>
+                            </span>
+                          )}
                           <button
                             type="button"
                             onClick={handleSelectSameLocation}
