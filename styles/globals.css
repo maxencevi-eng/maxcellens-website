@@ -764,6 +764,11 @@ html:not(.site-ready) [data-site-nav="menu"] {
   visibility: hidden !important;
   opacity: 0 !important;
 }
+/* Also hide nav menu until visibility settings are loaded (data-nav-ready) */
+[data-site-nav="menu"]:not([data-nav-ready]) {
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
 html.site-ready [data-site-social="icons"],
 html.site-ready [data-site-nav="menu"] {
   visibility: visible;

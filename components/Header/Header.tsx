@@ -197,6 +197,7 @@ export default function Header() {
   // start with an empty object on both server and client to avoid hydration mismatch
   const [navVisible, setNavVisible] = useState<{ [k: string]: boolean }>({});
   const [navMobileVisible, setNavMobileVisible] = useState<{ [k: string]: boolean }>({});
+  const [navReady, setNavReady] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -218,13 +219,18 @@ export default function Header() {
           } else {
             try { const l = localStorage.getItem('navMobileMenuVisible'); if (l) setNavMobileVisible(JSON.parse(l)); } catch(_){}
           }
+          if (!mounted) return;
+          setNavReady(true);
         } else {
           try { const l = localStorage.getItem('navMenuVisible'); if (l) setNavVisible(JSON.parse(l)); } catch(_){}
           try { const l2 = localStorage.getItem('navMobileMenuVisible'); if (l2) setNavMobileVisible(JSON.parse(l2)); } catch(_){}
+          if (!mounted) return;
+          setNavReady(true);
         }
       } catch (_) {
         try { const l = localStorage.getItem('navMenuVisible'); if (l) setNavVisible(JSON.parse(l)); } catch(_){}
         try { const l2 = localStorage.getItem('navMobileMenuVisible'); if (l2) setNavMobileVisible(JSON.parse(l2)); } catch(_){}
+        if (mounted) setNavReady(true);
       }
     }
     loadVisible();
@@ -339,6 +345,7 @@ export default function Header() {
             <nav
               data-site-nav="menu"
               data-measure="nav"
+              data-nav-ready={navReady ? '' : undefined}
               data-mobile-drawer={open && isMobile ? 'true' : undefined}
               className={`${styles.nav} ${open ? styles.open : ''} ${headerVisible ? '' : styles.hiddenUntilReady}`}
               aria-label="Main navigation"

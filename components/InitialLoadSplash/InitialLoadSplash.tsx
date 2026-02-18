@@ -74,7 +74,24 @@ export default function InitialLoadSplash() {
 
       if (cancelled) return;
 
-      // 2. Wait for header images (logo, icons) to be fully decoded
+      // 2. Wait for nav menu visibility data to load (data-nav-ready attribute)
+      const nav = document.querySelector('[data-site-nav="menu"]');
+      if (nav && !nav.hasAttribute('data-nav-ready')) {
+        await Promise.race([
+          new Promise<void>((resolve) => {
+            const obs = new MutationObserver(() => {
+              if (nav.hasAttribute('data-nav-ready')) { obs.disconnect(); resolve(); }
+            });
+            obs.observe(nav, { attributes: true, attributeFilter: ['data-nav-ready'] });
+            if (nav.hasAttribute('data-nav-ready')) { obs.disconnect(); resolve(); }
+          }),
+          new Promise<void>((r) => setTimeout(r, 600)),
+        ]);
+      }
+
+      if (cancelled) return;
+
+      // 3. Wait for header images (logo, icons) to be fully decoded
       try {
         const headerEl = document.querySelector('header');
         if (headerEl) {
@@ -94,7 +111,7 @@ export default function InitialLoadSplash() {
 
       if (cancelled) return;
 
-      // 3. Wait one extra animation frame so the browser paints the styled header
+      // 4. Wait one extra animation frame so the browser paints the styled header
       await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
       if (!cancelled) reveal();

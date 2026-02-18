@@ -258,24 +258,46 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                 <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {/* Padding */}
                   <fieldset style={{ border: '1px solid #eee', borderRadius: 8, padding: '10px 14px', margin: 0 }}>
-                    <legend style={{ fontSize: 13, fontWeight: 600, color: '#555', padding: '0 6px' }}>Marge intérieure</legend>
-                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 180px' }}>
-                        <span style={{ fontSize: 12, color: '#666' }}>Bureau (desktop)</span>
+                    <legend style={{ fontSize: 13, fontWeight: 600, color: '#555', padding: '0 6px' }}>Marge intérieure (px)</legend>
+                    <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>Bureau (desktop)</div>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 100px' }}>
+                        <span style={{ fontSize: 11, color: '#888' }}>Vertical</span>
                         <input
-                          value={gallerySettings.paddingDesktop || ''}
-                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingDesktop: e.target.value })}
-                          placeholder="ex: 1.5rem 2rem"
-                          style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}
+                          type="number" min={0} max={200}
+                          value={gallerySettings.paddingVDesktop ?? 24}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingVDesktop: Number(e.target.value) || 0 })}
+                          style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
                         />
                       </label>
-                      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 180px' }}>
-                        <span style={{ fontSize: 12, color: '#666' }}>Mobile</span>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 100px' }}>
+                        <span style={{ fontSize: 11, color: '#888' }}>Horizontal</span>
                         <input
-                          value={gallerySettings.paddingMobile || ''}
-                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingMobile: e.target.value })}
-                          placeholder="ex: 1rem 0.5rem"
-                          style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}
+                          type="number" min={0} max={200}
+                          value={gallerySettings.paddingHDesktop ?? 0}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingHDesktop: Number(e.target.value) || 0 })}
+                          style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
+                        />
+                      </label>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>Mobile</div>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 100px' }}>
+                        <span style={{ fontSize: 11, color: '#888' }}>Vertical</span>
+                        <input
+                          type="number" min={0} max={200}
+                          value={gallerySettings.paddingVMobile ?? 16}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingVMobile: Number(e.target.value) || 0 })}
+                          style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: '1 1 100px' }}>
+                        <span style={{ fontSize: 11, color: '#888' }}>Horizontal</span>
+                        <input
+                          type="number" min={0} max={200}
+                          value={gallerySettings.paddingHMobile ?? 0}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, paddingHMobile: Number(e.target.value) || 0 })}
+                          style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
                         />
                       </label>
                     </div>
@@ -307,44 +329,46 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                     </label>
                   </div>
 
-                  {/* Shadow */}
-                  <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <span style={{ fontSize: 12, color: '#666' }}>Ombre portée</span>
-                    <select
-                      value={gallerySettings.shadow || 'none'}
-                      onChange={(e) => setGallerySettings({ ...gallerySettings, shadow: e.target.value as GallerySettings['shadow'] })}
-                      style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, maxWidth: 220 }}
-                    >
-                      <option value="none">Aucune</option>
-                      <option value="light">Légère</option>
-                      <option value="medium">Moyenne</option>
-                      <option value="heavy">Forte</option>
-                    </select>
-                  </label>
+                  {/* Shadow + Glossy + Titles — same row on desktop */}
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 140px' }}>
+                      <span style={{ fontSize: 12, color: '#666' }}>Ombre portée</span>
+                      <select
+                        value={gallerySettings.shadow || 'none'}
+                        onChange={(e) => setGallerySettings({ ...gallerySettings, shadow: e.target.value as GallerySettings['shadow'] })}
+                        style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}
+                      >
+                        <option value="none">Aucune</option>
+                        <option value="light">Légère</option>
+                        <option value="medium">Moyenne</option>
+                        <option value="heavy">Forte</option>
+                      </select>
+                    </label>
 
-                  {/* Glossy */}
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={gallerySettings.glossy ?? false}
-                      onChange={(e) => setGallerySettings({ ...gallerySettings, glossy: e.target.checked })}
-                    />
-                    <span style={{ fontSize: 13 }}>Effet glossy (reflet lumineux)</span>
-                  </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', flex: '0 0 auto', paddingTop: 22 }}>
+                      <input
+                        type="checkbox"
+                        checked={gallerySettings.glossy ?? false}
+                        onChange={(e) => setGallerySettings({ ...gallerySettings, glossy: e.target.checked })}
+                      />
+                      <span style={{ fontSize: 13 }}>Glossy</span>
+                    </label>
 
-                  {/* Title Settings */}
-                  <fieldset style={{ border: '1px solid #eee', borderRadius: 8, padding: '10px 14px', margin: 0 }}>
-                    <legend style={{ fontSize: 13, fontWeight: 600, color: '#555', padding: '0 6px' }}>Titres des vidéos</legend>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 10 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', flex: '0 0 auto', paddingTop: 22 }}>
                       <input
                         type="checkbox"
                         checked={gallerySettings.showTitle ?? false}
                         onChange={(e) => setGallerySettings({ ...gallerySettings, showTitle: e.target.checked })}
                       />
-                      <span style={{ fontSize: 13 }}>Afficher les titres</span>
+                      <span style={{ fontSize: 13 }}>Titres</span>
                     </label>
-                    {(gallerySettings.showTitle) && (
-                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  </div>
+
+                  {/* Title detail settings — visible only when titles enabled */}
+                  {(gallerySettings.showTitle) && (
+                  <fieldset style={{ border: '1px solid #eee', borderRadius: 8, padding: '10px 14px', margin: 0 }}>
+                    <legend style={{ fontSize: 13, fontWeight: 600, color: '#555', padding: '0 6px' }}>Réglages titres</legend>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                         <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 100px' }}>
                           <span style={{ fontSize: 11, color: '#888' }}>Position</span>
                           <select
@@ -394,8 +418,8 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                           />
                         </label>
                       </div>
-                    )}
                   </fieldset>
+                  )}
                 </div>
               )}
             </div>

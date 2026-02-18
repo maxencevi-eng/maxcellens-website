@@ -8,8 +8,14 @@ import styles from './VideoGallery.module.css';
 const VideoLightbox = dynamic(() => import('./VideoLightbox').then((m) => ({ default: m.default })), { ssr: false });
 
 export type GallerySettings = {
+  /** @deprecated Use paddingVDesktop/paddingHDesktop instead */
   paddingDesktop?: string;
+  /** @deprecated Use paddingVMobile/paddingHMobile instead */
   paddingMobile?: string;
+  paddingVDesktop?: number;
+  paddingHDesktop?: number;
+  paddingVMobile?: number;
+  paddingHMobile?: number;
   gap?: number;
   borderRadius?: number;
   shadow?: 'none' | 'light' | 'medium' | 'heavy';
@@ -110,20 +116,13 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
       const cur = list[i];
       const n = cur.columns || 1;
       if (n > 1) {
+        // Group ALL consecutive videos with the same columns value
         const group: VideoItem[] = [cur];
-        let j = i + 1;
-        while (group.length < n && j < list.length) {
-          if ((list[j].columns || 1) === n) {
-            group.push(list[j]);
-          } else break;
-          j++;
+        while (i + 1 < list.length && (list[i + 1].columns || 1) === n) {
+          i++;
+          group.push(list[i]);
         }
-        if (group.length === n) {
-          out.push(group);
-          i += group.length - 1;
-        } else {
-          out.push(cur);
-        }
+        out.push(group);
       } else {
         out.push(cur);
       }
@@ -214,30 +213,39 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
 
   let globalIndex = 0;
 
+  // Build padding values: prefer numeric fields, fall back to legacy string fields
+  const pVD = gs.paddingVDesktop ?? 24;
+  const pHD = gs.paddingHDesktop ?? 0;
+  const pVM = gs.paddingVMobile;
+  const pHM = gs.paddingHMobile;
+  const desktopPadding = gs.paddingDesktop || `${pVD}px ${pHD}px`;
+  const hasMobilePadding = pVM !== undefined || pHM !== undefined || !!gs.paddingMobile;
+  const mobilePadding = gs.paddingMobile || (hasMobilePadding ? `${pVM ?? pVD}px ${pHM ?? pHD}px` : undefined);
+
   return (
     <div
       className={`${className ?? ''} ${styles.galleryResponsive}`}
       style={{
-        padding: gs.paddingDesktop || '1.5rem 0',
-        '--gallery-padding-mobile': gs.paddingMobile || undefined,
+        padding: desktopPadding,
+        '--gallery-padding-mobile': mobilePadding || undefined,
       } as React.CSSProperties}
-      data-padding-mobile={gs.paddingMobile ? '' : undefined}
+      data-padding-mobile={hasMobilePadding ? '' : undefined}
     >
       {rows.map((r, idx) => {
-        if (Array.isArray(r) && r.length > 1) {
-          const count = r.length;
+        if (Array.isArray(r)) {
+          const colCount = r[0].columns || 2;
+          const itemWidth = `calc(${100 / colCount}% - ${gap * (colCount - 1) / colCount}px)`;
           return (
-            <div key={idx} style={{ display: 'flex', gap, marginBottom: '2rem', justifyContent: 'center' }}>
+            <div key={idx} style={{ display: 'flex', flexWrap: 'wrap', gap, marginBottom: '2rem', justifyContent: 'center' }}>
               {r.map((item, j) => {
                 const id = getYouTubeId(item.url);
                 const isShort = isYouTubeShort(item.url);
                 const paddingTop = isShort ? '177.78%' : '56.25%';
                 const coverSrc = item.cover?.url || (id ? getYouTubeThumb(id) : getInlineThumb("Vidéo"));
-                const widthPercent = `${100 / count}%`;
                 const myIndex = globalIndex++;
-                if (!item.url && !item.cover?.url) return <div key={j} style={{ width: widthPercent }} />;
+                if (!item.url && !item.cover?.url) return <div key={j} style={{ width: itemWidth }} />;
                 return (
-                  <div key={j} style={{ width: widthPercent }}>
+                  <div key={j} style={{ width: itemWidth }}>
                     <button
                       type="button"
                       onClick={() => openLightbox(myIndex)}
@@ -284,7 +292,6 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
         }
 
         const item = r as VideoItem;
-        const count = item.columns || 1;
         const id = getYouTubeId(item.url);
         const isShort = isYouTubeShort(item.url);
         const paddingTop = isShort ? '177.78%' : '56.25%';
@@ -293,54 +300,6 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
 
         if (!item.url && !item.cover?.url) {
           return <div key={idx} style={{ marginBottom: '2rem' }} />;
-        }
-
-        if (count > 1) {
-          const width = `${100 / count}%`;
-          return (
-            <div key={idx} style={{ display: 'flex', justifyContent: 'center', gap, marginBottom: '2rem' }}>
-              <div style={{ width }}>
-                <button
-                  type="button"
-                  onClick={() => openLightbox(myIndex)}
-                  className={styles.cardButton}
-                  aria-label="Vidéo galerie"
-                  style={{ ...cardStyle, paddingTop }}
-                >
-                  <img
-                    src={coverSrc}
-                    alt=""
-                    loading="lazy"
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                    onError={(e) => {
-                      if (!item.cover?.url) {
-                        const img = e.currentTarget as HTMLImageElement;
-                        const next = getNextThumbFallback(img.src || '', id);
-                        img.src = next;
-                        if (next.startsWith('data:')) img.onerror = null;
-                      }
-                    }}
-                  />
-                  {renderGlossyOverlay()}
-                  {renderTitleOverlay(item.title)}
-                  <span
-                    aria-hidden
-                    className={styles.playOverlay}
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'rgba(0,0,0,0.2)',
-                    }}
-                  >
-                    <span className={styles.playIcon} />
-                  </span>
-                </button>
-              </div>
-            </div>
-          );
         }
 
         return (
