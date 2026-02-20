@@ -36,9 +36,10 @@ export async function POST(req: Request) {
       // For contact photos, footer banners, and animation images: no strict limit, just compress with high quality.
       const MAX_BYTES = (folder === 'contact' || folder === 'footer-banner' || folder === 'animation') ? 10 * 1024 * 1024 : 5 * 1024; // 10 MB soft target or 5 KB
 
-      // helper: try different sizes and quality to get best compression
+      // helper: try different sizes and quality to get best compression that fits
       async function generateWebpWithinSize(input: Buffer, maxBytes: number) {
         // Use more generous sizes/qualities for contact photos, footer banners, and animation images to keep them visually good
+        // Order: Highest quality to lowest quality
         const widthCandidates = (folder === 'contact' || folder === 'footer-banner' || folder === 'animation')
           ? [2400, 2000, 1600, 1200, 900, 800, 600, 400, 200, 100]
           : [1600, 1200, 800, 400, 200, 100, 64, 48, 32, 24];
@@ -49,15 +50,19 @@ export async function POST(req: Request) {
         let bestBuf: Buffer | null = null;
         let bestSize = Infinity;
 
+        // Iterate from highest quality to lowest
         for (const w of widthCandidates) {
           for (const q of qualityCandidates) {
             try {
-              const buf = await sharp(input).resize({ width: w }).webp({ quality: q }).toBuffer();
+              const buf = await sharp(input).resize({ width: w, withoutEnlargement: true }).webp({ quality: q }).toBuffer();
               const size = buf.length;
-              if (size <= maxBytes && size < bestSize) {
-                bestSize = size;
-                bestBuf = buf;
+
+              // If it fits within the limit, this is the best quality we can get (since we iterate high->low). Return immediately.
+              if (size <= maxBytes) {
+                return buf;
               }
+
+              // Otherwise keep track of the smallest file found so far (fallback if none fit)
               if (size < bestSize) {
                 bestSize = size;
                 bestBuf = buf;
@@ -68,7 +73,7 @@ export async function POST(req: Request) {
           }
         }
 
-        // Always return the best compression found, no strict size limit
+        // Return the best fallback found (smallest size) if none fit the strict limit
         return bestBuf ?? Buffer.from([]);
       }
 
