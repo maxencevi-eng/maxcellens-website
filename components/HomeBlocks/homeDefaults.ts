@@ -46,6 +46,8 @@ export type HomeStatsData = { items: HomeStatItem[]; backgroundColor?: string };
 
 export type FocusPoint = { x: number; y: number };
 
+export type AnimationImageRatio = '4:1' | '21:9' | '16:9' | '4:3' | '3:2' | '4:5' | '1:1';
+
 export type HomePortraitSlide = {
   title: string;
   text: string;
@@ -89,6 +91,8 @@ export type HomeCadreurBlockData = {
   titleFontSize?: number;
   html?: string;
   image?: { url: string; path?: string; focus?: FocusPoint } | null;
+  /** Ratio d'image pour le bloc Cadreur. `AnimationImageRatio` utilisé pour compatibilité */
+  imageRatio?: AnimationImageRatio;
   backgroundColor?: string;
   /** Up to 3 featured project videos */
   videos?: CadreurVideoItem[];
@@ -102,8 +106,6 @@ export type HomeQuoteItem = { text: string; author: string; role?: string; autho
 export type HomeQuoteData = { quotes: HomeQuoteItem[]; carouselSpeed?: number; backgroundColor?: string };
 
 export type HomeCtaData = { title: string; titleStyle?: TitleStyleKey; titleFontSize?: number; buttonLabel: string; buttonHref: string; buttonStyle?: '1' | '2'; backgroundColor?: string };
-
-export type AnimationImageRatio = '4:1' | '21:9' | '16:9' | '3:2' | '4:5' | '1:1';
 
 export type HomeAnimationBlockData = {
   blockTitle?: string;

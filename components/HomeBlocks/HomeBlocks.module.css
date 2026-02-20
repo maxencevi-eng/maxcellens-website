@@ -593,7 +593,8 @@
 }
 
 @media (min-width: 900px) {
-  .cadreurGrid { grid-template-columns: 1fr 1fr; gap: 3rem; }
+  .cadreurGrid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .cadreurContent { justify-self: end; text-align: right; }
 }
 
 .cadreurContent { max-width: 540px; }

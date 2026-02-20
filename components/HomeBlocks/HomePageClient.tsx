@@ -102,6 +102,7 @@ const IMAGE_RATIO_MAP: Record<string, string> = {
   '4:1': '4/1',
   '21:9': '21/9',
   '16:9': '16/9',
+  '4:3': '4/3',
   '3:2': '3/2',
   '4:5': '4/5',
   '1:1': '1/1',
@@ -512,7 +513,7 @@ export default function HomePageClient() {
                 {cadreurBlock.title ? (() => { const Tag = (cadreurBlock as any).titleStyle || "h2"; const fs = (cadreurBlock as any).titleFontSize; return <Tag className={`${styles.cadreurTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{cadreurBlock.title}</Tag>; })() : null}
                 {cadreurBlock.html ? <div className={styles.cadreurText} dangerouslySetInnerHTML={{ __html: cadreurBlock.html }} /> : null}
               </AnimateInView>
-              <AnimateInView variant="slideFromRight" className={styles.cadreurMedia}>
+              <AnimateInView variant="slideFromRight" className={styles.cadreurMedia} style={cadreurBlock.imageRatio && IMAGE_RATIO_MAP[cadreurBlock.imageRatio] ? { aspectRatio: IMAGE_RATIO_MAP[cadreurBlock.imageRatio] } : undefined}>
                 {cadreurBlock.image?.url ? (
                   <Image
                     src={cadreurBlock.image.url}
@@ -521,14 +522,18 @@ export default function HomePageClient() {
                     width={800}
                     height={600}
                     sizes="(max-width: 768px) 100vw, 800px"
-                    style={
-                      (cadreurBlock.image as any)?.focus?.x != null
+                    style={{
+                      ...(
+                        (cadreurBlock.image as any)?.focus?.x != null
                         ? { objectPosition: `${(cadreurBlock.image as any).focus.x}% ${(cadreurBlock.image as any).focus.y}%` }
-                        : undefined
+                        : {}
+                      ),
+                      ...(cadreurBlock.imageRatio ? { height: '100%' } : {})
+                    }
                     }
                   />
                 ) : (
-                  <div className={styles.cadreurImage} style={{ background: "rgba(0,0,0,0.06)", minHeight: 200 }} />
+                  <div className={styles.cadreurImage} style={{ background: "rgba(0,0,0,0.06)", minHeight: 200, ...(cadreurBlock.imageRatio ? { height: '100%' } : {}) }} />
                 )}
               </AnimateInView>
             </div>

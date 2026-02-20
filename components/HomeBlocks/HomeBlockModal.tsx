@@ -161,6 +161,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [cadreurTitleFontSize, setCadreurTitleFontSize] = useState<number | "">(28);
   const [cadreurHtml, setCadreurHtml] = useState("");
   const [cadreurImage, setCadreurImage] = useState<{ url: string; path?: string; focus?: { x: number; y: number } } | null>(null);
+  const [cadreurImageRatio, setCadreurImageRatio] = useState<AnimationImageRatio>("4:3" as any); // Using "4:3" or undefined as default if not set, but AnimationImageRatio doesn't obey "4:3". Let's check AnimationImageRatio values.
   const [cadreurBackgroundColor, setCadreurBackgroundColor] = useState("");
   // Cadreur videos
   const [cadreurVideos, setCadreurVideos] = useState<CadreurVideoItem[]>([
@@ -287,6 +288,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setCadreurTitleFontSize(getFontSize(d.titleFontSize));
       setCadreurHtml(d.html ?? "");
       setCadreurImage(d.image ? { ...d.image, focus: (d.image as any).focus ?? { x: 50, y: 50 } } : null);
+      setCadreurImageRatio(d.imageRatio ?? "4:3");
       setCadreurBackgroundColor(d.backgroundColor ?? "");
       // Videos
       if (Array.isArray(d.videos) && d.videos.length) {
@@ -521,7 +523,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         payload = { blockTitle: portraitBlockTitle, blockTitleStyle: portraitBlockTitleStyle, blockTitleFontSize: portraitBlockTitleFontSize !== "" ? clampTitleFontSize(portraitBlockTitleFontSize as number) : undefined, ctaLabel: portraitCtaLabel, ctaHref: portraitCtaHref, ctaButtonStyle: portraitCtaButtonStyle, carouselSpeed: portraitCarouselSpeed, slides: portraitSlides.map((s) => ({ ...s, titleFontSize: s.titleFontSize != null && s.titleFontSize >= TITLE_FONT_SIZE_MIN && s.titleFontSize <= TITLE_FONT_SIZE_MAX ? s.titleFontSize : undefined })), backgroundColor: portraitBackgroundColor?.trim() || undefined };
         break;
       case "home_cadreur":
-        payload = { title: cadreurTitle, titleStyle: cadreurTitleStyle, titleFontSize: cadreurTitleFontSize !== "" ? clampTitleFontSize(cadreurTitleFontSize as number) : undefined, html: cadreurHtml, image: cadreurImage, backgroundColor: cadreurBackgroundColor?.trim() || undefined, videos: cadreurVideos, videoSettings: cadreurVideoSettings, videosSectionTitle: cadreurVideosSectionTitle.trim() || undefined, videosSectionTitleAlign: cadreurVideosSectionTitleAlign };
+        payload = { title: cadreurTitle, titleStyle: cadreurTitleStyle, titleFontSize: cadreurTitleFontSize !== "" ? clampTitleFontSize(cadreurTitleFontSize as number) : undefined, html: cadreurHtml, image: cadreurImage, imageRatio: cadreurImageRatio, backgroundColor: cadreurBackgroundColor?.trim() || undefined, videos: cadreurVideos, videoSettings: cadreurVideoSettings, videosSectionTitle: cadreurVideosSectionTitle.trim() || undefined, videosSectionTitleAlign: cadreurVideosSectionTitleAlign };
         break;
       case "home_animation": {
         const rawBg = animationBackgroundColor?.trim() || "";
@@ -994,6 +996,19 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 ) : null}
               </div>
 
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Ratio de l'image</label>
+                <select value={cadreurImageRatio} onChange={(e) => setCadreurImageRatio(e.target.value as AnimationImageRatio)} style={{ ...inputStyle, width: 160 }}>
+                  <option value="4:1">4:1 (panoramique)</option>
+                  <option value="21:9">21:9 (cinéma)</option>
+                  <option value="16:9">16:9 (standard)</option>
+                  <option value="4:3">4:3 (photo)</option>
+                  <option value="3:2">3:2</option>
+                  <option value="4:5">4:5 (portrait)</option>
+                  <option value="1:1">1:1 (carré)</option>
+                </select>
+              </div>
+
               {/* ----- Projets vidéos mis en avant ----- */}
               <div style={{ marginTop: 20, marginBottom: 12, fontWeight: 600, fontSize: 14, borderTop: "1px solid #eee", paddingTop: 16 }}>Vidéos projets mis en avant (jusqu'à 3)</div>
 
@@ -1156,6 +1171,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <option value="4:1">4:1 (panoramique)</option>
                   <option value="21:9">21:9 (cinéma)</option>
                   <option value="16:9">16:9 (standard)</option>
+                  <option value="4:3">4:3 (photo)</option>
                   <option value="3:2">3:2</option>
                   <option value="4:5">4:5 (portrait)</option>
                   <option value="1:1">1:1 (carré)</option>
