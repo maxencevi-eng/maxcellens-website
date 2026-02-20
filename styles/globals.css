@@ -626,6 +626,93 @@ a:active { color: var(--color-link-active, var(--color-link-hover, var(--color-a
 .lexical-content-editable .lexical-h5,
 .lexical-content-editable h5 { font-family: var(--font-h5-family) !important; font-size: var(--font-h5-size) !important; font-weight: var(--font-h5-weight) !important; margin: 0 0 0.4rem; }
 
+/* ──────────── Lexical Toolbar ──────────── */
+.lexical-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+}
+.lexical-toolbar-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.lexical-toolbar-group {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+.lexical-toolbar-sep {
+  width: 1px;
+  height: 24px;
+  background: rgba(0,0,0,0.12);
+  flex-shrink: 0;
+}
+/* Toolbar buttons */
+.lexical-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  line-height: 1;
+}
+.lexical-toolbar-btn:hover {
+  background: #eee;
+  border-color: #bbb;
+}
+.lexical-toolbar-btn.active {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+/* Toolbar selects */
+.lexical-toolbar-select {
+  padding: 5px 8px;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 90px;
+  height: 30px;
+}
+.lexical-toolbar-select:hover {
+  border-color: #bbb;
+}
+.lexical-toolbar-select:focus {
+  outline: 2px solid #93c5fd;
+  outline-offset: -1px;
+}
+/* Link popup below toolbar */
+.lexical-toolbar-link-popup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
 /* Modal Édition Intro : même rendu que le site (couleur, typo, liens) */
 .rich-text-modal-body .lexical-content-editable,
 .rich-text-modal-body .richtext-content,

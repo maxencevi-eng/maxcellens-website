@@ -21,6 +21,20 @@ export default function HeroRuntime() {
 
     function applyBackground(url: string | null, hero: HTMLElement | null) {
       if (!hero) return;
+      // Update the Next.js <Image> element directly (it renders as an <img> with fill)
+      const img = hero.querySelector('img') as HTMLImageElement | null;
+      if (img) {
+        if (url) {
+          // Add cache-busting param to force browser to fetch the new image
+          const bustUrl = url.includes('?') ? `${url}&_t=${Date.now()}` : `${url}?_t=${Date.now()}`;
+          img.src = bustUrl;
+          img.srcset = '';  // Clear srcset so browser uses src
+          img.style.display = '';
+        } else {
+          img.style.display = 'none';
+        }
+      }
+      // Also set background-image as fallback
       hero.style.backgroundImage = url ? `url(${url})` : '';
     }
 
@@ -47,12 +61,22 @@ export default function HeroRuntime() {
 
       if (!effectiveSlides || !effectiveSlides.length) return;
 
-      try { hero.style.backgroundImage = `url(${effectiveSlides[0]})`; } catch (_) {}
+      // Show first slide on the <img> element
+      const img = hero.querySelector('img') as HTMLImageElement | null;
+      try {
+        const firstUrl = effectiveSlides[0];
+        if (img) { img.src = firstUrl; img.srcset = ''; img.style.display = ''; }
+        hero.style.backgroundImage = `url(${firstUrl})`;
+      } catch (_) {}
       intervalRef.current = window.setInterval(() => {
         try {
           idxRef.current = (idxRef.current + 1) % effectiveSlides!.length;
           const nextUrl = effectiveSlides![idxRef.current];
-          try { hero.style.backgroundImage = `url(${nextUrl})`; } catch (_) {}
+          try {
+            const imgEl = hero.querySelector('img') as HTMLImageElement | null;
+            if (imgEl) { imgEl.src = nextUrl; imgEl.srcset = ''; }
+            hero.style.backgroundImage = `url(${nextUrl})`;
+          } catch (_) {}
         } catch (_) { }
       }, Math.max(600, Number(speed) || 3000));
     }

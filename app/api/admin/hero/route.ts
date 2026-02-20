@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { supabaseAdmin, getHeaderForPage } from '../../../../lib/supabaseAdmin'
 
 function normalizeSlug(s: string): string {
@@ -156,6 +157,11 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: up.error?.message || String(up.error) }, { status: 500 });
           }
           await syncHeroToGalleryPages(page, incomingMode, settings);
+          // Revalidate the page so the server-rendered version picks up the new image immediately
+          try {
+            const pagePath = page === 'home' ? '/' : `/${page}`;
+            revalidatePath(pagePath);
+          } catch (_) {}
           return NextResponse.json({ ok: true, data: up.data, warning: 'headers table missing columns, stored hero configuration in site_settings' });
         } catch (fallbackErr: any) {
           console.error('hero upsert fallback exception', fallbackErr);
@@ -206,6 +212,12 @@ export async function POST(req: Request) {
     } catch (e) { console.warn('Error removing hero site_settings fallback', e); }
 
     await syncHeroToGalleryPages(page, payload.mode, payload.settings);
+
+    // Revalidate the page so the server-rendered version picks up the new image immediately
+    try {
+      const pagePath = page === 'home' ? '/' : `/${page}`;
+      revalidatePath(pagePath);
+    } catch (_) {}
 
     return NextResponse.json({ ok: true, data });
   } catch (err:any) {

@@ -1,9 +1,11 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 type Props = { page: string; onClose: () => void };
 
 export default function HeroEditor({ page, onClose }: Props) {
+  const router = useRouter();
   const [mode, setMode] = useState<'image'|'video'|'slideshow'>('image');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -162,6 +164,9 @@ export default function HeroEditor({ page, onClose }: Props) {
       // notify listeners
       try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: `hero_${page}`, value: JSON.stringify({ mode, settings }) } })); } catch(_){ }
       try { window.dispatchEvent(new CustomEvent('hero-updated', { detail: { page, mode, settings: displaySettings } })); } catch(_){ }
+
+      // Refresh server components so the new image is rendered server-side too
+      try { router.refresh(); } catch (_) {}
 
       if (j?.warning) setSuccess(`Sauvegardé — ${j.warning}`);
       else setSuccess('Sauvegardé');

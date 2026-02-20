@@ -164,6 +164,7 @@ function ToolbarPlugin() {
   const [lineHeight, setLineHeight] = useState<string>('1.25');
   const [textColor, setTextColor] = useState<string>('#000000');
   const [bgColor, setBgColor] = useState<string>('#ffffff');
+  const [fontSize, setFontSize] = useState<string>('inherit');
   const [isUppercase, setIsUppercase] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const emojiPanelRef = useRef<HTMLElement | null>(null);
@@ -215,6 +216,8 @@ function ToolbarPlugin() {
       setTextColor(col || '#000000');
       const bg = $getSelectionStyleValueForProperty(selection, 'background-color', '#ffffff');
       setBgColor(bg || '#ffffff');
+      const fs = $getSelectionStyleValueForProperty(selection, 'font-size', 'inherit');
+      setFontSize(fs || 'inherit');
       const tt = $getSelectionStyleValueForProperty(selection, 'text-transform', 'none');
       setIsUppercase(tt === 'uppercase');
     });
@@ -266,55 +269,57 @@ function ToolbarPlugin() {
   })();
 
   return (
-    <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <button type="button" onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)} title="Annuler">⤺</button>
-        <button type="button" onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)} title="Rétablir">⤻</button>
-      </div>
-      <div style={{ width: 1, height: 24, background: 'rgba(0,0,0,0.08)' }} />
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <button
-          type="button"
-          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}
-          className={isBold ? 'active' : ''}
-          title="Gras"
-        >
-          <strong>B</strong>
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')}
-          className={isItalic ? 'active' : ''}
-          title="Italique"
-        >
-          <em>I</em>
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')}
-          className={isUnderline ? 'active' : ''}
-          title="Souligné"
-        >
-          <span style={{ textDecoration: 'underline' }}>U</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            editor.update(() => {
-              const selection = $getSelection();
-              if (!$isRangeSelection(selection)) return;
-              const next = isUppercase ? null : 'uppercase';
-              $patchStyleText(selection, { 'text-transform': next });
-            });
-          }}
-          className={isUppercase ? 'active' : ''}
-          title="Majuscules"
-        >
-          <span style={{ textTransform: 'uppercase', fontSize: '0.85em' }}>Aa</span>
-        </button>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <div className="lexical-toolbar">
+      {/* Row 1: formatting buttons */}
+      <div className="lexical-toolbar-row">
+        <div className="lexical-toolbar-group">
+          <button type="button" className="lexical-toolbar-btn" onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)} title="Annuler">⤺</button>
+          <button type="button" className="lexical-toolbar-btn" onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)} title="Rétablir">⤻</button>
+        </div>
+        <div className="lexical-toolbar-sep" />
+        <div className="lexical-toolbar-group">
           <button
             type="button"
+            className={`lexical-toolbar-btn${isBold ? ' active' : ''}`}
+            onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}
+            title="Gras"
+          >
+            <strong>B</strong>
+          </button>
+          <button
+            type="button"
+            className={`lexical-toolbar-btn${isItalic ? ' active' : ''}`}
+            onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')}
+            title="Italique"
+          >
+            <em>I</em>
+          </button>
+          <button
+            type="button"
+            className={`lexical-toolbar-btn${isUnderline ? ' active' : ''}`}
+            onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')}
+            title="Souligné"
+          >
+            <span style={{ textDecoration: 'underline' }}>U</span>
+          </button>
+          <button
+            type="button"
+            className={`lexical-toolbar-btn${isUppercase ? ' active' : ''}`}
+            onClick={() => {
+              editor.update(() => {
+                const selection = $getSelection();
+                if (!$isRangeSelection(selection)) return;
+                const next = isUppercase ? null : 'uppercase';
+                $patchStyleText(selection, { 'text-transform': next });
+              });
+            }}
+            title="Majuscules"
+          >
+            <span style={{ textTransform: 'uppercase', fontSize: '0.85em' }}>Aa</span>
+          </button>
+          <button
+            type="button"
+            className={`lexical-toolbar-btn${isLink ? ' active' : ''}`}
             onClick={() => {
               if (!showLinkInput && isLink) {
                 editor.getEditorState().read(() => {
@@ -330,235 +335,176 @@ function ToolbarPlugin() {
               }
               setShowLinkInput((s) => !s);
             }}
-            className={isLink ? 'active' : ''}
             title="Lien"
           >
             🔗
           </button>
-          {showLinkInput && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#fff', border: '1px solid rgba(0,0,0,0.2)', borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,0.12)', flexWrap: 'wrap' }}>
-              {linkExternal ? (
-                <input
-                  ref={(el) => { linkInputRef.current = el; }}
-                  type="url"
-                  value={linkUrl}
-                  onChange={(e) => setLinkUrl(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') { e.preventDefault(); applyLink(); }
-                    if (e.key === 'Escape') setShowLinkInput(false);
-                  }}
-                  placeholder="https://..."
-                  style={{ width: 200, padding: '4px 8px', border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4, fontSize: 14 }}
-                />
-              ) : (
-                <>
-                  <select
-                    value={linkSelectValue}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setLinkUrl(v);
-                    }}
-                    style={{ padding: '4px 8px', fontSize: 14, border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4, minWidth: 180 }}
-                    title="Choisir une page (Portrait = galerie ciblée au chargement)"
-                  >
-                    <option value="">Choisir une page...</option>
-                    {(Array.from(new Set(SITE_PAGES.map((page) => page.group).filter(Boolean))) as string[]).map((group) => (
-                      <optgroup key={group} label={group}>
-                        {SITE_PAGES.filter((page) => page.group === group).map((page) => (
-                          <option key={page.path} value={page.path}>{page.label}</option>
-                        ))}
-                      </optgroup>
-                    ))}
-                    {SITE_PAGES.filter((page) => !page.group).map((page) => (
-                      <option key={page.path} value={page.path}>{page.label}</option>
-                    ))}
-                  </select>
-                  <input
-                    ref={(el) => { linkInputRef.current = el; }}
-                    type="text"
-                    value={linkUrl}
-                    onChange={(e) => setLinkUrl(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') { e.preventDefault(); applyLink(); }
-                      if (e.key === 'Escape') setShowLinkInput(false);
-                    }}
-                    placeholder="ou saisir un chemin (ex. /galeries)"
-                    style={{ width: 180, padding: '4px 8px', border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4, fontSize: 14 }}
-                  />
-                </>
-              )}
-              <select
-                value={linkExternal ? 'external' : 'internal'}
-                onChange={(e) => setLinkExternal(e.target.value === 'external')}
-                style={{ padding: '4px 6px', fontSize: 13, border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4 }}
-                title="Interne = même onglet, Externe = nouvel onglet"
-              >
-                <option value="internal">Interne (même onglet)</option>
-                <option value="external">Externe (nouvel onglet)</option>
-              </select>
-              <button type="button" onClick={applyLink} style={{ padding: '4px 10px', cursor: 'pointer', fontSize: 13 }}>Appliquer</button>
-              <button type="button" onClick={() => { setShowLinkInput(false); setLinkUrl(''); }} style={{ padding: '4px 8px', cursor: 'pointer', fontSize: 13 }}>Annuler</button>
-            </span>
-          )}
+        </div>
+        <div className="lexical-toolbar-sep" />
+        <div className="lexical-toolbar-group">
+          <button
+            type="button"
+            className="lexical-toolbar-btn"
+            onClick={() => {
+              let shouldRemove = false;
+              editor.getEditorState().read(() => {
+                const selection = $getSelection();
+                if (!$isRangeSelection(selection)) return;
+                const listItem = $findMatchingParent(selection.anchor.getNode(), $isListItemNode);
+                const list = listItem?.getParent();
+                if (list && $isListNode(list) && list.getListType() === 'bullet') shouldRemove = true;
+              });
+              if (shouldRemove) editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
+              else editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+            }}
+            title="Liste à puces (recliquer pour annuler)"
+          >
+            •
+          </button>
+          <button
+            type="button"
+            className="lexical-toolbar-btn"
+            onClick={() => {
+              let shouldRemove = false;
+              editor.getEditorState().read(() => {
+                const selection = $getSelection();
+                if (!$isRangeSelection(selection)) return;
+                const listItem = $findMatchingParent(selection.anchor.getNode(), $isListItemNode);
+                const list = listItem?.getParent();
+                if (list && $isListNode(list) && list.getListType() === 'number') shouldRemove = true;
+              });
+              if (shouldRemove) editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
+              else editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+            }}
+            title="Liste numérotée (recliquer pour annuler)"
+          >
+            1.
+          </button>
+          <button
+            type="button"
+            className="lexical-toolbar-btn"
+            onClick={() => editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined)}
+            title="Retirer liste (puces ou numérotation)"
+          >
+            ↩
+          </button>
+        </div>
+        <div className="lexical-toolbar-sep" />
+        <div className="lexical-toolbar-group">
+          <button type="button" className="lexical-toolbar-btn" onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left')} title="Aligner à gauche">≡</button>
+          <button type="button" className="lexical-toolbar-btn" onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center')} title="Centrer">≡</button>
+          <button type="button" className="lexical-toolbar-btn" onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')} title="Aligner à droite">≡</button>
+          <button
+            type="button"
+            className="lexical-toolbar-btn"
+            onClick={() => editor.dispatchCommand(INSERT_LINE_BREAK_COMMAND, false)}
+            title="Retour à la ligne (sans nouveau paragraphe)"
+          >
+            ↵
+          </button>
         </div>
       </div>
-      <div style={{ width: 1, height: 24, background: 'rgba(0,0,0,0.08)' }} />
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <button
-          type="button"
-          onClick={() => {
-            let shouldRemove = false;
-            editor.getEditorState().read(() => {
-              const selection = $getSelection();
-              if (!$isRangeSelection(selection)) return;
-              const listItem = $findMatchingParent(selection.anchor.getNode(), $isListItemNode);
-              const list = listItem?.getParent();
-              if (list && $isListNode(list) && list.getListType() === 'bullet') shouldRemove = true;
-            });
-            if (shouldRemove) editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
-            else editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
-          }}
-          title="Liste à puces (recliquer pour annuler)"
-        >
-          •
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            let shouldRemove = false;
-            editor.getEditorState().read(() => {
-              const selection = $getSelection();
-              if (!$isRangeSelection(selection)) return;
-              const listItem = $findMatchingParent(selection.anchor.getNode(), $isListItemNode);
-              const list = listItem?.getParent();
-              if (list && $isListNode(list) && list.getListType() === 'number') shouldRemove = true;
-            });
-            if (shouldRemove) editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
-            else editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
-          }}
-          title="Liste numérotée (recliquer pour annuler)"
-        >
-          1.
-        </button>
-        <button
-          type="button"
-          onClick={() => editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined)}
-          title="Retirer liste (puces ou numérotation)"
-        >
-          ↩
-        </button>
-      </div>
-      <div style={{ width: 1, height: 24, background: 'rgba(0,0,0,0.08)' }} />
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <button type="button" onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'left')} title="Aligner à gauche">≡</button>
-        <button type="button" onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'center')} title="Centrer">≡</button>
-        <button type="button" onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')} title="Aligner à droite">≡</button>
-        <button
-          type="button"
-          onClick={() => editor.dispatchCommand(INSERT_LINE_BREAK_COMMAND, false)}
-          title="Retour à la ligne (sans nouveau paragraphe)"
-        >
-          ↵
-        </button>
-      </div>
-      <div style={{ width: 1, height: 24, background: 'rgba(0,0,0,0.08)' }} />
-      <select
-        style={{ padding: '6px 8px', minWidth: 100 }}
-        value={blockFormat}
-        onChange={(e) => {
-          const v = e.target.value;
-          editor.update(() => {
-            const selection = $getSelection();
-            if (!$isRangeSelection(selection)) return;
-            if (v === 'paragraph') {
-              $setBlocksType(selection, $createParagraphNode);
-            } else if (/^h[1-5]$/.test(v)) {
-              $setBlocksType(selection, () => $createHeadingNode(v as 'h1' | 'h2' | 'h3' | 'h4' | 'h5'));
-            }
-          });
-        }}
-        title="Style de bloc (Paragraphe / Titres)"
-      >
-        <option value="paragraph">Paragraphe</option>
-        <option value="h1">Titre 1</option>
-        <option value="h2">Titre 2</option>
-        <option value="h3">Titre 3</option>
-        <option value="h4">Titre 4</option>
-        <option value="h5">Titre 5</option>
-      </select>
-      <select
-        style={{ padding: '6px 8px', minWidth: 100 }}
-        value={availableFonts.some((f) => f.value === fontFamily) ? fontFamily : 'inherit'}
-        onChange={(e) => {
-          const v = e.target.value;
-          editor.update(() => {
-            const selection = $getSelection();
-            if (!$isRangeSelection(selection)) return;
-            $patchStyleText(selection, { 'font-family': v === 'inherit' ? null : v });
-          });
-        }}
-        title="Police (style du site)"
-      >
-        {availableFonts.map((f) => (
-          <option key={f.label} value={f.value}>{f.label}</option>
-        ))}
-      </select>
-      <select
-        style={{ padding: '6px 8px', width: 56 }}
-        value={['1', '1.15', '1.25', '1.4', '1.6', '2', 'normal'].includes(lineHeight) ? lineHeight : '1.25'}
-        onChange={(e) => {
-          const v = e.target.value;
-          setLineHeight(v);
-          editor.update(() => {
-            const selection = $getSelection();
-            if (!$isRangeSelection(selection)) return;
-            $patchStyleText(selection, { 'line-height': v });
-          });
-        }}
-        title="Hauteur de ligne"
-      >
-        <option value="1">1</option>
-        <option value="1.15">1.15</option>
-        <option value="1.25">1.25</option>
-        <option value="1.4">1.4</option>
-        <option value="1.6">1.6</option>
-        <option value="2">2</option>
-        <option value="normal">normal</option>
-      </select>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title="Couleur du texte">
-        <input
-          type="color"
-          value={textColor}
+      {/* Row 2: dropdowns & color pickers */}
+      <div className="lexical-toolbar-row">
+        <select
+          className="lexical-toolbar-select"
+          value={blockFormat}
           onChange={(e) => {
             const v = e.target.value;
-            setTextColor(v);
             editor.update(() => {
               const selection = $getSelection();
               if (!$isRangeSelection(selection)) return;
-              $patchStyleText(selection, { color: v });
+              if (v === 'paragraph') {
+                $setBlocksType(selection, $createParagraphNode);
+              } else if (/^h[1-5]$/.test(v)) {
+                $setBlocksType(selection, () => $createHeadingNode(v as 'h1' | 'h2' | 'h3' | 'h4' | 'h5'));
+              }
             });
           }}
-          style={{ width: 24, height: 24, padding: 0, border: '1px solid rgba(0,0,0,0.2)', cursor: 'pointer' }}
-        />
-      </span>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title="Couleur de fond">
-        <input
-          type="color"
-          value={bgColor}
+          title="Style de bloc (Paragraphe / Titres)"
+        >
+          <option value="paragraph">Paragraphe</option>
+          <option value="h1">Titre 1</option>
+          <option value="h2">Titre 2</option>
+          <option value="h3">Titre 3</option>
+          <option value="h4">Titre 4</option>
+          <option value="h5">Titre 5</option>
+        </select>
+        <select
+          className="lexical-toolbar-select"
+          style={{ minWidth: 100 }}
+          value={availableFonts.some((f) => f.value === fontFamily) ? fontFamily : 'inherit'}
           onChange={(e) => {
             const v = e.target.value;
-            setBgColor(v);
             editor.update(() => {
               const selection = $getSelection();
               if (!$isRangeSelection(selection)) return;
-              $patchStyleText(selection, { 'background-color': v });
+              $patchStyleText(selection, { 'font-family': v === 'inherit' ? null : v });
             });
           }}
-          style={{ width: 24, height: 24, padding: 0, border: '1px solid rgba(0,0,0,0.2)', cursor: 'pointer' }}
-        />
-      </span>
-      <span ref={(el) => { emojiPanelRef.current = el; }} style={{ position: 'relative' }}>
-        <button type="button" onClick={(e) => { e.stopPropagation(); setShowEmoji((s) => !s); }} title="Insérer un emoji">😀</button>
+          title="Police (style du site)"
+        >
+          {availableFonts.map((f) => (
+            <option key={f.label} value={f.value}>{f.label}</option>
+          ))}
+        </select>
+        <select
+          className="lexical-toolbar-select"
+          style={{ width: 56 }}
+          value={['1', '1.15', '1.25', '1.4', '1.6', '2', 'normal'].includes(lineHeight) ? lineHeight : '1.25'}
+          onChange={(e) => {
+            const v = e.target.value;
+            setLineHeight(v);
+            editor.update(() => {
+              const selection = $getSelection();
+              if (!$isRangeSelection(selection)) return;
+              $patchStyleText(selection, { 'line-height': v });
+            });
+          }}
+          title="Hauteur de ligne"
+        >
+          <option value="1">1</option>
+          <option value="1.15">1.15</option>
+          <option value="1.25">1.25</option>
+          <option value="1.4">1.4</option>
+          <option value="1.6">1.6</option>
+          <option value="2">2</option>
+          <option value="normal">normal</option>
+        </select>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title="Couleur du texte">
+          <input
+            type="color"
+            value={textColor}
+            onChange={(e) => {
+              const v = e.target.value;
+              setTextColor(v);
+              editor.update(() => {
+                const selection = $getSelection();
+                if (!$isRangeSelection(selection)) return;
+                $patchStyleText(selection, { color: v });
+              });
+            }}
+            style={{ width: 24, height: 24, padding: 0, border: '1px solid rgba(0,0,0,0.2)', borderRadius: 3, cursor: 'pointer' }}
+          />
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} title="Couleur de fond">
+          <input
+            type="color"
+            value={bgColor}
+            onChange={(e) => {
+              const v = e.target.value;
+              setBgColor(v);
+              editor.update(() => {
+                const selection = $getSelection();
+                if (!$isRangeSelection(selection)) return;
+                $patchStyleText(selection, { 'background-color': v });
+              });
+            }}
+            style={{ width: 24, height: 24, padding: 0, border: '1px solid rgba(0,0,0,0.2)', borderRadius: 3, cursor: 'pointer' }}
+          />
+        </span>
+        <span ref={(el) => { emojiPanelRef.current = el; }} style={{ position: 'relative' }}>
+          <button type="button" className="lexical-toolbar-btn" onClick={(e) => { e.stopPropagation(); setShowEmoji((s) => !s); }} title="Insérer un emoji">😀</button>
         {showEmoji && (
           <div
             style={{
@@ -598,7 +544,109 @@ function ToolbarPlugin() {
             ))}
           </div>
         )}
-      </span>
+        </span>
+        <select
+          className="lexical-toolbar-select"
+          style={{ width: 72 }}
+          value={(() => {
+            const SIZES = ['inherit','10px','11px','12px','13px','14px','16px','18px','20px','22px','24px','28px','32px','36px','42px','48px','56px','64px','72px'];
+            return SIZES.includes(fontSize) ? fontSize : 'inherit';
+          })()}
+          onChange={(e) => {
+            const v = e.target.value;
+            setFontSize(v);
+            editor.update(() => {
+              const selection = $getSelection();
+              if (!$isRangeSelection(selection)) return;
+              $patchStyleText(selection, { 'font-size': v === 'inherit' ? null : v });
+            });
+          }}
+          title="Taille de police"
+        >
+          <option value="inherit">Auto</option>
+          <option value="10px">10</option>
+          <option value="11px">11</option>
+          <option value="12px">12</option>
+          <option value="13px">13</option>
+          <option value="14px">14</option>
+          <option value="16px">16</option>
+          <option value="18px">18</option>
+          <option value="20px">20</option>
+          <option value="22px">22</option>
+          <option value="24px">24</option>
+          <option value="28px">28</option>
+          <option value="32px">32</option>
+          <option value="36px">36</option>
+          <option value="42px">42</option>
+          <option value="48px">48</option>
+          <option value="56px">56</option>
+          <option value="64px">64</option>
+          <option value="72px">72</option>
+        </select>
+      </div>
+      {/* Link input popup (rendered outside rows so it doesn't shift toolbar) */}
+      {showLinkInput && (
+        <div className="lexical-toolbar-link-popup">
+          {linkExternal ? (
+            <input
+              ref={(el) => { linkInputRef.current = el; }}
+              type="url"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); applyLink(); }
+                if (e.key === 'Escape') setShowLinkInput(false);
+              }}
+              placeholder="https://..."
+              style={{ width: 200, padding: '4px 8px', border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4, fontSize: 14 }}
+            />
+          ) : (
+            <>
+              <select
+                value={linkSelectValue}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                style={{ padding: '4px 8px', fontSize: 14, border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4, minWidth: 180 }}
+                title="Choisir une page (Portrait = galerie ciblée au chargement)"
+              >
+                <option value="">Choisir une page...</option>
+                {(Array.from(new Set(SITE_PAGES.map((page) => page.group).filter(Boolean))) as string[]).map((group) => (
+                  <optgroup key={group} label={group}>
+                    {SITE_PAGES.filter((page) => page.group === group).map((page) => (
+                      <option key={page.path} value={page.path}>{page.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
+                {SITE_PAGES.filter((page) => !page.group).map((page) => (
+                  <option key={page.path} value={page.path}>{page.label}</option>
+                ))}
+              </select>
+              <input
+                ref={(el) => { linkInputRef.current = el; }}
+                type="text"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); applyLink(); }
+                  if (e.key === 'Escape') setShowLinkInput(false);
+                }}
+                placeholder="ou saisir un chemin (ex. /galeries)"
+                style={{ width: 180, padding: '4px 8px', border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4, fontSize: 14 }}
+              />
+            </>
+          )}
+          <select
+            value={linkExternal ? 'external' : 'internal'}
+            onChange={(e) => setLinkExternal(e.target.value === 'external')}
+            style={{ padding: '4px 6px', fontSize: 13, border: '1px solid rgba(0,0,0,0.2)', borderRadius: 4 }}
+            title="Interne = même onglet, Externe = nouvel onglet"
+          >
+            <option value="internal">Interne (même onglet)</option>
+            <option value="external">Externe (nouvel onglet)</option>
+          </select>
+          <button type="button" onClick={applyLink} style={{ padding: '4px 10px', cursor: 'pointer', fontSize: 13 }}>Appliquer</button>
+          <button type="button" onClick={() => { setShowLinkInput(false); setLinkUrl(''); }} style={{ padding: '4px 8px', cursor: 'pointer', fontSize: 13 }}>Annuler</button>
+        </div>
+      )}
     </div>
   );
 }
