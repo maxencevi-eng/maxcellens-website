@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import dynamic from 'next/dynamic';
@@ -364,7 +365,7 @@ export default function AdminSidebar() {
     <>
     <aside id="admin-sidebar" aria-label="Admin sidebar">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div className="admin-title">Admin</div>
+        <Link href="/admin" className="admin-title">ADMINISTRATION</Link>
         <button onClick={hideSidebar} aria-label="Masquer la sidebar" style={{ background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}>✕</button>
       </div>
 

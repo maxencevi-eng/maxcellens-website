@@ -150,6 +150,8 @@ body.has-admin-sidebar {
   font-weight: 700;
   margin-bottom: 14px;
   letter-spacing: 0.03em;
+  color: #fff;
+  text-decoration: none;
 }
 
 #admin-sidebar nav {
