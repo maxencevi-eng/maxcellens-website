@@ -33,16 +33,16 @@ export async function POST(req: Request) {
     // Use sharp to create a compressed WebP only and attempt to keep it under maxSize
     try {
       // Default target is tiny for logos/favicons to keep them extremely small.
-      // For the contact photo and footer banner we allow up to 200 KB so they retain quality.
-      const MAX_BYTES = (folder === 'contact' || folder === 'footer-banner') ? 500 * 1024 : 5 * 1024; // 500 KB or 5 KB
+      // For the contact photo, footer banner, and animation images we allow up to 1 MB so they retain quality.
+      const MAX_BYTES = (folder === 'contact' || folder === 'footer-banner' || folder === 'animation') ? 1024 * 1024 : 5 * 1024; // 1 MB or 5 KB
 
       // helper: try different sizes and quality to get under MAX_BYTES
       async function generateWebpWithinSize(input: Buffer, maxBytes: number) {
-        // Use more generous sizes/qualities for contact photos to keep them visually good
-        const widthCandidates = folder === 'contact'
+        // Use more generous sizes/qualities for contact photos, footer banners, and animation images to keep them visually good
+        const widthCandidates = (folder === 'contact' || folder === 'footer-banner' || folder === 'animation')
           ? [2400, 2000, 1600, 1200, 900, 800, 600, 400, 200, 100]
           : [1600, 1200, 800, 400, 200, 100, 64, 48, 32, 24];
-        const qualityCandidates = folder === 'contact'
+        const qualityCandidates = (folder === 'contact' || folder === 'footer-banner' || folder === 'animation')
           ? [92, 86, 80, 72, 64, 56, 48, 40, 32, 24]
           : [82, 72, 62, 52, 42, 32, 22, 12, 8];
 
