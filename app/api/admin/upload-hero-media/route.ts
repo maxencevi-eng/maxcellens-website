@@ -30,8 +30,9 @@ export async function POST(req: Request) {
     // allow optional folder override (e.g. 'Portrait/Galerie1')
     const folder = String(form.get('folder') || '').replace(/^\/+/, '').replace(/\.+/g, '.');
     if (kind === 'image') {
-      // We'll attempt to convert to webp and ensure final <= 200KB
-      const targetBytes = 200 * 1024; // 200KB strict target
+      // Compress to webp with reasonable quality — no strict size limit
+      // Sharp will optimize intelligently; final size is not capped
+      const targetBytes = 10 * 1024 * 1024; // 10MB soft target (very generous, just for algo guidance)
       let outBuf = buf;
       let finalContentType = (file as any).type || 'image/webp';
 
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
         const sharpImport = await import('sharp');
         const sharp = (sharpImport?.default || sharpImport) as any;
 
-        // try combinations of widths and qualities to reach targetBytes
+        // try combinations of widths and qualities to find best compression
         const widths = [1920, 1600, 1280, 1024, 800, 600, 400, 300];
         const qualities = [95, 85, 75, 65, 55, 45, 35, 25];
         let best: Buffer | null = null;
@@ -65,13 +66,9 @@ export async function POST(req: Request) {
           if (best && best.length <= targetBytes) break;
         }
 
-        if (!best || best.length > targetBytes) {
-          // if we have a best result but still too large, return error
-          if (best && best.length > targetBytes) {
-            return NextResponse.json({ error: 'Unable to reduce image below 200KB. Try a smaller image.' }, { status: 400 });
-          }
-        } else {
-          outBuf = best as Buffer;
+        // Always use the best compression result found, no size limit error
+        if (best) {
+          outBuf = best;
           finalContentType = 'image/webp';
         }
       } catch (e) {

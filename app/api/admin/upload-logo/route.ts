@@ -33,10 +33,10 @@ export async function POST(req: Request) {
     // Use sharp to create a compressed WebP only and attempt to keep it under maxSize
     try {
       // Default target is tiny for logos/favicons to keep them extremely small.
-      // For the contact photo, footer banner, and animation images we allow up to 1 MB so they retain quality.
-      const MAX_BYTES = (folder === 'contact' || folder === 'footer-banner' || folder === 'animation') ? 1024 * 1024 : 5 * 1024; // 1 MB or 5 KB
+      // For contact photos, footer banners, and animation images: no strict limit, just compress with high quality.
+      const MAX_BYTES = (folder === 'contact' || folder === 'footer-banner' || folder === 'animation') ? 10 * 1024 * 1024 : 5 * 1024; // 10 MB soft target or 5 KB
 
-      // helper: try different sizes and quality to get under MAX_BYTES
+      // helper: try different sizes and quality to get best compression
       async function generateWebpWithinSize(input: Buffer, maxBytes: number) {
         // Use more generous sizes/qualities for contact photos, footer banners, and animation images to keep them visually good
         const widthCandidates = (folder === 'contact' || folder === 'footer-banner' || folder === 'animation')
@@ -54,7 +54,10 @@ export async function POST(req: Request) {
             try {
               const buf = await sharp(input).resize({ width: w }).webp({ quality: q }).toBuffer();
               const size = buf.length;
-              if (size <= maxBytes) return buf; // success
+              if (size <= maxBytes && size < bestSize) {
+                bestSize = size;
+                bestBuf = buf;
+              }
               if (size < bestSize) {
                 bestSize = size;
                 bestBuf = buf;
@@ -65,7 +68,7 @@ export async function POST(req: Request) {
           }
         }
 
-        // If we couldn't reach the target, return the smallest produced buffer
+        // Always return the best compression found, no strict size limit
         return bestBuf ?? Buffer.from([]);
       }
 
