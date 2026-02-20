@@ -2,8 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import type { AnimationImageRatio } from '../HomeBlocks/homeDefaults';
 import styles from './Footer.module.css';
 import { Instagram, Youtube, Linkedin } from 'lucide-react';
+
+type BannerSizeMode = 'ratio' | 'fixed' | 'ratio-maxh';
+const VALID_SIZE_MODES: BannerSizeMode[] = ['ratio', 'fixed', 'ratio-maxh'];
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -69,15 +73,31 @@ export default function Footer() {
   const [iconStyle, setIconStyle] = useState<string>('style-outline');
   const [customIcons, setCustomIcons] = useState<{ [k: string]: string }>({});
   const [footerBanner, setFooterBanner] = useState<{ url?: string; path?: string } | null>(null);
+  const [bannerUrl, setBannerUrl] = useState<string>('');
   const [footerBannerFocal, setFooterBannerFocal] = useState<{ x: number; y: number } | null>(null);
   const [footerBannerHeight, setFooterBannerHeight] = useState<number | null>(null);
+  const [footerBannerRatio, setFooterBannerRatio] = useState<AnimationImageRatio>('21:9');
+  const [footerBannerSizeMode, setFooterBannerSizeMode] = useState<BannerSizeMode>('fixed');
   const [bannerError, setBannerError] = useState(false);
+
+  // Update bannerUrl with cache-busting when footerBanner changes
+  useEffect(() => {
+    if (footerBanner?.url) {
+      // Add cache-busting parameter to force fresh load
+      const bustedUrl = footerBanner.url.includes('?') 
+        ? `${footerBanner.url}&_t=${Date.now()}`
+        : `${footerBanner.url}?_t=${Date.now()}`;
+      setBannerUrl(bustedUrl);
+    } else {
+      setBannerUrl('');
+    }
+  }, [footerBanner?.url]);
 
   useEffect(() => {
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=footerColumn1,footerBottomText,footerMenuVisible,footerBanner,footerBannerFocal,footerBannerHeight,socialIcon_instagram,socialIcon_facebook,socialIcon_youtube,socialIcon_tiktok,socialIcon_linkedin');
+        const resp = await fetch('/api/admin/site-settings?keys=footerColumn1,footerBottomText,footerMenuVisible,footerBanner,footerBannerFocal,footerBannerHeight,footerBannerRatio,footerBannerSizeMode,socialIcon_instagram,socialIcon_facebook,socialIcon_youtube,socialIcon_tiktok,socialIcon_linkedin');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
@@ -111,6 +131,27 @@ export default function Footer() {
             try { setFooterBannerHeight(Number(s.footerBannerHeight)); } catch(_) {}
           } else {
             try { const vh = localStorage.getItem('footerBannerHeight'); if (vh) setFooterBannerHeight(Number(vh)); } catch(_) {}
+          }
+
+          // load banner ratio
+          if (s.footerBannerRatio) {
+            try { 
+              const validRatios = ['4:1', '21:9', '16:9', '4:3', '3:2', '4:5', '1:1'];
+              const ratio = String(s.footerBannerRatio);
+              if (validRatios.includes(ratio)) setFooterBannerRatio(ratio as AnimationImageRatio);
+            } catch(_) {}
+          } else {
+            try { const vr = localStorage.getItem('footerBannerRatio'); if (vr && ['4:1', '21:9', '16:9', '4:3', '3:2', '4:5', '1:1'].includes(vr)) setFooterBannerRatio(vr as AnimationImageRatio); } catch(_) {}
+          }
+
+          // load banner size mode
+          if (s.footerBannerSizeMode) {
+            try {
+              const mode = String(s.footerBannerSizeMode);
+              if (VALID_SIZE_MODES.includes(mode as BannerSizeMode)) setFooterBannerSizeMode(mode as BannerSizeMode);
+            } catch(_) {}
+          } else {
+            try { const vm = localStorage.getItem('footerBannerSizeMode'); if (vm && VALID_SIZE_MODES.includes(vm as BannerSizeMode)) setFooterBannerSizeMode(vm as BannerSizeMode); } catch(_) {}
           }
 
           if (s.socialIcon_instagram) setCustomIcons(prev => ({ ...prev, instagram: String(s.socialIcon_instagram) }));
@@ -147,6 +188,18 @@ export default function Footer() {
           }
           if (key === 'footerBannerHeight' && (det as any).value) {
             try { setFooterBannerHeight(Number((det as any).value)); } catch(_) {}
+          }
+          if (key === 'footerBannerRatio' && (det as any).value) {
+            try {
+              const ratio = String((det as any).value);
+              if (['4:1', '21:9', '16:9', '4:3', '3:2', '4:5', '1:1'].includes(ratio)) setFooterBannerRatio(ratio as AnimationImageRatio);
+            } catch(_) {}
+          }
+          if (key === 'footerBannerSizeMode' && (det as any).value) {
+            try {
+              const mode = String((det as any).value);
+              if (VALID_SIZE_MODES.includes(mode as BannerSizeMode)) setFooterBannerSizeMode(mode as BannerSizeMode);
+            } catch(_) {}
           }
           return;
         }
@@ -260,6 +313,17 @@ export default function Footer() {
     } catch (_) {}
   }, []);
 
+  // Map aspect ratios to CSS values
+  const IMAGE_RATIO_MAP: Record<string, string> = {
+    '4:1': '4/1',
+    '21:9': '21/9',
+    '16:9': '16/9',
+    '4:3': '4/3',
+    '3:2': '3/2',
+    '4:5': '4/5',
+    '1:1': '1/1',
+  };
+
   // build column JSX so we can re-order on mobile reliably (avoids relying only on CSS selectors)
   const colLogo = (
     <div className={`${styles.col} ${styles.colLogo}`} key="colLogo">
@@ -315,18 +379,39 @@ export default function Footer() {
     </div>
   );
 
+  // Compute banner inner styles based on size mode
+  const bannerInnerStyle = (() => {
+    if (isMobileFooter) return {}; // mobile: let CSS handle it (auto height)
+    const ratioValue = footerBannerRatio && IMAGE_RATIO_MAP[footerBannerRatio] ? IMAGE_RATIO_MAP[footerBannerRatio] : undefined;
+    switch (footerBannerSizeMode) {
+      case 'ratio':
+        // Pure ratio: height auto, aspect-ratio drives it
+        return { height: 'auto' as const, aspectRatio: ratioValue };
+      case 'fixed':
+        // Pure fixed height, no aspect-ratio
+        return { height: footerBannerHeight ? `${footerBannerHeight}px` : undefined };
+      case 'ratio-maxh':
+        // Ratio with max-height cap
+        return {
+          height: 'auto' as const,
+          aspectRatio: ratioValue,
+          maxHeight: footerBannerHeight ? `${footerBannerHeight}px` : undefined,
+        };
+      default:
+        return {};
+    }
+  })();
+
   return (
     <footer className={`${styles.footer} ${isMobileFooter ? styles.mobile : ''}`}>
-      {footerBanner?.url && !bannerError ? (
+      {bannerUrl && !bannerError ? (
         <div className={styles.banner} aria-label="Footer banner wrapper">
           <div
             className={styles.bannerInner}
-            style={{
-              height: (footerBannerHeight && !isMobileFooter) ? `${footerBannerHeight}px` : undefined
-            }}
+            style={bannerInnerStyle}
           >
             <img
-              src={footerBanner.url}
+              src={bannerUrl}
               alt="Footer banner"
               className={styles.bannerImg}
               style={{

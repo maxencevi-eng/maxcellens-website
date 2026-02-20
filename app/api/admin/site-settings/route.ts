@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { supabaseAdmin, supabaseUrl, serviceKey } from '../../../../lib/supabaseAdmin';
 
 // Simple GET/POST to read/write key/value settings in `site_settings` table.
@@ -83,6 +84,10 @@ export async function POST(req: Request) {
       console.error('site-settings upsert error', error);
       return NextResponse.json({ error: error.message || String(error) }, { status: 500 });
     }
+
+    // Invalidate cache for all pages since site settings affect multiple pages
+    try { revalidatePath('/'); } catch (_) {}
+
     return NextResponse.json({ ok: true, data });
   } catch (err: any) {
     console.error('site-settings POST error', err);

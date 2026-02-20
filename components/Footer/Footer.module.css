@@ -1,5 +1,5 @@
 .footer {
-  margin-top: 3rem;
+  margin-top: 0;
   font-family: inherit;
   /* Reserve minimum space to reduce CLS during hydration */
   min-height: 180px;
@@ -18,9 +18,11 @@
 
 /* Inner content aligned with header .contentWrap so left/right gutters match exactly */
 .bannerInner {
-  width: calc(100% - 80px);
-  margin: 0 40px;
-  height: var(--site-footer-banner-height, 160px);
+  width: 100%;
+  margin: 0;
+  /* Height is controlled by inline styles based on size mode (ratio / fixed / ratio-maxh).
+     Default: 160px for backwards-compatibility when no mode is set. */
+  height: 160px;
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
@@ -36,8 +38,8 @@
 
 @media (max-width: 640px) {
   .bannerInner { 
-    width: calc(100% - 30px); 
-    margin: 0 15px; 
+    width: 100%; 
+    margin: 0; 
     height: auto; 
     min-height: 0;
     display: block;

@@ -1,6 +1,16 @@
 "use client";
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import type { AnimationImageRatio } from '../HomeBlocks/homeDefaults';
 import styles from './FooterEditModal.module.css';
+
+type BannerSizeMode = 'ratio' | 'fixed' | 'ratio-maxh';
+const VALID_SIZE_MODES: BannerSizeMode[] = ['ratio', 'fixed', 'ratio-maxh'];
+const SIZE_MODE_LABELS: Record<BannerSizeMode, { label: string; desc: string }> = {
+  ratio: { label: 'Ratio proportionnel', desc: 'Hauteur calculée selon le ratio. Responsive.' },
+  fixed: { label: 'Hauteur fixe', desc: 'Hauteur en pixels précise. L\'image est recadrée.' },
+  'ratio-maxh': { label: 'Ratio + hauteur max', desc: 'Le ratio détermine la hauteur, plafonnée à un max en px.' },
+};
 
 type MenuVisible = {
   realisation?: boolean;
@@ -45,6 +55,7 @@ const setStorage = (key: string, value: string) => {
 const RichTextModal = dynamic(() => import('../RichTextModal/RichTextModal'), { ssr: false });
 
 export default function FooterEditModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
+  const router = useRouter();
   const [col1, setCol1] = useState('');
   const [bottomText, setBottomText] = useState('');
   const [menuVisible, setMenuVisible] = useState<MenuVisible>({ realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, admin: true });
@@ -58,6 +69,8 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [bannerFocal, setBannerFocal] = useState<{ x: number; y: number } | null>(null);
   const [bannerHeight, setBannerHeight] = useState<number | null>(null);
+  const [bannerRatio, setBannerRatio] = useState<AnimationImageRatio>('21:9');
+  const [bannerSizeMode, setBannerSizeMode] = useState<BannerSizeMode>('fixed');
   // banner height limits (px)
   const MAX_BANNER_HEIGHT = 1600;
   const MIN_BANNER_HEIGHT = 60;
@@ -85,7 +98,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
 
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=footerColumn1,footerBottomText,footerMenuVisible,footerBanner,footerBannerFocal,footerBannerHeight');
+        const resp = await fetch('/api/admin/site-settings?keys=footerColumn1,footerBottomText,footerMenuVisible,footerBanner,footerBannerFocal,footerBannerHeight,footerBannerRatio,footerBannerSizeMode');
         if (resp.ok) {
           const j = await resp.json();
           const s = j?.settings || {};
@@ -111,6 +124,18 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
 
           const heightVal = s.footerBannerHeight || getStorage('footerBannerHeight');
           if (heightVal) setBannerHeight(parseNumber(heightVal, 0) || null);
+
+          const ratioVal = s.footerBannerRatio || getStorage('footerBannerRatio');
+          if (ratioVal) {
+            const validRatios = ['4:1', '21:9', '16:9', '4:3', '3:2', '4:5', '1:1'];
+            const ratio = String(ratioVal);
+            if (validRatios.includes(ratio)) setBannerRatio(ratio as AnimationImageRatio);
+          }
+
+          const modeVal = s.footerBannerSizeMode || getStorage('footerBannerSizeMode');
+          if (modeVal && VALID_SIZE_MODES.includes(modeVal as BannerSizeMode)) {
+            setBannerSizeMode(modeVal as BannerSizeMode);
+          }
           
           return;
         }
@@ -168,7 +193,9 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerMenuVisible', value: JSON.stringify(payloadMenu) }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBanner', value: JSON.stringify(banner || '') }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBannerFocal', value: JSON.stringify(bannerFocal || '') }) }),
-        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBannerHeight', value: bannerHeight || '' }) })
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBannerHeight', value: bannerHeight || '' }) }),
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBannerRatio', value: bannerRatio }) }),
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBannerSizeMode', value: bannerSizeMode }) })
       ];
 
 
@@ -190,12 +217,19 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
       setStorage('footerBanner', JSON.stringify(banner || ''));
       setStorage('footerBannerFocal', JSON.stringify(bannerFocal || ''));
       setStorage('footerBannerHeight', String(bannerHeight || ''));
+      setStorage('footerBannerRatio', bannerRatio);
+      setStorage('footerBannerSizeMode', bannerSizeMode);
 
       // dispatch custom event so in-page components update immediately
       try { window.dispatchEvent(new CustomEvent('site-settings-updated')); } catch(_){ }
       try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'footerBanner', value: JSON.stringify(banner || ''), url: (banner && banner.url) ? banner.url : undefined, path: (banner && banner.path) ? banner.path : undefined } })); } catch(_){ }
       try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'footerBannerFocal', value: JSON.stringify(bannerFocal || '') } })); } catch(_){ }
       try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'footerBannerHeight', value: String(bannerHeight || '') } })); } catch(_){ }
+      try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'footerBannerRatio', value: bannerRatio } })); } catch(_){ }
+      try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'footerBannerSizeMode', value: bannerSizeMode } })); } catch(_){ }
+
+      // Refresh server components so the new image is rendered server-side too
+      try { router.refresh(); } catch (_) {}
 
       setSuccess('Sauvegardé');
       if (onSaved) onSaved();
@@ -238,7 +272,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
   }
 
   async function removeBanner() {
-    if (!banner?.path) { setBanner(null); setOriginalBannerPath(null); setBannerFocal(null); setBannerHeight(null); return; }
+    if (!banner?.path) { setBanner(null); setOriginalBannerPath(null); setBannerFocal(null); setBannerHeight(null); setBannerRatio('21:9'); setBannerSizeMode('fixed'); return; }
     setError(null);
     try {
       const resp = await fetch('/api/admin/delete-storage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: banner.path }) });
@@ -313,6 +347,79 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
                     <div style={{ width: 320, maxWidth: '100%', height: 160, borderRadius: 6, background: '#f7f8f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)' }}>Aucun aperçu</div>
                   )}
                 </div>
+
+                {/* ── Mode de dimensionnement ── */}
+                <div style={{ marginTop: 16, padding: 12, border: '1px solid #e0e0e3', borderRadius: 8, background: '#fafafa' }}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 8 }}>Mode de dimensionnement</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {(VALID_SIZE_MODES).map((mode) => (
+                      <label key={mode} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', padding: '6px 8px', borderRadius: 6, background: bannerSizeMode === mode ? '#e8e4f8' : 'transparent', transition: 'background 0.15s' }}>
+                        <input type="radio" name="bannerSizeMode" value={mode} checked={bannerSizeMode === mode} onChange={() => setBannerSizeMode(mode)} style={{ marginTop: 3 }} />
+                        <span>
+                          <span style={{ fontSize: 13, fontWeight: 500 }}>{SIZE_MODE_LABELS[mode].label}</span>
+                          <span style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginTop: 1 }}>{SIZE_MODE_LABELS[mode].desc}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* Ratio selector — visible in 'ratio' and 'ratio-maxh' modes */}
+                  {(bannerSizeMode === 'ratio' || bannerSizeMode === 'ratio-maxh') && (
+                    <div style={{ marginTop: 12 }}>
+                      <label style={{ display: 'block', fontSize: 13, color: 'var(--muted)', marginBottom: 4 }}>Ratio de l'image</label>
+                      <select value={bannerRatio} onChange={(e) => setBannerRatio(e.target.value as AnimationImageRatio)} style={{ padding: '6px 12px', fontSize: 13, borderRadius: 4, border: '1px solid #e6e6e6', width: 160 }}>
+                        <option value="4:1">4:1 (panoramique)</option>
+                        <option value="21:9">21:9 (cinéma)</option>
+                        <option value="16:9">16:9 (standard)</option>
+                        <option value="4:3">4:3 (photo)</option>
+                        <option value="3:2">3:2</option>
+                        <option value="4:5">4:5 (portrait)</option>
+                        <option value="1:1">1:1 (carré)</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Height control — visible in 'fixed' and 'ratio-maxh' modes */}
+                  {(bannerSizeMode === 'fixed' || bannerSizeMode === 'ratio-maxh') && (
+                    <div style={{ marginTop: 12 }}>
+                      <label className={styles.bannerHeightLabel}>
+                        {bannerSizeMode === 'ratio-maxh' ? 'Hauteur maximale (px)' : 'Hauteur bannière (px)'}
+                      </label>
+                      <div className={styles.bannerHeightBlock}>
+                        <div className={styles.bannerHeightRow}>
+                          <input
+                            type="range"
+                            min={MIN_BANNER_HEIGHT}
+                            max={MAX_BANNER_HEIGHT}
+                            value={currentBannerHeight}
+                            onChange={(e) => setBannerHeight(clampHeight(Number(e.target.value) || 0))}
+                            className={styles.bannerHeightSlider}
+                          />
+                          <input
+                            type="number"
+                            min={MIN_BANNER_HEIGHT}
+                            max={MAX_BANNER_HEIGHT}
+                            value={bannerInputValue}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              if (raw === '') { setBannerHeight(null); return; }
+                              const v = Number(raw);
+                              if (Number.isNaN(v)) { setBannerHeight(null); return; }
+                              setBannerHeight(clampHeight(v));
+                            }}
+                            className={styles.bannerHeightInput}
+                          />
+                        </div>
+                        <div className={styles.bannerHeightActions}>
+                          <button className="btn-ghost" onClick={() => setBannerHeight(null)}>Réinitialiser</button>
+                          <span className={styles.bannerHeightValue}>
+                            {bannerSizeMode === 'ratio-maxh' ? 'Max' : 'Valeur'}: {bannerHeight ? `${bannerHeight}px` : 'par défaut'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               </div>
             </div>
@@ -325,44 +432,6 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
                 <button className="btn-ghost" onClick={() => setOpenEditor('bottom')}>Éditer</button>
-              </div>
-            </div>
-
-            <div style={{ height: 12 }} />
-
-            <div style={{ height: 12 }} />
-            <div style={{ fontSize: 13, color: 'var(--muted)' }}>Import & aperçu dans la zone de gauche</div>
-            <div style={{ height: 12 }} />
-
-            <label className={styles.bannerHeightLabel}>Hauteur bannière (px)</label>
-            <div className={styles.bannerHeightBlock}>
-              <div className={styles.bannerHeightRow}>
-                <input
-                  type="range"
-                  min={MIN_BANNER_HEIGHT}
-                  max={MAX_BANNER_HEIGHT}
-                  value={currentBannerHeight}
-                  onChange={(e) => setBannerHeight(clampHeight(Number(e.target.value) || 0))}
-                  className={styles.bannerHeightSlider}
-                />
-                <input
-                  type="number"
-                  min={MIN_BANNER_HEIGHT}
-                  max={MAX_BANNER_HEIGHT}
-                  value={bannerInputValue}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    if (raw === '') { setBannerHeight(null); return; }
-                    const v = Number(raw);
-                    if (Number.isNaN(v)) { setBannerHeight(null); return; }
-                    setBannerHeight(clampHeight(v));
-                  }}
-                  className={styles.bannerHeightInput}
-                />
-              </div>
-              <div className={styles.bannerHeightActions}>
-                <button className="btn-ghost" onClick={() => setBannerHeight(null)}>Réinitialiser</button>
-                <span className={styles.bannerHeightValue}>Valeur appliquée: {bannerHeight ? `${bannerHeight}px` : 'par défaut'}</span>
               </div>
             </div>
 
