@@ -70,6 +70,19 @@ export type HomePortraitBlockData = {
   backgroundColor?: string;
 };
 
+export type CadreurVideoItem = {
+  url: string;
+  title?: string;
+  description?: string;
+  visible?: boolean;
+};
+
+export type CadreurVideoSettings = {
+  borderRadius?: number;
+  shadow?: 'none' | 'light' | 'medium' | 'heavy';
+  glossy?: boolean;
+};
+
 export type HomeCadreurBlockData = {
   title?: string;
   titleStyle?: TitleStyleKey;
@@ -77,12 +90,20 @@ export type HomeCadreurBlockData = {
   html?: string;
   image?: { url: string; path?: string; focus?: FocusPoint } | null;
   backgroundColor?: string;
+  /** Up to 3 featured project videos */
+  videos?: CadreurVideoItem[];
+  videoSettings?: CadreurVideoSettings;
+  /** Title displayed above the video section */
+  videosSectionTitle?: string;
+  videosSectionTitleAlign?: 'left' | 'center' | 'right';
 };
 
 export type HomeQuoteItem = { text: string; author: string; role?: string; authorStyle?: TitleStyleKey; roleStyle?: TitleStyleKey };
 export type HomeQuoteData = { quotes: HomeQuoteItem[]; carouselSpeed?: number; backgroundColor?: string };
 
 export type HomeCtaData = { title: string; titleStyle?: TitleStyleKey; titleFontSize?: number; buttonLabel: string; buttonHref: string; buttonStyle?: '1' | '2'; backgroundColor?: string };
+
+export type AnimationImageRatio = '4:1' | '21:9' | '16:9' | '3:2' | '4:5' | '1:1';
 
 export type HomeAnimationBlockData = {
   blockTitle?: string;
@@ -93,6 +114,10 @@ export type HomeAnimationBlockData = {
   blockSubtitleFontSize?: number;
   /** Bannière / image d'accroche (optionnel) */
   image?: { url: string; path?: string } | null;
+  /** Ratio d'image pour le bloc Animation */
+  imageRatio?: AnimationImageRatio;
+  /** Texte riche affiché sous le sous-titre */
+  html?: string;
   ctaLabel?: string;
   ctaHref?: string;
   ctaButtonStyle?: '1' | '2';
@@ -143,6 +168,14 @@ export const DEFAULT_CADREUR: HomeCadreurBlockData = {
   title: "Cadreur",
   html: "<p>Cadreur vidéo pour des sociétés de production. Je peux assurer chef opérateur, cadreur, ou filmer et laisser le montage à la boîte de prod. Je travaille en équipe et dispose de mon propre matériel : caméra, micros, lumières.</p>",
   image: null,
+  videos: [
+    { url: "", title: "", description: "", visible: false },
+    { url: "", title: "", description: "", visible: false },
+    { url: "", title: "", description: "", visible: false },
+  ],
+  videoSettings: { borderRadius: 12, shadow: 'medium', glossy: false },
+  videosSectionTitle: "",
+  videosSectionTitleAlign: 'center',
 };
 
 export const DEFAULT_QUOTE: HomeQuoteData = {
@@ -169,4 +202,6 @@ export const DEFAULT_ANIMATION: HomeAnimationBlockData = {
   blockTitleFontSize: 22,
   blockSubtitleFontSize: 16,
   image: null,
+  imageRatio: '21:9',
+  html: "",
 };

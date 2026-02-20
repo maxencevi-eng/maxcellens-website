@@ -13,6 +13,9 @@ import type {
   HomeQuoteData,
   HomeCtaData,
   TitleStyleKey,
+  CadreurVideoItem,
+  CadreurVideoSettings,
+  AnimationImageRatio,
 } from "./homeDefaults";
 import { TITLE_FONT_SIZE_MIN, TITLE_FONT_SIZE_MAX } from "./homeDefaults";
 
@@ -159,6 +162,19 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [cadreurHtml, setCadreurHtml] = useState("");
   const [cadreurImage, setCadreurImage] = useState<{ url: string; path?: string; focus?: { x: number; y: number } } | null>(null);
   const [cadreurBackgroundColor, setCadreurBackgroundColor] = useState("");
+  // Cadreur videos
+  const [cadreurVideos, setCadreurVideos] = useState<CadreurVideoItem[]>([
+    { url: "", title: "", description: "", visible: false },
+    { url: "", title: "", description: "", visible: false },
+    { url: "", title: "", description: "", visible: false },
+  ]);
+  const [cadreurVideoSettings, setCadreurVideoSettings] = useState<CadreurVideoSettings>({
+    borderRadius: 12,
+    shadow: 'medium',
+    glossy: false,
+  });
+  const [cadreurVideosSectionTitle, setCadreurVideosSectionTitle] = useState("");
+  const [cadreurVideosSectionTitleAlign, setCadreurVideosSectionTitleAlign] = useState<'left' | 'center' | 'right'>('center');
 
   // Quote (liste de citations + vitesse)
   const [quoteItems, setQuoteItems] = useState<{ text: string; author: string; role?: string; authorStyle?: TitleStyleKey; roleStyle?: TitleStyleKey }[]>([]);
@@ -184,6 +200,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [animationImage, setAnimationImage] = useState<{ url: string; path?: string } | null>(null);
   const [uploadingAnimationImage, setUploadingAnimationImage] = useState(false);
   const [animationBackgroundColor, setAnimationBackgroundColor] = useState("");
+  const [animationHtml, setAnimationHtml] = useState("");
+  const [editingAnimationHtml, setEditingAnimationHtml] = useState(false);
+  const [animationImageRatio, setAnimationImageRatio] = useState<AnimationImageRatio>("21:9");
 
   // Portrait CTA button style
   const [portraitCtaButtonStyle, setPortraitCtaButtonStyle] = useState<"1" | "2">("1");
@@ -269,6 +288,32 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setCadreurHtml(d.html ?? "");
       setCadreurImage(d.image ? { ...d.image, focus: (d.image as any).focus ?? { x: 50, y: 50 } } : null);
       setCadreurBackgroundColor(d.backgroundColor ?? "");
+      // Videos
+      if (Array.isArray(d.videos) && d.videos.length) {
+        const vids = d.videos.slice(0, 3).map((v: any) => ({
+          url: v?.url ?? "",
+          title: v?.title ?? "",
+          description: v?.description ?? "",
+          visible: Boolean(v?.visible),
+        }));
+        while (vids.length < 3) vids.push({ url: "", title: "", description: "", visible: false });
+        setCadreurVideos(vids);
+      } else {
+        setCadreurVideos([
+          { url: "", title: "", description: "", visible: false },
+          { url: "", title: "", description: "", visible: false },
+          { url: "", title: "", description: "", visible: false },
+        ]);
+      }
+      if (d.videoSettings) {
+        setCadreurVideoSettings({
+          borderRadius: d.videoSettings.borderRadius ?? 12,
+          shadow: d.videoSettings.shadow ?? 'medium',
+          glossy: d.videoSettings.glossy ?? false,
+        });
+      }
+      setCadreurVideosSectionTitle(d.videosSectionTitle ?? "");
+      setCadreurVideosSectionTitleAlign(d.videosSectionTitleAlign ?? "center");
     }
     if (blockKey === "home_animation") {
       setAnimationBlockTitle(d.blockTitle ?? "Animation");
@@ -279,6 +324,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setAnimationBlockSubtitleFontSize(getFontSize(d.blockSubtitleFontSize));
       setAnimationImage(d.image ?? null);
       setAnimationBackgroundColor(d.backgroundColor ?? "");
+      setAnimationHtml(d.html ?? "");
+      setAnimationImageRatio(d.imageRatio ?? "21:9");
     }
     if (blockKey === "home_quote") {
       if (Array.isArray(d.quotes) && d.quotes.length) {
@@ -474,13 +521,13 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         payload = { blockTitle: portraitBlockTitle, blockTitleStyle: portraitBlockTitleStyle, blockTitleFontSize: portraitBlockTitleFontSize !== "" ? clampTitleFontSize(portraitBlockTitleFontSize as number) : undefined, ctaLabel: portraitCtaLabel, ctaHref: portraitCtaHref, ctaButtonStyle: portraitCtaButtonStyle, carouselSpeed: portraitCarouselSpeed, slides: portraitSlides.map((s) => ({ ...s, titleFontSize: s.titleFontSize != null && s.titleFontSize >= TITLE_FONT_SIZE_MIN && s.titleFontSize <= TITLE_FONT_SIZE_MAX ? s.titleFontSize : undefined })), backgroundColor: portraitBackgroundColor?.trim() || undefined };
         break;
       case "home_cadreur":
-        payload = { title: cadreurTitle, titleStyle: cadreurTitleStyle, titleFontSize: cadreurTitleFontSize !== "" ? clampTitleFontSize(cadreurTitleFontSize as number) : undefined, html: cadreurHtml, image: cadreurImage, backgroundColor: cadreurBackgroundColor?.trim() || undefined };
+        payload = { title: cadreurTitle, titleStyle: cadreurTitleStyle, titleFontSize: cadreurTitleFontSize !== "" ? clampTitleFontSize(cadreurTitleFontSize as number) : undefined, html: cadreurHtml, image: cadreurImage, backgroundColor: cadreurBackgroundColor?.trim() || undefined, videos: cadreurVideos, videoSettings: cadreurVideoSettings, videosSectionTitle: cadreurVideosSectionTitle.trim() || undefined, videosSectionTitleAlign: cadreurVideosSectionTitleAlign };
         break;
       case "home_animation": {
         const rawBg = animationBackgroundColor?.trim() || "";
         const hexMatch = rawBg.replace(/^#/, "").match(/^([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/);
         const backgroundColor = hexMatch ? (hexMatch[1].length === 3 ? "#" + hexMatch[1].split("").map((c) => c + c).join("") : "#" + hexMatch[1]) : undefined;
-        payload = { blockTitle: animationBlockTitle, blockSubtitle: animationBlockSubtitle, blockTitleStyle: animationBlockTitleStyle, blockSubtitleStyle: animationBlockSubtitleStyle, blockTitleFontSize: animationBlockTitleFontSize !== "" ? clampTitleFontSize(animationBlockTitleFontSize as number) : undefined, blockSubtitleFontSize: animationBlockSubtitleFontSize !== "" ? clampTitleFontSize(animationBlockSubtitleFontSize as number) : undefined, image: animationImage, backgroundColor };
+        payload = { blockTitle: animationBlockTitle, blockSubtitle: animationBlockSubtitle, blockTitleStyle: animationBlockTitleStyle, blockSubtitleStyle: animationBlockSubtitleStyle, blockTitleFontSize: animationBlockTitleFontSize !== "" ? clampTitleFontSize(animationBlockTitleFontSize as number) : undefined, blockSubtitleFontSize: animationBlockSubtitleFontSize !== "" ? clampTitleFontSize(animationBlockSubtitleFontSize as number) : undefined, image: animationImage, imageRatio: animationImageRatio, html: animationHtml, backgroundColor };
         break;
       }
       case "home_quote":
@@ -946,6 +993,116 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   </div>
                 ) : null}
               </div>
+
+              {/* ----- Projets vidéos mis en avant ----- */}
+              <div style={{ marginTop: 20, marginBottom: 12, fontWeight: 600, fontSize: 14, borderTop: "1px solid #eee", paddingTop: 16 }}>Vidéos projets mis en avant (jusqu'à 3)</div>
+
+              {/* Titre de la section vidéos */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, display: "block", marginBottom: 4 }}>Titre au-dessus des vidéos</label>
+                <input
+                  type="text"
+                  value={cadreurVideosSectionTitle}
+                  onChange={(e) => setCadreurVideosSectionTitle(e.target.value)}
+                  placeholder="Ex : Mes projets vidéo"
+                  style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid #ccc", fontSize: 14 }}
+                />
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>Alignement :</span>
+                  {(["left", "center", "right"] as const).map((al) => (
+                    <label key={al} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer" }}>
+                      <input type="radio" name="cadreur-vst-align" checked={cadreurVideosSectionTitleAlign === al} onChange={() => setCadreurVideosSectionTitleAlign(al)} />
+                      {al === "left" ? "Gauche" : al === "center" ? "Centre" : "Droite"}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {cadreurVideos.map((vid, i) => (
+                <div key={i} style={{ marginBottom: 16, padding: 12, border: "1px solid #eee", borderRadius: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>Vidéo {i + 1}</span>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={vid.visible ?? false}
+                        onChange={(e) => setCadreurVideos((prev) => prev.map((v, j) => (j === i ? { ...v, visible: e.target.checked } : v)))}
+                      />
+                      Afficher
+                    </label>
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ fontSize: 12, color: "var(--muted)" }}>Lien YouTube</label>
+                    <input
+                      type="text"
+                      value={vid.url}
+                      onChange={(e) => setCadreurVideos((prev) => prev.map((v, j) => (j === i ? { ...v, url: e.target.value } : v)))}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      style={{ ...inputStyle, marginTop: 4 }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: 8 }}>
+                    <label style={{ fontSize: 12, color: "var(--muted)" }}>Titre</label>
+                    <input
+                      type="text"
+                      value={vid.title ?? ""}
+                      onChange={(e) => setCadreurVideos((prev) => prev.map((v, j) => (j === i ? { ...v, title: e.target.value } : v)))}
+                      placeholder="Nom du projet"
+                      style={{ ...inputStyle, marginTop: 4 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: "var(--muted)" }}>Description</label>
+                    <textarea
+                      value={vid.description ?? ""}
+                      onChange={(e) => setCadreurVideos((prev) => prev.map((v, j) => (j === i ? { ...v, description: e.target.value } : v)))}
+                      placeholder="Brève description du projet"
+                      rows={2}
+                      style={{ ...inputStyle, marginTop: 4, resize: "vertical" }}
+                    />
+                  </div>
+                </div>
+              ))}
+
+              {/* ----- Style des vidéos ----- */}
+              <div style={{ marginTop: 8, marginBottom: 12, fontWeight: 600, fontSize: 14, borderTop: "1px solid #eee", paddingTop: 16 }}>Style des vidéos</div>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)" }}>Arrondi (px)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={50}
+                    value={cadreurVideoSettings.borderRadius ?? 12}
+                    onChange={(e) => setCadreurVideoSettings((prev) => ({ ...prev, borderRadius: Math.max(0, Math.min(50, Number(e.target.value) || 0)) }))}
+                    style={{ ...inputStyle, width: 72, marginTop: 4 }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, color: "var(--muted)" }}>Ombre</label>
+                  <select
+                    value={cadreurVideoSettings.shadow ?? "medium"}
+                    onChange={(e) => setCadreurVideoSettings((prev) => ({ ...prev, shadow: e.target.value as any }))}
+                    style={{ ...inputStyle, width: 100, marginTop: 4 }}
+                  >
+                    <option value="none">Aucune</option>
+                    <option value="light">Légère</option>
+                    <option value="medium">Moyenne</option>
+                    <option value="heavy">Forte</option>
+                  </select>
+                </div>
+                <div style={{ display: "flex", alignItems: "end", paddingBottom: 2 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={cadreurVideoSettings.glossy ?? false}
+                      onChange={(e) => setCadreurVideoSettings((prev) => ({ ...prev, glossy: e.target.checked }))}
+                    />
+                    Glossy
+                  </label>
+                </div>
+              </div>
+
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -987,6 +1144,22 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   </select>
                   <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={animationBlockSubtitleFontSize === "" ? "" : animationBlockSubtitleFontSize} onChange={(e) => setAnimationBlockSubtitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
                 </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte riche (sous le sous-titre)</label>
+                <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: animationHtml || "<p style='color:#999'>Aucun</p>" }} />
+                <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingAnimationHtml(true)}>Éditer le texte</button>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Ratio de l'image</label>
+                <select value={animationImageRatio} onChange={(e) => setAnimationImageRatio(e.target.value as AnimationImageRatio)} style={{ ...inputStyle, width: 160 }}>
+                  <option value="4:1">4:1 (panoramique)</option>
+                  <option value="21:9">21:9 (cinéma)</option>
+                  <option value="16:9">16:9 (standard)</option>
+                  <option value="3:2">3:2</option>
+                  <option value="4:5">4:5 (portrait)</option>
+                  <option value="1:1">1:1 (carré)</option>
+                </select>
               </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
@@ -1137,6 +1310,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       )}
       {editingCadreurHtml && blockKey === "home_cadreur" && (
         <RichTextModal title="Texte Cadreur" initial={cadreurHtml} onClose={() => setEditingCadreurHtml(false)} onSave={(h) => { setCadreurHtml(h); setEditingCadreurHtml(false); }} />
+      )}
+      {editingAnimationHtml && blockKey === "home_animation" && (
+        <RichTextModal title="Texte Animation" initial={animationHtml} onClose={() => setEditingAnimationHtml(false)} onSave={(h) => { setAnimationHtml(h); setEditingAnimationHtml(false); }} />
       )}
     </>
   );

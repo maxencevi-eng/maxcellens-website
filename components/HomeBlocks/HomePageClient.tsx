@@ -1,8 +1,9 @@
 "use client";
 
-import React, { Fragment, useEffect, useState, useRef } from "react";
+import React, { Fragment, useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import Clients from "../Clients/Clients";
@@ -17,6 +18,7 @@ import type {
   HomeQuoteData,
   HomeQuoteItem,
   HomeCtaData,
+  CadreurVideoItem,
 } from "./homeDefaults";
 import {
   DEFAULT_INTRO,
@@ -31,7 +33,10 @@ import {
 import type { HomeBlockKey } from "./HomeBlockModal";
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
 import AnimateInView, { AnimateStaggerItem } from "../AnimateInView/AnimateInView";
+import type { VideoLightboxItem } from "../VideoGallery/VideoLightbox";
 import styles from "./HomeBlocks.module.css";
+
+const VideoLightbox = dynamic(() => import("../VideoGallery/VideoLightbox"), { ssr: false });
 
 const SETTINGS_KEYS =
   "home_intro,home_services,home_stats,home_portrait,home_cadreur,home_animation,home_quote,home_cta";
@@ -67,6 +72,41 @@ const ANIMATION_SECTIONS = [
   { label: "Livrables & contact", hash: "animation_cta" },
 ] as const;
 
+/* ----- YouTube helpers for cadreur videos ----- */
+function getYouTubeId(url: string) {
+  try {
+    if (!url) return '';
+    if (!url.includes('youtube') && !url.includes('youtu.be')) return url;
+    const short = url.match(/youtu\.be\/(.+)$/);
+    if (short?.[1]) return short[1].split(/[?&]/)[0];
+    const shorts = url.match(/shorts\/([^?&#\/]+)/);
+    if (shorts?.[1]) return shorts[1].split(/[?&]/)[0];
+    const embed = url.match(/embed\/(.+)$/);
+    if (embed?.[1]) return embed[1].split(/[?&]/)[0];
+    const watch = url.match(/[?&]v=([^&]+)/);
+    if (watch?.[1]) return watch[1];
+    return url;
+  } catch { return url; }
+}
+function isYouTubeShort(url: string) { return /\/shorts\//.test(url); }
+function getYouTubeThumb(id: string) { return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : ""; }
+
+const SHADOW_MAP: Record<string, string> = {
+  none: 'none',
+  light: '0 2px 8px rgba(0,0,0,0.15)',
+  medium: '0 4px 16px rgba(0,0,0,0.25)',
+  heavy: '0 8px 30px rgba(0,0,0,0.4)',
+};
+
+const IMAGE_RATIO_MAP: Record<string, string> = {
+  '4:1': '4/1',
+  '21:9': '21/9',
+  '16:9': '16/9',
+  '3:2': '3/2',
+  '4:5': '4/5',
+  '1:1': '1/1',
+};
+
 export default function HomePageClient() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -89,6 +129,28 @@ export default function HomePageClient() {
   const portraitTouchStartX = useRef<number | null>(null);
   const portraitIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0); // kept for possible dots; marquee uses continuous scroll
+
+  /* ---- Cadreur video lightbox state ---- */
+  const [cadreurLightboxOpen, setCadreurLightboxOpen] = useState(false);
+  const [cadreurLightboxIndex, setCadreurLightboxIndex] = useState(0);
+  const [cadreurLightboxInitial, setCadreurLightboxInitial] = useState(0);
+
+  const cadreurVisibleVideos = useMemo(() => {
+    const vids = (cadreurBlock as any).videos as CadreurVideoItem[] | undefined;
+    if (!vids) return [];
+    return vids.filter((v) => v && v.visible && v.url);
+  }, [cadreurBlock]);
+
+  const cadreurLightboxItems: VideoLightboxItem[] = useMemo(
+    () => cadreurVisibleVideos.map((v) => ({ url: v.url, isShort: isYouTubeShort(v.url) })),
+    [cadreurVisibleVideos]
+  );
+
+  const openCadreurLightbox = (idx: number) => {
+    setCadreurLightboxInitial(idx);
+    setCadreurLightboxIndex(idx);
+    setCadreurLightboxOpen(true);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -426,7 +488,12 @@ export default function HomePageClient() {
       </section>
   );
 
-  const cadreurSection = hide("home_cadreur") ? null : (
+  const cadreurSection = hide("home_cadreur") ? null : (() => {
+    const vs = (cadreurBlock as any).videoSettings || {};
+    const vBorderRadius = vs.borderRadius ?? 12;
+    const vShadow = SHADOW_MAP[vs.shadow || 'medium'] || 'none';
+    const vGlossy = vs.glossy ?? false;
+    return (
       <section className={styles.cadreurBlock} style={(cadreurBlock as any).backgroundColor ? { backgroundColor: (cadreurBlock as any).backgroundColor } : undefined}>
         <div className={`container ${blockWidthClass("home_cadreur")}`.trim()}>
           <div className={styles.editWrap}>
@@ -465,10 +532,61 @@ export default function HomePageClient() {
                 )}
               </AnimateInView>
             </div>
+
+            {/* --- Featured project videos --- */}
+            {cadreurVisibleVideos.length > 0 && (
+              <AnimateInView variant="stagger" className={styles.cadreurVideosSection}>
+                {(cadreurBlock as any).videosSectionTitle ? (
+                  <p className={styles.cadreurVideosSectionTitle} style={{ textAlign: (cadreurBlock as any).videosSectionTitleAlign || 'center' }}>
+                    {(cadreurBlock as any).videosSectionTitle}
+                  </p>
+                ) : null}
+                <div className={styles.cadreurVideosGrid} data-count={cadreurVisibleVideos.length}>
+                  {cadreurVisibleVideos.map((vid, i) => {
+                    const ytId = getYouTubeId(vid.url);
+                    const thumb = getYouTubeThumb(ytId);
+                    return (
+                      <AnimateStaggerItem key={i}>
+                        <div className={styles.cadreurVideoCard}>
+                          <button
+                            type="button"
+                            className={styles.cadreurVideoThumbWrap}
+                            style={{ borderRadius: vBorderRadius, boxShadow: vShadow !== 'none' ? vShadow : undefined }}
+                            onClick={() => openCadreurLightbox(i)}
+                            aria-label={vid.title || "Vidéo projet"}
+                          >
+                            <img src={thumb} alt="" loading="lazy" />
+                            {vGlossy && <span className={styles.cadreurVideoGlossy} />}
+                            <span className={styles.cadreurVideoPlay}>
+                              <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><polygon points="6,3 20,12 6,21" /></svg>
+                            </span>
+                          </button>
+                          {vid.title && <p className={styles.cadreurVideoTitle}>{vid.title}</p>}
+                          {vid.description && <p className={styles.cadreurVideoDesc}>{vid.description}</p>}
+                        </div>
+                      </AnimateStaggerItem>
+                    );
+                  })}
+                </div>
+              </AnimateInView>
+            )}
           </div>
         </div>
+
+        {/* Cadreur video lightbox */}
+        {cadreurLightboxOpen && cadreurLightboxItems.length > 0 && (
+          <VideoLightbox
+            videos={cadreurLightboxItems}
+            index={cadreurLightboxIndex}
+            initialIndex={cadreurLightboxInitial}
+            onClose={() => setCadreurLightboxOpen(false)}
+            onPrev={() => setCadreurLightboxIndex((i) => (i <= 0 ? cadreurLightboxItems.length - 1 : i - 1))}
+            onNext={() => setCadreurLightboxIndex((i) => (i >= cadreurLightboxItems.length - 1 ? 0 : i + 1))}
+          />
+        )}
       </section>
-  );
+    );
+  })();
 
   const animationSection = hide("home_animation") ? null : (
       <section
@@ -494,7 +612,7 @@ export default function HomePageClient() {
             <AnimateInView variant="scaleIn">
             <div className={styles.animationBlockCard}>
               {(animationBlock as any).image?.url ? (
-                <div className={styles.animationBlockBannerWrap}>
+                <div className={styles.animationBlockBannerWrap} style={(animationBlock as any).imageRatio && IMAGE_RATIO_MAP[(animationBlock as any).imageRatio] ? { aspectRatio: IMAGE_RATIO_MAP[(animationBlock as any).imageRatio] } : undefined}>
                   <Image src={(animationBlock as any).image.url} alt="" className={styles.animationBlockBanner} width={1200} height={600} sizes="(max-width: 768px) 100vw, 1200px" />
                 </div>
               ) : null}
@@ -509,6 +627,9 @@ export default function HomePageClient() {
                   const fs = (animationBlock as any).blockSubtitleFontSize;
                   return <Tag className={`${styles.animationBlockSubtitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(animationBlock as any).blockSubtitle}</Tag>;
                 })() : null}
+                {(animationBlock as any).html ? (
+                  <div className={styles.animationBlockRichText} dangerouslySetInnerHTML={{ __html: (animationBlock as any).html }} />
+                ) : null}
                 <div className={styles.animationBlockButtons}>
                   {ANIMATION_SECTIONS.map(({ label, hash }) => (
                     <button
