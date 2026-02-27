@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Fragment, useEffect, useState, useRef, useMemo } from "react";
+import React, { Fragment, useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -250,17 +250,22 @@ export default function HomePageClient() {
     return DEFAULT_PORTRAIT.slides;
   })();
   const portraitCarouselSpeed = Math.max(2000, (portraitBlock as any).carouselSpeed ?? 5000);
-  useEffect(() => {
+  const resetPortraitInterval = useCallback(() => {
+    if (portraitIntervalRef.current) clearInterval(portraitIntervalRef.current);
+    portraitIntervalRef.current = null;
     if (portraitSlides.length <= 1) return;
     portraitIntervalRef.current = setInterval(() => {
       setPortraitSlideDirection("next");
       setCurrentPortraitSlide((prev) => (prev >= portraitSlides.length - 1 ? 0 : prev + 1));
     }, portraitCarouselSpeed);
+  }, [portraitSlides.length, portraitCarouselSpeed]);
+  useEffect(() => {
+    resetPortraitInterval();
     return () => {
       if (portraitIntervalRef.current) clearInterval(portraitIntervalRef.current);
       portraitIntervalRef.current = null;
     };
-  }, [portraitSlides.length, portraitCarouselSpeed]);
+  }, [resetPortraitInterval]);
 
   if (!loaded) {
     return (
@@ -387,9 +392,11 @@ export default function HomePageClient() {
                 if (delta > 0) {
                   setPortraitSlideDirection("next");
                   setCurrentPortraitSlide((prev) => (prev >= portraitSlides.length - 1 ? 0 : prev + 1));
+                  resetPortraitInterval();
                 } else {
                   setPortraitSlideDirection("prev");
                   setCurrentPortraitSlide((prev) => (prev <= 0 ? portraitSlides.length - 1 : prev - 1));
+                  resetPortraitInterval();
                 }
               }}
             >
@@ -450,6 +457,7 @@ export default function HomePageClient() {
                         onClick={() => {
                           setPortraitSlideDirection(i > portraitIndex ? "next" : "prev");
                           setCurrentPortraitSlide(i);
+                          resetPortraitInterval();
                         }}
                         aria-label={`Slide ${i + 1}`}
                       />
@@ -462,6 +470,7 @@ export default function HomePageClient() {
                       onClick={() => {
                         setPortraitSlideDirection("prev");
                         setCurrentPortraitSlide((prev) => (prev <= 0 ? portraitSlides.length - 1 : prev - 1));
+                        resetPortraitInterval();
                       }}
                       aria-label="Précédent"
                     >
@@ -473,6 +482,7 @@ export default function HomePageClient() {
                       onClick={() => {
                         setPortraitSlideDirection("next");
                         setCurrentPortraitSlide((prev) => (prev >= portraitSlides.length - 1 ? 0 : prev + 1));
+                        resetPortraitInterval();
                       }}
                       aria-label="Suivant"
                     >
@@ -558,7 +568,8 @@ export default function HomePageClient() {
                             className={styles.cadreurVideoThumbWrap}
                             style={{ borderRadius: vBorderRadius, boxShadow: vShadow !== 'none' ? vShadow : undefined }}
                             onClick={() => openCadreurLightbox(i)}
-                            aria-label={vid.title || "Vidéo projet"}
+                            aria-label={vid.title || `Vidéo ${i + 1}`}
+                            data-video-name={vid.title || `Vidéo ${i + 1}`}
                           >
                             <img src={thumb} alt="" loading="lazy" />
                             {vGlossy && <span className={styles.cadreurVideoGlossy} />}

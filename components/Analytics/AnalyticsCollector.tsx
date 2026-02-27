@@ -197,8 +197,13 @@ export default function AnalyticsCollector() {
         if (ariaLabelLower === 'menu' || (hasHamburger && !btnEl.textContent?.trim())) {
           return 'menu mobile|';
         }
-        const isVideoGallery = ariaLabelLower === 'vidéo galerie' || /cardButton|videoGallery|VideoGallery/i.test(btnClass) || (btnEl.closest?.('[class*="VideoGallery"]') != null);
-        if (isVideoGallery) return 'vidéo galerie|Vidéo galerie';
+        const isVideoGallery = ariaLabelLower === 'vidéo galerie' || ariaLabelLower.startsWith('vidéo galerie') || /cardButton|videoGallery|VideoGallery/i.test(btnClass) || (btnEl.closest?.('[class*="VideoGallery"]') != null) || (btnEl.closest?.('[class*="cadreurVideo"]') != null);
+        if (isVideoGallery) {
+          const videoLabel = ariaLabel && ariaLabel !== 'Vidéo galerie' && ariaLabel !== 'Vidéo projet' ? ariaLabel : null;
+          const dataVideoName = btnEl.getAttribute?.('data-video-name');
+          const label = dataVideoName || videoLabel || 'Vidéo';
+          return `vidéo galerie|${label}`;
+        }
         const hasImg = btnEl.querySelector?.('img');
         const inGalleryLike = btnEl.closest?.('[class*="Gallery"]') || btnEl.closest?.('[class*="gallery"]') || btnEl.closest?.('[class*="masonry"]');
         if (hasImg && inGalleryLike) {

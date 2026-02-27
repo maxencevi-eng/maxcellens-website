@@ -70,6 +70,9 @@ export async function GET(req: Request) {
     const visitorHashesParam = url.searchParams.get('visitorHashes');
     const requestedVisitorHashes = visitorHashesParam ? visitorHashesParam.split(',').filter(Boolean) : null;
 
+    const countriesParam = url.searchParams.get('countries');
+    const requestedCountries = countriesParam ? countriesParam.split(',').map(s => decodeURIComponent(s)).filter(Boolean) : null;
+
     const { data: filterRow } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'analytics_ip_filter').maybeSingle();
     const filter = parseIpFilter((filterRow as any)?.value);
     const includeHashes = filter.include?.length ? hashedIpList(filter.include) : null;
@@ -218,6 +221,14 @@ export async function GET(req: Request) {
       sessions = sessions.filter((s) => s.ip_hash && requestedVisitorHashes.includes(s.ip_hash));
     }
 
+    // 5. Filtre par pays sélectionnés (temporaire, via query param)
+    if (requestedCountries?.length) {
+      sessions = sessions.filter((s) => {
+        const c = (s.country && String(s.country).trim()) ? String(s.country).trim() : 'Inconnu';
+        return requestedCountries.includes(c);
+      });
+    }
+
     let visitors: { ip: string | null; ip_hash: string | null; country: string; city: string; sessionCount: number }[] = [];
     try {
       const visitorSelectWithBot = 'session_id, ip_hash, ip, country, city, user_agent, is_bot, human_validated';
@@ -302,6 +313,10 @@ export async function GET(req: Request) {
         if (requestedVisitorHashes?.length) {
           visitors = visitors.filter((v) => v.ip_hash && requestedVisitorHashes.includes(v.ip_hash));
         }
+        // Filtre par pays sélectionnés (temporaire)
+        if (requestedCountries?.length) {
+          visitors = visitors.filter((v) => requestedCountries.includes(v.country));
+        }
       }
     } catch (_) {}
 
@@ -369,7 +384,7 @@ export async function GET(req: Request) {
       pathCount.set(p, cur);
     });
     const topContent = Array.from(pathCount.entries())
-      .map(([path, { views, duration }]) => ({ path, views, avgTime: views ? Math.round(duration / views) : 0 }))
+      .map(([path, { views, duration }]) => ({ path, views, avgTime: views ? Math.round(duration / views) : 0, totalTime: Math.round(duration) }))
       .sort((a, b) => b.views - a.views)
       .slice(0, 20);
 
@@ -409,6 +424,7 @@ export async function GET(req: Request) {
         country,
         count,
         avgTimeSeconds: (() => { const d = countryDuration.get(country); return d?.count ? Math.round(d.sum / d.count) : 0; })(),
+        avgTimeSiteSeconds: (() => { const d = countryDuration.get(country); return d?.sum && count ? Math.round(d.sum / count) : 0; })(),
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 15);
@@ -417,7 +433,8 @@ export async function GET(req: Request) {
         const [country, city] = key.split('|');
         const d = cityDuration.get(key);
         const avgTimeSeconds = d?.count ? Math.round(d.sum / d.count) : 0;
-        return { country, city: city || 'Inconnu', count, avgTimeSeconds };
+        const avgTimeSiteSeconds = d?.sum && count ? Math.round(d.sum / count) : 0;
+        return { country, city: city || 'Inconnu', count, avgTimeSeconds, avgTimeSiteSeconds };
       })
       .sort((a, b) => b.count - a.count)
       .slice(0, 15);

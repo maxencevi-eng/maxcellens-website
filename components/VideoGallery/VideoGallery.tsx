@@ -247,7 +247,8 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
                       type="button"
                       onClick={() => openLightbox(myIndex)}
                       className={styles.cardButton}
-                      aria-label="Vidéo galerie"
+                      aria-label={item.title ? `${item.title}` : `Vidéo ${myIndex + 1}`}
+                      data-video-name={item.title || `Vidéo ${myIndex + 1}`}
                       style={{ ...cardStyle, paddingTop }}
                     >
                       <img
@@ -305,7 +306,8 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
               type="button"
               onClick={() => openLightbox(myIndex)}
               className={styles.cardButton}
-              aria-label="Vidéo galerie"
+              aria-label={item.title ? `${item.title}` : `Vidéo ${myIndex + 1}`}
+              data-video-name={item.title || `Vidéo ${myIndex + 1}`}
               style={{ ...cardStyle, paddingTop }}
             >
               <img

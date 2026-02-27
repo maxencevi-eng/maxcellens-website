@@ -22,9 +22,9 @@ type AnalyticsData = {
     avgPagesPerVisit: number;
   };
   trafficLast30Days: { date: string; views: number; visitors: number }[];
-  topContent: { path: string; views: number; avgTime: number }[];
-  byCountry: { country: string; count: number; avgTimeSeconds?: number }[];
-  byCity: { country: string; city: string; count: number; avgTimeSeconds?: number }[];
+  topContent: { path: string; views: number; avgTime: number; totalTime: number }[];
+  byCountry: { country: string; count: number; avgTimeSeconds?: number; avgTimeSiteSeconds?: number }[];
+  byCity: { country: string; city: string; count: number; avgTimeSeconds?: number; avgTimeSiteSeconds?: number }[];
   topClicks: { path: string; element_id: string; count: number }[];
   bySource?: { source: string; browser: string; count: number; avgTimeSeconds?: number }[];
   visitsByPage?: { path: string; uniqueVisitors: number; avgTimeSeconds?: number }[];
@@ -87,6 +87,9 @@ export default function StatisticsModal({
   const [dataTab, setDataTab] = useState<'content' | 'geo' | 'clicks' | 'source' | 'visitsByPage' | 'visitors'>('content');
   const [myIp, setMyIp] = useState<string | null>(null);
   const [selectedVisitorHashes, setSelectedVisitorHashes] = useState<Set<string>>(new Set());
+  const [selectedCountries, setSelectedCountries] = useState<Set<string>>(new Set());
+  const [countryFilterCountries, setCountryFilterCountries] = useState<string[] | null>(null);
+  const [countryFilterActive, setCountryFilterActive] = useState(false);
   const [hashAddedFeedback, setHashAddedFeedback] = useState<string | null>(null);
   const [purgingHashes, setPurgingHashes] = useState(false);
   const [purgeHashResult, setPurgeHashResult] = useState<string | null>(null);
@@ -124,6 +127,9 @@ export default function StatisticsModal({
       if (visitorFilterHashes?.length) {
         params.set('visitorHashes', visitorFilterHashes.join(','));
       }
+      if (countryFilterCountries?.length) {
+        params.set('countries', countryFilterCountries.map(c => encodeURIComponent(c)).join(','));
+      }
       const res = await fetch(`/api/admin/analytics?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -157,7 +163,7 @@ export default function StatisticsModal({
     } finally {
       setLoading(false);
     }
-  }, [effectivePeriod, selectedDate, visitorFilterHashes]);
+  }, [effectivePeriod, selectedDate, visitorFilterHashes, countryFilterCountries]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -730,7 +736,8 @@ export default function StatisticsModal({
                             <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
                               <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Page</th>
                               <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Vues</th>
-                              <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Temps moyen (s)</th>
+                              <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Temps moyen</th>
+                              <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Temps total</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -739,6 +746,7 @@ export default function StatisticsModal({
                                 <td style={{ padding: '10px 14px', color: '#1e293b' }}>Page {getPageLabel(row.path || '/')}</td>
                                 <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.views}</td>
                                 <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{formatDurationSeconds(row.avgTime)}</td>
+                                <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{formatDurationSeconds(row.totalTime)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -766,23 +774,78 @@ export default function StatisticsModal({
                     <div className={styles.geoGrid} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                       <div>
                         <h3 className={styles.sectionTitle} style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600, color: '#1e293b' }}>Par pays</h3>
+                        {countryData.length > 0 && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const countries = Array.from(selectedCountries);
+                                if (countries.length === 0) return;
+                                setCountryFilterCountries(countries);
+                                setCountryFilterActive(true);
+                              }}
+                              disabled={selectedCountries.size === 0}
+                              style={{ padding: '6px 14px', fontSize: 13, background: selectedCountries.size ? '#2563eb' : '#f1f5f9', color: selectedCountries.size ? '#fff' : '#94a3b8', border: 'none', borderRadius: 6, cursor: selectedCountries.size ? 'pointer' : 'not-allowed', fontWeight: 600 }}
+                            >
+                              Filtrer ({selectedCountries.size})
+                            </button>
+                            {countryFilterActive && (
+                              <span style={{ fontSize: 12, color: '#2563eb', fontWeight: 600, background: '#eff6ff', padding: '4px 10px', borderRadius: 6, border: '1px solid #bfdbfe', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                Filtre actif ({countryFilterCountries?.length ?? 0})
+                                <button
+                                  type="button"
+                                  onClick={() => { setCountryFilterCountries(null); setCountryFilterActive(false); }}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontWeight: 700, fontSize: 13, lineHeight: 1, padding: 0 }}
+                                  title="Retirer le filtre pays"
+                                >✕</button>
+                              </span>
+                            )}
+                            {selectedCountries.size > 0 && (
+                              <button type="button" onClick={() => setSelectedCountries(new Set())} style={{ padding: '6px 12px', fontSize: 12, background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: 6, cursor: 'pointer' }}>
+                                Désélectionner tout
+                              </button>
+                            )}
+                          </div>
+                        )}
                         <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: 10 }}>
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                             <thead>
                               <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                                <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600, width: 40 }}>Sel.</th>
                                 <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Pays</th>
                                 <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Visites</th>
-                                <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Temps moyen</th>
+                                <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Temps moyen / page</th>
+                                <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Temps moyen site</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {(countryData.slice((pageGeoCountry - 1) * PAGE_SIZE, pageGeoCountry * PAGE_SIZE)).map((row) => (
-                                <tr key={row.country} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                  <td style={{ padding: '10px 14px', color: '#1e293b' }}>{formatCity(row.country)}</td>
-                                  <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.count}</td>
-                                  <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{formatDurationSeconds(row.avgTimeSeconds ?? 0)}</td>
-                                </tr>
-                              ))}
+                              {(countryData.slice((pageGeoCountry - 1) * PAGE_SIZE, pageGeoCountry * PAGE_SIZE)).map((row) => {
+                                const countryName = formatCity(row.country);
+                                const isSelected = selectedCountries.has(row.country);
+                                return (
+                                  <tr key={row.country} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                    <td style={{ padding: '10px 14px', color: '#1e293b' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => {
+                                          setSelectedCountries((prev) => {
+                                            const next = new Set(prev);
+                                            if (next.has(row.country)) next.delete(row.country);
+                                            else next.add(row.country);
+                                            return next;
+                                          });
+                                        }}
+                                        aria-label={`Sélectionner ${countryName}`}
+                                      />
+                                    </td>
+                                    <td style={{ padding: '10px 14px', color: '#1e293b' }}>{countryName}</td>
+                                    <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.count}</td>
+                                    <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{formatDurationSeconds(row.avgTimeSeconds ?? 0)}</td>
+                                    <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{formatDurationSeconds(row.avgTimeSiteSeconds ?? 0)}</td>
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
@@ -802,7 +865,8 @@ export default function StatisticsModal({
                               <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
                                 <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Ville / Pays</th>
                                 <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Visites</th>
-                                <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Temps moyen</th>
+                                <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Temps moyen / page</th>
+                                <th style={{ padding: '10px 14px', color: '#374151', fontWeight: 600 }}>Temps moyen site</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -811,6 +875,7 @@ export default function StatisticsModal({
                                   <td style={{ padding: '10px 14px', color: '#1e293b' }}>{formatCity(row.city)} ({formatCity(row.country)})</td>
                                   <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{row.count}</td>
                                   <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{formatDurationSeconds(row.avgTimeSeconds ?? 0)}</td>
+                                  <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{formatDurationSeconds(row.avgTimeSiteSeconds ?? 0)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -831,7 +896,20 @@ export default function StatisticsModal({
 
               {dataTab === 'clicks' && (
                 (() => {
-                  const clicksData = Array.isArray(data?.topClicks) ? data.topClicks : [];
+                  const allClicksData = Array.isArray(data?.topClicks) ? data.topClicks : [];
+                  const ALLOWED_CLICK_TYPES = new Set(['bouton', 'bouton bloc', 'lien', 'lien interne', 'lien externe', 'menu', 'menu mobile', 'vidéo galerie', 'photo galerie', 'image galerie']);
+                  const clicksData = allClicksData.filter((row) => {
+                    const raw = (row.element_id || '').trim();
+                    if (!raw) return false;
+                    const pipe = raw.indexOf('|');
+                    if (pipe >= 0) {
+                      const type = raw.slice(0, pipe).trim().toLowerCase();
+                      return ALLOWED_CLICK_TYPES.has(type);
+                    }
+                    const lower = raw.toLowerCase();
+                    if (lower.startsWith('mailto:') || lower.startsWith('http://') || lower.startsWith('https://')) return true;
+                    return false;
+                  });
                   const showPagination = clicksData.length > PAGE_SIZE;
                   return (
                     <div>
