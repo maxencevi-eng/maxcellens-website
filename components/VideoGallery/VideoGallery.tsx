@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import type { VideoLightboxItem } from './VideoLightbox';
 import styles from './VideoGallery.module.css';
@@ -94,6 +94,16 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxInitialIndex, setLightboxInitialIndex] = useState(0);
+  const [loadedSet, setLoadedSet] = useState<Set<number>>(new Set());
+
+  const markLoaded = useCallback((index: number) => {
+    setLoadedSet((prev) => {
+      if (prev.has(index)) return prev;
+      const next = new Set(prev);
+      next.add(index);
+      return next;
+    });
+  }, []);
 
   const list: VideoItem[] = useMemo(() => {
     return raw.map((it) => {
@@ -228,6 +238,7 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
       } as React.CSSProperties}
       data-padding-mobile={hasMobilePadding ? '' : undefined}
     >
+
       {rows.map((r, idx) => {
         if (Array.isArray(r)) {
           const colCount = r[0].columns || 2;
@@ -240,6 +251,7 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
                 const paddingTop = isShort ? '177.78%' : '56.25%';
                 const coverSrc = item.cover?.url || (id ? getYouTubeThumb(id) : getInlineThumb("Vidéo"));
                 const myIndex = globalIndex++;
+                const isThisLoaded = loadedSet.has(myIndex);
                 if (!item.url && !item.cover?.url) return <div key={j} style={{ width: itemWidth }} />;
                 return (
                   <div key={j} style={{ width: itemWidth }}>
@@ -249,13 +261,16 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
                       className={styles.cardButton}
                       aria-label={item.title ? `${item.title}` : `Vidéo ${myIndex + 1}`}
                       data-video-name={item.title || `Vidéo ${myIndex + 1}`}
-                      style={{ ...cardStyle, paddingTop }}
+                      style={{ ...cardStyle, paddingTop, background: '#000' }}
                     >
                       <img
+                        ref={(el) => { if (el && el.complete && el.naturalWidth > 0) markLoaded(myIndex); }}
                         src={coverSrc}
                         alt=""
-                        loading="lazy"
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                        loading={myIndex < 4 ? 'eager' : 'lazy'}
+                        decoding="async"
+                        onLoad={() => markLoaded(myIndex)}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: isThisLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }}
                         onError={(e) => {
                           if (!item.cover?.url) {
                             const img = e.currentTarget as HTMLImageElement;
@@ -295,6 +310,7 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
         const paddingTop = isShort ? '177.78%' : '56.25%';
         const coverSrc = item.cover?.url || (id ? getYouTubeThumb(id) : getInlineThumb("Vidéo"));
         const myIndex = globalIndex++;
+        const isLoaded2 = loadedSet.has(myIndex);
 
         if (!item.url && !item.cover?.url) {
           return <div key={idx} style={{ marginBottom: '2rem' }} />;
@@ -308,13 +324,16 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
               className={styles.cardButton}
               aria-label={item.title ? `${item.title}` : `Vidéo ${myIndex + 1}`}
               data-video-name={item.title || `Vidéo ${myIndex + 1}`}
-              style={{ ...cardStyle, paddingTop }}
+              style={{ ...cardStyle, paddingTop, background: '#000' }}
             >
               <img
+                ref={(el) => { if (el && el.complete && el.naturalWidth > 0) markLoaded(myIndex); }}
                 src={coverSrc}
                 alt=""
-                loading="lazy"
-                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                loading={myIndex < 4 ? 'eager' : 'lazy'}
+                decoding="async"
+                onLoad={() => markLoaded(myIndex)}
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: isLoaded2 ? 1 : 0, transition: 'opacity 0.4s ease' }}
                 onError={(e) => {
                   if (!item.cover?.url) {
                     const img = e.currentTarget as HTMLImageElement;

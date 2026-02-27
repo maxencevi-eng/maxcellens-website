@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 // use native img to avoid next/image remote domain restrictions in admin editor preview
 const PortraitLightbox = dynamic(() => import('../PortraitLightbox/PortraitLightbox'), { ssr: false });
@@ -9,12 +9,31 @@ type Item = { id: string | number; title?: string; image_url: string; width?: nu
 
 type Settings = { galleryType?: string; columns?: number; aspect?: string; disposition?: string };
 
+/** Number of images loaded eagerly (above the fold) */
+const EAGER_COUNT = 6;
+
 export default function PortraitGallery({ items, settings = {} }: { items: Item[]; settings?: Settings }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [slideshowIndex, setSlideshowIndex] = useState<number>(0);
   const [columns, setColumns] = useState<number>(3);
   const gridRef = React.useRef<HTMLDivElement | null>(null);
   const [spans, setSpans] = useState<number[]>([]);
+  // Track which images have loaded
+  const [loadedSet, setLoadedSet] = useState<Set<number>>(new Set());
+
+  const markLoaded = useCallback((index: number) => {
+    setLoadedSet((prev) => {
+      if (prev.has(index)) return prev;
+      const next = new Set(prev);
+      next.add(index);
+      return next;
+    });
+  }, []);
+
+  // Reset loaded state when items change (e.g. tab switch)
+  useEffect(() => {
+    setLoadedSet(new Set());
+  }, [items]);
 
   // set columns from settings (fallback to responsive default)
   useEffect(() => {
@@ -79,6 +98,31 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
   const gap = 16;
   const rowHeight = 8;
 
+  /** Return inline style for progressive image reveal */
+  const imgRevealStyle = (index: number): React.CSSProperties => ({
+    opacity: loadedSet.has(index) ? 1 : 0,
+    transition: 'opacity 0.4s ease',
+  });
+
+  /** Ref callback to handle already-cached images (e.g. tab switch) */
+  const imgRef = useCallback((index: number) => (el: HTMLImageElement | null) => {
+    if (el && el.complete && el.naturalWidth > 0) markLoaded(index);
+  }, [markLoaded]);
+
+  /** Common img props for sequential loading */
+  const imgLoadingProps = (index: number) => ({
+    ref: imgRef(index),
+    loading: (index < EAGER_COUNT ? 'eager' : 'lazy') as 'eager' | 'lazy',
+    ...(index < 3 ? { fetchPriority: 'high' as const } : {}),
+    onLoad: () => markLoaded(index),
+    decoding: 'async' as const,
+  });
+
+  /** Transparent placeholder — no visible background before image loads */
+  const skeletonBg: React.CSSProperties = {
+    background: 'transparent',
+  };
+
   // compute a unified padding percent when a fixed aspect is configured
   const aspectPaddingPercent = React.useMemo(() => {
     try {
@@ -100,6 +144,7 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
 
   return (
     <div className="PortraitGallery" style={{ display: 'flex', justifyContent: 'center' }}>
+
       <div style={{ maxWidth: 1100, width: '100%' }}>
         {/* Render according to galleryType */}
         {(!settings.galleryType || settings.galleryType === 'masonry') && (
@@ -108,12 +153,12 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
               <div key={`${String(it.id)}-${i}`} style={{ breakInside: 'avoid', marginBottom: 12 }}>
                 <button onClick={() => { if (!settings.galleryType || settings.galleryType === 'masonry' || settings.galleryType === 'grid') open(i); }} aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}>
                       {aspectPaddingPercent ? (
-                        <div style={{ width: '100%', borderRadius: 0, overflow: 'hidden', background: '#f6f7f8', position: 'relative', paddingBottom: `${aspectPaddingPercent}%` }}>
-                          <img src={it.image_url} alt={it.title || ''} style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
+                        <div style={{ width: '100%', borderRadius: 0, overflow: 'hidden', position: 'relative', paddingBottom: `${aspectPaddingPercent}%`, ...skeletonBg }}>
+                          <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, ...imgRevealStyle(i) }} />
                         </div>
                       ) : (
-                        <div style={{ width: '100%', borderRadius: 0, overflow: 'hidden', background: '#f6f7f8' }}>
-                          <img src={it.image_url} alt={it.title || ''} style={{ objectFit: 'cover', width: '100%', display: 'block' }} />
+                        <div style={{ width: '100%', borderRadius: 0, overflow: 'hidden', minHeight: 60, ...skeletonBg }}>
+                          <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', display: 'block', ...imgRevealStyle(i) }} />
                         </div>
                       )}
                 </button>
@@ -134,8 +179,8 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
                 return (
                   <div key={`${String(it.id)}-${i}`} style={{ display: 'block' }}>
                     <button onClick={() => { if (settings.galleryType === 'grid' || !settings.galleryType || settings.galleryType === 'masonry') open(i); }} aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}>
-                      <div style={{ width: '100%', borderRadius: 0, overflow: 'hidden', background: '#f6f7f8', position: 'relative', paddingBottom: `${paddingBottom}%` }}>
-                        <img src={it.image_url} alt={it.title || ''} style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+                      <div style={{ width: '100%', borderRadius: 0, overflow: 'hidden', position: 'relative', paddingBottom: `${paddingBottom}%`, ...skeletonBg }}>
+                        <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, ...imgRevealStyle(i) }} />
                       </div>
                     </button>
                   </div>
@@ -144,8 +189,8 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
               return (
                 <div key={`${String(it.id)}-${i}`}>
                   <button onClick={() => open(i)} aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}>
-                    <div style={{ position: 'relative', width: '100%', borderRadius: 0, overflow: 'hidden', background: '#f6f7f8', height: '100%' }}>
-                      <img src={it.image_url} alt={it.title || ''} style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }} />
+                    <div style={{ position: 'relative', width: '100%', borderRadius: 0, overflow: 'hidden', height: '100%', minHeight: 60, ...skeletonBg }}>
+                      <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block', ...imgRevealStyle(i) }} />
                     </div>
                   </button>
                 </div>
@@ -159,8 +204,8 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
             {items.map((it, i) => (
               <div key={`${String(it.id)}-${i}`} style={{ flex: `0 0 ${Math.max(20, Math.floor(100 / Math.max(1, columns)))}%`, scrollSnapAlign: 'center' }}>
                 <div aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'default', display: 'block', width: '100%' }}>
-                  <div style={{ width: '100%', borderRadius: 8, overflow: 'hidden', background: '#f6f7f8' }}>
-                    <img src={it.image_url} alt={it.title || ''} style={{ objectFit: 'cover', width: '100%', display: 'block' }} />
+                  <div style={{ width: '100%', borderRadius: 8, overflow: 'hidden', minHeight: 60, ...skeletonBg }}>
+                    <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', display: 'block', ...imgRevealStyle(i) }} />
                   </div>
                 </div>
               </div>
