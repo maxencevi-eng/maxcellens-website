@@ -49,7 +49,7 @@ export default function GalleryMasonry({ items }: { items: Item[] }) {
                   priority={i < 3}
                   onLoad={() => markLoaded(i)}
                   onLoadingComplete={() => markLoaded(i)}
-                  style={{ opacity: loadedSet.has(i) ? 1 : 0, transition: 'opacity 0.4s ease' }}
+                  style={i < EAGER_COUNT ? {} : { opacity: loadedSet.has(i) ? 1 : 0, transition: 'opacity 0.4s ease' }}
                 />
               </div>
               <div className="p-3">

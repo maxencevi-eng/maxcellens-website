@@ -27,7 +27,7 @@ const defaultLogos = [
   makePlaceholder('Logo 10'),
 ];
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import ClientsEditModal from './ClientsEditModal';
 import { supabase } from '../../lib/supabase';
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from '../BlockVisibility';
@@ -41,6 +41,16 @@ export default function Clients({ logos, title }: Props) {
   const { hiddenBlocks, blockWidthModes, isAdmin: isAdminCtx } = useBlockVisibility();
   const hide = !isAdminCtx && hiddenBlocks.includes('clients');
   const blockWidthClass = blockWidthModes['clients'] === 'max1600' ? 'block-width-1600' : '';
+  const [loadedSet, setLoadedSet] = useState<Set<string>>(new Set());
+
+  const markLoaded = useCallback((key: string) => {
+    setLoadedSet((prev) => {
+      if (prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+  }, []);
 
   // grid settings (from site-settings `clients_grid`)
   const [gridSettings, setGridSettings] = useState<{ columns: number; itemWidth: number; rowGap: number; colGap: number; heightRatio: number; cloudMode?: boolean; rows?: number }>(() => ({
@@ -167,42 +177,52 @@ export default function Clients({ logos, title }: Props) {
             {cloudMode
               ? cloudRowsContent.map((row, rowIndex) => (
                   <div key={`row-${rowIndex}`} className={styles.cloudRow}>
-                    {row.map((it, i) => (
-                      <div key={`${rowIndex}-${i}`} className={`${styles.item} ${styles.cloudItem}`}>
-                        <img
-                          src={it.url}
-                          alt={`client-${rowIndex}-${i}`}
-                          loading="lazy"
-                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                          onError={(e) => {
-                            const el = e.currentTarget as HTMLImageElement;
-                            // fallback to an inline SVG data URI to avoid external requests
-                            const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='60'><rect fill='%23f3f4f6' width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='14'>Logo</text></svg>`;
-                            el.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-                            el.onerror = null;
-                          }}
-                        />
-                      </div>
-                    ))}
+                    {row.map((it, i) => {
+                      const key = `cloud-${rowIndex}-${i}`;
+                      return (
+                        <div key={`${rowIndex}-${i}`} className={`${styles.item} ${styles.cloudItem}`}>
+                          <img
+                            ref={(el) => { if (el && el.complete && el.naturalWidth > 0) markLoaded(key); }}
+                            src={it.url}
+                            alt={`client-${rowIndex}-${i}`}
+                            loading="lazy"
+                            onLoad={() => markLoaded(key)}
+                            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', opacity: loadedSet.has(key) ? 1 : 0, transition: 'opacity 0.4s ease' }}
+                            onError={(e) => {
+                              const el = e.currentTarget as HTMLImageElement;
+                              // fallback to an inline SVG data URI to avoid external requests
+                              const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='60'><rect fill='%23f3f4f6' width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='14'>Logo</text></svg>`;
+                              el.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+                              el.onerror = null;
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 ))
-              : logosList.map((it, i) => (
-                  <div key={i} className={styles.item}>
-                    <img
-                      src={it.url}
-                      alt={`client-${i}`}
-                      loading="lazy"
-                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                      onError={(e) => {
-                        const el = e.currentTarget as HTMLImageElement;
-                        // fallback to an inline SVG data URI to avoid external requests
-                        const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='60'><rect fill='%23f3f4f6' width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='14'>Logo</text></svg>`;
-                        el.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-                        el.onerror = null;
-                      }}
-                    />
-                  </div>
-                ))}
+              : logosList.map((it, i) => {
+                  const key = `grid-${i}`;
+                  return (
+                    <div key={i} className={styles.item}>
+                      <img
+                        ref={(el) => { if (el && el.complete && el.naturalWidth > 0) markLoaded(key); }}
+                        src={it.url}
+                        alt={`client-${i}`}
+                        loading="lazy"
+                        onLoad={() => markLoaded(key)}
+                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', opacity: loadedSet.has(key) ? 1 : 0, transition: 'opacity 0.4s ease' }}
+                        onError={(e) => {
+                          const el = e.currentTarget as HTMLImageElement;
+                          // fallback to an inline SVG data URI to avoid external requests
+                          const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='60'><rect fill='%23f3f4f6' width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='14'>Logo</text></svg>`;
+                          el.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+                          el.onerror = null;
+                        }}
+                      />
+                    </div>
+                  );
+                })}
           </div>
         </div>
       </div>

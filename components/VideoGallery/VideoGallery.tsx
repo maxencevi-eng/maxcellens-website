@@ -270,7 +270,7 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
                         loading={myIndex < 4 ? 'eager' : 'lazy'}
                         decoding="async"
                         onLoad={() => markLoaded(myIndex)}
-                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: isThisLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }}
+                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', ...(myIndex < 4 ? {} : { opacity: isThisLoaded ? 1 : 0, transition: 'opacity 0.4s ease' }) }}
                         onError={(e) => {
                           if (!item.cover?.url) {
                             const img = e.currentTarget as HTMLImageElement;
@@ -333,7 +333,7 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
                 loading={myIndex < 4 ? 'eager' : 'lazy'}
                 decoding="async"
                 onLoad={() => markLoaded(myIndex)}
-                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: isLoaded2 ? 1 : 0, transition: 'opacity 0.4s ease' }}
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', ...(myIndex < 4 ? {} : { opacity: isLoaded2 ? 1 : 0, transition: 'opacity 0.4s ease' }) }}
                 onError={(e) => {
                   if (!item.cover?.url) {
                     const img = e.currentTarget as HTMLImageElement;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import GalleriesPagesEditor, { type GallerySubPageEntry } from "./GalleriesPagesEditor";
@@ -13,6 +13,16 @@ export default function GalleriesMenuClient() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [loadedSet, setLoadedSet] = useState<Set<number>>(new Set());
+
+  const markLoaded = useCallback((index: number) => {
+    setLoadedSet((prev) => {
+      if (prev.has(index)) return prev;
+      const next = new Set(prev);
+      next.add(index);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -93,7 +103,7 @@ export default function GalleriesMenuClient() {
             gap: "1.5rem",
           }}
         >
-          {pages.map((p) => (
+          {pages.map((p, i) => (
             <Link
               key={p.id}
               href={`/galeries/${encodeURIComponent(p.slug)}`}
@@ -106,6 +116,7 @@ export default function GalleriesMenuClient() {
                 textDecoration: "none",
                 color: "inherit",
                 transition: "transform 0.2s, box-shadow 0.2s",
+                position: "relative",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-4px)";
@@ -116,17 +127,23 @@ export default function GalleriesMenuClient() {
                 e.currentTarget.style.boxShadow = "0 4px 14px rgba(0,0,0,0.08)";
               }}
             >
-              <div
-                style={{
-                  aspectRatio: "16/10",
-                  background: "#e5e7eb",
-                  backgroundImage: p.headerImageUrl
-                    ? `url(${p.headerImageUrl})`
-                    : `url(${DEFAULT_HEADER})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              />
+              <div style={{ aspectRatio: "16/10", background: "transparent", position: "relative", overflow: "hidden" }}>
+                <img
+                  ref={(el) => { if (el && el.complete && el.naturalWidth > 0) markLoaded(i); }}
+                  src={p.headerImageUrl || DEFAULT_HEADER}
+                  alt={p.name || "Galerie"}
+                  loading={i < 4 ? "eager" : "lazy"}
+                  decoding="async"
+                  onLoad={() => markLoaded(i)}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    opacity: loadedSet.has(i) ? 1 : 0,
+                    transition: "opacity 0.4s ease",
+                  }}
+                />
+              </div>
               <div style={{ padding: "1rem 1.25rem" }}>
                 <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 600 }}>
                   {p.name || p.slug || "Galerie"}

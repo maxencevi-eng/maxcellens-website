@@ -30,11 +30,6 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
     });
   }, []);
 
-  // Reset loaded state when items change (e.g. tab switch)
-  useEffect(() => {
-    setLoadedSet(new Set());
-  }, [items]);
-
   // set columns from settings (fallback to responsive default)
   useEffect(() => {
     function update() {
@@ -98,11 +93,13 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
   const gap = 16;
   const rowHeight = 8;
 
-  /** Return inline style for progressive image reveal */
-  const imgRevealStyle = (index: number): React.CSSProperties => ({
-    opacity: loadedSet.has(index) ? 1 : 0,
-    transition: 'opacity 0.4s ease',
-  });
+  /** Return inline style for progressive image reveal.
+   *  First EAGER_COUNT images show immediately (no flash).
+   *  Later images fade in when loaded. */
+  const imgRevealStyle = (index: number): React.CSSProperties =>
+    index < EAGER_COUNT
+      ? {}                                           // visible immediately
+      : { opacity: loadedSet.has(index) ? 1 : 0, transition: 'opacity 0.4s ease' };
 
   /** Ref callback to handle already-cached images (e.g. tab switch) */
   const imgRef = useCallback((index: number) => (el: HTMLImageElement | null) => {
