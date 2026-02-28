@@ -72,3 +72,20 @@ export async function PATCH(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
 }
+
+export async function DELETE(request: NextRequest) {
+  const isAdmin = await requireBacAdmin();
+  if (!isAdmin) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+  if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 });
+
+  // Delete related saisies and choix first
+  await supabaseAdmin.from('bac_saisies_acteurs').delete().eq('scene_id', id);
+  await supabaseAdmin.from('bac_choix_scenes').delete().eq('scene_id', id);
+
+  const { error } = await supabaseAdmin.from('bac_scenes').delete().eq('id', id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
+}

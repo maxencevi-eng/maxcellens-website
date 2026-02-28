@@ -187,6 +187,17 @@ function SceneEditor({ scene, groupes, roles, onClose, onToast }: {
     setSaving(false);
   }
 
+  async function handleDelete() {
+    if (!confirm('Supprimer cette scène définitivement ? Les choix de scènes et saisies associées seront aussi supprimés.')) return;
+    const res = await fetch(`/bac/api/scenes?id=${scene.id}`, { method: 'DELETE' });
+    if (res.ok) {
+      onToast('Scène supprimée', 'success');
+      onClose();
+    } else {
+      onToast('Erreur de suppression', 'error');
+    }
+  }
+
   // Script block helpers
   function addScriptBlock(type: 'didascalie' | 'replique') {
     const blocks = [...(form.script_json || [])];
@@ -247,9 +258,14 @@ function SceneEditor({ scene, groupes, roles, onClose, onToast }: {
           <h1>{form.titre || 'Sans titre'}</h1>
           <span className="bac-badge bac-badge-primary">{ACTE_LABELS[form.acte]}</span>
         </div>
-        <button className="bac-btn bac-btn-primary" onClick={save} disabled={saving}>
-          {saving ? <span className="bac-spinner" style={{ width: 18, height: 18 }} /> : '💾 Sauvegarder'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="bac-btn bac-btn-ghost" style={{ color: 'var(--bac-error)' }} onClick={handleDelete}>
+            🗑️ Supprimer
+          </button>
+          <button className="bac-btn bac-btn-primary" onClick={save} disabled={saving}>
+            {saving ? <span className="bac-spinner" style={{ width: 18, height: 18 }} /> : '💾 Sauvegarder'}
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

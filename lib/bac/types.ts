@@ -15,8 +15,10 @@ export interface BacProfil {
   type: ProfilType;
   couleur: string;
   mot_de_passe_hash?: string;
+  mot_de_passe_clair?: string;
   actif: boolean;
   ordre_affichage: number;
+  nb_scenes_requis?: number; // default 4, for groupe-acteur
   created_at: string;
 }
 

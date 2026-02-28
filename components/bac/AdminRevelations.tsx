@@ -66,6 +66,18 @@ export default function AdminRevelations() {
     loadData();
   }
 
+  async function handleDelete(item: BacRevelation) {
+    if (!confirm(`Supprimer la révélation "${item.titre}" définitivement ?`)) return;
+    const res = await fetch(`/bac/api/revelations?id=${item.id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Révélation supprimée');
+      setShowModal(false);
+      loadData();
+    } else {
+      showToast('Erreur de suppression', 'error');
+    }
+  }
+
   return (
     <div>
       <div className="bac-page-header bac-animate-in">
@@ -130,9 +142,14 @@ export default function AdminRevelations() {
             </div>
             <div className="bac-modal-footer">
               {editItem && (
-                <button type="button" className="bac-btn bac-btn-ghost" style={{ marginRight: 'auto' }} onClick={() => { toggleActive(editItem); setShowModal(false); }}>
-                  {editItem.actif ? '🚫 Désactiver' : '✅ Activer'}
-                </button>
+                <div style={{ display: 'flex', gap: 8, marginRight: 'auto' }}>
+                  <button type="button" className="bac-btn bac-btn-ghost" onClick={() => { toggleActive(editItem); setShowModal(false); }}>
+                    {editItem.actif ? '🚫 Désactiver' : '✅ Activer'}
+                  </button>
+                  <button type="button" className="bac-btn bac-btn-ghost" style={{ color: 'var(--bac-error)' }} onClick={() => handleDelete(editItem)}>
+                    🗑️ Supprimer
+                  </button>
+                </div>
               )}
               <button type="button" className="bac-btn bac-btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
               <button type="submit" className="bac-btn bac-btn-primary">{editItem ? 'Enregistrer' : 'Créer'}</button>

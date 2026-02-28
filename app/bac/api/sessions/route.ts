@@ -1,11 +1,12 @@
 // app/bac/api/sessions/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
-import { requireBacAdmin, requireBacProfil } from '../../../../lib/bac/auth';
+import { requireBacAdmin, requireBacProfil, getBacSession } from '../../../../lib/bac/auth';
 
 export async function GET() {
-  const session = await requireBacProfil('admin', 'coordinateur');
-  if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  // Allow all authenticated BAC users to fetch sessions
+  const auth = await getBacSession();
+  if (!auth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
   const { data, error } = await supabaseAdmin
     .from('bac_sessions')
@@ -13,6 +14,15 @@ export async function GET() {
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // For groupe-acteur and technique: filter to only sessions that include their group
+  if (auth.profil_type === 'groupe-acteur') {
+    const filtered = (data || []).filter((s: any) =>
+      s.groupes_actifs?.includes(auth.profil_slug)
+    );
+    return NextResponse.json(filtered);
+  }
+
   return NextResponse.json(data);
 }
 
@@ -78,4 +88,22 @@ export async function PATCH(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
+}
+
+export async function DELETE(request: NextRequest) {
+  const isAdmin = await requireBacAdmin();
+  if (!isAdmin) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+  if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 });
+
+  // Delete related data first
+  await supabaseAdmin.from('bac_saisies_acteurs').delete().eq('session_id', id);
+  await supabaseAdmin.from('bac_choix_scenes').delete().eq('session_id', id);
+  await supabaseAdmin.from('bac_casting_groupes').delete().eq('session_id', id);
+
+  const { error } = await supabaseAdmin.from('bac_sessions').delete().eq('id', id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
 }

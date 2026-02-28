@@ -45,3 +45,19 @@ export async function PATCH(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
 }
+
+export async function DELETE(request: NextRequest) {
+  const isAdmin = await requireBacAdmin();
+  if (!isAdmin) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+  if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 });
+
+  // Unlink sessions referencing this theme
+  await supabaseAdmin.from('bac_sessions').update({ theme_id: null }).eq('theme_id', id);
+
+  const { error } = await supabaseAdmin.from('bac_themes').delete().eq('id', id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
+}

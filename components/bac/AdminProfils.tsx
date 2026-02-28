@@ -9,6 +9,8 @@ export default function AdminProfils() {
   const [showModal, setShowModal] = useState(false);
   const [editingPw, setEditingPw] = useState<string | null>(null);
   const [newPw, setNewPw] = useState('');
+  const [editingScenes, setEditingScenes] = useState<string | null>(null);
+  const [newNbScenes, setNewNbScenes] = useState(4);
   const [newProfil, setNewProfil] = useState({ nom: '', slug: '', couleur: '#6366f1', password: '' });
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [showPrintView, setShowPrintView] = useState(false);
@@ -56,6 +58,21 @@ export default function AdminProfils() {
     }
   }
 
+  async function handleUpdateNbScenes(id: string) {
+    const res = await fetch('/bac/api/profils', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, nb_scenes_requis: newNbScenes }),
+    });
+    if (res.ok) {
+      setProfils(prev => prev.map(p => p.id === id ? { ...p, nb_scenes_requis: newNbScenes } : p));
+      showToast('Nombre de scènes mis à jour');
+      setEditingScenes(null);
+    } else {
+      showToast('Erreur', 'error');
+    }
+  }
+
   async function handleCreateProfil(e: React.FormEvent) {
     e.preventDefault();
     const res = await fetch('/bac/api/profils', {
@@ -86,12 +103,14 @@ export default function AdminProfils() {
   if (showPrintView) {
     return (
       <div style={{ padding: 40 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <h1 className="bac-h1">🎬 Bureau à la Carte — Mots de passe du jour</h1>
-          <button className="bac-btn bac-btn-secondary" onClick={() => setShowPrintView(false)}>
-            ← Retour
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="bac-btn bac-btn-secondary" onClick={() => setShowPrintView(false)}>← Retour</button>
+            <button className="bac-btn bac-btn-primary" onClick={() => window.print()}>🖨️ Imprimer</button>
+          </div>
         </div>
+
         <div className="bac-stagger">
           {profils.filter(p => p.actif && p.type !== 'admin').map(p => (
             <div key={p.id} className="bac-card" style={{ borderLeft: `4px solid ${p.couleur}`, marginBottom: 12, padding: 16 }}>
@@ -102,18 +121,24 @@ export default function AdminProfils() {
                     ({p.slug})
                   </span>
                 </div>
-                <div style={{ fontFamily: 'var(--bac-font-mono)', fontSize: '1.125rem', fontWeight: 700 }}>
-                  ••••••
-                </div>
+                {p.mot_de_passe_clair ? (
+                  <div style={{ fontFamily: 'var(--bac-font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--bac-primary)' }}>
+                    {p.mot_de_passe_clair}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.8125rem', color: 'var(--bac-warning)', fontWeight: 600 }}>
+                    ⚠️ Ré-enregistrez le mdp
+                  </div>
+                )}
               </div>
               <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', marginTop: 4 }}>
-                Connexion : /bac/connexion?profil={p.slug}
+                Connexion : /bac/{p.slug}
               </div>
             </div>
           ))}
         </div>
         <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginTop: 24 }}>
-          Modifiez les mots de passe depuis l'admin puis imprimez cette page le Jour J.
+          Si un mot de passe affiche "⚠️", cliquez sur 🔑 Modifier dans la liste et re-saisissez le mot de passe pour l'enregistrer en clair.
         </p>
       </div>
     );
@@ -184,22 +209,56 @@ export default function AdminProfils() {
                         <button className="bac-btn bac-btn-ghost bac-btn-sm" onClick={() => { setEditingPw(null); setNewPw(''); }}>✕</button>
                       </div>
                     ) : (
-                      <button
-                        className="bac-btn bac-btn-ghost bac-btn-sm"
-                        onClick={() => { setEditingPw(profil.id); setNewPw(''); }}
-                      >
-                        🔑 Modifier
-                      </button>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        {profil.mot_de_passe_clair ? (
+                          <code style={{ fontFamily: 'var(--bac-font-mono)', fontSize: '0.9375rem', fontWeight: 700, color: 'var(--bac-primary)' }}>
+                            {profil.mot_de_passe_clair}
+                          </code>
+                        ) : (
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--bac-warning)' }}>⚠️ non visible</span>
+                        )}
+                        <button
+                          className="bac-btn bac-btn-ghost bac-btn-sm"
+                          onClick={() => { setEditingPw(profil.id); setNewPw(''); }}
+                        >
+                          🔑
+                        </button>
+                      </div>
                     )}
                   </td>
                   <td>
                     {profil.type === 'groupe-acteur' && (
-                      <button
-                        className="bac-btn bac-btn-ghost bac-btn-sm"
-                        onClick={() => handleToggleActive(profil)}
-                      >
-                        {profil.actif ? '🚫 Désactiver' : '✅ Activer'}
-                      </button>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <button
+                          className="bac-btn bac-btn-ghost bac-btn-sm"
+                          onClick={() => handleToggleActive(profil)}
+                        >
+                          {profil.actif ? '🚫 Désactiver' : '✅ Activer'}
+                        </button>
+                        {editingScenes === profil.id ? (
+                          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                            <input
+                              type="number"
+                              min={0}
+                              max={4}
+                              className="bac-input"
+                              style={{ width: 56, padding: '4px 8px', minHeight: 32 }}
+                              value={newNbScenes}
+                              onChange={e => setNewNbScenes(Number(e.target.value))}
+                            />
+                            <button className="bac-btn bac-btn-primary bac-btn-sm" onClick={() => handleUpdateNbScenes(profil.id)}>✓</button>
+                            <button className="bac-btn bac-btn-ghost bac-btn-sm" onClick={() => setEditingScenes(null)}>✕</button>
+                          </div>
+                        ) : (
+                          <button
+                            className="bac-btn bac-btn-ghost bac-btn-sm"
+                            title="Nombre de scènes requises"
+                            onClick={() => { setEditingScenes(profil.id); setNewNbScenes(profil.nb_scenes_requis ?? 4); }}
+                          >
+                            🎬 {profil.nb_scenes_requis ?? 4} scène{(profil.nb_scenes_requis ?? 4) > 1 ? 's' : ''}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -242,7 +301,7 @@ export default function AdminProfils() {
                   onChange={(e) => setNewProfil(prev => ({ ...prev, slug: e.target.value }))}
                   placeholder="auto-généré"
                 />
-                <p className="bac-form-help">Sera utilisé dans l'URL : /bac/connexion?profil={newProfil.slug || '...'}</p>
+                <p className="bac-form-help">Sera utilisé dans l'URL : /bac/{newProfil.slug || '...'}</p>
               </div>
               <div className="bac-form-row">
                 <div className="bac-form-group">

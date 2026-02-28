@@ -1,10 +1,32 @@
-// app/bac/api/auth/route.ts — Login / Logout
+// app/bac/api/auth/route.ts — Login / Logout / SSO
 import { NextRequest, NextResponse } from 'next/server';
-import { loginBac, BAC_COOKIE_NAME, BAC_COOKIE_MAX_AGE, getBacSession } from '../../../../lib/bac/auth';
+import { loginBac, createBacSession, BAC_COOKIE_NAME, BAC_COOKIE_MAX_AGE, getBacSession } from '../../../../lib/bac/auth';
+import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 
 export async function POST(request: NextRequest) {
   try {
-    const { slug, password } = await request.json();
+    const body = await request.json();
+
+    // SSO: if site admin is already logged in via Supabase Auth
+    if (body.sso && body.access_token) {
+      const { data: { user }, error } = await supabaseAdmin.auth.getUser(body.access_token);
+      if (error || !user) {
+        return NextResponse.json({ error: 'Token Supabase invalide' }, { status: 401 });
+      }
+      // Valid Supabase user → auto-create BAC admin session
+      const token = await createBacSession('admin', 'admin');
+      const response = NextResponse.json({ success: true, type: 'admin', slug: 'admin' });
+      response.cookies.set(BAC_COOKIE_NAME, token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: BAC_COOKIE_MAX_AGE,
+        path: '/bac',
+      });
+      return response;
+    }
+
+    const { slug, password } = body;
     if (!slug || !password) {
       return NextResponse.json({ error: 'Identifiant et mot de passe requis' }, { status: 400 });
     }

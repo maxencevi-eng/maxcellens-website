@@ -42,7 +42,7 @@ function ConnexionInner() {
             router.push('/bac/technique');
             break;
           case 'groupe-acteur':
-            router.push(`/bac/groupe/${slug}`);
+            router.push(`/bac/${slug}`);
             break;
           default:
             router.push('/bac');

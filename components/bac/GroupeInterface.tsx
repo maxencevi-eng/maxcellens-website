@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { supabase } from '../../lib/supabase';
-import type { BacSession, BacRole, BacVariant, BacCasting, BacChoixScene, BacScene, ScriptBloc } from '../../lib/bac/types';
+import { useEffect, useState } from 'react';
+import type { BacSession, BacRole, BacCasting, BacChoixScene, BacScene, ScriptBloc } from '../../lib/bac/types';
 
 type Phase = 'loading' | 'casting' | 'scenes' | 'personnalisation' | 'pret';
 
@@ -12,8 +11,9 @@ interface CastingMember {
   variant_id: string;
 }
 
-export default function GroupeInterface({ slug }: { slug: string }) {
+export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: string; nbScenesRequis?: number }) {
   const [phase, setPhase] = useState<Phase>('loading');
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [session, setSession] = useState<BacSession | null>(null);
   const [roles, setRoles] = useState<BacRole[]>([]);
   const [casting, setCasting] = useState<BacCasting[]>([]);
@@ -23,6 +23,8 @@ export default function GroupeInterface({ slug }: { slug: string }) {
   const [members, setMembers] = useState<CastingMember[]>([]);
   const [currentActe, setCurrentActe] = useState(1);
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
+  const [detailScene, setDetailScene] = useState<BacScene | null>(null);
+  const [showSceneDetail, setShowSceneDetail] = useState(false);
   const [showCastingModal, setShowCastingModal] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [validatedScenes, setValidatedScenes] = useState<Set<string>>(new Set());
@@ -38,12 +40,23 @@ export default function GroupeInterface({ slug }: { slug: string }) {
       // Get active session
       const sessRes = await fetch('/bac/api/sessions');
       const sessions = await sessRes.json();
-      const active = Array.isArray(sessions) ? sessions.find((s: BacSession) =>
+      let active = Array.isArray(sessions) ? sessions.find((s: BacSession) =>
         (s.statut === 'en-cours' || s.statut === 'en-preparation') && s.groupes_actifs.includes(slug)
       ) : null;
 
+      // If no active session for this group, allow admin to view/manage any session for the group
       if (!active) {
-        setPhase('loading');
+        try {
+          const authRes = await fetch('/bac/api/auth');
+          const authData = await authRes.json();
+          if (authData?.authenticated && authData.profil_type === 'admin') {
+            // admin can open any session that includes the group
+            active = Array.isArray(sessions) ? sessions.find((s: BacSession) => s.groupes_actifs.includes(slug)) : null;
+          }
+        } catch (_) {}
+      }
+
+      if (!active) {
         return;
       }
       setSession(active);
@@ -67,7 +80,7 @@ export default function GroupeInterface({ slug }: { slug: string }) {
         const choixData = await choixRes.json();
         if (Array.isArray(choixData)) {
           setChoix(choixData);
-          if (choixData.length === 4 && choixData.every((c: BacChoixScene) => c.statut === 'valide')) {
+          if (nbScenesRequis === 0 || (choixData.length >= nbScenesRequis && choixData.every((c: BacChoixScene) => c.statut === 'valide'))) {
             // Load saisies
             const saisiesRes = await fetch(`/bac/api/saisies?session_id=${active.id}&groupe_slug=${slug}`);
             const saisiesData = await saisiesRes.json();
@@ -84,10 +97,12 @@ export default function GroupeInterface({ slug }: { slug: string }) {
           setPhase('scenes');
         }
       } else {
-        setPhase('casting');
+        setPhase(nbScenesRequis === 0 ? 'personnalisation' : 'casting');
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setDataLoaded(true);
     }
   }
 
@@ -131,7 +146,7 @@ export default function GroupeInterface({ slug }: { slug: string }) {
       const data = await res.json();
       setCasting(data);
       showToastMsg('Casting enregistré !');
-      setPhase('scenes');
+      setPhase(nbScenesRequis === 0 ? 'personnalisation' : 'scenes');
     }
   }
 
@@ -140,7 +155,15 @@ export default function GroupeInterface({ slug }: { slug: string }) {
     return scenes.filter(s => s.acte === String(acte));
   }
 
-  async function selectScene(acte: number, sceneId: string) {
+  async function selectScene(_acte: number, sceneId: string) {
+    // Open a detail modal instead of immediate selection. User confirms choice there.
+    const scene = scenes.find(s => s.id === sceneId) || null;
+    if (!scene) return;
+    setDetailScene(scene);
+    setShowSceneDetail(true);
+  }
+
+  async function confirmSelectScene(acte: number, sceneId: string) {
     if (!session) return;
     const res = await fetch('/bac/api/choix-scenes', {
       method: 'POST',
@@ -153,7 +176,9 @@ export default function GroupeInterface({ slug }: { slug: string }) {
         const filtered = prev.filter(c => c.acte !== String(acte));
         return [...filtered, data];
       });
-      if (acte < 4) setCurrentActe(acte + 1);
+      setShowSceneDetail(false);
+      setDetailScene(null);
+      // Do not auto-advance; user chooses when to go to next act
     }
   }
 
@@ -210,29 +235,32 @@ export default function GroupeInterface({ slug }: { slug: string }) {
   }
 
   function validateScene(sceneId: string) {
-    setValidatedScenes(prev => new Set([...prev, sceneId]));
+    const newValidated = new Set([...validatedScenes, sceneId]);
+    setValidatedScenes(newValidated);
     showToastMsg('Scène validée ✓');
-    // Move to next scene
     const nextIndex = currentSceneIndex + 1;
     if (nextIndex < chosenScenes.length) {
       setCurrentSceneIndex(nextIndex);
     }
+    // All scenes validated → move to pret
+    if (chosenScenes.every(s => newValidated.has(s.id))) {
+      setPhase('pret');
+    }
   }
 
-  const allScenesValidated = chosenScenes.length === 4 && chosenScenes.every(s => validatedScenes.has(s.id));
 
   // ========== RENDER ==========
   if (phase === 'loading') {
     return (
       <div className="bac-mobile-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        {!session ? (
+        {!dataLoaded ? (
+          <div className="bac-spinner" />
+        ) : (
           <div className="bac-empty">
             <div className="bac-empty-icon">🎬</div>
             <p>Aucune session active pour votre groupe</p>
             <button className="bac-btn bac-btn-secondary" style={{ marginTop: 16 }} onClick={loadData}>Réessayer</button>
           </div>
-        ) : (
-          <div className="bac-spinner" />
         )}
       </div>
     );
@@ -249,7 +277,7 @@ export default function GroupeInterface({ slug }: { slug: string }) {
               👥 Casting
             </button>
           )}
-          {allScenesValidated && (
+          {phase === 'pret' && (
             <span className="bac-badge bac-badge-success">✅ Prêt</span>
           )}
         </div>
@@ -299,7 +327,7 @@ export default function GroupeInterface({ slug }: { slug: string }) {
             ) : (
               <>
                 <h2 className="bac-h2" style={{ marginBottom: 20, textAlign: 'center' }}>Qui joue quoi ?</h2>
-                <div className="bac-stagger" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div className="bac-stagger" style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 100 }}>
                   {members.map((member, i) => {
                     const role = roles.find(r => r.id === member.role_id);
                     const variants = role?.variants || [];
@@ -376,7 +404,7 @@ export default function GroupeInterface({ slug }: { slug: string }) {
 
             {/* Acte tabs */}
             <div className="bac-tabs" style={{ marginBottom: 20 }}>
-              {[1, 2, 3, 4].map(acte => {
+              {Array.from({ length: nbScenesRequis }, (_, i) => i + 1).map(acte => {
                 const chosen = choix.find(c => c.acte === String(acte));
                 return (
                   <button
@@ -413,10 +441,38 @@ export default function GroupeInterface({ slug }: { slug: string }) {
               })}
             </div>
 
-            {choix.length === 4 && (
+            {/* Scene detail modal */}
+            {showSceneDetail && detailScene && (
+              <div className="bac-modal-overlay" onClick={() => { setShowSceneDetail(false); setDetailScene(null); }}>
+                <div className="bac-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 720 }}>
+                  <div className="bac-modal-header">
+                    <h2 className="bac-h2">{detailScene.titre}</h2>
+                    <button className="bac-btn bac-btn-ghost bac-btn-icon" onClick={() => { setShowSceneDetail(false); setDetailScene(null); }}>✕</button>
+                  </div>
+                  <div className="bac-modal-body">
+                    <p style={{ color: 'var(--bac-text-secondary)' }}>{detailScene.ton_principal} — {detailScene.ton_secondaire}</p>
+                    <p style={{ marginTop: 12 }}>{detailScene.fil_rouge}</p>
+                    <div style={{ marginTop: 12 }}>
+                      <strong>Durée :</strong> {detailScene.duree_min}-{detailScene.duree_max} min • <strong>Difficulté</strong> {detailScene.difficulte}
+                    </div>
+                    {detailScene.champ_perso_label && (
+                      <div style={{ marginTop: 12 }}>
+                        <strong>Champ perso :</strong> {detailScene.champ_perso_label} — ex: {detailScene.champ_perso_exemple}
+                      </div>
+                    )}
+                  </div>
+                  <div className="bac-modal-footer">
+                    <button className="bac-btn bac-btn-secondary" onClick={() => { setShowSceneDetail(false); setDetailScene(null); }}>Annuler</button>
+                    <button className="bac-btn bac-btn-primary" onClick={() => confirmSelectScene(currentActe, detailScene.id)}>Choisir cette scène</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {choix.length >= nbScenesRequis && nbScenesRequis > 0 && (
               <div className="bac-mobile-bottom-bar">
                 <button className="bac-btn bac-btn-success bac-btn-lg" style={{ width: '100%' }} onClick={validateChoices}>
-                  Valider les 4 scènes ✅
+                  Valider les {nbScenesRequis} scène{nbScenesRequis > 1 ? 's' : ''} ✅
                 </button>
               </div>
             )}
@@ -526,11 +582,45 @@ export default function GroupeInterface({ slug }: { slug: string }) {
         )}
 
         {/* ===== PRÊT ===== */}
-        {allScenesValidated && (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }} className="bac-animate-scale">
-            <div style={{ fontSize: '4rem', marginBottom: 16 }}>✅</div>
-            <h2 className="bac-h2" style={{ marginBottom: 8 }}>Votre groupe est prêt !</h2>
-            <p style={{ color: 'var(--bac-text-secondary)' }}>Toutes les scènes sont validées. En attendant le tournage...</p>
+        {phase === 'pret' && (
+          <div className="bac-animate-in" style={{ paddingBottom: 40 }}>
+            <div style={{ textAlign: 'center', padding: '40px 0 28px' }} className="bac-animate-scale">
+              <div style={{ fontSize: '3.5rem', marginBottom: 12 }}>✅</div>
+              <h2 className="bac-h2" style={{ marginBottom: 6 }}>Votre groupe est prêt !</h2>
+              <p style={{ color: 'var(--bac-text-secondary)' }}>Toutes les scènes sont validées. En attendant le tournage...</p>
+            </div>
+
+            {/* Résumé casting */}
+            {casting.length > 0 && (
+              <div className="bac-card" style={{ marginBottom: 16, padding: 16 }}>
+                <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 12 }}>👥 Notre casting</h3>
+                {casting.map(c => (
+                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
+                    <strong>{c.prenom}</strong>
+                    <span style={{ fontSize: '0.875rem', color: 'var(--bac-text-secondary)' }}>
+                      {(c.role as any)?.nom || '—'}
+                      {(c.variant as any)?.emoji ? ` — ${(c.variant as any).emoji} ${(c.variant as any).nom}` : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Résumé scènes */}
+            {choix.length > 0 && (
+              <div className="bac-card" style={{ padding: 16 }}>
+                <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 12 }}>🎬 Nos scènes</h3>
+                {[...choix].sort((a, b) => a.acte.localeCompare(b.acte)).map(c => {
+                  const scene = scenes.find(s => s.id === c.scene_id);
+                  return (
+                    <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
+                      <span className="bac-badge bac-badge-primary" style={{ minWidth: 60 }}>Acte {c.acte}</span>
+                      <strong style={{ fontSize: '0.9375rem', textAlign: 'right' }}>{scene?.titre || '—'}</strong>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

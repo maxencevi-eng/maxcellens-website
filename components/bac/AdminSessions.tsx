@@ -129,6 +129,17 @@ export default function AdminSessions() {
     URL.revokeObjectURL(url);
   }
 
+  async function handleDelete(session: BacSession) {
+    if (!confirm(`Supprimer la session "${session.nom_entreprise}" et toutes ses données (casting, choix, saisies) ?`)) return;
+    const res = await fetch(`/bac/api/sessions?id=${session.id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Session supprimée');
+      loadData();
+    } else {
+      showToast('Erreur de suppression', 'error');
+    }
+  }
+
   return (
     <div>
       <div className="bac-page-header bac-animate-in">
@@ -186,6 +197,9 @@ export default function AdminSessions() {
                         📦 Archiver
                       </button>
                     )}
+                    <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ color: 'var(--bac-error)' }} onClick={() => handleDelete(session)}>
+                      🗑️
+                    </button>
                   </div>
                 </div>
                 <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -255,32 +269,50 @@ export default function AdminSessions() {
 
               {/* Bloc 3 */}
               <h3 className="bac-h3" style={{ marginBottom: 12 }}>Thème</h3>
-              <div className="bac-radio-group" style={{ marginBottom: 20 }}>
-                {themes.map(t => (
-                  <label key={t.id} className={`bac-radio-label ${form.theme_id === t.id ? 'selected' : ''}`} style={{ cursor: 'pointer' }}>
-                    <input type="radio" name="theme" checked={form.theme_id === t.id} onChange={() => setForm(p => ({ ...p, theme_id: t.id }))} />
-                    <div>
-                      <strong>{t.titre}</strong>
-                      {t.description && <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', marginTop: 2 }}>{t.description}</p>}
-                    </div>
-                  </label>
-                ))}
+              <div className="bac-form-group" style={{ marginBottom: 20 }}>
+                <select
+                  className="bac-input bac-select"
+                  value={form.theme_id}
+                  onChange={e => setForm(p => ({ ...p, theme_id: e.target.value }))}
+                >
+                  <option value="">— Sélectionner un thème —</option>
+                  {themes.map(t => (
+                    <option key={t.id} value={t.id}>{t.titre}</option>
+                  ))}
+                </select>
+                {form.theme_id && (() => {
+                  const selected = themes.find(t => t.id === form.theme_id);
+                  return selected?.description ? (
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', marginTop: 8, padding: '10px 12px', background: 'var(--bac-surface-active)', borderRadius: 'var(--bac-radius)', borderLeft: '3px solid var(--bac-primary)' }}>
+                      {selected.description}
+                    </p>
+                  ) : null;
+                })()}
               </div>
 
               <div className="bac-divider" />
 
               {/* Bloc 4 */}
               <h3 className="bac-h3" style={{ marginBottom: 12 }}>Révélation</h3>
-              <div className="bac-radio-group" style={{ marginBottom: 8 }}>
-                {revelations.map(r => (
-                  <label key={r.id} className={`bac-radio-label ${form.revelation_id === r.id ? 'selected' : ''}`} style={{ cursor: 'pointer' }}>
-                    <input type="radio" name="revelation" checked={form.revelation_id === r.id} onChange={() => setForm(p => ({ ...p, revelation_id: r.id }))} />
-                    <div>
-                      <strong>{r.titre}</strong>
-                      {r.description && <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', marginTop: 2 }}>{r.description}</p>}
-                    </div>
-                  </label>
-                ))}
+              <div className="bac-form-group" style={{ marginBottom: 8 }}>
+                <select
+                  className="bac-input bac-select"
+                  value={form.revelation_id}
+                  onChange={e => setForm(p => ({ ...p, revelation_id: e.target.value }))}
+                >
+                  <option value="">— Sélectionner une révélation —</option>
+                  {revelations.map(r => (
+                    <option key={r.id} value={r.id}>{r.titre}{r.delai_suggere ? ` (${r.delai_suggere})` : ''}</option>
+                  ))}
+                </select>
+                {form.revelation_id && (() => {
+                  const selected = revelations.find(r => r.id === form.revelation_id);
+                  return selected?.description ? (
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', marginTop: 8, padding: '10px 12px', background: 'var(--bac-surface-active)', borderRadius: 'var(--bac-radius)', borderLeft: '3px solid var(--bac-warning)' }}>
+                      {selected.description}
+                    </p>
+                  ) : null;
+                })()}
               </div>
               <p className="bac-form-help" style={{ color: 'var(--bac-warning)' }}>
                 🤫 Cette révélation sera secrète pour tous — acteurs et équipe technique. Elle apparaîtra uniquement dans vos documents coordinateur.

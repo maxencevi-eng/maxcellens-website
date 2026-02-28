@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
       type: 'groupe-acteur',
       couleur: couleur || '#6366f1',
       mot_de_passe_hash: hash,
+      mot_de_passe_clair: password,
       actif: true,
       ordre_affichage: 20,
     })
@@ -56,15 +57,19 @@ export async function PATCH(request: NextRequest) {
   if (!isAdmin) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
   const body = await request.json();
-  const { id, password, actif, nom, couleur } = body;
+  const { id, password, actif, nom, couleur, nb_scenes_requis } = body;
 
   if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 });
 
   const updates: any = {};
-  if (password) updates.mot_de_passe_hash = await hashPassword(password);
+  if (password) {
+    updates.mot_de_passe_hash = await hashPassword(password);
+    updates.mot_de_passe_clair = password;
+  }
   if (actif !== undefined) updates.actif = actif;
   if (nom) updates.nom = nom;
   if (couleur) updates.couleur = couleur;
+  if (nb_scenes_requis !== undefined) updates.nb_scenes_requis = nb_scenes_requis;
 
   const { data, error } = await supabaseAdmin
     .from('bac_profils_acces')

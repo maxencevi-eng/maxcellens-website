@@ -66,6 +66,18 @@ export default function AdminThemes() {
     loadThemes();
   }
 
+  async function handleDelete(theme: BacTheme) {
+    if (!confirm(`Supprimer le thème "${theme.titre}" définitivement ?`)) return;
+    const res = await fetch(`/bac/api/themes?id=${theme.id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Thème supprimé');
+      setShowModal(false);
+      loadThemes();
+    } else {
+      showToast('Erreur de suppression', 'error');
+    }
+  }
+
   return (
     <div>
       <div className="bac-page-header bac-animate-in">
@@ -119,9 +131,14 @@ export default function AdminThemes() {
             </div>
             <div className="bac-modal-footer">
               {editTheme && (
-                <button type="button" className="bac-btn bac-btn-ghost" style={{ marginRight: 'auto' }} onClick={() => { toggleActive(editTheme); setShowModal(false); }}>
-                  {editTheme.actif ? '🚫 Désactiver' : '✅ Activer'}
-                </button>
+                <div style={{ display: 'flex', gap: 8, marginRight: 'auto' }}>
+                  <button type="button" className="bac-btn bac-btn-ghost" onClick={() => { toggleActive(editTheme); setShowModal(false); }}>
+                    {editTheme.actif ? '🚫 Désactiver' : '✅ Activer'}
+                  </button>
+                  <button type="button" className="bac-btn bac-btn-ghost" style={{ color: 'var(--bac-error)' }} onClick={() => handleDelete(editTheme)}>
+                    🗑️ Supprimer
+                  </button>
+                </div>
               )}
               <button type="button" className="bac-btn bac-btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
               <button type="submit" className="bac-btn bac-btn-primary">{editTheme ? 'Enregistrer' : 'Créer'}</button>
