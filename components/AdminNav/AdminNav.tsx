@@ -15,6 +15,7 @@ const MAIN_PAGES: { href: string; label: string }[] = [
   { href: "/animation", label: "Animation" },
   { href: "/galeries", label: "Galeries" },
   { href: "/contact", label: "Contact" },
+  { href: "/bac", label: "Bureau à la Carte" },
   { href: "/admin", label: "Admin" },
 ];
 

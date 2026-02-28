@@ -400,6 +400,13 @@ export default function Header() {
                   </Link>{' '}
                 </>
               ) : null}
+              {isNavItemVisible('bac') ? (
+                <>
+                  <Link href="/bac" className={linkClass('/bac')} onClick={() => setOpen(false)}>
+                    Bureau à la Carte
+                  </Link>{' '}
+                </>
+              ) : null}
               {isNavItemVisible('admin') ? (
                 <>
                   <Link href="/admin" className={linkClass('/admin')} onClick={() => setOpen(false)}>
