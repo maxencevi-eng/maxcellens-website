@@ -409,13 +409,13 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
             <span>Casting</span>
           </div>
           <div className={`bac-step-line ${phase !== 'casting' ? 'completed' : ''}`} />
-          <div className={`bac-step ${phase === 'scenes' ? 'active' : phase === 'personnalisation' || phase === 'pret' ? 'completed' : ''}`}>
-            <div className="bac-step-number">{phase === 'personnalisation' || phase === 'pret' ? '✓' : '2'}</div>
+          <div className={`bac-step ${phase === 'scenes' ? 'active' : phase === 'personnalisation' ? 'completed' : ''}`}>
+            <div className="bac-step-number">{phase === 'personnalisation' ? '✓' : '2'}</div>
             <span>Scènes</span>
           </div>
-          <div className={`bac-step-line ${phase === 'personnalisation' || phase === 'pret' ? 'completed' : ''}`} />
-          <div className={`bac-step ${phase === 'personnalisation' ? 'active' : phase === 'pret' ? 'completed' : ''}`}>
-            <div className="bac-step-number">{phase === 'pret' ? '✓' : '3'}</div>
+          <div className={`bac-step-line ${phase === 'personnalisation' ? 'completed' : ''}`} />
+          <div className={`bac-step ${phase === 'personnalisation' ? 'active' : ''}`}>
+            <div className="bac-step-number">3</div>
             <span>Perso</span>
           </div>
         </div>
