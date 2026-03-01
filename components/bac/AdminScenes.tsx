@@ -136,14 +136,14 @@ export default function AdminScenes() {
                 </div>
               </div>
               <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {scene.groupe_acteur && (() => {
-                  const groupe = groupes.find(x => x.slug === scene.groupe_acteur);
+                {(scene.groupes_concernes || []).map(g => {
+                  const groupe = groupes.find(x => x.slug === g);
                   return (
-                    <span className="bac-badge" style={{ background: (groupe?.couleur || '#888') + '20', color: groupe?.couleur || '#888' }}>
-                      {groupe?.nom || scene.groupe_acteur}
+                    <span key={g} className="bac-badge" style={{ background: (groupe?.couleur || '#888') + '20', color: groupe?.couleur || '#888' }}>
+                      {groupe?.nom || g}
                     </span>
                   );
-                })()}
+                })}
                 {scene.ton_principal && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>• {scene.ton_principal}</span>}
               </div>
             </div>
