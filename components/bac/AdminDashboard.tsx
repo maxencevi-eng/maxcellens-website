@@ -7,8 +7,8 @@ interface DashStats {
   profils: number;
   roles: number;
   scenes: number;
-  themes: number;
   revelations: number;
+  denouements: number;
   sessions: number;
   sessionsActives: number;
 }
@@ -23,7 +23,7 @@ interface GroupeInfo {
   activeSessionStatut: string | null;
 }
 
-const defaultStats: DashStats = { profils: 0, roles: 0, scenes: 0, themes: 0, revelations: 0, sessions: 0, sessionsActives: 0 };
+const defaultStats: DashStats = { profils: 0, roles: 0, scenes: 0, revelations: 0, denouements: 0, sessions: 0, sessionsActives: 0 };
 
 export default function BacAdminDashboard() {
   const [stats, setStats] = useState<DashStats>(defaultStats);
@@ -36,12 +36,12 @@ export default function BacAdminDashboard() {
 
   async function loadStats() {
     try {
-      const [profils, roles, scenes, themes, revelations, sessions] = await Promise.all([
+      const [profils, roles, scenes, revelations, denouements, sessions] = await Promise.all([
         fetch('/bac/api/profils').then(r => r.json()),
         fetch('/bac/api/roles').then(r => r.json()),
         fetch('/bac/api/scenes').then(r => r.json()),
-        fetch('/bac/api/themes').then(r => r.json()),
         fetch('/bac/api/revelations').then(r => r.json()),
+        fetch('/bac/api/denouements').then(r => r.json()),
         fetch('/bac/api/sessions').then(r => r.json()),
       ]);
 
@@ -49,8 +49,8 @@ export default function BacAdminDashboard() {
         profils: Array.isArray(profils) ? profils.length : 0,
         roles: Array.isArray(roles) ? roles.length : 0,
         scenes: Array.isArray(scenes) ? scenes.length : 0,
-        themes: Array.isArray(themes) ? themes.length : 0,
         revelations: Array.isArray(revelations) ? revelations.length : 0,
+        denouements: Array.isArray(denouements) ? denouements.length : 0,
         sessions: Array.isArray(sessions) ? sessions.length : 0,
         sessionsActives: Array.isArray(sessions) ? sessions.filter((s: any) => s.statut === 'en-cours' || s.statut === 'en-preparation').length : 0,
       });
@@ -84,8 +84,8 @@ export default function BacAdminDashboard() {
     { label: 'Profils d\'accès', value: stats.profils, icon: '👥', href: '/bac/admin/dashboard/profils', color: '#8b5cf6' },
     { label: 'Rôles', value: stats.roles, icon: '🎭', href: '/bac/admin/dashboard/roles', color: '#f59e0b' },
     { label: 'Scènes', value: stats.scenes, icon: '🎬', href: '/bac/admin/dashboard/scenes', color: '#3b82f6' },
-    { label: 'Thèmes', value: stats.themes, icon: '🎨', href: '/bac/admin/dashboard/themes', color: '#10b981' },
-    { label: 'Révélations', value: stats.revelations, icon: '🤫', href: '/bac/admin/dashboard/revelations', color: '#ef4444' },
+    { label: 'Révélations', value: stats.revelations, icon: '🌅', href: '/bac/admin/dashboard/themes', color: '#10b981' },
+    { label: 'Dénouements', value: stats.denouements, icon: '🎞️', href: '/bac/admin/dashboard/revelations', color: '#ef4444' },
     { label: 'Sessions', value: stats.sessions, icon: '📋', href: '/bac/admin/dashboard/sessions', color: '#06b6d4' },
   ];
 

@@ -7,9 +7,9 @@ const navItems = [
   { href: '/animation/admin/dashboard', label: 'Tableau de bord', icon: '📊' },
   { href: '/animation/admin/dashboard/profils', label: 'Profils d\'accès', icon: '👥' },
   { href: '/animation/admin/dashboard/roles', label: 'Rôles & Variants', icon: '🎭' },
-  { href: '/animation/admin/dashboard/themes', label: 'Thèmes', icon: '🎨' },
+  { href: '/animation/admin/dashboard/themes', label: 'Révélations', icon: '🌅' },
   { href: '/animation/admin/dashboard/scenes', label: 'Scènes', icon: '🎬' },
-  { href: '/animation/admin/dashboard/revelations', label: 'Révélations', icon: '🤫' },
+  { href: '/animation/admin/dashboard/revelations', label: 'Dénouements', icon: '🎞️' },
   { href: '/animation/admin/dashboard/sessions', label: 'Sessions', icon: '📋' },
   { href: '/animation/technique', label: 'Script global', icon: '📜' },
 ];

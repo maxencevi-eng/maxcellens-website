@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, Fragment } from 'react';
-import type { BacSession, BacScene, BacCasting, BacChoixScene, BacSaisie, BacRole } from '../../lib/bac/types';
+import type { BacSession, BacScene, BacCasting, BacChoixScene, BacSaisie, BacRole, BacRevelation, BacDenouement } from '../../lib/bac/types';
 import DeroulAnimation from './DeroulAnimation';
 
 type SectionId = 'animation' | 'tournage';
@@ -84,7 +84,6 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
   const [editActors, setEditActors] = useState<Record<number, string>>({});
   // Intro / Finale scene editing
   const [editingSpecial, setEditingSpecial] = useState<'intro' | 'finale' | null>(null);
-  const [editSpecialSceneId, setEditSpecialSceneId] = useState<string>('');
 
   useEffect(() => { loadData(); }, []);
 
@@ -281,30 +280,19 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
 
   // ── Intro / Finale helpers ──────────────────────────────────────
 
-  function getSpecialScenes(type: 'intro' | 'finale'): BacScene[] {
-    const acte = type === 'intro' ? 'intro' : 'final';
-    return allScenes.filter(s => s.acte === acte);
-  }
-
-  function getSelectedSpecialScene(type: 'intro' | 'finale'): BacScene | null {
+  function getSpecialEntity(type: 'intro' | 'finale'): BacRevelation | BacDenouement | null {
     if (!session) return null;
-    const id = type === 'intro' ? session.scene_intro_id : session.scene_finale_id;
-    if (!id) return null;
-    return allScenes.find(s => s.id === id) || null;
+    return type === 'intro' ? (session.revelation || null) : (session.denouement || null);
   }
 
   function startEditingSpecial(type: 'intro' | 'finale') {
-    const scene = getSelectedSpecialScene(type);
-    const sceneId = type === 'intro' ? (session?.scene_intro_id || '') : (session?.scene_finale_id || '');
-    setEditSpecialSceneId(sceneId);
-    if (scene) {
-      const saisies = getSceneSaisies(type, scene.id);
-      const champSaisie = saisies.find(s => s.bloc_index === -1);
-      setEditChampPerso(champSaisie?.champ_perso_valeur || '');
+    const entity = getSpecialEntity(type);
+    if (entity) {
+      const saisies = getSceneSaisies(type, entity.id);
       const actors: Record<number, string> = {};
       saisies.forEach(s => { if (s.bloc_index >= 0 && s.acteur_id) actors[s.bloc_index] = s.acteur_id; });
       // Auto-assign when only 1 actor with this role across all groups
-      ((scene.script_json || []) as any[]).forEach((bloc: any, i: number) => {
+      ((entity.script_json || []) as any[]).forEach((bloc: any, i: number) => {
         if (bloc.type !== 'replique' || actors[i]) return;
         const eligible = allCasting.filter(c => c.role_id === bloc.role_id);
         if (eligible.length === 1) actors[i] = eligible[0].id;
@@ -319,52 +307,33 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
 
   async function saveSpecialEdit(type: 'intro' | 'finale') {
     if (!session) return;
-    // 1. Update session scene_intro_id / scene_finale_id
-    const sessionField = type === 'intro' ? 'scene_intro_id' : 'scene_finale_id';
-    await fetch('/bac/api/sessions', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: session.id, [sessionField]: editSpecialSceneId || null }),
-    });
-    setSession(prev => prev ? { ...prev, [sessionField]: editSpecialSceneId || null } : prev);
-
-    // 2. Save saisies if a scene is selected
-    const scene = editSpecialSceneId ? allScenes.find(s => s.id === editSpecialSceneId) : null;
-    if (scene) {
-      const groupSlug = type; // 'intro' or 'finale'
-      const sceneSaisies = getSceneSaisies(groupSlug, scene.id);
+    const entity = getSpecialEntity(type);
+    if (entity) {
+      const groupSlug = type;
+      const sceneSaisies = getSceneSaisies(groupSlug, entity.id);
       const saisies: any[] = [];
-      if (scene.champ_perso_label) {
-        const existing = sceneSaisies.find(s => s.bloc_index === -1);
-        saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: scene.id, bloc_index: -1, texte_saisi: existing?.texte_saisi || '', acteur_id: null, champ_perso_valeur: editChampPerso || null });
-      }
-      (scene.script_json as any[]).forEach((bloc: any, i: number) => {
+      (entity.script_json as any[]).forEach((bloc: any, i: number) => {
         if (bloc.type !== 'replique') return;
         const existing = sceneSaisies.find(s => s.bloc_index === i);
-        saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: scene.id, bloc_index: i, texte_saisi: existing?.texte_saisi || '', acteur_id: editActors[i] || null, champ_perso_valeur: null });
+        saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: entity.id, bloc_index: i, texte_saisi: existing?.texte_saisi || '', acteur_id: editActors[i] || null, champ_perso_valeur: null });
       });
       await fetch('/bac/api/saisies', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ saisies }) });
-      setAllSaisies(prev => [...prev.filter(s => !(s.groupe_slug === groupSlug && s.scene_id === scene.id)), ...saisies]);
+      setAllSaisies(prev => [...prev.filter(s => !(s.groupe_slug === groupSlug && s.scene_id === entity.id)), ...saisies]);
     }
-
     setEditingSpecial(null);
   }
 
   // ── Render a special (intro or finale) block ────────────────────
   function renderSpecialBlock(type: 'intro' | 'finale') {
     const label = type === 'intro' ? 'INTRO' : 'FINALE';
-    const icon = type === 'intro' ? '🎬' : '🎤';
+    const icon = type === 'intro' ? '🌅' : '🎬';
     const color = type === 'intro' ? 'var(--bac-info)' : 'var(--bac-success, #22c55e)';
-    const availableScenes = getSpecialScenes(type);
-    const selectedScene = getSelectedSpecialScene(type);
+    const entity = getSpecialEntity(type);
     const isEditing = editingSpecial === type;
     const groupSlug = type;
 
-    const sceneSaisies = selectedScene ? getSceneSaisies(groupSlug, selectedScene.id) : [];
-    const scriptJson = (isEditing && editSpecialSceneId
-      ? (allScenes.find(s => s.id === editSpecialSceneId)?.script_json || [])
-      : (selectedScene?.script_json || [])) as any[];
-    const editScene = isEditing && editSpecialSceneId ? allScenes.find(s => s.id === editSpecialSceneId) : null;
+    const sceneSaisies = entity ? getSceneSaisies(groupSlug, entity.id) : [];
+    const scriptJson = (entity?.script_json || []) as any[];
 
     return (
       <div key={`special-${type}`} style={{ marginBottom: 24 }}>
@@ -373,90 +342,56 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
           <h2 style={{ fontWeight: 800, fontSize: '1.375rem', color, margin: 0 }}>
             {icon} {label}
           </h2>
-          {!isEditing && (
+          {!isEditing && entity && (
             <button
               className="bac-btn bac-btn-ghost"
               style={{ padding: '4px 10px', fontSize: '0.8125rem', marginLeft: 'auto' }}
               onClick={() => { setEditingSceneKey(null); startEditingSpecial(type); }}
             >
-              ✏️ Modifier
+              ✏️ Attribuer acteurs
             </button>
           )}
         </div>
 
         {isEditing ? (
-          /* ── Edit mode ── */
+          /* ── Edit mode : attribution des acteurs ── */
           <div className="bac-card" style={{ padding: 20, borderLeft: `4px solid ${color}` }}>
-            {/* Scene selector */}
-            <div className="bac-form-group" style={{ marginBottom: 16 }}>
-              <label className="bac-label">Scène {label.toLowerCase()}</label>
-              {availableScenes.length === 0 ? (
-                <p style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>Aucune scène {label.toLowerCase()} disponible</p>
-              ) : (
-                <select
-                  className="bac-input"
-                  value={editSpecialSceneId}
-                  onChange={e => {
-                    setEditSpecialSceneId(e.target.value);
-                    setEditChampPerso('');
-                    setEditActors({});
-                  }}
-                >
-                  <option value="">— Aucune scène sélectionnée —</option>
-                  {availableScenes.map(s => (
-                    <option key={s.id} value={s.id}>{s.titre}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {editScene && (
-              <>
-                {/* Champ perso */}
-                {editScene.champ_perso_label && (
-                  <div className="bac-form-group" style={{ marginBottom: 16 }}>
-                    <label className="bac-label">{editScene.champ_perso_label}</label>
-                    <input className="bac-input" value={editChampPerso} onChange={e => setEditChampPerso(e.target.value)} placeholder={editScene.champ_perso_exemple || editScene.champ_perso_label} />
-                  </div>
-                )}
-
-                {/* Script blocs in edit mode */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {(editScene.script_json as any[]).map((bloc: any, i: number) => {
-                    if (bloc.type === 'didascalie') {
-                      return <div key={i} className="bac-script-didascalie">{bloc.texte}</div>;
-                    }
-                    const role = roles.find(r => r.id === bloc.role_id);
-                    const roleName = role?.nom || bloc.role_id || 'Rôle';
-                    const roleActors = allCasting.filter(c => c.role_id === bloc.role_id);
-                    // If no matching actors by role_id, show all casting
-                    const actorPool = roleActors.length > 0 ? roleActors : allCasting;
-                    return (
-                      <div key={i} className="bac-script-replique">
-                        <div className="bac-script-role-name" style={{ color: role?.couleur || color, marginBottom: 4 }}>
-                          {roleName}
+            {entity ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {(entity.script_json as any[]).map((bloc: any, i: number) => {
+                  if (bloc.type === 'didascalie') {
+                    return <div key={i} className="bac-script-didascalie">{bloc.texte}</div>;
+                  }
+                  const role = roles.find(r => r.id === bloc.role_id);
+                  const roleName = role?.nom || bloc.role_id || 'Rôle';
+                  const roleActors = allCasting.filter(c => c.role_id === bloc.role_id);
+                  const actorPool = roleActors.length > 0 ? roleActors : allCasting;
+                  return (
+                    <div key={i} className="bac-script-replique">
+                      <div className="bac-script-role-name" style={{ color: role?.couleur || color, marginBottom: 4 }}>{roleName}</div>
+                      <div className="bac-script-directive" style={{ marginBottom: 6 }}>{bloc.directive}</div>
+                      <div style={{ fontStyle: 'italic', color: 'var(--bac-text-muted)', fontSize: '0.875rem', marginBottom: 8 }}>"{bloc.exemple}"</div>
+                      {actorPool.length > 0 ? (
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {actorPool.map(actor => (
+                            <label key={actor.id} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', padding: '4px 12px', borderRadius: 6, border: `1px solid ${editActors[i] === actor.id ? 'var(--bac-primary)' : 'var(--bac-border)'}`, background: editActors[i] === actor.id ? 'rgba(99,102,241,0.12)' : 'transparent', fontSize: '0.875rem', fontWeight: editActors[i] === actor.id ? 700 : 400 }}>
+                              <input type="radio" name={`special-actor-${type}-${i}`} value={actor.id} checked={editActors[i] === actor.id} onChange={() => setEditActors(prev => ({ ...prev, [i]: actor.id }))} style={{ display: 'none' }} />
+                              {actor.prenom}
+                            </label>
+                          ))}
                         </div>
-                        <div className="bac-script-directive" style={{ marginBottom: 6 }}>{bloc.directive}</div>
-                        <div style={{ fontStyle: 'italic', color: 'var(--bac-text-muted)', fontSize: '0.875rem', marginBottom: 8 }}>"{bloc.exemple}"</div>
-                        {actorPool.length > 0 ? (
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                            {actorPool.map(actor => (
-                              <label key={actor.id} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', padding: '4px 12px', borderRadius: 6, border: `1px solid ${editActors[i] === actor.id ? 'var(--bac-primary)' : 'var(--bac-border)'}`, background: editActors[i] === actor.id ? 'rgba(99,102,241,0.12)' : 'transparent', fontSize: '0.875rem', fontWeight: editActors[i] === actor.id ? 700 : 400 }}>
-                                <input type="radio" name={`special-actor-${type}-${i}`} value={actor.id} checked={editActors[i] === actor.id} onChange={() => setEditActors(prev => ({ ...prev, [i]: actor.id }))} style={{ display: 'none' }} />
-                                {actor.prenom}
-                              </label>
-                            ))}
-                          </div>
-                        ) : (
-                          <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>Aucun acteur disponible</p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
+                      ) : (
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>Aucun acteur disponible</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>
+                Aucune {type === 'intro' ? 'révélation' : 'dénouement'} assigné à cette session. Configurez-le dans les Sessions.
+              </p>
             )}
-
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button className="bac-btn bac-btn-primary" style={{ padding: '6px 16px', fontSize: '0.875rem' }} onClick={() => saveSpecialEdit(type)}>
                 ✓ Enregistrer
@@ -466,26 +401,13 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
               </button>
             </div>
           </div>
-        ) : selectedScene ? (
-          /* ── Read mode with selected scene ── */
+        ) : entity ? (
+          /* ── Read mode ── */
           <div className="bac-card" style={{ padding: 20, borderLeft: `4px solid ${color}` }}>
             <div style={{ marginBottom: 8 }}>
-              <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>{selectedScene.titre}</h3>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {selectedScene.duree_min}-{selectedScene.duree_max} min</span>
+              <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>{entity.titre}</h3>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {entity.duree_min}–{entity.duree_max} min</span>
             </div>
-
-            {/* Champ perso display */}
-            {selectedScene.champ_perso_label && (() => {
-              const champSaisie = sceneSaisies.find(s => s.bloc_index === -1);
-              return champSaisie?.champ_perso_valeur ? (
-                <div style={{ marginBottom: 16, padding: 12, background: 'var(--bac-bg-tertiary)', borderRadius: 8, borderLeft: `3px solid ${color}` }}>
-                  <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{selectedScene.champ_perso_label}:</span>{' '}
-                  <span style={{ color: 'var(--bac-primary)', fontWeight: 700 }}>{champSaisie.champ_perso_valeur}</span>
-                </div>
-              ) : null;
-            })()}
-
-            {/* Script blocs read mode */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {scriptJson.map((bloc: any, i: number) => {
                 if (bloc.type === 'didascalie') {
@@ -493,7 +415,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                 }
                 const role = roles.find(r => r.id === bloc.role_id);
                 const roleName = role?.nom || bloc.role_id || 'Rôle';
-                const saisie = sceneSaisies.find(s => s.bloc_index === i);
+                const saisie = sceneSaisies.find((s: BacSaisie) => s.bloc_index === i);
                 const acteur = saisie?.acteur_id ? allCasting.find(c => c.id === saisie.acteur_id) : null;
                 return (
                   <div key={i} className="bac-script-replique">
@@ -501,24 +423,16 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                       {roleName} {acteur ? `(${acteur.prenom})` : ''}
                     </div>
                     <div className="bac-script-directive">{bloc.directive}</div>
-                    {saisie?.texte_saisi ? (
-                      <div style={{ fontStyle: 'italic', color: 'var(--bac-primary)', padding: '8px 12px', background: 'var(--bac-bg-tertiary)', borderRadius: 6 }}>
-                        "{saisie.texte_saisi}"
-                      </div>
-                    ) : (
-                      <div className="bac-script-exemple">"{bloc.exemple}"</div>
-                    )}
+                    <div className="bac-script-exemple">"{bloc.exemple}"</div>
                   </div>
                 );
               })}
             </div>
           </div>
         ) : (
-          /* ── No scene selected ── */
+          /* ── Not assigned ── */
           <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--bac-text-muted)', fontSize: '0.9rem' }}>
-            {availableScenes.length > 0
-              ? `Aucune scène ${label.toLowerCase()} sélectionnée. Cliquez sur Modifier pour en choisir une.`
-              : `Aucune scène ${label.toLowerCase()} disponible dans la base.`}
+            Aucune {type === 'intro' ? 'révélation' : 'dénouement'} assigné — configurez-le dans Sessions.
           </div>
         )}
       </div>
@@ -744,7 +658,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
             {renderSpecialBlock('finale')}
           </div>
 
-          {allEntries.length === 0 && !session.scene_intro_id && !session.scene_finale_id && (
+          {allEntries.length === 0 && !session.revelation_id && !session.denouement_id && (
             <div className="bac-empty" style={{ marginTop: 16 }}><p>Aucune scène validée pour l'instant</p></div>
           )}
         </div>

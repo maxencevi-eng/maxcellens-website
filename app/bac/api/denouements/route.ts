@@ -1,5 +1,5 @@
-// app/bac/api/revelations/route.ts
-// Révélations — scènes d'introduction scripted (formerly Thèmes)
+// app/bac/api/denouements/route.ts
+// Dénouements — scènes de finale scripted (formerly Révélations)
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 import { requireBacAdmin } from '../../../../lib/bac/auth';
@@ -8,7 +8,7 @@ const EMPTY_NOTES = { cadrage: '', rythme: '', silences: '', pieges: '', astuce:
 
 export async function GET() {
   const { data, error } = await supabaseAdmin
-    .from('bac_revelations')
+    .from('bac_denouements')
     .select('*')
     .order('created_at');
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const { data, error } = await supabaseAdmin
-    .from('bac_revelations')
+    .from('bac_denouements')
     .insert({
-      titre: body.titre || 'Nouvelle révélation',
+      titre: body.titre || 'Nouveau dénouement',
       description: body.description || '',
       ton_principal: body.ton_principal || '',
       ton_secondaire: body.ton_secondaire || '',
@@ -53,7 +53,7 @@ export async function PATCH(request: NextRequest) {
   updates.updated_at = new Date().toISOString();
 
   const { data, error } = await supabaseAdmin
-    .from('bac_revelations')
+    .from('bac_denouements')
     .update(updates)
     .eq('id', id)
     .select()
@@ -71,9 +71,9 @@ export async function DELETE(request: NextRequest) {
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 });
 
-  await supabaseAdmin.from('bac_sessions').update({ revelation_id: null }).eq('revelation_id', id);
+  await supabaseAdmin.from('bac_sessions').update({ denouement_id: null }).eq('denouement_id', id);
 
-  const { error } = await supabaseAdmin.from('bac_revelations').delete().eq('id', id);
+  const { error } = await supabaseAdmin.from('bac_denouements').delete().eq('id', id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
 }

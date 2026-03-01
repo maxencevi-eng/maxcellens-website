@@ -10,7 +10,7 @@ export async function GET() {
 
   const { data, error } = await supabaseAdmin
     .from('bac_sessions')
-    .select('*, theme:bac_themes(*), revelation:bac_revelations(*)')
+    .select('*, revelation:bac_revelations(*), denouement:bac_denouements(*)')
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -46,13 +46,13 @@ export async function POST(request: NextRequest) {
       date_jour_j: body.date_jour_j || null,
       lieu: body.lieu || '',
       nb_participants: body.nb_participants || 10,
-      theme_id: body.theme_id || null,
       revelation_id: body.revelation_id || null,
+      denouement_id: body.denouement_id || null,
       groupes_actifs: body.groupes_actifs || [],
       statut: 'en-preparation',
       snapshot_scenes_json: scenes || [],
     })
-    .select('*, theme:bac_themes(*), revelation:bac_revelations(*)')
+    .select('*, revelation:bac_revelations(*), denouement:bac_denouements(*)')
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -85,7 +85,7 @@ export async function PATCH(request: NextRequest) {
     .from('bac_sessions')
     .update(updates)
     .eq('id', id)
-    .select('*, theme:bac_themes(*), revelation:bac_revelations(*)')
+    .select('*, revelation:bac_revelations(*), denouement:bac_denouements(*)')
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

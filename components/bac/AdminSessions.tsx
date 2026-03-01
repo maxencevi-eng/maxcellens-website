@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { BacSession, BacProfil, BacTheme, BacRevelation } from '../../lib/bac/types';
+import type { BacSession, BacProfil, BacRevelation, BacDenouement } from '../../lib/bac/types';
 
 const STATUT_MAP: Record<string, { label: string; badge: string; icon: string }> = {
   'en-preparation': { label: 'En préparation', badge: 'bac-badge-warning', icon: '⏳' },
@@ -13,8 +13,8 @@ const STATUT_MAP: Record<string, { label: string; badge: string; icon: string }>
 export default function AdminSessions() {
   const [sessions, setSessions] = useState<BacSession[]>([]);
   const [groupes, setGroupes] = useState<BacProfil[]>([]);
-  const [themes, setThemes] = useState<BacTheme[]>([]);
   const [revelations, setRevelations] = useState<BacRevelation[]>([]);
+  const [denouements, setDenouements] = useState<BacDenouement[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editSession, setEditSession] = useState<BacSession | null>(null);
@@ -25,8 +25,8 @@ export default function AdminSessions() {
     date_jour_j: '',
     lieu: '',
     nb_participants: 10,
-    theme_id: '',
     revelation_id: '',
+    denouement_id: '',
     groupes_actifs: [] as string[],
   });
 
@@ -34,16 +34,16 @@ export default function AdminSessions() {
 
   async function loadData() {
     try {
-      const [s, p, t, r] = await Promise.all([
+      const [s, p, r, d] = await Promise.all([
         fetch('/bac/api/sessions').then(r => r.json()),
         fetch('/bac/api/profils').then(r => r.json()),
-        fetch('/bac/api/themes').then(r => r.json()),
         fetch('/bac/api/revelations').then(r => r.json()),
+        fetch('/bac/api/denouements').then(r => r.json()),
       ]);
       if (Array.isArray(s)) setSessions(s);
       if (Array.isArray(p)) setGroupes(p.filter((x: BacProfil) => x.type === 'groupe-acteur' && x.actif));
-      if (Array.isArray(t)) setThemes(t.filter((x: BacTheme) => x.actif));
       if (Array.isArray(r)) setRevelations(r.filter((x: BacRevelation) => x.actif));
+      if (Array.isArray(d)) setDenouements(d.filter((x: BacDenouement) => x.actif));
     } catch { } finally { setLoading(false); }
   }
 
@@ -59,8 +59,8 @@ export default function AdminSessions() {
       date_jour_j: '',
       lieu: '',
       nb_participants: 10,
-      theme_id: '',
       revelation_id: '',
+      denouement_id: '',
       groupes_actifs: groupes.map(g => g.slug),
     });
     setShowModal(true);
@@ -73,8 +73,8 @@ export default function AdminSessions() {
       date_jour_j: session.date_jour_j || '',
       lieu: session.lieu,
       nb_participants: session.nb_participants,
-      theme_id: session.theme_id || '',
       revelation_id: session.revelation_id || '',
+      denouement_id: session.denouement_id || '',
       groupes_actifs: session.groupes_actifs,
     });
     setShowModal(true);
@@ -84,8 +84,8 @@ export default function AdminSessions() {
     e.preventDefault();
     const payload = {
       ...form,
-      theme_id: form.theme_id || null,
       revelation_id: form.revelation_id || null,
+      denouement_id: form.denouement_id || null,
     };
 
     const res = editSession
@@ -173,7 +173,7 @@ export default function AdminSessions() {
                       {session.lieu && <span style={{ fontSize: '0.875rem', color: 'var(--bac-text-secondary)' }}>📍 {session.lieu}</span>}
                       <span style={{ fontSize: '0.875rem', color: 'var(--bac-text-secondary)' }}>👥 {session.nb_participants} participants</span>
                     </div>
-                    {session.theme && <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginTop: 4 }}>🎨 {session.theme.titre}</p>}
+                    {session.revelation && <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginTop: 4 }}>🌅 {session.revelation.titre}</p>}
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <button className="bac-btn bac-btn-secondary bac-btn-sm" onClick={() => openEdit(session)}>
@@ -268,22 +268,23 @@ export default function AdminSessions() {
               <div className="bac-divider" />
 
               {/* Bloc 3 */}
-              <h3 className="bac-h3" style={{ marginBottom: 12 }}>Thème</h3>
+              <h3 className="bac-h3" style={{ marginBottom: 4 }}>🌅 Révélation <span style={{ fontWeight: 400, fontSize: '0.875rem', color: 'var(--bac-text-muted)' }}>(intro)</span></h3>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginBottom: 12 }}>Scène d'introduction scripted — jouée avant les actes</p>
               <div className="bac-form-group" style={{ marginBottom: 20 }}>
                 <select
                   className="bac-input bac-select"
-                  value={form.theme_id}
-                  onChange={e => setForm(p => ({ ...p, theme_id: e.target.value }))}
+                  value={form.revelation_id}
+                  onChange={e => setForm(p => ({ ...p, revelation_id: e.target.value }))}
                 >
-                  <option value="">— Sélectionner un thème —</option>
-                  {themes.map(t => (
-                    <option key={t.id} value={t.id}>{t.titre}</option>
+                  <option value="">— Aucune révélation —</option>
+                  {revelations.map(r => (
+                    <option key={r.id} value={r.id}>{r.titre}</option>
                   ))}
                 </select>
-                {form.theme_id && (() => {
-                  const selected = themes.find(t => t.id === form.theme_id);
+                {form.revelation_id && (() => {
+                  const selected = revelations.find(r => r.id === form.revelation_id);
                   return selected?.description ? (
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', marginTop: 8, padding: '10px 12px', background: 'var(--bac-surface-active)', borderRadius: 'var(--bac-radius)', borderLeft: '3px solid var(--bac-primary)' }}>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', marginTop: 8, padding: '10px 12px', background: 'var(--bac-surface-active)', borderRadius: 'var(--bac-radius)', borderLeft: '3px solid #6366f1' }}>
                       {selected.description}
                     </p>
                   ) : null;
@@ -293,30 +294,28 @@ export default function AdminSessions() {
               <div className="bac-divider" />
 
               {/* Bloc 4 */}
-              <h3 className="bac-h3" style={{ marginBottom: 12 }}>Révélation</h3>
+              <h3 className="bac-h3" style={{ marginBottom: 4 }}>🎬 Dénouement <span style={{ fontWeight: 400, fontSize: '0.875rem', color: 'var(--bac-text-muted)' }}>(finale)</span></h3>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginBottom: 12 }}>Scène de clôture scripted — jouée après les actes</p>
               <div className="bac-form-group" style={{ marginBottom: 8 }}>
                 <select
                   className="bac-input bac-select"
-                  value={form.revelation_id}
-                  onChange={e => setForm(p => ({ ...p, revelation_id: e.target.value }))}
+                  value={form.denouement_id}
+                  onChange={e => setForm(p => ({ ...p, denouement_id: e.target.value }))}
                 >
-                  <option value="">— Sélectionner une révélation —</option>
-                  {revelations.map(r => (
-                    <option key={r.id} value={r.id}>{r.titre}{r.delai_suggere ? ` (${r.delai_suggere})` : ''}</option>
+                  <option value="">— Aucun dénouement —</option>
+                  {denouements.map(d => (
+                    <option key={d.id} value={d.id}>{d.titre}</option>
                   ))}
                 </select>
-                {form.revelation_id && (() => {
-                  const selected = revelations.find(r => r.id === form.revelation_id);
+                {form.denouement_id && (() => {
+                  const selected = denouements.find(d => d.id === form.denouement_id);
                   return selected?.description ? (
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', marginTop: 8, padding: '10px 12px', background: 'var(--bac-surface-active)', borderRadius: 'var(--bac-radius)', borderLeft: '3px solid var(--bac-warning)' }}>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', marginTop: 8, padding: '10px 12px', background: 'var(--bac-surface-active)', borderRadius: 'var(--bac-radius)', borderLeft: '3px solid #f97316' }}>
                       {selected.description}
                     </p>
                   ) : null;
                 })()}
               </div>
-              <p className="bac-form-help" style={{ color: 'var(--bac-warning)' }}>
-                🤫 Cette révélation sera secrète pour tous — acteurs et équipe technique. Elle apparaîtra uniquement dans vos documents coordinateur.
-              </p>
             </div>
             <div className="bac-modal-footer">
               <button type="button" className="bac-btn bac-btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>

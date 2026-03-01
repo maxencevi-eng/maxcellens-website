@@ -44,24 +44,40 @@ export interface BacVariant {
   emoji: string;
 }
 
-// ---- Thèmes ----
-export interface BacTheme {
-  id: string;
-  titre: string;
-  description: string;
-  actif: boolean;
-  created_at: string;
-}
-
-// ---- Révélations ----
+// ---- Révélation (formerly Thème) — scène d'intro scripted ----
 export interface BacRevelation {
   id: string;
   titre: string;
   description: string;
-  delai_suggere: string;
-  note_interne: string;
+  ton_principal: string;
+  ton_secondaire: string;
+  duree_min: number;
+  duree_max: number;
+  fil_rouge: string;
+  script_json: ScriptBloc[];
+  itw_json: ItwQuestion[];
+  notes_real_json: NotesRealisation;
   actif: boolean;
   created_at: string;
+  updated_at: string;
+}
+
+// ---- Dénouement (formerly Révélation) — scène de finale scripted ----
+export interface BacDenouement {
+  id: string;
+  titre: string;
+  description: string;
+  ton_principal: string;
+  ton_secondaire: string;
+  duree_min: number;
+  duree_max: number;
+  fil_rouge: string;
+  script_json: ScriptBloc[];
+  itw_json: ItwQuestion[];
+  notes_real_json: NotesRealisation;
+  actif: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 // ---- Script blocks ----
@@ -132,19 +148,17 @@ export interface BacSession {
   date_jour_j: string | null;
   lieu: string;
   nb_participants: number;
-  theme_id: string | null;
-  revelation_id: string | null;
+  revelation_id: string | null;    // formerly theme_id — intro de la session
+  denouement_id: string | null;   // formerly revelation_id — finale de la session
   groupes_actifs: string[];
   statut: SessionStatut;
   snapshot_scenes_json: BacScene[];
   documents_generes_json: any | null;
-  scene_intro_id: string | null;
-  scene_finale_id: string | null;
   created_at: string;
   updated_at: string;
   // Joined
-  theme?: BacTheme;
   revelation?: BacRevelation;
+  denouement?: BacDenouement;
 }
 
 // ---- Casting ----

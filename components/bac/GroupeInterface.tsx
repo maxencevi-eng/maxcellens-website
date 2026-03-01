@@ -39,8 +39,8 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   const [globalChoix, setGlobalChoix] = useState<BacChoixScene[]>([]);
   const [globalSaisies, setGlobalSaisies] = useState<Record<string, any>>({});
   const [globalScenes, setGlobalScenes] = useState<BacScene[]>([]);
-  const [globalIntroScene, setGlobalIntroScene] = useState<BacScene | null>(null);
-  const [globalFinaleScene, setGlobalFinaleScene] = useState<BacScene | null>(null);
+  const [globalIntroScene, setGlobalIntroScene] = useState<any>(null);
+  const [globalFinaleScene, setGlobalFinaleScene] = useState<any>(null);
 
   // Load initial data
   useEffect(() => {
@@ -170,12 +170,8 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       setGlobalCasting(allCastArr);
       setGlobalChoix(allChoixArr);
       setGlobalSaisies(saisiesMap);
-      if (session.scene_intro_id) {
-        setGlobalIntroScene(allScenesArr.find(s => s.id === session.scene_intro_id) || null);
-      }
-      if (session.scene_finale_id) {
-        setGlobalFinaleScene(allScenesArr.find(s => s.id === session.scene_finale_id) || null);
-      }
+      setGlobalIntroScene(session.revelation || null);
+      setGlobalFinaleScene(session.denouement || null);
       setRoles(Array.isArray(allRolesRes) ? allRolesRes.filter((r: BacRole) => r.actif) : roles);
     } catch (e) { console.error(e); }
     setGlobalLoading(false);
