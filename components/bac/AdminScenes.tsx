@@ -61,7 +61,7 @@ export default function AdminScenes() {
 
   const filteredScenes = scenes.filter(s => {
     if (filterActe && s.acte !== filterActe) return false;
-    if (filterGroupe && !s.groupes_concernes.includes(filterGroupe)) return false;
+    if (filterGroupe && s.groupe_acteur !== filterGroupe) return false;
     return true;
   });
 
@@ -136,14 +136,14 @@ export default function AdminScenes() {
                 </div>
               </div>
               <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {scene.groupes_concernes.map(g => {
-                  const groupe = groupes.find(x => x.slug === g);
+                {scene.groupe_acteur && (() => {
+                  const groupe = groupes.find(x => x.slug === scene.groupe_acteur);
                   return (
-                    <span key={g} className="bac-badge" style={{ background: (groupe?.couleur || '#888') + '20', color: groupe?.couleur || '#888' }}>
-                      {groupe?.nom || g}
+                    <span className="bac-badge" style={{ background: (groupe?.couleur || '#888') + '20', color: groupe?.couleur || '#888' }}>
+                      {groupe?.nom || scene.groupe_acteur}
                     </span>
                   );
-                })}
+                })()}
                 {scene.ton_principal && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>• {scene.ton_principal}</span>}
               </div>
             </div>
@@ -248,7 +248,7 @@ function SceneEditor({ scene, groupes, roles, onClose, onToast }: {
     update('itw_json', itws);
   }
 
-  const relevantRoles = roles.filter(r => r.actif && form.groupes_concernes.includes(r.groupe_slug));
+  const relevantRoles = roles.filter(r => r.actif && (form.groupes_concernes || []).includes(r.groupe_slug));
 
   return (
     <div className="bac-animate-in">
@@ -324,22 +324,22 @@ function SceneEditor({ scene, groupes, roles, onClose, onToast }: {
           </div>
 
           <div className="bac-form-group">
-            <label className="bac-label">Groupes concernés</label>
+            <label className="bac-label">Groupes avec des rôles dans cette scène</label>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {groupes.map(g => (
                 <label
                   key={g.slug}
-                  className={`bac-radio-label ${form.groupes_concernes.includes(g.slug) ? 'selected' : ''}`}
+                  className={`bac-radio-label ${(form.groupes_concernes || []).includes(g.slug) ? 'selected' : ''}`}
                   style={{ cursor: 'pointer' }}
                 >
                   <input
                     type="checkbox"
-                    checked={form.groupes_concernes.includes(g.slug)}
+                    checked={(form.groupes_concernes || []).includes(g.slug)}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        update('groupes_concernes', [...form.groupes_concernes, g.slug]);
+                        update('groupes_concernes', [...(form.groupes_concernes || []), g.slug]);
                       } else {
-                        update('groupes_concernes', form.groupes_concernes.filter((s: string) => s !== g.slug));
+                        update('groupes_concernes', (form.groupes_concernes || []).filter((s: string) => s !== g.slug));
                       }
                     }}
                   />
@@ -348,6 +348,24 @@ function SceneEditor({ scene, groupes, roles, onClose, onToast }: {
                 </label>
               ))}
             </div>
+          </div>
+
+          <div className="bac-form-group">
+            <label className="bac-label">Groupe qui choisit cette scène</label>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginBottom: 8 }}>
+              Ce groupe verra la scène dans son interface de sélection. Les autres groupes ne la verront pas.
+            </p>
+            <select
+              className="bac-input bac-select"
+              style={{ maxWidth: 260 }}
+              value={form.groupe_acteur || ''}
+              onChange={e => update('groupe_acteur', e.target.value || null)}
+            >
+              <option value="">— Aucun groupe assigné —</option>
+              {groupes.map(g => (
+                <option key={g.slug} value={g.slug}>{g.nom}</option>
+              ))}
+            </select>
           </div>
 
           <div className="bac-form-row">

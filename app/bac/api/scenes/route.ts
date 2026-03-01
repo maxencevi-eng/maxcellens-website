@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   let query = supabaseAdmin.from('bac_scenes').select('*').order('acte, created_at');
 
   if (acte) query = query.eq('acte', acte);
-  if (groupe) query = query.contains('groupes_concernes', [groupe]);
+  if (groupe) query = query.eq('groupe_acteur', groupe);
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
       duree_max: body.duree_max || 3,
       difficulte: body.difficulte || 1,
       groupes_concernes: body.groupes_concernes || [],
+      groupe_acteur: body.groupe_acteur || null,
       nb_intervenants_min: body.nb_intervenants_min || 1,
       nb_intervenants_max: body.nb_intervenants_max || 5,
       fil_rouge: body.fil_rouge || '',

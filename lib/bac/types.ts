@@ -136,6 +136,7 @@ export interface BacScene {
   duree_max: number;
   difficulte: number;
   groupes_concernes: string[];
+  groupe_acteur: string | null;
   nb_intervenants_min: number;
   nb_intervenants_max: number;
   fil_rouge: string;
