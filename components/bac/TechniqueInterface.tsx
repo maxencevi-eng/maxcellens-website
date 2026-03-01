@@ -60,7 +60,7 @@ const ROLES_TECHNIQUES = [
     categorie: 'Scénariste',
     roles: [
       {
-        nom: 'Scénariste (à temps plein)',
+        nom: 'Scénariste',
         description: `Supervise le respect du scénario tout au long de la journée de tournage.\nConnaît toutes les scènes sur le bout des doigts et intervient si un acteur s'écarte trop du script initial ou improvise de façon non pertinente.\nAjuste en temps réel les répliques ou le déroulé si nécessaire.\nInterface essentielle entre la vision artistique et la réalité du tournage.`,
       },
     ],

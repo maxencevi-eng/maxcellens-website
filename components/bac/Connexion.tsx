@@ -1,10 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function Connexion({ profilSlug }: { profilSlug: string }) {
-  const router = useRouter();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,7 +24,7 @@ export default function Connexion({ profilSlug }: { profilSlug: string }) {
       const data = await res.json();
 
       if (res.ok) {
-        router.refresh(); // Server component re-renders with the new session
+        window.location.reload(); // Full reload so the server picks up the new cookie
       } else {
         setError(data.error || 'Identifiants incorrects');
       }
