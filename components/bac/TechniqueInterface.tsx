@@ -680,7 +680,19 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                   {gc.map(c => (
                     <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
                       <span style={{ fontWeight: 600 }}>{c.prenom}</span>
-                      <span style={{ color: 'var(--bac-text-secondary)' }}>{(c.role as any)?.nom || '—'}</span>
+                      <span style={{ color: 'var(--bac-text-secondary)' }}>
+                        {(c.role as any)?.nom || '—'}
+                        {(c.variant as any)?.emoji || (c.variant as any)?.nom ? (
+                          <span style={{ marginLeft: 6, color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>
+                            {(c.variant as any)?.emoji} {(c.variant as any)?.nom}
+                            {(c.variant as any)?.description ? (
+                              <span style={{ marginLeft: 4, color: 'var(--bac-text-muted)', fontStyle: 'italic', opacity: 0.8 }}>
+                                — {(c.variant as any)?.description}
+                              </span>
+                            ) : null}
+                          </span>
+                        ) : null}
+                      </span>
                     </div>
                   ))}
                 </div>

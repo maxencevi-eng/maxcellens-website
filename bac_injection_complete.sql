@@ -1,433 +1,370 @@
 -- ============================================================
--- BUREAU À LA CARTE — INJECTION COMPLÈTE
--- À exécuter dans Supabase SQL Editor (section par section si besoin)
--- Idempotent : ne crée rien si l'élément existe déjà (basé sur le nom/titre)
+-- BAC — INJECTION SQL COMPLÈTE
+-- Révélations (màj colonnes + contenu) + Dénouements (création + injection)
+-- ============================================================
+-- Exécuter dans l'ordre. Compatible Supabase / PostgreSQL.
+-- Dollar-quoting ($$) utilisé pour les apostrophes françaises.
 -- ============================================================
 
 BEGIN;
 
--- ────────────────────────────────────────────────────────────
--- ÉTAPE 0 : Colonnes manquantes sur bac_revelations
--- (delai_suggere et note_interne spécifiques aux annonces)
--- ────────────────────────────────────────────────────────────
+-- ═══════════════════════════════════════════════════════════
+-- 1. ALTER TABLE bac_revelations — ajout colonnes
+-- ═══════════════════════════════════════════════════════════
 
-ALTER TABLE bac_revelations
-  ADD COLUMN IF NOT EXISTS delai_suggere TEXT DEFAULT '',
-  ADD COLUMN IF NOT EXISTS note_interne  TEXT DEFAULT '';
-
-
--- ════════════════════════════════════════════════════════════
--- ÉTAPE 1 : bac_roles (8 rôles, 4 groupes)
--- ════════════════════════════════════════════════════════════
-
-INSERT INTO bac_roles (nom, groupe_slug, description, couleur, actif)
-SELECT v.nom, v.groupe_slug, v.description, v.couleur, v.actif
-FROM (VALUES
-  ('Manager',          'managers',        'Le responsable d''équipe. Jongle entre les directives du haut et la réalité du terrain.',           '#E8A838', true),
-  ('Manager adjoint',  'managers',        'Fait le travail du manager sans le titre. Compense en permanence, sans jamais le dire.',             '#D4921E', true),
-  ('Assistant',        'assistants',      'Sait exactement comment tout fonctionne. N''a pas le droit de le dire.',                             '#4ECDC4', true),
-  ('Assistant senior', 'assistants',      'Le titre "senior" signifie qu''il est là depuis longtemps. Ce n''est pas forcément un avantage.',    '#3AB5AD', true),
-  ('Chef de projet',   'chefs-de-projet', 'Responsable de tout ce qui a un début, une fin et un budget. Souvent deux sur trois.',               '#6C63FF', true),
-  ('Chargé de projet', 'chefs-de-projet', 'Exécute. Beaucoup. Questionne peu. Commence à questionner.',                                         '#5952E8', true),
-  ('Directeur',        'directeurs',      'Décide des grandes orientations. Pas toujours au courant des petites réalités.',                     '#E84855', true),
-  ('Directeur adjoint','directeurs',      'Prépare, applique et explique les décisions du directeur. Dans cet ordre, idéalement.',              '#C73340', true)
-) AS v(nom, groupe_slug, description, couleur, actif)
-WHERE NOT EXISTS (SELECT 1 FROM bac_roles r WHERE r.nom = v.nom);
+ALTER TABLE bac_revelations ADD COLUMN IF NOT EXISTS ton_principal    TEXT NOT NULL DEFAULT '';
+ALTER TABLE bac_revelations ADD COLUMN IF NOT EXISTS ton_secondaire   TEXT NOT NULL DEFAULT '';
+ALTER TABLE bac_revelations ADD COLUMN IF NOT EXISTS duree_min        INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE bac_revelations ADD COLUMN IF NOT EXISTS duree_max        INTEGER NOT NULL DEFAULT 3;
+ALTER TABLE bac_revelations ADD COLUMN IF NOT EXISTS fil_rouge        TEXT NOT NULL DEFAULT '';
+ALTER TABLE bac_revelations ADD COLUMN IF NOT EXISTS script_json      JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE bac_revelations ADD COLUMN IF NOT EXISTS itw_json         JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE bac_revelations ADD COLUMN IF NOT EXISTS notes_real_json  JSONB NOT NULL DEFAULT '{"cadrage":"","rythme":"","silences":"","pieges":"","astuce":""}';
+ALTER TABLE bac_revelations ADD COLUMN IF NOT EXISTS updated_at       TIMESTAMPTZ;
 
 
--- ════════════════════════════════════════════════════════════
--- ÉTAPE 2 : bac_variants (3 variants par rôle = 24 variants)
--- ════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════
+-- 2. UPDATE bac_revelations — injection contenu script
+-- ═══════════════════════════════════════════════════════════
 
--- Manager
-INSERT INTO bac_variants (role_id, lettre, nom, description, emoji)
-SELECT r.id, v.lettre, v.nom, v.description, v.emoji
-FROM bac_roles r
-CROSS JOIN (VALUES
-  ('A', 'L''anxieux',  'Anticipe tout ce qui peut mal tourner, le dit à voix haute, souvent raison.', '😰'),
-  ('B', 'Le positif',  'Voit le bon côté de tout. Même les catastrophes. Surtout les catastrophes.',  '😄'),
-  ('C', 'Le fataliste','S''en fout ouvertement. Pas par malveillance — juste une sagesse résignée.',   '🤷')
-) AS v(lettre, nom, description, emoji)
-WHERE r.nom = 'Manager'
-AND NOT EXISTS (SELECT 1 FROM bac_variants bv WHERE bv.role_id = r.id AND bv.lettre = v.lettre);
-
--- Manager adjoint
-INSERT INTO bac_variants (role_id, lettre, nom, description, emoji)
-SELECT r.id, v.lettre, v.nom, v.description, v.emoji
-FROM bac_roles r
-CROSS JOIN (VALUES
-  ('A', 'Le procédurier','A un process pour tout. Même pour improviser.',                              '📋'),
-  ('B', 'Le désabusé',   'A tout vu, tout entendu. Se souvient de tout. Pardonne rien.',               '🙄'),
-  ('C', 'Le sauveur',    'Résout les problèmes des autres avant les siens. Sourit toujours.',           '🤗')
-) AS v(lettre, nom, description, emoji)
-WHERE r.nom = 'Manager adjoint'
-AND NOT EXISTS (SELECT 1 FROM bac_variants bv WHERE bv.role_id = r.id AND bv.lettre = v.lettre);
-
--- Assistant
-INSERT INTO bac_variants (role_id, lettre, nom, description, emoji)
-SELECT r.id, v.lettre, v.nom, v.description, v.emoji
-FROM bac_roles r
-CROSS JOIN (VALUES
-  ('A', 'L''ambitieux',    'Fait le travail de trois personnes en espérant que quelqu''un le remarque.', '🌟'),
-  ('B', 'Le discret',      'Présent depuis toujours. Personne ne sait ce qu''il fait. Tout s''effondrerait sans lui.', '😶'),
-  ('C', 'Le revendicatif', 'Connaît ses droits. Les cite volontiers. N''a pas forcément tort.',          '😤')
-) AS v(lettre, nom, description, emoji)
-WHERE r.nom = 'Assistant'
-AND NOT EXISTS (SELECT 1 FROM bac_variants bv WHERE bv.role_id = r.id AND bv.lettre = v.lettre);
-
--- Assistant senior
-INSERT INTO bac_variants (role_id, lettre, nom, description, emoji)
-SELECT r.id, v.lettre, v.nom, v.description, v.emoji
-FROM bac_roles r
-CROSS JOIN (VALUES
-  ('A', 'L''ancien',    'Se souvient de comment c''était avant. En parle beaucoup. Souvent nostalgique.',                      '🧓'),
-  ('B', 'Le formateur', 'Explique tout à tout le monde même quand personne n''a demandé.',                                     '🧑‍🏫'),
-  ('C', 'Le détaché',   'A atteint un niveau de sérénité que les autres confondent avec de la paresse.',                      '😎')
-) AS v(lettre, nom, description, emoji)
-WHERE r.nom = 'Assistant senior'
-AND NOT EXISTS (SELECT 1 FROM bac_variants bv WHERE bv.role_id = r.id AND bv.lettre = v.lettre);
-
--- Chef de projet
-INSERT INTO bac_variants (role_id, lettre, nom, description, emoji)
-SELECT r.id, v.lettre, v.nom, v.description, v.emoji
-FROM bac_roles r
-CROSS JOIN (VALUES
-  ('A', 'Le méthodique', 'Gantt, jalons, livrables. Dort avec son planning. Littéralement.',                                  '📊'),
-  ('B', 'L''urgentiste', 'Tout est urgent. Tout. L''urgence est son état naturel, presque confortable.',                      '🔥'),
-  ('C', 'Le diplomate',  'Jamais en désaccord ouvert. Reformule jusqu''à ce que tout le monde croit avoir eu raison.',         '🎭')
-) AS v(lettre, nom, description, emoji)
-WHERE r.nom = 'Chef de projet'
-AND NOT EXISTS (SELECT 1 FROM bac_variants bv WHERE bv.role_id = r.id AND bv.lettre = v.lettre);
-
--- Chargé de projet
-INSERT INTO bac_variants (role_id, lettre, nom, description, emoji)
-SELECT r.id, v.lettre, v.nom, v.description, v.emoji
-FROM bac_roles r
-CROSS JOIN (VALUES
-  ('A', 'Le rapide',        'Livre avant la deadline. Parfois avant d''avoir bien compris la demande.',                       '⚡'),
-  ('B', 'Le questionneur',  'Pose des questions pertinentes au mauvais moment. Souvent juste après le lancement.',            '🤔'),
-  ('C', 'Le documentariste','Note tout. Envoie des comptes-rendus de 4 pages pour des réunions de 10 minutes.',               '📝')
-) AS v(lettre, nom, description, emoji)
-WHERE r.nom = 'Chargé de projet'
-AND NOT EXISTS (SELECT 1 FROM bac_variants bv WHERE bv.role_id = r.id AND bv.lettre = v.lettre);
-
--- Directeur
-INSERT INTO bac_variants (role_id, lettre, nom, description, emoji)
-SELECT r.id, v.lettre, v.nom, v.description, v.emoji
-FROM bac_roles r
-CROSS JOIN (VALUES
-  ('A', 'Le visionnaire',  'Parle de disruption, de pivot, d''impact. Rarement de comment exactement.',                      '👔'),
-  ('B', 'Le gestionnaire', 'Tableaux de bord, KPIs, reporting. Ce qui n''est pas mesuré n''existe pas.',                     '📰'),
-  ('C', 'Le bienveillant', 'Vraiment à l''écoute. Ce qui rend ses décisions incompréhensibles encore plus douloureuses.',    '🤝')
-) AS v(lettre, nom, description, emoji)
-WHERE r.nom = 'Directeur'
-AND NOT EXISTS (SELECT 1 FROM bac_variants bv WHERE bv.role_id = r.id AND bv.lettre = v.lettre);
-
--- Directeur adjoint
-INSERT INTO bac_variants (role_id, lettre, nom, description, emoji)
-SELECT r.id, v.lettre, v.nom, v.description, v.emoji
-FROM bac_roles r
-CROSS JOIN (VALUES
-  ('A', 'Le miroir',           'Approuve tout ce que dit le directeur. Avec conviction croissante.',                          '🪞'),
-  ('B', 'Le médiateur',        'Traduit les décisions d''en haut en quelque chose de digeste pour le terrain. Fait de son mieux.', '⚖️'),
-  ('C', 'L''ambitieux discret','Souriant. Attentif. Se souvient de tout. Attend son heure.',                                  '🚀')
-) AS v(lettre, nom, description, emoji)
-WHERE r.nom = 'Directeur adjoint'
-AND NOT EXISTS (SELECT 1 FROM bac_variants bv WHERE bv.role_id = r.id AND bv.lettre = v.lettre);
+-- ── Révélation 1 — L'audit surprise ──────────────────────────
+UPDATE bac_revelations SET
+  script_json = $$[
+  {"type":"didascalie","texte":"Une salle quelconque, début de journée. Quelqu'un entre avec l'air de quelqu'un qui a une mauvaise nouvelle mais qui a décidé de la livrer calmement.","style":"ouverture"},
+  {"type":"replique","role":"Coordinateur","directive":"Annonce la révélation avec le ton de quelqu'un qui essaie d'avoir l'air calme — et n'y arrive pas complètement. Marquer une pause avant 'dans 48 heures'.","exemple":"Voilà. On vient d'apprendre ce matin qu'un audit externe aura lieu… dans 48 heures. Je vous laisse digérer.","didascalie_replique":"pose le document qu'il tenait, mains libres","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Silence. Quelqu'un ouvre la bouche. La referme. Tout le monde regarde ailleurs ou fixe un point.","style":"intermediaire"},
+  {"type":"replique","role":"Coordinateur","directive":"Ajoute l'information sur le thème de l'épisode — ce sur quoi tout le monde va devoir se concentrer aujourd'hui","exemple":"L'audit porte sur [LE THÈME]. C'est le fil rouge de notre journée. À vous de jouer.","didascalie_replique":"regard caméra","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Les gens repartent. Certains vite. Certains lentement. Personne ne sait vraiment par où commencer.","style":"cloture"}
+]$$::jsonb,
+  itw_json = $$[
+  {"role_cible":"Manager","question":"Un audit en 48 heures. Votre première pensée ?","reponse_a":"Qu'est-ce qu'on n'a pas fait qu'on aurait dû faire. Dans cet ordre.","reponse_b":"Qu'on est prêts ! Enfin… on va être prêts. C'est l'intention qui compte.","reponse_c":"Que ça tombait un jour comme un autre. Y'a pas de bon moment pour un audit."},
+  {"role_cible":"Assistant","question":"Vous avez eu l'air surpris. Vous l'étiez vraiment ?","reponse_a":"Surpris non. Inquiet oui. C'est différent.","reponse_b":"Oui ! Mais dans le bon sens. Un audit c'est une opportunité de montrer ce qu'on fait bien.","reponse_c":"J'avais entendu des rumeurs. Donc à moitié."}
+]$$::jsonb,
+  notes_real_json = $${"cadrage":"Plan serré sur le visage pendant l'annonce. Pan lent vers le groupe pour capter les premières réactions — ne pas couper trop vite.","rythme":"Lent. Le silence après '48 heures' est le moment le plus important. Ne pas le remplir.","silences":"Minimum 4 secondes après l'annonce. Laisser tourner la caméra. Les vraies réactions arrivent après.","pieges":"Ne pas jouer la scène comme un drama — rester dans le registre comédie de bureau. La tension vient du réalisme, pas de la mise en scène.","astuce":"Tourner cette scène en tout premier, avant que les acteurs soient échauffés. Le naturel non-joué est exactement ce qu'on cherche pour l'intro."}$$::jsonb,
+  updated_at = now()
+WHERE titre = $$L'audit surprise$$;
 
 
--- ════════════════════════════════════════════════════════════
--- ÉTAPE 3 : bac_themes (6 thèmes)
--- ════════════════════════════════════════════════════════════
-
-INSERT INTO bac_themes (titre, description, actif)
-SELECT v.titre, v.description, v.actif
-FROM (VALUES
-  ('Culture d''entreprise',
-   'L''épisode tourne autour des valeurs, de l''histoire et de l''ADN de votre entreprise. Idéal pour célébrer un anniversaire, accueillir de nouveaux arrivants ou rappeler ce qui vous rend uniques — avec humour et autodérision.',
-   true),
-  ('RGPD & Cybersécurité',
-   'Sensibilisation aux bonnes pratiques numériques version comédie de bureau. Mots de passe sur Post-it, pièces jointes douteuses, WiFi public — tous les classiques y passent, mais cette fois on en rit ensemble.',
-   true),
-  ('QHSE',
-   'La sécurité au travail version sitcom. Procédures ignorées, EPI mal portés, formulaires perdus — l''épisode aborde les enjeux qualité, hygiène et sécurité par le biais du ridicule bienveillant.',
-   true),
-  ('Onboarding',
-   'Un (ou plusieurs) nouveaux arrivent, et personne n''est vraiment prêt à les accueillir. Le thème parfait pour célébrer les intégrations récentes ou préparer les prochaines — vu de l''intérieur et de l''extérieur.',
-   true),
-  ('Gestion de projet',
-   'Deadlines floues, périmètre qui s''élargit, réunions de réunions — l''épisode met en scène les joies universelles de la conduite de projet. Tout le monde se reconnaît. C''est le principe.',
-   true),
-  ('Transformation digitale',
-   'Nouveaux outils, nouvelles méthodes, résistances diverses — l''épisode explore la transformation en cours avec tendresse. Entre ceux qui ont tout adopté et ceux qui ont gardé leur fichier Excel de 2008.',
-   true)
-) AS v(titre, description, actif)
-WHERE NOT EXISTS (SELECT 1 FROM bac_themes t WHERE t.titre = v.titre);
+-- ── Révélation 2 — La visite du siège ───────────────────────
+UPDATE bac_revelations SET
+  script_json = $$[
+  {"type":"didascalie","texte":"Bureau. Matin. Quelqu'un arrive avec l'énergie de quelqu'un qui va annoncer une bonne nouvelle — mais dont le sourire est légèrement trop grand.","style":"ouverture"},
+  {"type":"replique","role":"Coordinateur","directive":"Présenter l'annonce comme une bonne nouvelle tout en laissant filtrer que c'est compliqué. Le sourire doit tenir jusqu'à la fin de la phrase — à peine.","exemple":"Bonne nouvelle ! Une délégation du siège vient nous rendre visite. Dans 2 jours. C'est une vraie reconnaissance du travail qu'on fait.","didascalie_replique":"sourire maintenu, regard qui fait le tour de la pièce","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Silence. Quelqu'un hoche la tête. Le hochement dit 'très bien' mais les yeux disent autre chose.","style":"intermediaire"},
+  {"type":"replique","role":"Coordinateur","directive":"Précise l'enjeu thématique de la visite — ce qu'ils vont observer","exemple":"Ils viennent regarder comment on gère [LE THÈME]. Autant dire que c'est notre journée la plus importante de l'année.","didascalie_replique":"le sourire a légèrement diminué","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Tout le monde repart. Certains sourient encore. Plus personne ne sourit vraiment.","style":"cloture"}
+]$$::jsonb,
+  itw_json = $$[
+  {"role_cible":"Manager","question":"Une visite du siège dans 2 jours. Bonne ou mauvaise nouvelle ?","reponse_a":"Les deux. Surtout mauvaise. Mais j'ai pas dit ça.","reponse_b":"Bonne ! C'est une chance de montrer ce qu'on fait. On est prêts. On sera prêts.","reponse_c":"Neutre. Ils viendront, ils partiront. On verra ce que ça donne."},
+  {"role_cible":"Chef de projet","question":"Ce que vous avez pensé mais pas dit à ce moment-là ?","reponse_a":"Que j'avais une liste de 12 choses à corriger avant leur arrivée et 48 heures pour le faire.","reponse_b":"Que c'était excitant ! Vraiment.","reponse_c":"Que ça ne changerait probablement rien sur le fond. Mais que le fond allait quand même devoir être épousseté."}
+]$$::jsonb,
+  notes_real_json = $${"cadrage":"Filmer le sourire en plan serré — l'expression du coordinateur est le cœur de la scène. Insert sur les visages du groupe pendant l'annonce.","rythme":"Léger et rapide jusqu'au silence. Le silence casse le rythme volontairement.","silences":"Le silence après le hochement de tête. 3 secondes. Caméra sur le groupe.","pieges":"Le coordinateur ne doit pas jouer 'le méchant qui cache quelque chose' — il est sincèrement positif. C'est l'ambivalence du groupe qui fait la scène.","astuce":"Demander au coordinateur-acteur de tenir le sourire une seconde de trop après sa dernière réplique. Ce petit décalage fait tout."}$$::jsonb,
+  updated_at = now()
+WHERE titre = $$La visite du siège$$;
 
 
--- ════════════════════════════════════════════════════════════
--- ÉTAPE 4 : bac_revelations (5 révélations / annonces)
--- ════════════════════════════════════════════════════════════
-
-INSERT INTO bac_revelations (
-  titre, description, delai_suggere, note_interne,
-  ton_principal, ton_secondaire, duree_min, duree_max,
-  fil_rouge, script_json, itw_json, notes_real_json, actif
-)
-SELECT v.titre, v.description, v.delai_suggere, v.note_interne,
-       v.ton_principal, v.ton_secondaire, v.duree_min, v.duree_max,
-       v.fil_rouge, v.script_json::jsonb, v.itw_json::jsonb,
-       v.notes_real_json::jsonb, v.actif
-FROM (VALUES
-  (
-    'L''audit surprise',
-    'L''équipe apprend qu''un audit externe aura lieu dans 48 heures. Personne n''est prêt.',
-    '48 heures',
-    'Annoncer lors de l''intro comme une "info reçue ce matin". Laisser un silence après l''annonce. Ne pas répondre aux questions — "vous en saurez plus en temps voulu". Déclenche immédiatement l''instinct de survie de chaque groupe.',
-    '', '', 1, 2, '',
-    '[]', '[]',
-    '{"cadrage":"","rythme":"","silences":"","pieges":"","astuce":""}',
-    true
-  ),
-  (
-    'La visite du siège',
-    'L''équipe apprend qu''une délégation du siège visite les locaux dans 2 jours. Personne n''est prêt.',
-    '2 jours',
-    'Présenter comme "une bonne nouvelle" avec un sourire légèrement forcé. La tension vient du fait que tout le monde comprend immédiatement les implications sans que ce soit dit. Laisser les groupes imaginer ce que "la visite" implique pour eux spécifiquement.',
-    '', '', 1, 2, '',
-    '[]', '[]',
-    '{"cadrage":"","rythme":"","silences":"","pieges":"","astuce":""}',
-    true
-  ),
-  (
-    'La fusion annoncée',
-    'L''équipe apprend qu''un rapprochement avec une autre structure sera officiellement annoncé dans une semaine. Personne n''est prêt.',
-    '1 semaine',
-    'Ton volontairement flou — "rapprochement", pas "fusion". L''ambiguïté est le moteur. Ne pas préciser qui fusionne avec qui. Chaque groupe projette ses propres craintes. Particulièrement efficace avec des équipes qui ont vécu des réorganisations.',
-    '', '', 1, 2, '',
-    '[]', '[]',
-    '{"cadrage":"","rythme":"","silences":"","pieges":"","astuce":""}',
-    true
-  ),
-  (
-    'Le déménagement imminent',
-    'L''équipe apprend que les bureaux seront déménagés dans un nouveau site dans 3 semaines. Personne n''est prêt.',
-    '3 semaines',
-    'Révélation concrète et immédiatement personnelle — tout le monde a des affaires, des habitudes, des voisins de bureau. Déclenche des réactions très différentes selon les profils. Très efficace pour les scènes de personnalisation.',
-    '', '', 1, 2, '',
-    '[]', '[]',
-    '{"cadrage":"","rythme":"","silences":"","pieges":"","astuce":""}',
-    true
-  ),
-  (
-    'Le nouveau logiciel',
-    'L''équipe apprend que l''ensemble des outils métier seront migrés vers un nouveau système dans 10 jours. Personne n''est prêt.',
-    '10 jours',
-    'Révélation très universelle — tout le monde a vécu une migration chaotique. Laisser les groupes y projeter leur propre cauchemar. Idéal pour le thème Transformation digitale.',
-    '', '', 1, 2, '',
-    '[]', '[]',
-    '{"cadrage":"","rythme":"","silences":"","pieges":"","astuce":""}',
-    true
-  )
-) AS v(titre, description, delai_suggere, note_interne, ton_principal, ton_secondaire,
-       duree_min, duree_max, fil_rouge, script_json, itw_json, notes_real_json, actif)
-WHERE NOT EXISTS (SELECT 1 FROM bac_revelations r WHERE r.titre = v.titre);
+-- ── Révélation 3 — La fusion annoncée ───────────────────────
+UPDATE bac_revelations SET
+  script_json = $$[
+  {"type":"didascalie","texte":"Salle de réunion. Tout le monde est là — ce qui est inhabituel. Quelqu'un ferme la porte.","style":"ouverture"},
+  {"type":"replique","role":"Coordinateur","directive":"Utiliser le mot 'rapprochement' — jamais 'fusion'. Le ton est mesuré, presque administratif. Laisser le mot 'officiellement' traîner.","exemple":"Voilà. Dans une semaine, nous annoncerons officiellement un rapprochement avec une autre structure. Je voulais que vous le sachiez avant.","didascalie_replique":"pose les mains à plat sur la table","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Silence long. Quelqu'un formule une question à mi-voix. Personne ne répond.","style":"intermediaire"},
+  {"type":"replique","role":"Coordinateur","directive":"Anticipe la vraie question sans y répondre — et ramène sur le thème de l'épisode","exemple":"Je sais ce que vous vous demandez. Pour l'instant, ce que je peux dire c'est que [LE THÈME] reste notre priorité. C'est ce qui nous définit. C'est ce qu'on va montrer aujourd'hui.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"didascalie","texte":"La porte se rouvre. Les gens sortent. Lentement, et en chuchotant.","style":"cloture"}
+]$$::jsonb,
+  itw_json = $$[
+  {"role_cible":"Directeur","question":"'Rapprochement'. Vous avez choisi ce mot. Pourquoi pas fusion ?","reponse_a":"Parce que ce n'est pas encore acté. Les mots ont un impact. 'Rapprochement' laisse des options.","reponse_b":"C'est le terme officiel ! Et il est juste. On se rapproche. C'est positif.","reponse_c":"Parce que 'fusion' fait peur. 'Rapprochement' fait moins peur. La réalité reste la même."},
+  {"role_cible":"Manager","question":"La question que personne n'a osé poser — c'était quoi ?","reponse_a":"Est-ce qu'on garde nos postes. Évidemment.","reponse_b":"Comment ça va se passer concrètement ! C'est la question utile.","reponse_c":"Avec qui. Parce que selon avec qui, tout change."}
+]$$::jsonb,
+  notes_real_json = $${"cadrage":"Plan large d'ouverture pour montrer tout le monde dans la salle. Puis resserrer progressivement sur le coordinateur. Finir sur les visages à la sortie.","rythme":"Lent et solennel. Pas de rupture de rythme — la gravité s'installe doucement.","silences":"Le silence long après l'annonce est le plus important de cette révélation. 5 secondes minimum. Ne pas couper sur la question chuchotée — la laisser exister sans réponse.","pieges":"Éviter le ton dramatique de feuilleton. Rester dans le registre du réel — une vraie annonce en entreprise n'est jamais théâtrale.","astuce":"Fermer la porte au début de la scène est un détail qui crée immédiatement l'atmosphère. S'assurer que ce geste est filmé."}$$::jsonb,
+  updated_at = now()
+WHERE titre = $$La fusion annoncée$$;
 
 
--- ════════════════════════════════════════════════════════════
--- ÉTAPE 5 : bac_scenes (9 scènes complètes)
--- ════════════════════════════════════════════════════════════
+-- ── Révélation 4 — Le déménagement imminent ─────────────────
+UPDATE bac_revelations SET
+  script_json = $$[
+  {"type":"didascalie","texte":"Open space ou salle commune. Quelqu'un arrive avec un plan imprimé — ou quelque chose qui ressemble à un plan.","style":"ouverture"},
+  {"type":"replique","role":"Coordinateur","directive":"Annoncer comme un fait accompli — pas une mauvaise nouvelle, juste une réalité. Le ton est pratique et légèrement trop rapide.","exemple":"Voilà, donc c'est confirmé — on déménage dans 3 semaines. Nouveau site. Nouvelles dispositions. Les détails arrivent, mais c'est acté.","didascalie_replique":"montre vaguement le plan sans vraiment l'expliquer","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Quelqu'un regarde autour de lui comme pour mémoriser l'endroit. Quelqu'un d'autre regarde sa plante verte.","style":"intermediaire"},
+  {"type":"replique","role":"Coordinateur","directive":"Faire le lien avec le thème de la journée — c'est le moment de montrer comment l'équipe gère le changement","exemple":"Et justement — aujourd'hui on parle de [LE THÈME]. C'est peut-être le meilleur moment pour en parler. Vraiment.","didascalie_replique":"regard caméra","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Quelqu'un demande si les places seront attribuées ou libres. La vraie question de la journée.","style":"cloture"}
+]$$::jsonb,
+  itw_json = $$[
+  {"role_cible":"Assistant","question":"Votre première pensée en apprenant le déménagement ?","reponse_a":"Mes affaires. J'ai beaucoup d'affaires. Ça va prendre du temps à trier.","reponse_b":"Nouveau départ ! Nouvelle énergie ! Je suis vraiment enthousiaste.","reponse_c":"Que c'est comme ça. On déménage. On s'adapte. On survit."},
+  {"role_cible":"Manager","question":"Places attribuées ou libres — c'est vraiment la question importante ?","reponse_a":"C'est LA question. La place détermine les dynamiques. C'est stratégique.","reponse_b":"Dans le fond non. Mais pour les gens c'est concret. C'est par là qu'on commence.","reponse_c":"C'est la question qu'on peut poser. Les vraies questions, on les garde pour plus tard."}
+]$$::jsonb,
+  notes_real_json = $${"cadrage":"Montrer l'espace actuel — les bureaux, les affaires personnelles visibles. Ce que les gens vont quitter. Sans insister, juste montrer.","rythme":"Pratique et rapide — comme une vraie annonce opérationnelle. Le côté émotionnel émerge dans les réactions, pas dans le discours.","silences":"Le silence pendant que quelqu'un regarde autour de lui. 3 secondes. Laisser la caméra observer.","pieges":"Ne pas jouer la tristesse du déménagement — rester dans le registre comédie. La plante verte est un gag visuel suffisant.","astuce":"Si possible, filmer dans le vrai espace de travail de l'entreprise. Le réalisme du décor crée une résonance immédiate avec le public."}$$::jsonb,
+  updated_at = now()
+WHERE titre = $$Le déménagement imminent$$;
 
--- ─── SCÈNE 01 : L'annonce (intro fixe) ───────────────────────────────────────
-INSERT INTO bac_scenes (
-  titre, acte, ton_principal, ton_secondaire, duree_min, duree_max, difficulte,
-  groupes_concernes, nb_intervenants_min, nb_intervenants_max, fil_rouge,
-  champ_perso_label, champ_perso_exemple, champ_perso_replique_cible,
-  script_json, itw_json, notes_real_json, actif
-)
-SELECT
-  'L''annonce', 'intro', 'Neutre / Solennel', 'Légèrement inquiet', 1, 2, 1,
-  ARRAY['managers','assistants','chefs-de-projet','directeurs'], 1, 2,
-  'C''est ici que la révélation est annoncée pour la première fois. La scène est portée par le coordinateur (en rôle fictif) ou un "personnage officiel". Elle plante le contexte de tout l''épisode — le ton doit être sérieux juste assez pour que la suite soit drôle.',
-  NULL, NULL, NULL,
-  '[{"type":"didascalie","texte":"Un couloir ou une salle quelconque. Quelqu''un s''apprête à faire une annonce. Ambiance légèrement solennelle.","style":"ouverture"},{"type":"replique","role":"Coordinateur","directive":"Annonce la révélation avec le ton de quelqu''un qui essaie d''avoir l''air calme mais ne l''est pas tout à fait. Lire [LA RÉVÉLATION] avec un naturel forcé.","exemple":"Donc voilà. On vient d''apprendre que [LA RÉVÉLATION] aura lieu [LE DÉLAI]. Je vous laisse digérer ça.","didascalie_replique":"marque une pause après l''annonce","utilise_element_perso":false},{"type":"didascalie","texte":"Silence. Puis tout le monde repart vaquer à ses occupations comme si rien ne s''était passé. Ce qui est exactement le problème.","style":"cloture"}]'::jsonb,
-  '[]'::jsonb,
-  '{"cadrage":"Plan serré sur le visage pendant l''annonce. Pan vers le groupe pour capter les premières réactions — furtives, pas jouées.","rythme":"Lent. Le silence après l''annonce est le moment le plus important de cette scène.","silences":"Minimum 4 secondes après [LA RÉVÉLATION]. Ne pas couper.","pieges":"Ne pas rendre la scène comique trop tôt — l''humour vient du contraste avec ce qui suit, pas de la scène elle-même.","astuce":"Si possible tourner cette scène en premier, avant que les acteurs soient échauffés. Le naturel non-joué est exactement ce qu''on cherche."}'::jsonb,
+
+-- ── Révélation 5 — Le nouveau logiciel ──────────────────────
+UPDATE bac_revelations SET
+  script_json = $$[
+  {"type":"didascalie","texte":"Bureau. Quelqu'un projette un écran — une interface inconnue, colorée, visiblement différente de ce que tout le monde utilise.","style":"ouverture"},
+  {"type":"replique","role":"Coordinateur","directive":"Annoncer la migration avec l'enthousiasme de quelqu'un qui a été briefé par le département IT et répète les mots clés sans forcément y croire","exemple":"Donc voilà — dans 10 jours on migre vers le nouveau système. C'est plus intuitif, plus performant, et ça va vraiment simplifier notre quotidien.","didascalie_replique":"désigne l'écran d'un geste large","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Quelqu'un lève la main. Plusieurs questions arrivent en même temps. Trop de questions.","style":"intermediaire"},
+  {"type":"replique","role":"Coordinateur","directive":"Couper les questions avec bienveillance — et ramener sur le thème de l'épisode comme antidote","exemple":"On aura le temps pour les questions. Ce qui est sûr c'est que [LE THÈME] — c'est exactement ce dont on a besoin pour traverser ça ensemble. C'est pour ça qu'on est là aujourd'hui.","didascalie_replique":"coupe doucement d'un geste de la main","utilise_element_perso":false},
+  {"type":"didascalie","texte":"L'interface reste projetée. Personne ne la regarde vraiment. Tout le monde la regarde quand même.","style":"cloture"}
+]$$::jsonb,
+  itw_json = $$[
+  {"role_cible":"Chef de projet","question":"'Plus intuitif, plus performant.' Vous y avez cru ?","reponse_a":"Non. Mais j'ai noté les questions à poser au support le jour J.","reponse_b":"Oui ! Les nouveaux outils c'est toujours une opportunité. Il faut juste le temps d'adaptation.","reponse_c":"J'ai entendu 'dans 10 jours'. Tout le reste était du bruit."},
+  {"role_cible":"Assistant","question":"Vous avez levé la main. C'était quoi votre question ?","reponse_a":"Est-ce que les données de l'ancien système sont migrées. Parce que j'ai 3 ans d'archives dedans.","reponse_b":"Comment ça marche ! Je voulais comprendre tout de suite.","reponse_c":"Est-ce qu'on peut garder l'ancien en parallèle. La réponse était non. Je le savais."}
+]$$::jsonb,
+  notes_real_json = $${"cadrage":"L'écran projeté doit être visible en arrière-plan tout au long de la scène. Insert sur les visages face à l'interface inconnue.","rythme":"Vif au départ — l'annonce est rapide, presque commerciale. Ralentit sur les questions qui arrivent.","silences":"Le silence final face à l'interface projetée. 3 secondes. La caméra peut faire un lent zoom arrière pour montrer tout le groupe face à l'écran.","pieges":"Le coordinateur ne doit pas avoir l'air de mentir — il est sincèrement convaincu, ou du moins il joue le jeu. C'est plus drôle que le cynisme.","astuce":"Préparer une vraie fausse interface à projeter — même une capture d'un logiciel inconnu suffit. Le visuel est fondamental pour cette scène."}$$::jsonb,
+  updated_at = now()
+WHERE titre = $$Le nouveau logiciel$$;
+
+
+-- ═══════════════════════════════════════════════════════════
+-- 3. CREATE TABLE bac_denouements
+-- ═══════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS bac_denouements (
+  id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  titre            TEXT        NOT NULL,
+  type             TEXT        CHECK (type IN ('coherent', 'twist')),
+  description_courte TEXT      DEFAULT '',
+  note_interne     TEXT        DEFAULT '',
+  script_json      JSONB       NOT NULL DEFAULT '[]',
+  itw_json         JSONB       NOT NULL DEFAULT '[]',
+  notes_real_json  JSONB       NOT NULL DEFAULT '{"cadrage":"","rythme":"","silences":"","pieges":"","astuce":""}',
+  actif            BOOLEAN     NOT NULL DEFAULT true,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ
+);
+
+-- Colonnes manquantes si la table existait déjà sans elles
+ALTER TABLE bac_denouements ADD COLUMN IF NOT EXISTS type             TEXT        CHECK (type IN ('coherent', 'twist'));
+ALTER TABLE bac_denouements ADD COLUMN IF NOT EXISTS description_courte TEXT       DEFAULT '';
+ALTER TABLE bac_denouements ADD COLUMN IF NOT EXISTS note_interne     TEXT        DEFAULT '';
+ALTER TABLE bac_denouements ADD COLUMN IF NOT EXISTS updated_at       TIMESTAMPTZ;
+
+
+-- ═══════════════════════════════════════════════════════════
+-- 4. INSERT bac_denouements (idempotent : DELETE + INSERT)
+-- ═══════════════════════════════════════════════════════════
+
+DELETE FROM bac_denouements WHERE titre IN (
+  $$C'était un exercice$$,
+  $$Finalement repoussé$$,
+  $$L'équipe pilote$$,
+  $$Ça n'aura pas lieu$$,
+  $$Une bonne nouvelle cachée$$,
+  $$On ne saura jamais$$,
+  $$L'équipe décide$$,
+  $$Retour à la normale, mais différent$$
+);
+
+
+-- ── D1 — C'était un exercice (twist) ────────────────────────
+INSERT INTO bac_denouements (titre, type, description_courte, note_interne, script_json, itw_json, notes_real_json, actif)
+VALUES (
+  $$C'était un exercice$$,
+  'twist',
+  $$La révélation n'était pas réelle — c'était un test de résilience organisationnelle. Tout le monde a réussi.$$,
+  $$Le twist le plus déstabilisant. Jouer sur le fait que la réaction collective était "la vraie réponse attendue". Les acteurs peuvent trouver ça rassurant ou encore plus inquiétant selon leur variant.$$,
+  $$[
+  {"type":"didascalie","texte":"Tout le monde est réuni. La journée touche à sa fin. Quelqu'un s'apprête à parler — avec l'énergie de quelqu'un qui garde quelque chose pour la fin.","style":"ouverture"},
+  {"type":"replique","role":"Coordinateur","directive":"Annoncer le twist avec un calme total — comme si c'était la suite logique évidente de tout ce qui s'est passé","exemple":"Donc voilà. [LA RÉVÉLATION] — c'était un exercice. Un scénario conçu pour observer comment vous gérez l'incertitude ensemble.","didascalie_replique":"laisse la phrase se poser","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Silence. Puis quelqu'un rit. Puis quelqu'un d'autre. Puis quelqu'un ne rit pas du tout.","style":"intermediaire"},
+  {"type":"replique","role":"Coordinateur","directive":"Confirmer que c'était réel dans la forme, fictif dans le fond — et que ça ne change rien à la qualité de ce qu'ils ont produit","exemple":"Tout ce que vous avez fait aujourd'hui — c'était vous. La pression était artificielle. Les réactions, elles, ne l'étaient pas.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"replique","role":"Manager","directive":"Réagir selon son variant — entre soulagement, irritation et philosophie","exemple":"Donc on a vraiment cru à tout ça pour… un exercice.","didascalie_replique":"regard caméra","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Quelqu'un se lève pour partir. S'arrête. Revient s'asseoir. Il a besoin d'une seconde.","style":"cloture"}
+]$$::jsonb,
+  $$[
+  {"role_cible":"Manager","question":"C'était un exercice. Comment vous vous sentez maintenant que vous le savez ?","reponse_a":"Soulagé et légèrement vexé. Dans cet ordre.","reponse_b":"Pareil qu'avant ! Ce qu'on a fait avait de la valeur. Peu importe le contexte.","reponse_c":"Ça ne change rien. On aurait réagi pareil avec une vraie révélation. C'est ça le truc."},
+  {"role_cible":"Assistant","question":"Vous avez ri quand c'est sorti. C'était quoi ce rire ?","reponse_a":"De la nervosité. Clairement.","reponse_b":"Du soulagement ! Et de la fierté. On s'en est bien sortis !","reponse_c":"Je sais pas. C'est sorti. Parfois le corps répond avant le cerveau."}
+]$$::jsonb,
+  $${"cadrage":"Plan d'ensemble pour voir toutes les réactions en même temps quand le twist tombe. Ne pas choisir une seule personne — le collectif est le sujet.","rythme":"Lent et mesuré jusqu'au twist. Puis laisser le chaos des réactions exister librement quelques secondes avant de reprendre.","silences":"Le silence juste après l'annonce du twist — avant les rires. C'est 2 secondes maximum mais elles sont cruciales.","pieges":"Ne pas jouer la révélation du twist de façon trop théâtrale — plus c'est calme, plus c'est percutant.","astuce":"Tourner la réaction en plan large d'abord, puis repasser pour les inserts de visages. Les vraies réactions ne se reproduisent pas — il faut les capturer du premier coup."}$$::jsonb,
   true
-WHERE NOT EXISTS (SELECT 1 FROM bac_scenes s WHERE s.titre = 'L''annonce' AND s.acte = 'intro');
+);
 
--- ─── SCÈNE 02 : La réunion qui n'en finit pas ─────────────────────────────────
-INSERT INTO bac_scenes (
-  titre, acte, ton_principal, ton_secondaire, duree_min, duree_max, difficulte,
-  groupes_concernes, nb_intervenants_min, nb_intervenants_max, fil_rouge,
-  champ_perso_label, champ_perso_exemple, champ_perso_replique_cible,
-  script_json, itw_json, notes_real_json, actif
-)
-SELECT
-  'La réunion qui n''en finit pas', '1', 'Absurde', 'Bureaucratique', 2, 3, 1,
-  ARRAY['managers','chefs-de-projet'], 2, 4,
-  'La révélation plane en arrière-plan — un participant essaie de l''annoncer mais se fait couper à chaque tentative. Elle reste suspendue jusqu''à la toute fin.',
-  'Un outil ou processus interne à citer',
-  'Monday, Teams, le CRM, le process de validation',
-  4,
-  '[{"type":"didascalie","texte":"La réunion semble durer depuis un moment. Tout le monde a l''air légèrement épuisé. Un tableau blanc couvert de schémas incompréhensibles est visible en arrière-plan.","style":"ouverture"},{"type":"replique","role":"Chef de projet","directive":"Lance la réunion avec une énergie légèrement forcée, comme si relancer l''enthousiasme était aussi dans ses attributions","exemple":"Bon, on reprend. Donc on en était à… le point 3 sur 14. Ce qui est plutôt bien pour une réunion d''une heure.","didascalie_replique":"en regardant son écran sans vraiment le voir","utilise_element_perso":false},{"type":"replique","role":"Manager","directive":"Interrompt pour soulever un problème de procédure hors sujet, mais qui lui semble absolument prioritaire","exemple":"Avant d''aller plus loin — est-ce que ce point a bien été validé par le bon circuit ? Parce que la dernière fois on avait eu un retour là-dessus.","didascalie_replique":"","utilise_element_perso":false},{"type":"didascalie","texte":"Léger silence gêné. Quelqu''un note quelque chose sans qu''on sache quoi.","style":"intermediaire"},{"type":"replique","role":"Chef de projet","directive":"Tente de reprendre le contrôle en proposant de mettre le point en parking lot — ce qui revient à repousser le problème","exemple":"On peut peut-être mettre ça en parking lot et y revenir en fin de réunion ? Ou planifier une réunion dédiée ?","didascalie_replique":"avec l''espoir visible que personne ne dira oui","utilise_element_perso":false},{"type":"replique","role":"Manager","directive":"Saisit l''occasion pour mentionner l''outil ou processus personnalisé — à la fois pertinent et complètement hors sujet","exemple":"D''ailleurs tant qu''on est là — est-ce que tout le monde a bien migré vers [ÉLÉMENT PERSONNALISÉ] ? Parce que j''ai encore des gens qui m''envoient des mails.","didascalie_replique":"","utilise_element_perso":true},{"type":"didascalie","texte":"Tout le monde réagit différemment — hochements de tête vagues, regard vers le plafond, quelqu''un sort discrètement son téléphone.","style":"intermediaire"},{"type":"replique","role":"Chef de projet","directive":"Essaie d''annoncer la révélation — c''est le moment prévu — mais se fait couper avant d''avoir pu finir","exemple":"OK, et justement — j''avais quelque chose d''important à annoncer, c''est un peu lié à tout ça en fait…","didascalie_replique":"commence à se lever légèrement","utilise_element_perso":false},{"type":"replique","role":"Manager","directive":"Coupe involontairement en relançant un sous-débat sur le point 3, sans réaliser que quelque chose d''important allait être dit","exemple":"Ah oui avant — sur le point 3, j''avais une question de fond. Ça prendra deux minutes.","didascalie_replique":"","utilise_element_perso":false},{"type":"didascalie","texte":"Le chef de projet se rassoit. La révélation attendra.","style":"cloture"}]'::jsonb,
-  '[{"role_cible":"Chef de projet","question":"Vous aviez quelque chose d''important à annoncer en réunion. Ça s''est passé comment ?","reponse_a":"C''était prévu au point 7. On n''y est jamais arrivé. J''ai mis une note dans le compte-rendu pour la prochaine fois.","reponse_b":"C''était urgent ! Ça l''est toujours. Là maintenant ça l''est encore. Vous êtes sûrs qu''on peut pas en parler maintenant ?","reponse_c":"Je pense que tout le monde a bien compris qu''il y avait quelque chose d''important. Parfois ne pas dire les choses c''est aussi une façon de les dire."},{"role_cible":"Manager","question":"Cette réunion a duré combien de temps selon vous ?","reponse_a":"Trop longtemps. Pas assez pour couvrir tout ce qui n''a pas été dit. C''est le problème.","reponse_b":"Honnêtement ? C''était plutôt efficace. On a avancé sur beaucoup de points. Enfin, on en a parlé.","reponse_c":"Je sais plus. À un moment j''ai arrêté de regarder l''heure. Ça aide."}]'::jsonb,
-  '{"cadrage":"Plan large d''ouverture pour montrer tout le monde autour de la table et l''état général de fatigue. Ensuite plans rapprochés sur les visages pendant les silences.","rythme":"Commencer lentement — presque trop lentement. Les interruptions s''accélèrent légèrement vers la fin, puis retombent sur le silence final.","silences":"Le silence après ''ça prendra deux minutes'' est le plus important. Ne pas le couper. Laisser la caméra sur le visage du chef de projet. Minimum 3 secondes.","pieges":"Ne pas surjouer l''épuisement — l''absurde doit sembler complètement normal pour les personnages. S''assurer que [ÉLÉMENT PERSONNALISÉ] s''intègre naturellement dans la réplique 4.","astuce":"Tourner d''abord en plan large, puis recommencer pour les inserts de visages. Tourner l''ITW Chef de projet juste après — garder le même niveau d''énergie ''fin de réunion''."}'::jsonb,
+
+-- ── D2 — Finalement repoussé (coherent) ─────────────────────
+INSERT INTO bac_denouements (titre, type, description_courte, note_interne, script_json, itw_json, notes_real_json, actif)
+VALUES (
+  $$Finalement repoussé$$,
+  'coherent',
+  $$La révélation aura bien lieu, mais le délai a été repoussé. On a du temps. Pas beaucoup. Mais du temps.$$,
+  $$Dénouement doux-amer — rassurant et légèrement absurde. Tout le stress de l'épisode était prématuré. Ce qui ne le rend pas moins réel.$$,
+  $$[
+  {"type":"didascalie","texte":"Fin de journée. Tout le monde est réuni, dans un état de fatigue productive. L'atmosphère est celle d'après-bataille.","style":"ouverture"},
+  {"type":"replique","role":"Coordinateur","directive":"Annoncer le report comme une bonne nouvelle — en sachant que tout le monde va réaliser dans la seconde que c'est aussi absurde","exemple":"Donc voilà — bonne nouvelle. [LA RÉVÉLATION] est repoussée. Plusieurs semaines supplémentaires. On a du temps.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Un silence. Le genre de silence où les gens font le calcul de tout ce qu'ils ont vécu dans la journée.","style":"intermediaire"},
+  {"type":"replique","role":"Chef de projet","directive":"Formuler l'absurdité de la situation avec un calme parfait","exemple":"Donc ce matin on avait [LE DÉLAI]. Là on a plus. C'est bien. C'est très bien.","didascalie_replique":"hoche la tête lentement","utilise_element_perso":false},
+  {"type":"replique","role":"Coordinateur","directive":"Confirmer avec la même philosophie — et pointer que ce qui a été fait aujourd'hui reste valable","exemple":"Ce que vous avez produit aujourd'hui — ça servira. Le délai change, pas le fond.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"replique","role":"Assistant","directive":"Clore avec une réplique qui dit tout sans insister","exemple":"Bien. On recommence dans quelques semaines alors.","didascalie_replique":"regard caméra","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Quelqu'un ramasse ses affaires. Tout le monde suit. La prochaine fois ils seront prêts. Probablement.","style":"cloture"}
+]$$::jsonb,
+  $$[
+  {"role_cible":"Chef de projet","question":"Le report. Bonne ou mauvaise nouvelle ?","reponse_a":"Bonne pour le planning. Mauvaise pour l'énergie dépensée aujourd'hui. Mitigée globalement.","reponse_b":"Excellente ! Plus de temps c'est toujours mieux. On va vraiment bien se préparer maintenant.","reponse_c":"C'est neutre. Ça arrive. On recommence. C'est la vie d'une organisation."},
+  {"role_cible":"Assistant","question":"'On recommence dans quelques semaines.' Vous étiez sérieux ?","reponse_a":"Oui. Et j'ai déjà commencé à préparer la prochaine fois.","reponse_b":"Bien sûr ! On sera encore mieux préparés.","reponse_c":"À moitié. D'ici là il se passera autre chose. Il se passe toujours autre chose."}
+]$$::jsonb,
+  $${"cadrage":"Plan sur les visages fatigués mais dignes. Cette scène se joue dans les expressions plus que dans les mots.","rythme":"Lent et épuisé — c'est la fin de journée, ça doit se sentir.","silences":"Le silence de calcul après l'annonce du report. 4 secondes. Laisser les acteurs faire ce calcul pour de vrai.","pieges":"Éviter le ton amer ou cynique — la douceur-amère fonctionne, le cynisme tue la scène.","astuce":"Tourner en fin de journée réelle si possible. L'état des acteurs en fin de session est exactement ce qu'il faut pour cette scène."}$$::jsonb,
   true
-WHERE NOT EXISTS (SELECT 1 FROM bac_scenes s WHERE s.titre = 'La réunion qui n''en finit pas');
+);
 
--- ─── SCÈNE 03 : Le mail de toute l'entreprise ─────────────────────────────────
-INSERT INTO bac_scenes (
-  titre, acte, ton_principal, ton_secondaire, duree_min, duree_max, difficulte,
-  groupes_concernes, nb_intervenants_min, nb_intervenants_max, fil_rouge,
-  champ_perso_label, champ_perso_exemple, champ_perso_replique_cible,
-  script_json, itw_json, notes_real_json, actif
-)
-SELECT
-  'Le mail de toute l''entreprise', '1', 'Chaos', 'Comique', 2, 3, 2,
-  ARRAY['assistants','chefs-de-projet'], 2, 4,
-  'Quelqu''un a envoyé un mail à toute l''entreprise par erreur. Le mail mentionnait la révélation. La scène est la réaction en chaîne : chacun reçoit le mail, le lit, réagit, et commence à répondre à tous.',
-  'L''objet du mail envoyé par erreur',
-  '"Réunion confidentielle vendredi", "Budget prévisionnel v3 FINAL", "Ne pas transférer"',
-  2,
-  '[{"type":"didascalie","texte":"Bureau open space. Plusieurs personnes travaillent. Un téléphone vibre. Puis un autre. Puis tous en même temps.","style":"ouverture"},{"type":"replique","role":"Assistant","directive":"Reçoit le mail, le lit, réalise l''ampleur de l''erreur — communique tout ça en une seule phrase sans le dire explicitement","exemple":"Attends… il a envoyé ça à TOUTE l''entreprise ? Avec comme objet ''[ÉLÉMENT PERSONNALISÉ]'' ?","didascalie_replique":"en regardant son écran, voix qui monte légèrement","utilise_element_perso":true},{"type":"replique","role":"Chargé de projet","directive":"Confirme que oui, lui aussi l''a reçu, et ajoute une information qui aggrave la situation","exemple":"Ouais. Et apparemment il a répondu à tous pour s''excuser. Ce qui fait que maintenant tout le monde a aussi l''excuse.","didascalie_replique":"","utilise_element_perso":false},{"type":"didascalie","texte":"Silence de deux secondes pendant que tout le monde absorbe l''information.","style":"intermediaire"},{"type":"replique","role":"Assistant","directive":"Annonce qu''il va répondre à tous pour clarifier, sans réaliser que c''est exactement ce qu''il ne faut pas faire","exemple":"Bon, je réponds à tous pour dire que c''était une erreur et que personne ne doit en parler.","didascalie_replique":"les doigts déjà sur le clavier","utilise_element_perso":false},{"type":"replique","role":"Chargé de projet","directive":"Tente de l''arrêter mais trop tard — et dans la panique envoie lui-même quelque chose","exemple":"Non attends ! Surtout pas répondre à— merde. Je viens d''envoyer un ''merci pour l''info'' à tout le monde.","didascalie_replique":"","utilise_element_perso":false},{"type":"didascalie","texte":"Les téléphones se remettent à vibrer. Tous en même temps. De nouveau.","style":"cloture"}]'::jsonb,
-  '[{"role_cible":"Assistant","question":"Quand vous avez reçu ce mail, quelle a été votre première réaction ?","reponse_a":"Honnêtement ? Voir si je pouvais en tirer quelque chose. C''est pas mal comme info.","reponse_b":"J''ai fermé l''onglet. C''est pas mes affaires. Je l''ai rouvert deux minutes après.","reponse_c":"J''ai immédiatement vérifié si mon nom était dans le fil. Parce que si mon nom est dans le fil, ça me concerne."},{"role_cible":"Chargé de projet","question":"Vous avez répondu à tous par accident. Vous assumez ?","reponse_a":"C''était une erreur de parcours. Ça arrive. J''ai déjà documenté le process pour éviter que ça se reproduise.","reponse_b":"C''est fait, on peut pas revenir en arrière. Autant en faire quelque chose d''utile maintenant.","reponse_c":"Mon message était factuel. ''Merci pour l''info''. C''est une information objective. Je le referais."}]'::jsonb,
-  '{"cadrage":"Filmer les écrans d''ordinateur en insert pour que le public voie les notifications arriver. Plan d''ensemble pour capter les réactions simultanées.","rythme":"Démarrer calme, accélérer progressivement. Le silence de 2 secondes au milieu est une respiration — ne pas le rater.","silences":"Le silence après ''et que personne ne doit en parler'' avant le clic sur Envoyer. 2 secondes suffisent.","pieges":"Éviter que les acteurs se regardent pour se donner les répliques — ils doivent regarder leurs écrans. Le comique vient du fait qu''ils ne se parlent pas vraiment, ils réagissent à leur écran.","astuce":"Prévoir un vrai son de notification pour les téléphones sur plateau — ça aide les acteurs à réagir au bon moment sans signal de régie."}'::jsonb,
+
+-- ── D3 — L'équipe pilote (coherent) ─────────────────────────
+INSERT INTO bac_denouements (titre, type, description_courte, note_interne, script_json, itw_json, notes_real_json, actif)
+VALUES (
+  $$L'équipe pilote$$,
+  'coherent',
+  $$Cette équipe est désignée pour piloter la transition en premier. C'est une responsabilité. C'est aussi une forme de compliment, dit-on.$$,
+  $$Dénouement ambigu — être "pilote" peut être une promotion ou un cobaye. Laisser les acteurs choisir leur lecture selon leur variant.$$,
+  $$[
+  {"type":"didascalie","texte":"Réunion de clôture. Tout le monde est là. Une légère tension anticipatoire — on attend une décision.","style":"ouverture"},
+  {"type":"replique","role":"Directeur","directive":"Annoncer la désignation comme pilote avec le ton de quelqu'un qui offre un cadeau dont il n'est pas sûr qu'il sera reçu comme tel","exemple":"Après réflexion — et en regardant ce que vous avez fait aujourd'hui — vous avez été désignés équipe pilote pour [LA RÉVÉLATION]. Vous serez les premiers.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Silence. Quelqu'un lève un sourcil. Quelqu'un d'autre ferme les yeux brièvement.","style":"intermediaire"},
+  {"type":"replique","role":"Manager","directive":"Réagir selon son variant — entre fierté prudente, enthousiasme, et fatalisme","exemple":"On est… pilotes. C'est-à-dire qu'on passe en premier.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"replique","role":"Directeur","directive":"Confirmer avec une formule qui peut être lue comme encourageante ou comme une mise en garde","exemple":"Exactement. Tout le monde vous regardera. C'est une vraie responsabilité.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"replique","role":"Assistant","directive":"Conclure avec la réplique qu'on pense tous tout bas","exemple":"Et si ça se passe mal — c'est nous les cobayes ?","didascalie_replique":"regard caméra","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Personne ne répond à cette question. Ce qui est en soi une réponse.","style":"cloture"}
+]$$::jsonb,
+  $$[
+  {"role_cible":"Directeur","question":"Équipe pilote — vous leur avez offert quoi exactement ?","reponse_a":"La visibilité et la responsabilité. Ce sont les deux faces d'une même opportunité.","reponse_b":"Une chance unique ! Être pilote c'est façonner la méthode pour tout le monde.","reponse_c":"Une accélération. Ils auraient vécu ça de toute façon. Là ils le vivent en premier."},
+  {"role_cible":"Assistant","question":"Cobayes ou pionniers ?","reponse_a":"Les deux. La question est de savoir lequel prime à la fin.","reponse_b":"Pionniers ! Et fiers de l'être.","reponse_c":"Cobayes qui se font appeler pionniers. C'est souvent la même chose."}
+]$$::jsonb,
+  $${"cadrage":"Plan sur le directeur pendant l'annonce, puis pan vers le groupe pour voir les réactions en temps réel.","rythme":"Solennel au départ, puis légèrement déstabilisé par la question finale.","silences":"Le silence final après la question 'cobayes ?' — ne pas répondre. La caméra reste sur le groupe. 4 secondes.","pieges":"Le directeur ne doit pas avoir l'air de se rendre compte de l'ambiguïté — c'est l'absence de conscience qui rend la scène drôle.","astuce":"La question finale peut être improvisée par l'acteur selon son variant — l'écrire comme une option, pas une obligation."}$$::jsonb,
   true
-WHERE NOT EXISTS (SELECT 1 FROM bac_scenes s WHERE s.titre = 'Le mail de toute l''entreprise');
+);
 
--- ─── SCÈNE 04 : La formation obligatoire ──────────────────────────────────────
-INSERT INTO bac_scenes (
-  titre, acte, ton_principal, ton_secondaire, duree_min, duree_max, difficulte,
-  groupes_concernes, nb_intervenants_min, nb_intervenants_max, fil_rouge,
-  champ_perso_label, champ_perso_exemple, champ_perso_replique_cible,
-  script_json, itw_json, notes_real_json, actif
-)
-SELECT
-  'La formation obligatoire', '1', 'Résigné', 'Comique', 2, 3, 1,
-  ARRAY['assistants','managers'], 2, 3,
-  'Pendant la formation en ligne obligatoire, quelqu''un reçoit une notification liée à la révélation. Personne ne regarde vraiment la formation, mais tout le monde fait semblant.',
-  'Le nom de la formation obligatoire',
-  '"Formation RGPD", "Module sécurité incendie", "e-learning intégration"',
-  1,
-  '[{"type":"didascalie","texte":"Une salle de formation ou des bureaux. Plusieurs personnes sont devant leur écran, casque sur les oreilles — ou pas. La formation tourne en arrière-plan.","style":"ouverture"},{"type":"replique","role":"Manager","directive":"Décrit ce qu''il est censé faire avec le ton de quelqu''un qui fait autre chose en même temps","exemple":"Donc on a tous la [ÉLÉMENT PERSONNALISÉ] à finir avant vendredi. C''est 45 minutes, ça se met en fond.","didascalie_replique":"en répondant à des mails pendant qu''il parle","utilise_element_perso":true},{"type":"replique","role":"Assistant","directive":"Demande innocemment si on peut vraiment faire autre chose en même temps, sachant que tout le monde le fait déjà","exemple":"On est censés vraiment regarder ou juste finir les modules ?","didascalie_replique":"","utilise_element_perso":false},{"type":"replique","role":"Manager","directive":"Répond de façon à ne pas répondre — tout en validant implicitement qu''on peut faire autre chose","exemple":"Il y a un quiz à la fin. Sur les grandes lignes. C''est faisable.","didascalie_replique":"sans lever les yeux","utilise_element_perso":false},{"type":"didascalie","texte":"Un téléphone vibre. L''assistant le regarde furtivement.","style":"intermediaire"},{"type":"replique","role":"Assistant","directive":"Réagit à la notification liée à la révélation sans pouvoir en parler ouvertement — crée un malaise discret","exemple":"Hm. OK. C''est… intéressant comme info.","didascalie_replique":"repose le téléphone face écran vers le bas","utilise_element_perso":false},{"type":"replique","role":"Manager","directive":"Perçoit que quelque chose s''est passé mais fait le choix de ne pas creuser — trop de choses à gérer","exemple":"Quoi ?","didascalie_replique":"","utilise_element_perso":false},{"type":"replique","role":"Assistant","directive":"Botte en touche avec une réponse qui ne dit rien mais intrigue","exemple":"Non, rien. Je regardais la formation.","didascalie_replique":"regard caméra","utilise_element_perso":false},{"type":"didascalie","texte":"La formation continue de tourner. Personne ne la regarde.","style":"cloture"}]'::jsonb,
-  '[{"role_cible":"Manager","question":"Vous suivez ce genre de formation comment ?","reponse_a":"J''anticipe. Je bloque du temps, je fais rien d''autre. C''est 45 minutes, autant les passer bien.","reponse_b":"En multitâche. Le temps c''est du temps. Et honnêtement la formation tourne toute seule très bien.","reponse_c":"Je délègue le clic. Pas officiellement. Mais c''est comme ça que ça marche."},{"role_cible":"Assistant","question":"Vous avez reçu une notification pendant la formation. C''était quoi ?","reponse_a":"Je peux pas en parler. Mais c''est important. Et ça me concerne directement.","reponse_b":"Rien de spécial. Enfin. Pas encore.","reponse_c":"Un truc confidentiel. Ce qui veut dire que tout le monde le saura demain matin."}]'::jsonb,
-  '{"cadrage":"Insert sur l''écran de formation qui tourne — le son de la vidéo e-learning en fond audio crée l''atmosphère. Plan sur les visages qui regardent ailleurs.","rythme":"Lent et plat — c''est voulu. C''est une scène de non-événement. L''humour est dans l''absence d''action.","silences":"Le silence après ''Non, rien. Je regardais la formation.'' avec le regard caméra. Minimum 2 secondes.","pieges":"Ne pas rendre la notification trop mystérieuse — l''acteur doit jouer la retenue, pas le secret dramatique.","astuce":"Préparer un vrai écran de formation e-learning en fond — n''importe lequel, ça ne s''entend pas vraiment. Le réalisme du décor compte beaucoup."}'::jsonb,
+
+-- ── D4 — Ça n'aura pas lieu (twist) ─────────────────────────
+INSERT INTO bac_denouements (titre, type, description_courte, note_interne, script_json, itw_json, notes_real_json, actif)
+VALUES (
+  $$Ça n'aura pas lieu$$,
+  'twist',
+  $$La révélation est annulée. Complètement. Sans explication. Tout redevient comme avant. Ce qui est presque plus perturbant.$$,
+  $$Le twist le plus radical. Fonctionne particulièrement bien si les groupes ont beaucoup investi émotionnellement dans leurs scènes. Le silence après l'annonce doit être long.$$,
+  $$[
+  {"type":"didascalie","texte":"Fin de journée. Quelqu'un entre avec une feuille ou un téléphone — l'air de quelqu'un qui vient d'apprendre quelque chose.","style":"ouverture"},
+  {"type":"replique","role":"Coordinateur","directive":"Annoncer l'annulation comme un fait — sans explication, sans commentaire, sans interprétation. Le plus neutre possible.","exemple":"Donc voilà. [LA RÉVÉLATION] n'aura pas lieu. Décision prise en haut. Aucune autre information pour l'instant.","didascalie_replique":"pose la feuille","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Silence très long. Quelqu'un regarde ses notes de la journée. Quelqu'un ferme son carnet.","style":"intermediaire"},
+  {"type":"replique","role":"Chef de projet","directive":"Formuler l'absurdité de la journée entière avec un calme surhumain","exemple":"Tout ce qu'on a fait aujourd'hui…","didascalie_replique":"laisse la phrase en suspens","utilise_element_perso":false},
+  {"type":"replique","role":"Coordinateur","directive":"Compléter honnêtement — sans chercher à arranger les choses","exemple":"N'est pas perdu. Vous avez travaillé ensemble. Ça, ça reste.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"replique","role":"Manager","directive":"Réagit selon son variant — acceptation, ironie douce ou soulagement","exemple":"Ah. Bien.","didascalie_replique":"regard caméra","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Les gens commencent à partir. Comme si c'était un mardi ordinaire.","style":"cloture"}
+]$$::jsonb,
+  $$[
+  {"role_cible":"Chef de projet","question":"'Tout ce qu'on a fait aujourd'hui…' — vous alliez dire quoi ?","reponse_a":"Que c'était du travail réel sur un problème fictif. Ce qui pose une vraie question sur la valeur du travail.","reponse_b":"Que c'était quand même une super journée ! Le contexte change pas ce qu'on a produit.","reponse_c":"Je sais plus. La phrase s'est arrêtée toute seule."},
+  {"role_cible":"Manager","question":"'Ah. Bien.' C'était sincère ?","reponse_a":"C'était tout ce que j'avais à dire. Je traitais l'information.","reponse_b":"Oui ! Soulagement total. Une bonne nouvelle c'est une bonne nouvelle.","reponse_c":"C'était le son que j'ai produit. Je laisse les autres décider ce que ça voulait dire."}
+]$$::jsonb,
+  $${"cadrage":"Plan fixe sur le groupe pendant l'annonce. Ne pas bouger la caméra. L'immobilité du cadre amplifie le choc.","rythme":"Très lent après l'annonce. Laisser le silence vivre.","silences":"Le silence après 'ça n'aura pas lieu' est le plus long de tout l'épisode. 6 secondes minimum. Ne pas couper.","pieges":"Éviter toute musique ou tout effet sonore — le silence doit être pur. Et ne pas laisser les acteurs essayer de rendre la scène plus positive qu'elle ne l'est.","astuce":"Dire aux acteurs de ne rien jouer — juste recevoir l'information. Les meilleures réactions sont celles qu'on ne joue pas."}$$::jsonb,
   true
-WHERE NOT EXISTS (SELECT 1 FROM bac_scenes s WHERE s.titre = 'La formation obligatoire');
+);
 
--- ─── SCÈNE 05 : Le couloir de la vérité ──────────────────────────────────────
-INSERT INTO bac_scenes (
-  titre, acte, ton_principal, ton_secondaire, duree_min, duree_max, difficulte,
-  groupes_concernes, nb_intervenants_min, nb_intervenants_max, fil_rouge,
-  champ_perso_label, champ_perso_exemple, champ_perso_replique_cible,
-  script_json, itw_json, notes_real_json, actif
-)
-SELECT
-  'Le couloir de la vérité', '1', 'Drama', 'The Office', 1, 2, 2,
-  ARRAY['directeurs','managers'], 2, 2,
-  'Deux personnes qui savent toutes les deux la révélation se croisent dans le couloir. Elles font semblant de ne pas savoir — et savent que l''autre sait qu''elles savent.',
-  NULL, NULL, NULL,
-  '[{"type":"didascalie","texte":"Un couloir. Deux personnes arrivent de directions opposées. Elles se voient de loin. Quelque chose passe sur leurs visages.","style":"ouverture"},{"type":"replique","role":"Directeur","directive":"Salutation hyper normale. Trop normale. Le genre de normalité qui dit ''je cache quelque chose''","exemple":"Bonjour ! Bonne journée ?","didascalie_replique":"sourire légèrement trop large","utilise_element_perso":false},{"type":"replique","role":"Manager","directive":"Répond avec la même énergie forcée — les deux jouent le même jeu et le savent","exemple":"Oui, très bien ! Et vous ? Tout roule ?","didascalie_replique":"","utilise_element_perso":false},{"type":"replique","role":"Directeur","directive":"Ouvre la porte à un échange sur le sujet réel — de façon suffisamment vague pour pouvoir se rétracter","exemple":"Oui oui. Bon. C''est une période… chargée, hein.","didascalie_replique":"en hochant la tête avec signification","utilise_element_perso":false},{"type":"replique","role":"Manager","directive":"Valide sans confirmer — la conversation avance sans rien dire","exemple":"Ah ça oui. On a tous… beaucoup de choses en tête en ce moment.","didascalie_replique":"","utilise_element_perso":false},{"type":"didascalie","texte":"Un silence. Les deux se regardent. Tout est dit. Rien n''est dit.","style":"intermediaire"},{"type":"replique","role":"Directeur","directive":"Clôt la conversation avec une formule creuse qui confirme que rien ne sera dit ici","exemple":"Bon. On en reparlera. Bonne continuation !","didascalie_replique":"","utilise_element_perso":false},{"type":"replique","role":"Manager","directive":"Idem — reprend sa route comme si la conversation n''avait pas eu lieu","exemple":"Vous de même !","didascalie_replique":"regard caméra","utilise_element_perso":false},{"type":"didascalie","texte":"Ils repartent chacun de leur côté. Exactement comme avant.","style":"cloture"}]'::jsonb,
-  '[{"role_cible":"Directeur","question":"Vous saviez quelque chose dans ce couloir ?","reponse_a":"Je suis au courant de beaucoup de choses. C''est mon rôle de l''être. Et de savoir quand en parler.","reponse_b":"Les indicateurs que j''avais me donnaient une image assez claire de la situation, oui.","reponse_c":"Bien sûr. Et lui aussi. Et on sait tous les deux que l''autre sait. C''est ça la communication non-violente."},{"role_cible":"Manager","question":"Vous avez eu l''impression de vous comprendre dans ce couloir ?","reponse_a":"Parfaitement. Et c''est exactement ce qui m''a angoissé.","reponse_b":"Oui ! C''est ça qui est bien avec une bonne équipe — parfois les mots ne sont pas nécessaires.","reponse_c":"On s''est très bien compris. Ça ne change rien à rien, mais au moins on se comprend."}]'::jsonb,
-  '{"cadrage":"Filmer le couloir en plan large d''abord pour voir l''approche des deux personnages. Puis alterner en plan américain sur chaque visage pendant l''échange.","rythme":"Lent et mesuré. Chaque réplique doit laisser un léger temps avant la suivante — comme si les deux choisissaient soigneusement leurs mots.","silences":"Le silence du regard mutuel au milieu est la scène. Minimum 4 secondes. Ne pas couper.","pieges":"Ne pas jouer ''le secret'' de façon dramatique — c''est une comédie de bureau, pas un thriller. L''humour vient du sous-texte absurde, pas de la tension.","astuce":"Tourner l''ITW juste après, dans le même couloir si possible. Demander aux acteurs de rester dans l''état de la scène."}'::jsonb,
+
+-- ── D5 — Une bonne nouvelle cachée (twist) ──────────────────
+INSERT INTO bac_denouements (titre, type, description_courte, note_interne, script_json, itw_json, notes_real_json, actif)
+VALUES (
+  $$Une bonne nouvelle cachée$$,
+  'twist',
+  $$Derrière la révélation se cachait une opportunité que personne n'avait vue venir.$$,
+  $$Le dénouement feel-good. À utiliser avec modération — l'astuce est de laisser les acteurs rester légèrement sceptiques même face à la bonne nouvelle.$$,
+  $$[
+  {"type":"didascalie","texte":"Clôture de journée. Quelqu'un arrive avec une énergie différente — pas de tension, pas de solennité. Quelque chose de léger.","style":"ouverture"},
+  {"type":"replique","role":"Directeur","directive":"Lâcher la bonne nouvelle avec le ton de quelqu'un qui en est lui-même un peu surpris","exemple":"Donc voilà. Ce que j'ai appris ce soir — [LA RÉVÉLATION] s'accompagne d'un budget supplémentaire. Dédié à notre équipe. C'était dans le package depuis le début.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Silence. Puis quelqu'un demande de répéter. Pour être sûr.","style":"intermediaire"},
+  {"type":"replique","role":"Manager","directive":"Formule la méfiance saine qui est dans la tête de tout le monde","exemple":"Un budget. Pour compenser le fait que… ou pour financer le…","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"replique","role":"Directeur","directive":"Répondre avec honnêteté — oui c'est les deux, et c'est quand même bien","exemple":"Les deux, probablement. Mais c'est réel. Et c'est pour vous.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"replique","role":"Assistant","directive":"Clore avec la réplique qui ramène tout le monde sur terre sans éteindre la bonne nouvelle","exemple":"On verra ce que ça donne concrètement. Mais… c'est bien.","didascalie_replique":"regard caméra","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Quelqu'un sourit. Vraiment cette fois.","style":"cloture"}
+]$$::jsonb,
+  $$[
+  {"role_cible":"Directeur","question":"Vous le saviez depuis le début, le budget ?","reponse_a":"Non. Ça s'est décidé dans la journée. En partie à cause de ce que vous avez tous montré.","reponse_b":"Oui ! Et c'est pour ça que j'avais confiance. Il y avait un plan.","reponse_c":"Disons que j'avais des indications. Mais rien de confirmé avant ce soir."},
+  {"role_cible":"Assistant","question":"'C'est bien.' Vous étiez convaincu ?","reponse_a":"À 70%. Les 30% restants attendent de voir les chiffres.","reponse_b":"Complètement ! C'est une super nouvelle et je l'assume.","reponse_c":"Je prends. On verra après. Mais je prends."}
+]$$::jsonb,
+  $${"cadrage":"Filmer le sourire final en plan serré — c'est l'image de clôture de l'épisode. Laisser la caméra sur ce visage quelques secondes.","rythme":"Progressivement plus léger — c'est la seule scène de l'épisode qui se termine sur une montée.","silences":"Le silence de vérification après l'annonce — 2 secondes avant que quelqu'un parle.","pieges":"Ne pas sombrer dans l'euphorie — le scepticisme résiduel est ce qui rend la scène juste et crédible.","astuce":"Le sourire final doit être spontané — si l'acteur le joue, ça se voit. Trouver quelque chose de concret à lui dire juste avant la prise pour provoquer un vrai sourire."}$$::jsonb,
   true
-WHERE NOT EXISTS (SELECT 1 FROM bac_scenes s WHERE s.titre = 'Le couloir de la vérité');
+);
 
--- ─── SCÈNE 06 : La machine à café ────────────────────────────────────────────
-INSERT INTO bac_scenes (
-  titre, acte, ton_principal, ton_secondaire, duree_min, duree_max, difficulte,
-  groupes_concernes, nb_intervenants_min, nb_intervenants_max, fil_rouge,
-  champ_perso_label, champ_perso_exemple, champ_perso_replique_cible,
-  script_json, itw_json, notes_real_json, actif
-)
-SELECT
-  'La machine à café', '2', 'Sitcom', 'Existentiel', 2, 3, 2,
-  ARRAY['assistants','managers'], 2, 3,
-  'Une conversation anodine autour de la machine à café dégénère en débat sur le sens du travail, la place de chacun — et finit par effleurer la révélation sans jamais la nommer.',
-  NULL, NULL, NULL,
-  '[{"type":"didascalie","texte":"Coin café. Quelqu''un attend que son café coule. Un autre arrive.","style":"ouverture"},{"type":"replique","role":"Assistant","directive":"Ouvre la conversation avec quelque chose de parfaitement banal","exemple":"T''as vu le café ? Ils ont encore changé les dosettes.","didascalie_replique":"","utilise_element_perso":false},{"type":"replique","role":"Manager","directive":"Répond mais enchaîne immédiatement sur quelque chose de plus profond — la transition est abrupte et assumée","exemple":"Ouais. Enfin… ça change quoi au fond ? Le café c''est le café.","didascalie_replique":"air pensif","utilise_element_perso":false},{"type":"replique","role":"Assistant","directive":"Rebondit sur la profondeur inattendue — y va franchement","exemple":"T''es en train de me faire une métaphore sur le café là ?","didascalie_replique":"","utilise_element_perso":false},{"type":"replique","role":"Manager","directive":"Ne confirme ni n''infirme — continue sur sa lancée","exemple":"Je dis juste que des fois on change les choses et ça change pas grand chose. Et des fois on change rien et tout change quand même.","didascalie_replique":"","utilise_element_perso":false},{"type":"didascalie","texte":"Un silence. L''assistant regarde son café.","style":"intermediaire"},{"type":"replique","role":"Assistant","directive":"Essaie de ramener la conversation au concret — mais la réflexion sur la révélation transparaît dans la question","exemple":"C''est rapport à… ce qui se passe en ce moment ?","didascalie_replique":"prudemment","utilise_element_perso":false},{"type":"replique","role":"Manager","directive":"Esquive — mais de façon qui confirme implicitement que oui","exemple":"Ça parle de café.","didascalie_replique":"boit une gorgée, regard caméra","utilise_element_perso":false},{"type":"didascalie","texte":"Ils restent un moment en silence. Le café continue de couler.","style":"cloture"}]'::jsonb,
-  '[{"role_cible":"Manager","question":"Vous parliez de café ou d''autre chose dans cette conversation ?","reponse_a":"Des deux. En même temps. La vie c''est ça.","reponse_b":"Du café ! C''est important le café. Ça structure la journée. C''est un moment de connexion.","reponse_c":"Je sais plus. Au bout d''un moment les frontières deviennent floues."},{"role_cible":"Assistant","question":"Vous avez compris ce qu''il voulait dire ?","reponse_a":"Oui. Et je pense qu''il savait que j''avais compris. C''est confortable quelque part.","reponse_b":"Je crois. Mais je suis pas sûr qu''il ait voulu dire quelque chose de précis. Parfois les gens parlent juste.","reponse_c":"J''ai compris qu''il évitait de répondre. Ce qui en soi est une réponse."}]'::jsonb,
-  '{"cadrage":"Filmer serré sur les visages. La machine à café doit être visible mais pas le centre du cadre. Insert sur la tasse qui se remplit pendant les silences.","rythme":"Décontracté mais mesuré. Ce n''est pas une scène qui s''emballe — elle flotte.","silences":"Le silence après ''C''est rapport à ce qui se passe en ce moment ?'' est central. 3 secondes minimum.","pieges":"Ne pas jouer la mélancolie — rester dans la légèreté. Le comique vient du décalage entre le sujet (le café) et la profondeur du ton, pas d''une vraie tristesse.","astuce":"Laisser les acteurs improviser légèrement autour des répliques. Cette scène supporte bien les variations de formulation."}'::jsonb,
+
+-- ── D6 — On ne saura jamais (twist) ─────────────────────────
+INSERT INTO bac_denouements (titre, type, description_courte, note_interne, script_json, itw_json, notes_real_json, actif)
+VALUES (
+  $$On ne saura jamais$$,
+  'twist',
+  $$Aucune décision finale n'est communiquée. L'incertitude devient la nouvelle normalité.$$,
+  $$Le dénouement le plus réaliste. Puissant pour finir sur une note existentielle sans être dramatique.$$,
+  $$[
+  {"type":"didascalie","texte":"Fin de journée. Tout le monde attend. Quelqu'un vérifie son téléphone. Puis un autre.","style":"ouverture"},
+  {"type":"replique","role":"Coordinateur","directive":"Annoncer l'absence de réponse avec une honnêteté totale — pas d'excuse, pas de discours","exemple":"Donc voilà. Pas de décision finale ce soir. Sur [LA RÉVÉLATION] — rien n'est tranché. On continue à travailler sans savoir.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Quelqu'un hoche la tête. Comme si c'était exactement ce qu'il s'attendait à entendre.","style":"intermediaire"},
+  {"type":"replique","role":"Manager","directive":"Réagir selon son variant — avec l'acceptation propre à chaque personnalité","exemple":"Et c'est comme ça depuis combien de temps maintenant ?","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"replique","role":"Coordinateur","directive":"Répondre honnêtement — et pointer que cette capacité à fonctionner dans le flou est peut-être la vraie compétence","exemple":"Un moment. Et vous continuez quand même. C'est ça qui est remarquable.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"replique","role":"Assistant","directive":"Clore avec une réplique simple et vraie","exemple":"On fait avec ce qu'on a. C'est comme ça.","didascalie_replique":"regard caméra","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Les gens partent un par un. L'incertitude reste. Elle est chez elle ici.","style":"cloture"}
+]$$::jsonb,
+  $$[
+  {"role_cible":"Manager","question":"Pas de réponse. Vous gérez comment l'incertitude au quotidien ?","reponse_a":"Je liste ce que je contrôle et je me concentre là-dessus. Le reste n'existe pas pour moi.","reponse_b":"Je reste positif ! L'absence de mauvaise nouvelle c'est déjà une bonne nouvelle.","reponse_c":"Je fais comme si de rien n'était. Tout le monde fait pareil. Ça tient."},
+  {"role_cible":"Assistant","question":"'C'est comme ça.' Vous trouviez ça normal ?","reponse_a":"Normal non. Habituel oui. C'est différent.","reponse_b":"C'est la réalité d'une organisation vivante. Ça change, ça évolue, c'est sain.","reponse_c":"J'avais arrêté d'attendre une réponse depuis un moment. Ce soir n'était pas une surprise."}
+]$$::jsonb,
+  $${"cadrage":"Plan large qui se vide progressivement à mesure que les gens partent. Finir sur un espace presque vide. Symbolique et efficace.","rythme":"Lent et régulier — sans pic émotionnel. C'est le rythme de quelque chose qui continue.","silences":"Le silence après 'C'est comme ça' avec le regard caméra. 5 secondes. C'est le dernier plan de l'épisode si ce dénouement est choisi.","pieges":"Ne pas rendre la scène mélancolique — la sérénité face à l'incertitude est de la force, pas de la résignation.","astuce":"Demander à l'acteur du dernier regard caméra de penser à quelque chose de concret et vrai dans sa vie professionnelle. Le regard sera réel."}$$::jsonb,
   true
-WHERE NOT EXISTS (SELECT 1 FROM bac_scenes s WHERE s.titre = 'La machine à café');
+);
 
--- ─── SCÈNE 07 : Le nouveau ─────────────────────────────────────────────────────
-INSERT INTO bac_scenes (
-  titre, acte, ton_principal, ton_secondaire, duree_min, duree_max, difficulte,
-  groupes_concernes, nb_intervenants_min, nb_intervenants_max, fil_rouge,
-  champ_perso_label, champ_perso_exemple, champ_perso_replique_cible,
-  script_json, itw_json, notes_real_json, actif
-)
-SELECT
-  'Le nouveau', '2', 'Naïf', 'Décalé', 2, 3, 1,
-  ARRAY['assistants','chefs-de-projet'], 2, 3,
-  'Un nouveau (ou quelqu''un qui joue ce rôle) pose des questions innocentes sur l''organisation — et ses questions révèlent l''absurdité des process en place, et indirectement l''impact de la révélation sur l''équipe.',
-  'Un process interne réel à expliquer',
-  '"la validation des congés", "le process de commande", "la demande de badge visiteur"',
-  3,
-  '[{"type":"didascalie","texte":"Bureau. Quelqu''un explique le fonctionnement à un nouveau — avec toute la patience de quelqu''un qui l''a déjà expliqué vingt fois.","style":"ouverture"},{"type":"replique","role":"Chargé de projet","directive":"Introduit le nouveau avec un enthousiasme légèrement forcé","exemple":"Donc voilà, bienvenue ! On est une super équipe. Tu vas voir, c''est très fluide ici.","didascalie_replique":"","utilise_element_perso":false},{"type":"replique","role":"Assistant","directive":"Pose une question innocente sur quelque chose d''absolument basique qui devrait être simple","exemple":"Et pour… avoir accès au serveur, ça marche comment ?","didascalie_replique":"stylo levé, prêt à noter","utilise_element_perso":false},{"type":"replique","role":"Chargé de projet","directive":"Explique le process réel — qui est objectivement absurde — avec le ton de quelqu''un qui trouve ça parfaitement normal","exemple":"Alors pour [ÉLÉMENT PERSONNALISÉ], il faut d''abord remplir le formulaire F7, le faire valider par ton N+1, puis par le service concerné, et ensuite t''envoies le mail à l''adresse dédiée. Qui est la même que le support, mais c''est pas pareil.","didascalie_replique":"","utilise_element_perso":true},{"type":"replique","role":"Assistant","directive":"Pose une question de suivi qui révèle l''absurdité de la procédure","exemple":"Et si mon N+1 est absent ?","didascalie_replique":"","utilise_element_perso":false},{"type":"replique","role":"Chargé de projet","directive":"Répond avec une solution de contournement qui est encore plus compliquée que le process initial","exemple":"T''attends. Ou alors tu demandes au N+1 du N+1, mais faut que ce soit explicitement délégué, ce qui nécessite un autre formulaire.","didascalie_replique":"","utilise_element_perso":false},{"type":"replique","role":"Assistant","directive":"Note tout ça scrupuleusement — et pose une question finale qui révèle qu''il a tout compris de la vraie situation","exemple":"Et en ce moment… c''est le bon moment pour commencer ? J''ai entendu des choses dans les couloirs.","didascalie_replique":"lève les yeux du carnet","utilise_element_perso":false},{"type":"replique","role":"Chargé de projet","directive":"Marque une pause — et répond avec une formule qui dit tout sans rien dire","exemple":"C''est toujours le bon moment pour apprendre les process. Surtout maintenant.","didascalie_replique":"regard caméra","utilise_element_perso":false},{"type":"didascalie","texte":"Le nouveau repose son stylo. Peut-être qu''il a compris quelque chose.","style":"cloture"}]'::jsonb,
-  '[{"role_cible":"Assistant","question":"Votre premier jour, première impression ?","reponse_a":"Très organisé. Beaucoup de process. J''aime bien les process. J''ai trois pages de notes.","reponse_b":"Super accueil ! Tout le monde est sympa. J''ai pas encore tout compris mais ça viendra.","reponse_c":"C''est intéressant. J''ai l''impression que tout le monde sait quelque chose que moi je sais pas encore."},{"role_cible":"Chargé de projet","question":"Vous aimez bien accueillir les nouveaux ?","reponse_a":"C''est important de bien transmettre. J''ai un document d''onboarding. Sur 14 pages.","reponse_b":"J''adore ! C''est frais comme regard. Des fois ils posent des questions qu''on s''est arrêté de se poser.","reponse_c":"Je fais ce qu''il faut. Et là en particulier c''est un bon timing pour savoir comment les choses marchent."}]'::jsonb,
-  '{"cadrage":"Plan sur le carnet de notes du nouveau pour les inserts — on lit ce qu''il écrit. Plan sur le visage du chargé de projet pendant les explications — l''expression de quelqu''un qui récite quelque chose d''absurde avec conviction.","rythme":"Régulier, comme une vraie formation. S''accélère légèrement à la fin avec la question sur ''les choses dans les couloirs''.","silences":"La pause avant ''C''est toujours le bon moment'' doit être marquée — 2 secondes.","pieges":"Le nouveau doit avoir l''air sincèrement intéressé, pas ironique. C''est quand la naïveté est jouée sans second degré que la scène est drôle.","astuce":"Préparer un vrai faux formulaire F7 à montrer à la caméra. Un détail visuel suffit à ancrer le réalisme."}'::jsonb,
+
+-- ── D7 — L'équipe décide (coherent) ─────────────────────────
+INSERT INTO bac_denouements (titre, type, description_courte, note_interne, script_json, itw_json, notes_real_json, actif)
+VALUES (
+  $$L'équipe décide$$,
+  'coherent',
+  $$Sans décision venue d'en haut, l'équipe prend elle-même position. Ensemble. Pour la première fois.$$,
+  $$Le dénouement le plus fédérateur — idéal pour des sessions orientées cohésion. Fonctionne mieux si des scènes de l'épisode ont montré des frictions qui se résolvent ici.$$,
+  $$[
+  {"type":"didascalie","texte":"Fin de journée. Pas de décision d'en haut. Quelqu'un pose une question simple au groupe.","style":"ouverture"},
+  {"type":"replique","role":"Chef de projet","directive":"Poser la question comme une évidence — avec une légère surprise que personne ne l'ait posée avant","exemple":"En attendant qu'on nous dise quoi faire sur [LA RÉVÉLATION] — on décide comment on travaille, nous ?","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Un silence. Pas d'hésitation — juste le temps de réaliser que c'est possible.","style":"intermediaire"},
+  {"type":"replique","role":"Manager","directive":"Confirmer — avec la légèreté de quelqu'un qui réalise que c'était simple depuis le début","exemple":"Ouais. On fait comment on veut. C'est dans notre périmètre.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"replique","role":"Assistant","directive":"Ajouter la contribution concrète — ce que le groupe va réellement décider","exemple":"Alors on décide qu'on continue à travailler comme aujourd'hui. Ensemble. Ça a bien marché.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"replique","role":"Directeur","directive":"Valider avec l'autorité nécessaire — et l'humilité de quelqu'un qui réalise que l'équipe n'avait pas besoin de lui pour ça","exemple":"Je valide. Et franchement — vous n'aviez pas besoin que je le dise.","didascalie_replique":"regard caméra","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Tout le monde repart avec quelque chose de décidé. Ce n'est pas grand chose. Mais c'est le leur.","style":"cloture"}
+]$$::jsonb,
+  $$[
+  {"role_cible":"Chef de projet","question":"Pourquoi vous avez posé cette question-là à ce moment-là ?","reponse_a":"Parce que c'était le seul levier actionnable. Les autres étaient hors périmètre.","reponse_b":"Parce que j'en avais besoin ! Et je pense que tout le monde aussi.","reponse_c":"Parce que quelqu'un devait la poser. Ça aurait pu être n'importe qui."},
+  {"role_cible":"Directeur","question":"'Vous n'aviez pas besoin que je le dise.' C'était dur à admettre ?","reponse_a":"Non. C'est un fait. Le reconnaître est dans mon intérêt à long terme.","reponse_b":"Pas du tout ! Au contraire — c'est exactement ce qu'on veut. Des équipes autonomes.","reponse_c":"Un peu. Mais c'est sain. On grandit tous dans cette histoire."}
+]$$::jsonb,
+  $${"cadrage":"Plan sur le groupe — tout le monde dans le cadre quand la décision est prise. C'est un moment collectif, pas individuel.","rythme":"Progressivement plus léger et plus énergique — en miroir inverse de l'intro.","silences":"Le silence après la question du chef de projet. 3 secondes. Le groupe réalise que c'est possible — laisser ce moment exister.","pieges":"Ne pas en faire un discours de motivation. La force est dans la simplicité — une décision banale prise ensemble.","astuce":"Si des frictions ont eu lieu entre acteurs dans les scènes précédentes, les faire se regarder brièvement ici — le non-verbal fait le récit de réconciliation sans qu'on ait besoin de le jouer."}$$::jsonb,
   true
-WHERE NOT EXISTS (SELECT 1 FROM bac_scenes s WHERE s.titre = 'Le nouveau');
+);
 
--- ─── SCÈNE 08 : Le Powerpoint de la mort ─────────────────────────────────────
-INSERT INTO bac_scenes (
-  titre, acte, ton_principal, ton_secondaire, duree_min, duree_max, difficulte,
-  groupes_concernes, nb_intervenants_min, nb_intervenants_max, fil_rouge,
-  champ_perso_label, champ_perso_exemple, champ_perso_replique_cible,
-  script_json, itw_json, notes_real_json, actif
-)
-SELECT
-  'Le Powerpoint de la mort', '2', 'Satire corporate', 'Absurde', 2, 3, 2,
-  ARRAY['managers','chefs-de-projet'], 2, 4,
-  'Quelqu''un présente un Powerpoint de 47 slides pour un sujet simple. La slide 12 contient sans le vouloir une référence à la révélation — personne ne sait si c''est intentionnel.',
-  'Le sujet de la présentation',
-  '"le bilan de la semaine", "la nouvelle politique de déplacement", "le plan de formation Q3"',
-  1,
-  '[{"type":"didascalie","texte":"Salle de réunion. Quelqu''un est debout devant un écran. La slide affichée indique ''Slide 4 / 47''.","style":"ouverture"},{"type":"replique","role":"Chef de projet","directive":"Lance la présentation avec une énergie totalement disproportionnée par rapport au sujet — comme si 47 slides pour ça était parfaitement raisonnable","exemple":"Donc voilà, j''ai préparé une présentation sur [ÉLÉMENT PERSONNALISÉ]. 47 slides. J''aurais pu en faire moins mais je voulais être complet.","didascalie_replique":"","utilise_element_perso":true},{"type":"replique","role":"Manager","directive":"Réagit en essayant de rester professionnel malgré l''absurdité évidente","exemple":"47… c''est… très complet en effet. On a combien de temps ?","didascalie_replique":"","utilise_element_perso":false},{"type":"replique","role":"Chef de projet","directive":"Répond avec le timing réel — qui est impossible — avec le même calme","exemple":"J''ai bloqué deux heures. Mais si on va vite on peut peut-être s''en sortir en 90 minutes.","didascalie_replique":"fait avancer les slides","utilise_element_perso":false},{"type":"didascalie","texte":"La slide 12 apparaît à l''écran. Elle contient une référence visible à la révélation — personne n''en parle.","style":"intermediaire"},{"type":"replique","role":"Manager","directive":"Remarque la slide 12 mais pose la question de façon à pouvoir l''ignorer si nécessaire","exemple":"La slide 12, c''est… informatif. C''est là depuis longtemps dans ta présentation ?","didascalie_replique":"","utilise_element_perso":false},{"type":"replique","role":"Chef de projet","directive":"Répond de façon à clore le sujet immédiatement et reprendre le fil","exemple":"Contexte général. On en reparlera. Slide 13.","didascalie_replique":"clique avant la fin de sa phrase","utilise_element_perso":false},{"type":"didascalie","texte":"La présentation continue. Il reste 34 slides.","style":"cloture"}]'::jsonb,
-  '[{"role_cible":"Chef de projet","question":"47 slides pour ça. Vous assumez ?","reponse_a":"Complètement. Une slide = une idée. 47 idées, 47 slides. C''est la règle.","reponse_b":"J''aurais pu en faire 50. J''ai coupé des trucs.","reponse_c":"Le fond est là. La forme c''est secondaire. Enfin. La forme c''est important aussi. D''où les 47 slides."},{"role_cible":"Manager","question":"La slide 12. Vous avez voulu en savoir plus ?","reponse_a":"J''ai noté. Je vérifierai. Ça peut pas rester sans réponse.","reponse_b":"Je lui fais confiance. Si c''était important, il en aurait parlé. Il y a peut-être une slide dédiée plus loin.","reponse_c":"Non. Parfois vaut mieux pas savoir. Y''a encore 34 slides."}]'::jsonb,
-  '{"cadrage":"Plan large sur la salle pour montrer l''écran et les participants. Insert sur les visages pendant la slide 12. Filmer l''écran avec la slide 12 visible clairement.","rythme":"Régulier et légèrement soporifique — c''est voulu. Le rythme doit reproduire l''effet d''une vraie longue présentation.","silences":"Le silence après l''apparition de la slide 12 avant que quelqu''un prenne la parole. 3 secondes.","pieges":"Le présentateur ne doit pas avoir l''air de se rendre compte que sa présentation est absurde. C''est exactement ce qui la rend drôle.","astuce":"Préparer un vrai Powerpoint de 47 slides (même vide) à projeter. La slide 12 doit avoir un titre lié à la révélation — une phrase vague suffit."}'::jsonb,
+
+-- ── D8 — Retour à la normale, mais différent (coherent) ─────
+INSERT INTO bac_denouements (titre, type, description_courte, note_interne, script_json, itw_json, notes_real_json, actif)
+VALUES (
+  $$Retour à la normale, mais différent$$,
+  'coherent',
+  $$La révélation a eu lieu. C'est derrière eux. Tout ressemble à avant. Mais quelque chose a changé.$$,
+  $$Le dénouement le plus sobre et souvent le plus juste. Éviter tout discours inspirant — la force est dans la subtilité.$$,
+  $$[
+  {"type":"didascalie","texte":"Quelques jours après. Même espace, même équipe. Les marques du changement sont là si on cherche — mais discrètes.","style":"ouverture"},
+  {"type":"replique","role":"Coordinateur","directive":"Constater simplement — avec la voix de quelqu'un qui observe de l'extérieur ce qu'il a lui-même vécu","exemple":"[LA RÉVÉLATION] a eu lieu comme prévu. C'est fait. On est de l'autre côté maintenant.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Un silence de reconnaissance — pas de douleur, pas d'euphorie. Juste le fait que quelque chose est passé.","style":"intermediaire"},
+  {"type":"replique","role":"Manager","directive":"Noter un détail concret qui a changé — petit, précis, réel","exemple":"Les réunions du lundi durent moins longtemps depuis. Personne a décidé ça. C'est juste comme ça.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"replique","role":"Assistant","directive":"Ajouter son propre détail — dans le même registre de concret","exemple":"On se dit bonjour différemment aussi. Je sais pas comment expliquer. C'est juste différent.","didascalie_replique":"","utilise_element_perso":false},
+  {"type":"replique","role":"Coordinateur","directive":"Clore sans conclusion — juste l'observation finale","exemple":"C'est ça le changement. Ça ressemble à rien de grand. Et pourtant.","didascalie_replique":"regard caméra","utilise_element_perso":false},
+  {"type":"didascalie","texte":"Tout le monde reprend ce qu'il faisait. Mais autrement.","style":"cloture"}
+]$$::jsonb,
+  $$[
+  {"role_cible":"Manager","question":"'Les réunions du lundi durent moins longtemps.' C'est une bonne chose ?","reponse_a":"C'est une donnée. Je note. On verra si ça tient.","reponse_b":"Oui ! Signe de maturité collective. On va droit au sujet maintenant.","reponse_c":"Je sais pas si c'est bon ou mauvais. Mais c'est réel. Et c'est nous qui l'avons fait."},
+  {"role_cible":"Assistant","question":"Comment vous diriez bonjour différemment ?","reponse_a":"On se regarde en disant bonjour. Ce qui semble basique. Ça l'était pas forcément avant.","reponse_b":"Avec plus de sincérité ! On a traversé quelque chose ensemble. Ça se sent.","reponse_c":"Je pourrais pas expliquer. C'est subtil. Mais c'est là."}
+]$$::jsonb,
+  $${"cadrage":"Les mêmes cadres que l'intro si possible — mêmes endroits, mêmes personnes, légèrement différents. Le montage fera le travail de comparaison.","rythme":"Doux et posé. C'est une scène de contemplation, pas d'action.","silences":"Le silence après 'Et pourtant.' — dernier silence de l'épisode. 5 secondes. Finir là-dessus.","pieges":"Ne pas chercher à expliquer ce qui a changé — le laisser sous-entendu. Tout ce qui est nommé perd de sa puissance ici.","astuce":"Si c'est possible en logistique, filmer cette scène dans le même espace que l'intro avec les mêmes acteurs aux mêmes endroits. Le spectateur fera la comparaison inconsciemment."}$$::jsonb,
   true
-WHERE NOT EXISTS (SELECT 1 FROM bac_scenes s WHERE s.titre = 'Le Powerpoint de la mort');
-
--- ─── SCÈNE 09 : La deadline ────────────────────────────────────────────────────
-INSERT INTO bac_scenes (
-  titre, acte, ton_principal, ton_secondaire, duree_min, duree_max, difficulte,
-  groupes_concernes, nb_intervenants_min, nb_intervenants_max, fil_rouge,
-  champ_perso_label, champ_perso_exemple, champ_perso_replique_cible,
-  script_json, itw_json, notes_real_json, actif
-)
-SELECT
-  'La deadline', '3', 'Thriller', 'Comédie', 2, 3, 3,
-  ARRAY['chefs-de-projet','assistants'], 2, 4,
-  '2 heures avant une échéance critique — qui coïncide avec l''annonce de la révélation — chacun gère la pression différemment. Certains travaillent vraiment, d''autres se paralysent.',
-  'Le livrable à rendre',
-  '"le rapport annuel", "la présentation client", "le planning consolidé"',
-  1,
-  '[{"type":"didascalie","texte":"Bureau. 14h00 affiché quelque part. Une ambiance de tension contenue. Des gens qui tapent vite.","style":"ouverture"},{"type":"replique","role":"Chargé de projet","directive":"Annonce l''état de la situation avec un calme qui cache à peine la panique","exemple":"Donc on a deux heures pour finir [ÉLÉMENT PERSONNALISÉ]. J''ai fait le point : on est à 60%. C''est jouable.","didascalie_replique":"voix légèrement trop contrôlée","utilise_element_perso":true},{"type":"replique","role":"Assistant","directive":"Répond en révélant que son estimation de 60% est optimiste — avec des détails précis","exemple":"60% si on compte pas la partie validation. Qui représente à peu près 40% du travail.","didascalie_replique":"sans lever les yeux de son écran","utilise_element_perso":false},{"type":"replique","role":"Chargé de projet","directive":"Absorbe l''information et recalcule à voix haute de façon chaotique","exemple":"OK donc en vrai on est à… 36%. En deux heures. C''est… on peut le faire si tout le monde reste focus.","didascalie_replique":"","utilise_element_perso":false},{"type":"didascalie","texte":"Quelqu''un ouvre un onglet de navigateur non professionnel. Le referme immédiatement.","style":"intermediaire"},{"type":"replique","role":"Assistant","directive":"Soulève le problème réel — qui dépasse la deadline elle-même","exemple":"Et de toute façon… vu ce qui va se passer demain matin, est-ce que ce rendu a encore du sens ?","didascalie_replique":"","utilise_element_perso":false},{"type":"replique","role":"Chargé de projet","directive":"Refuse d''ouvrir ce débat — la deadline est la deadline","exemple":"On livre. On réfléchit après. C''est comme ça que ça marche.","didascalie_replique":"","utilise_element_perso":false},{"type":"replique","role":"Assistant","directive":"Accepte — mais avec une réserve qui reste en suspension","exemple":"OK. On livre. Et demain ?","didascalie_replique":"regard caméra","utilise_element_perso":false},{"type":"didascalie","texte":"Chargé de projet ne répond pas. Les claviers reprennent.","style":"cloture"}]'::jsonb,
-  '[{"role_cible":"Chargé de projet","question":"36% en deux heures. Vous y croyiez vraiment ?","reponse_a":"J''y croyais parce qu''on n''avait pas le choix d''y croire. C''est une compétence en soi.","reponse_b":"À 100%. On l''a fait. Enfin… à 80%. Ce qui est déjà bien.","reponse_c":"Non. Mais dire non ça sert à rien à deux heures de la deadline."},{"role_cible":"Assistant","question":"''Et demain ?''. Vous pensiez à quoi exactement ?","reponse_a":"À tout ce qui va changer. Et à tout ce qu''il va falloir refaire.","reponse_b":"Je sais pas. C''est sorti. C''est une vraie question.","reponse_c":"À rien de précis. C''était juste la question évidente. Que personne voulait poser."}]'::jsonb,
-  '{"cadrage":"Filmer avec une légère instabilité — main légèrement moins stable que d''habitude pour créer la tension. Inserts sur les écrans, les montres, les mains qui tapent.","rythme":"Rapide au début, puis ralenti sur la question ''Et demain ?'' et le silence final.","silences":"Le silence final après la question sans réponse est le plus important de la scène. 4 secondes minimum. Les claviers qui reprennent brisent le silence — pas une voix.","pieges":"Éviter le jeu trop dramatique — rester dans la comédie malgré la tension. Le rire vient de la reconnaissance du situation, pas de la dramaturgie.","astuce":"Afficher une vraie horloge en fond de plan — numérique de préférence, qui défile. Ça ancre la tension sans qu''on ait besoin de la jouer."}'::jsonb,
-  true
-WHERE NOT EXISTS (SELECT 1 FROM bac_scenes s WHERE s.titre = 'La deadline');
+);
 
 
--- ════════════════════════════════════════════════════════════
--- RÉSUMÉ
--- ════════════════════════════════════════════════════════════
--- Tables injectées :
---   bac_roles         : 8 rôles (managers ×2, assistants ×2, chefs-de-projet ×2, directeurs ×2)
---   bac_variants      : 24 variants (3 par rôle)
---   bac_themes        : 6 thèmes
---   bac_revelations   : 5 révélations (avec colonnes delai_suggere + note_interne ajoutées)
---   bac_scenes        : 9 scènes complètes (scènes 01–09)
---
--- ⚠️  NON INJECTÉ :
---   bac_denouements   : contenu non disponible dans le document fourni
---                       → À créer manuellement via l'interface admin /bac/admin/dashboard/revelations
---                         ou en fournissant les données dans une prochaine session
---   Scène 10 (Le team building raté) : données tronquées dans la source
--- ════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════
+-- 5. ALTER TABLE bac_sessions — ajout denouement_id
+-- ═══════════════════════════════════════════════════════════
+
+ALTER TABLE bac_sessions
+  ADD COLUMN IF NOT EXISTS denouement_id UUID REFERENCES bac_denouements(id);
+
+-- NOTE : theme_id conservé intentionnellement pour ne pas perdre de données existantes.
+-- Supprimer après vérification : ALTER TABLE bac_sessions DROP COLUMN theme_id;
 
 COMMIT;

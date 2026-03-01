@@ -12,7 +12,7 @@ interface GroupeStatusData {
   phase: 'attente' | 'casting' | 'scenes' | 'personnalisation' | 'pret';
 }
 
-export default function CoordinateurInterface() {
+export default function CoordinateurInterface({ isAdmin = false }: { isAdmin?: boolean }) {
   const [session, setSession] = useState<BacSession | null>(null);
   const [sessions, setSessions] = useState<BacSession[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState('');
@@ -139,15 +139,9 @@ export default function CoordinateurInterface() {
     return Math.round((done / total) * 100);
   }
 
-  async function generateDocuments() {
-    if (!session) return;
-    // Placeholder — will call the document API
-    alert('La génération de documents sera disponible prochainement.');
-  }
-
   async function handleLogout() {
     await fetch('/bac/api/auth', { method: 'DELETE' });
-    window.location.href = '/animation/coordinateur';
+    window.location.href = isAdmin ? '/animation/admin' : '/animation/coordinateur';
   }
 
   if (loading) {
@@ -168,10 +162,11 @@ export default function CoordinateurInterface() {
             MAJ {lastUpdate.toLocaleTimeString('fr-FR')} • Mise à jour en temps réel
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="bac-btn bac-btn-primary" onClick={generateDocuments}>📄 Documents</button>
-          <button className="bac-btn bac-btn-ghost" onClick={handleLogout}>Déco</button>
-        </div>
+        {isAdmin && (
+          <a href="/animation/admin/dashboard" className="bac-btn bac-btn-secondary" style={{ fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
+            ← Tableau de bord
+          </a>
+        )}
       </div>
 
       {/* Session selector */}
@@ -316,6 +311,17 @@ export default function CoordinateurInterface() {
           </div>
         </>
       )}
+
+      {/* Déconnexion at bottom */}
+      <div style={{ marginTop: 48, paddingTop: 24, borderTop: '1px solid var(--bac-border)', textAlign: 'center' }}>
+        <button
+          className="bac-btn bac-btn-ghost"
+          onClick={handleLogout}
+          style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}
+        >
+          Déconnexion
+        </button>
+      </div>
     </div>
   );
 }
