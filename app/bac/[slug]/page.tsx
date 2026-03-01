@@ -1,8 +1,8 @@
-// app/bac/[slug]/page.tsx — Friendly group route (/bac/{slug})
+// app/bac/[slug]/page.tsx — Group route (/animation/{slug})
 import GroupeClient from '../../../components/bac/GroupeInterface';
+import Connexion from '../../../components/bac/Connexion';
 import { getBacSession } from '../../../lib/bac/auth';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
-import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -14,13 +14,9 @@ export default async function GroupSlugPage({ params }: { params: Promise<{ slug
   const { slug } = await params;
   const session = await getBacSession();
 
-  if (!session) {
-    return redirect(`/bac/connexion?profil=${encodeURIComponent(slug)}`);
-  }
-
-  // Security: only admin or the matching profil can access this page
-  if (session.profil_type !== 'admin' && session.profil_slug !== slug) {
-    return redirect(`/bac/connexion?profil=${encodeURIComponent(slug)}`);
+  // Not logged in or wrong profil → show inline login for this slug
+  if (!session || (session.profil_type !== 'admin' && session.profil_slug !== slug)) {
+    return <Connexion profilSlug={slug} />;
   }
 
   // Fetch group config (nb_scenes_requis)

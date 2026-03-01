@@ -23,7 +23,7 @@ export default function BacAdminLogin() {
             body: JSON.stringify({ sso: true, access_token: session.access_token }),
           });
           if (res.ok) {
-            router.push('/bac/admin/dashboard');
+            router.push('/animation/admin/dashboard');
             return;
           }
         }
@@ -46,7 +46,7 @@ export default function BacAdminLogin() {
       });
 
       if (res.ok) {
-        router.push('/bac/admin/dashboard');
+        router.push('/animation/admin/dashboard');
       } else {
         setError('Mot de passe incorrect');
       }

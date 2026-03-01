@@ -102,9 +102,10 @@ export default function AdminProfils() {
 
   if (showPrintView) {
     return (
-      <div style={{ padding: 40 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h1 className="bac-h1">🎬 Bureau à la Carte — Mots de passe du jour</h1>
+      <div style={{ padding: '24px 16px', maxWidth: 600 }}>
+        {/* Header: title on top, buttons below */}
+        <div style={{ marginBottom: 24 }}>
+          <h1 className="bac-h1" style={{ marginBottom: 12 }}>🎬 Bureau à la Carte — Mots de passe du jour</h1>
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="bac-btn bac-btn-secondary" onClick={() => setShowPrintView(false)}>← Retour</button>
             <button className="bac-btn bac-btn-primary" onClick={() => window.print()}>🖨️ Imprimer</button>
@@ -114,26 +115,28 @@ export default function AdminProfils() {
         <div className="bac-stagger">
           {profils.filter(p => p.actif && p.type !== 'admin').map(p => (
             <div key={p.id} className="bac-card" style={{ borderLeft: `4px solid ${p.couleur}`, marginBottom: 12, padding: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong>{p.nom}</strong>
-                  <span style={{ color: 'var(--bac-text-muted)', marginLeft: 8, fontSize: '0.875rem' }}>
-                    ({p.slug})
-                  </span>
-                </div>
+              {/* Name + password row */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <strong style={{ fontSize: '1rem' }}>{p.nom}</strong>
                 {p.mot_de_passe_clair ? (
-                  <div style={{ fontFamily: 'var(--bac-font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--bac-primary)' }}>
+                  <span style={{ fontFamily: 'var(--bac-font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--bac-primary)' }}>
                     {p.mot_de_passe_clair}
-                  </div>
+                  </span>
                 ) : (
-                  <div style={{ fontSize: '0.8125rem', color: 'var(--bac-warning)', fontWeight: 600 }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--bac-warning)', fontWeight: 600 }}>
                     ⚠️ Ré-enregistrez le mdp
-                  </div>
+                  </span>
                 )}
               </div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', marginTop: 4 }}>
-                Connexion : /bac/{p.slug}
-              </div>
+              {/* Clickable URL */}
+              <a
+                href={`/animation/${p.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--bac-primary)', marginTop: 6, wordBreak: 'break-all', textDecoration: 'underline' }}
+              >
+                /animation/{p.slug}
+              </a>
             </div>
           ))}
         </div>
@@ -166,105 +169,103 @@ export default function AdminProfils() {
           <div className="bac-spinner" />
         </div>
       ) : (
-        <div className="bac-card bac-animate-in">
-          <table className="bac-table">
-            <thead>
-              <tr>
-                <th>Profil</th>
-                <th>Slug</th>
-                <th>Type</th>
-                <th>Couleur</th>
-                <th>Statut</th>
-                <th>Mot de passe</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {profils.filter(p => p.type !== 'admin').map(profil => (
-                <tr key={profil.id} style={{ opacity: profil.actif ? 1 : 0.5 }}>
-                  <td><strong>{profil.nom}</strong></td>
-                  <td style={{ fontFamily: 'var(--bac-font-mono)', fontSize: '0.8125rem' }}>{profil.slug}</td>
-                  <td>{typeLabel(profil.type)}</td>
-                  <td>
-                    <span className="bac-color-dot" style={{ backgroundColor: profil.couleur }} />
-                  </td>
-                  <td>
-                    <span className={`bac-badge ${profil.actif ? 'bac-badge-success' : 'bac-badge-error'}`}>
-                      {profil.actif ? 'Actif' : 'Inactif'}
-                    </span>
-                  </td>
-                  <td>
-                    {editingPw === profil.id ? (
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <input
-                          type="text"
-                          className="bac-input"
-                          style={{ maxWidth: 150, padding: '6px 10px', minHeight: 36 }}
-                          value={newPw}
-                          onChange={(e) => setNewPw(e.target.value)}
-                          placeholder="Nouveau mdp"
-                          autoFocus
-                        />
-                        <button className="bac-btn bac-btn-primary bac-btn-sm" onClick={() => handleUpdatePassword(profil.id)}>✓</button>
-                        <button className="bac-btn bac-btn-ghost bac-btn-sm" onClick={() => { setEditingPw(null); setNewPw(''); }}>✕</button>
-                      </div>
+        <div className="bac-animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {profils.filter(p => p.type !== 'admin').map(profil => (
+            <div
+              key={profil.id}
+              className="bac-card"
+              style={{
+                padding: 16,
+                opacity: profil.actif ? 1 : 0.55,
+                borderLeft: `4px solid ${profil.couleur || 'var(--bac-border)'}`,
+              }}
+            >
+              {/* Top row: name + type + status */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                <div>
+                  <strong style={{ fontSize: '1rem' }}>{profil.nom}</strong>
+                  <span style={{ marginLeft: 8, fontFamily: 'var(--bac-font-mono)', fontSize: '0.75rem', color: 'var(--bac-text-muted)' }}>
+                    ({profil.slug})
+                  </span>
+                  <div style={{ marginTop: 4, fontSize: '0.8125rem', color: 'var(--bac-text-secondary)' }}>{typeLabel(profil.type)}</div>
+                </div>
+                <span className={`bac-badge ${profil.actif ? 'bac-badge-success' : 'bac-badge-error'}`}>
+                  {profil.actif ? 'Actif' : 'Inactif'}
+                </span>
+              </div>
+
+              {/* Password row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', minWidth: 100 }}>Mot de passe :</span>
+                {editingPw === profil.id ? (
+                  <div style={{ display: 'flex', gap: 6, flex: 1 }}>
+                    <input
+                      type="text"
+                      className="bac-input"
+                      style={{ flex: 1, padding: '6px 10px', minHeight: 36 }}
+                      value={newPw}
+                      onChange={(e) => setNewPw(e.target.value)}
+                      placeholder="Nouveau mot de passe"
+                      autoFocus
+                    />
+                    <button className="bac-btn bac-btn-primary bac-btn-sm" onClick={() => handleUpdatePassword(profil.id)}>✓</button>
+                    <button className="bac-btn bac-btn-ghost bac-btn-sm" onClick={() => { setEditingPw(null); setNewPw(''); }}>✕</button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {profil.mot_de_passe_clair ? (
+                      <code style={{ fontFamily: 'var(--bac-font-mono)', fontSize: '1rem', fontWeight: 700, color: 'var(--bac-primary)' }}>
+                        {profil.mot_de_passe_clair}
+                      </code>
                     ) : (
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        {profil.mot_de_passe_clair ? (
-                          <code style={{ fontFamily: 'var(--bac-font-mono)', fontSize: '0.9375rem', fontWeight: 700, color: 'var(--bac-primary)' }}>
-                            {profil.mot_de_passe_clair}
-                          </code>
-                        ) : (
-                          <span style={{ fontSize: '0.8125rem', color: 'var(--bac-warning)' }}>⚠️ non visible</span>
-                        )}
-                        <button
-                          className="bac-btn bac-btn-ghost bac-btn-sm"
-                          onClick={() => { setEditingPw(profil.id); setNewPw(''); }}
-                        >
-                          🔑
-                        </button>
-                      </div>
+                      <span style={{ fontSize: '0.8125rem', color: 'var(--bac-warning)' }}>⚠️ non visible</span>
                     )}
-                  </td>
-                  <td>
-                    {profil.type === 'groupe-acteur' && (
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <button
-                          className="bac-btn bac-btn-ghost bac-btn-sm"
-                          onClick={() => handleToggleActive(profil)}
-                        >
-                          {profil.actif ? '🚫 Désactiver' : '✅ Activer'}
-                        </button>
-                        {editingScenes === profil.id ? (
-                          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                            <input
-                              type="number"
-                              min={0}
-                              max={4}
-                              className="bac-input"
-                              style={{ width: 56, padding: '4px 8px', minHeight: 32 }}
-                              value={newNbScenes}
-                              onChange={e => setNewNbScenes(Number(e.target.value))}
-                            />
-                            <button className="bac-btn bac-btn-primary bac-btn-sm" onClick={() => handleUpdateNbScenes(profil.id)}>✓</button>
-                            <button className="bac-btn bac-btn-ghost bac-btn-sm" onClick={() => setEditingScenes(null)}>✕</button>
-                          </div>
-                        ) : (
-                          <button
-                            className="bac-btn bac-btn-ghost bac-btn-sm"
-                            title="Nombre de scènes requises"
-                            onClick={() => { setEditingScenes(profil.id); setNewNbScenes(profil.nb_scenes_requis ?? 4); }}
-                          >
-                            🎬 {profil.nb_scenes_requis ?? 4} scène{(profil.nb_scenes_requis ?? 4) > 1 ? 's' : ''}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <button
+                      className="bac-btn bac-btn-ghost bac-btn-sm"
+                      onClick={() => { setEditingPw(profil.id); setNewPw(''); }}
+                    >
+                      🔑 Modifier
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions row (groupe-acteur only) */}
+              {profil.type === 'groupe-acteur' && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 8, borderTop: '1px solid var(--bac-border)' }}>
+                  <button
+                    className="bac-btn bac-btn-ghost bac-btn-sm"
+                    onClick={() => handleToggleActive(profil)}
+                  >
+                    {profil.actif ? '🚫 Désactiver' : '✅ Activer'}
+                  </button>
+                  {editingScenes === profil.id ? (
+                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <input
+                        type="number"
+                        min={0}
+                        max={4}
+                        className="bac-input"
+                        style={{ width: 56, padding: '4px 8px', minHeight: 32 }}
+                        value={newNbScenes}
+                        onChange={e => setNewNbScenes(Number(e.target.value))}
+                      />
+                      <button className="bac-btn bac-btn-primary bac-btn-sm" onClick={() => handleUpdateNbScenes(profil.id)}>✓</button>
+                      <button className="bac-btn bac-btn-ghost bac-btn-sm" onClick={() => setEditingScenes(null)}>✕</button>
+                    </div>
+                  ) : (
+                    <button
+                      className="bac-btn bac-btn-ghost bac-btn-sm"
+                      title="Nombre de scènes requises"
+                      onClick={() => { setEditingScenes(profil.id); setNewNbScenes(profil.nb_scenes_requis ?? 4); }}
+                    >
+                      🎬 {profil.nb_scenes_requis ?? 4} scène{(profil.nb_scenes_requis ?? 4) > 1 ? 's' : ''}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

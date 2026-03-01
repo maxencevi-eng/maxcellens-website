@@ -1,12 +1,7 @@
-// app/bac/connexion/page.tsx
-import ConnexionClient from '../../../components/bac/Connexion';
-import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'Connexion',
-  robots: { index: false, follow: false },
-};
-
+// The generic /connexion page no longer exists.
+// Each profil has its own inline login at /animation/{slug}.
 export default function ConnexionPage() {
-  return <ConnexionClient />;
+  redirect('/animation/admin');
 }

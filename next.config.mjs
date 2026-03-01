@@ -74,8 +74,15 @@ const nextConfig = {
     };
     return config;
   },
+  // Serve all BAC system pages at /animation/* (canonical URL)
+  async rewrites() {
+    return [
+      { source: '/animation/:path+', destination: '/bac/:path+' },
+    ];
+  },
   async redirects() {
     return [
+      // Site redirects
       { source: '/galleries', destination: '/galeries', permanent: true },
       { source: '/production', destination: '/realisation', permanent: true },
       { source: '/services/production', destination: '/realisation', permanent: true },
@@ -85,6 +92,9 @@ const nextConfig = {
       { source: '/services/portrait', destination: '/portrait', permanent: true },
       { source: '/services/animation', destination: '/animation', permanent: true },
       { source: '/services', destination: '/', permanent: true },
+      // BAC: redirect /bac page-routes → /animation/* (API routes excluded via pattern)
+      { source: '/bac', destination: '/animation/connexion', permanent: false },
+      { source: '/bac/:slug((?!api(?:/|$)).+)', destination: '/animation/:slug', permanent: false },
     ];
   },
 };

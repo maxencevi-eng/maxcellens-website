@@ -25,10 +25,10 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
   const [detailScene, setDetailScene] = useState<BacScene | null>(null);
   const [showSceneDetail, setShowSceneDetail] = useState(false);
-  const [showCastingModal, setShowCastingModal] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [validatedScenes, setValidatedScenes] = useState<Set<string>>(new Set());
   const [saisies, setSaisies] = useState<Record<string, any>>({});
+  const [editingPretSceneId, setEditingPretSceneId] = useState<string | null>(null);
 
   // Load initial data
   useEffect(() => {
@@ -61,14 +61,15 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       }
       setSession(active);
 
-      // Get scenes from snapshot
-      const snapshotScenes = active.snapshot_scenes_json || [];
-      setScenes(snapshotScenes.filter((s: BacScene) => s.groupes_concernes.includes(slug)));
+      // Get scenes dynamically from API (not from snapshot, so new scenes appear immediately)
+      const scenesRes = await fetch(`/bac/api/scenes?groupe=${encodeURIComponent(slug)}`);
+      const scenesData = await scenesRes.json();
+      setScenes(Array.isArray(scenesData) ? scenesData : []);
 
       // Get roles for this group
       const rolesRes = await fetch('/bac/api/roles');
       const allRoles = await rolesRes.json();
-      setRoles(Array.isArray(allRoles) ? allRoles.filter((r: BacRole) => r.groupe_slug === slug && r.actif) : []);
+      setRoles(Array.isArray(allRoles) ? allRoles.filter((r: BacRole) => r.actif) : []);
 
       // Get existing casting
       const castRes = await fetch(`/bac/api/casting?session_id=${active.id}&groupe_slug=${slug}`);
@@ -89,7 +90,12 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
               saisiesData.forEach((s: any) => { map[`${s.scene_id}_${s.bloc_index}`] = s; });
               setSaisies(map);
             }
-            setPhase('personnalisation');
+            if (choixData.length > 0 && choixData.every((c: BacChoixScene) => c.statut === 'valide')) {
+              setValidatedScenes(new Set(choixData.map((c: BacChoixScene) => c.scene_id)));
+              setPhase('pret');
+            } else {
+              setPhase('personnalisation');
+            }
           } else {
             setPhase('scenes');
           }
@@ -183,8 +189,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   }
 
   async function validateChoices() {
-    if (!session || choix.length < 4) return;
-    if (!confirm('Les choix ne seront plus modifiables. Confirmer ?')) return;
+    if (!session || choix.length < nbScenesRequis) return;
 
     const res = await fetch('/bac/api/choix-scenes', {
       method: 'PATCH',
@@ -272,13 +277,8 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       <div className="bac-mobile-header">
         <h1>🎬 {slug.charAt(0).toUpperCase() + slug.slice(1)}</h1>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {phase !== 'casting' && (
-            <button className="bac-btn bac-btn-ghost bac-btn-sm" onClick={() => setShowCastingModal(true)}>
-              👥 Casting
-            </button>
-          )}
           {phase === 'pret' && (
-            <span className="bac-badge bac-badge-success">✅ Prêt</span>
+            <span className="bac-badge bac-badge-success" style={{ fontSize: '0.78rem' }}>✅ Votre groupe est prêt</span>
           )}
         </div>
       </div>
@@ -327,7 +327,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
             ) : (
               <>
                 <h2 className="bac-h2" style={{ marginBottom: 20, textAlign: 'center' }}>Qui joue quoi ?</h2>
-                <div className="bac-stagger" style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 100 }}>
+                <div className="bac-stagger" style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 130 }}>
                   {members.map((member, i) => {
                     const role = roles.find(r => r.id === member.role_id);
                     const variants = role?.variants || [];
@@ -418,7 +418,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
               })}
             </div>
 
-            <div className="bac-stagger" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 100 }}>
+            <div className="bac-stagger" style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 120 }}>
               {getScenesForActe(currentActe).map(scene => {
                 const isChosen = choix.find(c => c.acte === String(currentActe))?.scene_id === scene.id;
                 return (
@@ -470,9 +470,24 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
             )}
 
             {choix.length >= nbScenesRequis && nbScenesRequis > 0 && (
-              <div className="bac-mobile-bottom-bar">
-                <button className="bac-btn bac-btn-success bac-btn-lg" style={{ width: '100%' }} onClick={validateChoices}>
-                  Valider les {nbScenesRequis} scène{nbScenesRequis > 1 ? 's' : ''} ✅
+              <div className="bac-mobile-bottom-bar" style={{ backdropFilter: 'blur(12px)', background: 'rgba(15,15,26,0.95)', borderTop: '1px solid rgba(99,102,241,0.3)', padding: '14px 20px' }}>
+                <button
+                  onClick={validateChoices}
+                  style={{
+                    width: '100%',
+                    background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    border: 'none',
+                    borderRadius: 12,
+                    padding: '14px 24px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 20px rgba(34,197,94,0.35)',
+                    letterSpacing: '0.01em',
+                  }}
+                >
+                  ✅ Valider les {nbScenesRequis} scène{nbScenesRequis > 1 ? 's' : ''}
                 </button>
               </div>
             )}
@@ -514,7 +529,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
             )}
 
             {/* Script blocks */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 100 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 160 }}>
               {(currentScene.script_json || []).map((bloc: ScriptBloc, i: number) => {
                 if (bloc.type === 'didascalie') {
                   return (
@@ -535,24 +550,24 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                       {role?.nom || 'Rôle'}
                     </div>
 
-                    {/* Assign actor */}
-                    {casting.length > 0 && (
-                      <div style={{ marginBottom: 12 }}>
-                        <label className="bac-label" style={{ fontSize: '0.8125rem' }}>Qui dit cette réplique ?</label>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          <label className={`bac-radio-label ${!saisie.acteur_id ? 'selected' : ''}`} style={{ padding: '6px 10px', cursor: 'pointer', fontSize: '0.8125rem' }}>
-                            <input type="radio" name={`actor-${i}`} checked={!saisie.acteur_id} onChange={() => saveSaisie(currentScene.id, i, saisie.texte_saisi || '', undefined)} />
-                            Non assigné
-                          </label>
-                          {casting.filter(c => c.role_id === repBloc.role_id || !repBloc.role_id).map(c => (
-                            <label key={c.id} className={`bac-radio-label ${saisie.acteur_id === c.id ? 'selected' : ''}`} style={{ padding: '6px 10px', cursor: 'pointer', fontSize: '0.8125rem' }}>
-                              <input type="radio" name={`actor-${i}`} checked={saisie.acteur_id === c.id} onChange={() => saveSaisie(currentScene.id, i, saisie.texte_saisi || '', c.id)} />
-                              {c.prenom} {c.variant && `(${(c.variant as any)?.nom || ''})`}
-                            </label>
-                          ))}
+                    {/* Assign actor — only own group, only matching role */}
+                    {(() => {
+                      const eligible = casting.filter(c => c.role_id === repBloc.role_id);
+                      if (eligible.length === 0) return null;
+                      return (
+                        <div style={{ marginBottom: 12 }}>
+                          <label className="bac-label" style={{ fontSize: '0.8125rem' }}>Qui dit cette réplique ?</label>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {eligible.map(c => (
+                              <label key={c.id} className={`bac-radio-label ${saisie.acteur_id === c.id ? 'selected' : ''}`} style={{ padding: '6px 10px', cursor: 'pointer', fontSize: '0.8125rem' }}>
+                                <input type="radio" name={`actor-${i}`} checked={saisie.acteur_id === c.id} onChange={() => saveSaisie(currentScene.id, i, saisie.texte_saisi || '', c.id)} />
+                                {c.prenom} {c.variant && `(${(c.variant as any)?.nom || ''})`}
+                              </label>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     <div className="bac-script-directive">{repBloc.directive}</div>
                     <div className="bac-script-exemple">"{repBloc.exemple}"</div>
@@ -569,13 +584,16 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
               })}
             </div>
 
-            <div className="bac-mobile-bottom-bar">
+            <div className="bac-mobile-bottom-bar" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <button
                 className={`bac-btn bac-btn-lg ${validatedScenes.has(currentScene.id) ? 'bac-btn-success' : 'bac-btn-primary'}`}
                 style={{ width: '100%' }}
                 onClick={() => validateScene(currentScene.id)}
               >
                 {validatedScenes.has(currentScene.id) ? '✓ Scène validée' : 'Valider cette scène'}
+              </button>
+              <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ width: '100%' }} onClick={() => setPhase('scenes')}>
+                ← Modifier les scènes
               </button>
             </div>
           </div>
@@ -584,12 +602,6 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
         {/* ===== PRÊT ===== */}
         {phase === 'pret' && (
           <div className="bac-animate-in" style={{ paddingBottom: 40 }}>
-            <div style={{ textAlign: 'center', padding: '40px 0 28px' }} className="bac-animate-scale">
-              <div style={{ fontSize: '3.5rem', marginBottom: 12 }}>✅</div>
-              <h2 className="bac-h2" style={{ marginBottom: 6 }}>Votre groupe est prêt !</h2>
-              <p style={{ color: 'var(--bac-text-secondary)' }}>Toutes les scènes sont validées. En attendant le tournage...</p>
-            </div>
-
             {/* Résumé casting */}
             {casting.length > 0 && (
               <div className="bac-card" style={{ marginBottom: 16, padding: 16 }}>
@@ -606,59 +618,143 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
               </div>
             )}
 
-            {/* Résumé scènes */}
+            {/* Script personnalisé */}
             {choix.length > 0 && (
-              <div className="bac-card" style={{ padding: 16 }}>
-                <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 12 }}>🎬 Nos scènes</h3>
+              <div style={{ marginTop: 16 }}>
+                <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 12 }}>📜 Notre script</h3>
                 {[...choix].sort((a, b) => a.acte.localeCompare(b.acte)).map(c => {
                   const scene = scenes.find(s => s.id === c.scene_id);
+                  if (!scene) return null;
+                  const champSaisie = saisies[`${scene.id}_-1`];
+                  const isEditing = editingPretSceneId === scene.id;
                   return (
-                    <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
-                      <span className="bac-badge bac-badge-primary" style={{ minWidth: 60 }}>Acte {c.acte}</span>
-                      <strong style={{ fontSize: '0.9375rem', textAlign: 'right' }}>{scene?.titre || '—'}</strong>
+                    <div key={c.id} className="bac-card" style={{ marginBottom: 16, padding: 20, border: isEditing ? '2px solid var(--bac-primary)' : undefined }}>
+                      {/* Scene header */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                        <div>
+                          <span className="bac-badge bac-badge-primary">Acte {c.acte}</span>
+                          <h4 style={{ fontWeight: 700, fontSize: '1.0625rem', marginTop: 6 }}>{scene.titre}</h4>
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>
+                          {isEditing ? (
+                            <button
+                              className="bac-btn bac-btn-success bac-btn-sm"
+                              onClick={() => { setEditingPretSceneId(null); showToastMsg('Modifications enregistrées ✓'); }}
+                            >
+                              ✓ Enregistrer
+                            </button>
+                          ) : (
+                            <button
+                              className="bac-btn bac-btn-ghost bac-btn-sm"
+                              onClick={() => setEditingPretSceneId(scene.id)}
+                            >
+                              ✏️ Modifier
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Champ perso */}
+                      {scene.champ_perso_label && (
+                        isEditing ? (
+                          <div className="bac-card" style={{ marginBottom: 12, padding: 12, borderLeft: '4px solid var(--bac-info)' }}>
+                            <label className="bac-label">{scene.champ_perso_label}</label>
+                            <p className="bac-form-help" style={{ marginBottom: 6 }}>ex: {scene.champ_perso_exemple}</p>
+                            <input
+                              className="bac-input"
+                              placeholder={scene.champ_perso_exemple || ''}
+                              value={champSaisie?.champ_perso_valeur || ''}
+                              onChange={e => saveSaisie(scene.id, -1, '', undefined, e.target.value)}
+                              style={{ fontSize: '1rem' }}
+                            />
+                          </div>
+                        ) : champSaisie?.champ_perso_valeur ? (
+                          <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--bac-bg-tertiary)', borderRadius: 8, borderLeft: '3px solid var(--bac-info)' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{scene.champ_perso_label} :</span>{' '}
+                            <span style={{ color: 'var(--bac-primary)', fontWeight: 700 }}>{champSaisie.champ_perso_valeur}</span>
+                          </div>
+                        ) : null
+                      )}
+
+                      {/* Script blocs */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {(scene.script_json || []).map((bloc: ScriptBloc, i: number) => {
+                          if (bloc.type === 'didascalie') {
+                            return <div key={i} className="bac-script-didascalie">{(bloc as any).texte}</div>;
+                          }
+                          const repBloc = bloc as any;
+                          const role = roles.find(r => r.id === repBloc.role_id);
+                          const saisie = saisies[`${scene.id}_${i}`] || {};
+                          const acteur = saisie.acteur_id ? casting.find(cst => cst.id === saisie.acteur_id) : null;
+
+                          if (isEditing) {
+                            return (
+                              <div key={i} className="bac-script-replique">
+                                <div className="bac-script-role-name" style={{ color: role?.couleur || 'var(--bac-text)' }}>
+                                  {role?.nom || 'Rôle'}
+                                </div>
+                                {(() => {
+                                  const eligible = casting.filter(c => c.role_id === repBloc.role_id);
+                                  if (eligible.length === 0) return null;
+                                  return (
+                                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                                      {eligible.map(cst => (
+                                        <label key={cst.id} className={`bac-radio-label ${saisie.acteur_id === cst.id ? 'selected' : ''}`} style={{ padding: '4px 8px', cursor: 'pointer', fontSize: '0.8125rem' }}>
+                                          <input type="radio" name={`pret-actor-${scene.id}-${i}`} checked={saisie.acteur_id === cst.id} onChange={() => saveSaisie(scene.id, i, saisie.texte_saisi || '', cst.id)} />
+                                          {cst.prenom}
+                                        </label>
+                                      ))}
+                                    </div>
+                                  );
+                                })()}
+                                <div className="bac-script-directive">{repBloc.directive}</div>
+                                <textarea
+                                  className="bac-input"
+                                  style={{ fontSize: '0.9375rem', minHeight: 52, marginTop: 6 }}
+                                  placeholder={`"${repBloc.exemple}" (optionnel)`}
+                                  value={saisie.texte_saisi || ''}
+                                  onChange={e => saveSaisie(scene.id, i, e.target.value, saisie.acteur_id)}
+                                />
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div key={i} className="bac-script-replique">
+                              <div className="bac-script-role-name" style={{ color: role?.couleur || 'var(--bac-text)' }}>
+                                {role?.nom || 'Rôle'}{acteur ? ` — ${acteur.prenom}` : ''}
+                              </div>
+                              <div className="bac-script-directive">{repBloc.directive}</div>
+                              {saisie.texte_saisi ? (
+                                <div style={{ fontStyle: 'italic', color: 'var(--bac-primary)', padding: '8px 12px', background: 'var(--bac-bg-tertiary)', borderRadius: 6 }}>
+                                  "{saisie.texte_saisi}"
+                                </div>
+                              ) : (
+                                <div className="bac-script-exemple">"{repBloc.exemple}"</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })}
               </div>
             )}
-          </div>
-        )}
-      </div>
 
-      {/* Casting modal */}
-      {showCastingModal && (
-        <div className="bac-modal-overlay" onClick={() => setShowCastingModal(false)}>
-          <div className="bac-modal" onClick={e => e.stopPropagation()}>
-            <div className="bac-modal-header">
-              <h2 className="bac-h2">👥 Notre casting</h2>
-              <button className="bac-btn bac-btn-ghost bac-btn-icon" onClick={() => setShowCastingModal(false)}>✕</button>
-            </div>
-            <div className="bac-modal-body">
-              {casting.length === 0 ? (
-                <p style={{ color: 'var(--bac-text-muted)' }}>Aucun casting enregistré</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {casting.map(c => (
-                    <div key={c.id} className="bac-status-card" style={{ borderLeftColor: (c.role as any)?.couleur || 'var(--bac-primary)' }}>
-                      <div>
-                        <strong>{c.prenom}</strong>
-                        <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)' }}>
-                          {(c.role as any)?.nom || 'Sans rôle'} — {(c.variant as any)?.emoji || ''} {(c.variant as any)?.nom || ''}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="bac-modal-footer">
-              <button className="bac-btn bac-btn-secondary" onClick={() => { setShowCastingModal(false); setPhase('casting'); }}>
-                ✏️ Modifier le casting
+            {/* Boutons modification */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
+              <button className="bac-btn bac-btn-secondary bac-btn-lg" style={{ width: '100%' }} onClick={() => setPhase('personnalisation')}>
+                ✏️ Modifier la personnalisation
+              </button>
+              <button className="bac-btn bac-btn-ghost bac-btn-lg" style={{ width: '100%' }} onClick={() => setPhase('scenes')}>
+                ← Modifier les scènes
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {toast && <div className={`bac-toast ${toast.type === 'success' ? 'bac-toast-success' : 'bac-toast-error'}`}>{toast.msg}</div>}
     </div>

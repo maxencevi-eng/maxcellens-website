@@ -4,13 +4,14 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
 const navItems = [
-  { href: '/bac/admin/dashboard', label: 'Tableau de bord', icon: '📊' },
-  { href: '/bac/admin/dashboard/profils', label: 'Profils d\'accès', icon: '👥' },
-  { href: '/bac/admin/dashboard/roles', label: 'Rôles & Variants', icon: '🎭' },
-  { href: '/bac/admin/dashboard/scenes', label: 'Scènes', icon: '🎬' },
-  { href: '/bac/admin/dashboard/themes', label: 'Thèmes', icon: '🎨' },
-  { href: '/bac/admin/dashboard/revelations', label: 'Révélations', icon: '🤫' },
-  { href: '/bac/admin/dashboard/sessions', label: 'Sessions', icon: '📋' },
+  { href: '/animation/admin/dashboard', label: 'Tableau de bord', icon: '📊' },
+  { href: '/animation/admin/dashboard/profils', label: 'Profils d\'accès', icon: '👥' },
+  { href: '/animation/admin/dashboard/roles', label: 'Rôles & Variants', icon: '🎭' },
+  { href: '/animation/admin/dashboard/themes', label: 'Thèmes', icon: '🎨' },
+  { href: '/animation/admin/dashboard/scenes', label: 'Scènes', icon: '🎬' },
+  { href: '/animation/admin/dashboard/revelations', label: 'Révélations', icon: '🤫' },
+  { href: '/animation/admin/dashboard/sessions', label: 'Sessions', icon: '📋' },
+  { href: '/animation/technique', label: 'Script global', icon: '📜' },
 ];
 
 export default function BacAdminSidebar() {
@@ -19,7 +20,7 @@ export default function BacAdminSidebar() {
 
   const handleLogout = async () => {
     await fetch('/bac/api/auth', { method: 'DELETE' });
-    router.push('/bac/admin');
+    router.push('/animation/admin');
   };
 
   return (
@@ -33,7 +34,7 @@ export default function BacAdminSidebar() {
           <Link
             key={item.href}
             href={item.href}
-            className={pathname === item.href || (item.href !== '/bac/admin/dashboard' && pathname.startsWith(item.href)) ? 'active' : ''}
+            className={pathname === item.href || (item.href !== '/animation/admin/dashboard' && pathname.startsWith(item.href)) ? 'active' : ''}
           >
             <span className="bac-admin-nav-icon">{item.icon}</span>
             {item.label}

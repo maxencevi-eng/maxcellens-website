@@ -1,19 +1,65 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { BacSession, BacScene, BacCasting, BacChoixScene, BacSaisie, ScriptBloc, BacRole } from '../../lib/bac/types';
+import { useEffect, useState, Fragment } from 'react';
+import type { BacSession, BacScene, BacCasting, BacChoixScene, BacSaisie, BacRole } from '../../lib/bac/types';
 
-type TabId = 'script' | 'repartition' | 'itw';
+type TabId = 'script' | 'repartition' | 'itw' | 'notes' | 'pratiques';
 
-export default function TechniqueInterface() {
+const ROLES_TECHNIQUES = [
+  {
+    categorie: 'Équipe principale',
+    roles: [
+      {
+        nom: 'Ingénieur son',
+        description: `Responsable de toute la prise de son sur le tournage.\nGère la perche (microphone longue portée) et les micros-cravates ou sans fil pour chaque acteur.\nVeille à la qualité audio en temps réel, signale tout problème (bruit de fond, saturation, câblage) et s'assure que chaque prise est propre et exploitable au montage.`,
+      },
+      {
+        nom: 'Souffleur(s)',
+        description: `Présent(e) pour chaque acteur si possible, le souffleur rassure et aide à la mémorisation du texte sur le vif.\nIl suit la feuille de répliques en silence, et intervient discrètement si un acteur hésite ou oublie sa ligne.\nSon rôle est discret mais essentiel pour garantir la fluidité du tournage et mettre les acteurs en confiance.\nIl peut y avoir un souffleur par acteur dans l'idéal.`,
+      },
+      {
+        nom: 'Assistant(e) réalisation',
+        description: `Véritable bras droit du réalisateur, il/elle coordonne le tournage au quotidien : gestion du clap (annonce du nom de la scène et du numéro de prise), gestion du timing entre les scènes, coordination des équipes.\nPeut également filmer des images Behind The Scenes (BTS) pour alimenter le générique ou le bêtisier.\nLors des phases d'interview (ITW), c'est lui/elle qui pose les questions face caméra, avec un regard naturel et bienveillant, façon journaliste.\nIl peut y avoir plusieurs assistants réalisation selon la complexité du tournage.`,
+      },
+    ],
+  },
+  {
+    categorie: 'Équipe secondaire',
+    roles: [
+      {
+        nom: 'Make-up & continuité',
+        description: `Veille à la cohérence visuelle des acteurs tout au long du tournage : coiffure, lunettes, tenues vestimentaires.\nS'assure que chaque acteur est raccord d'une scène à l'autre (continuité de costume et de maquillage).\nIntervient entre les prises pour les retouches : cheveux, maquillage léger, lingettes.\nUn détail qui fait toute la différence au montage.`,
+      },
+      {
+        nom: 'Décorateur / Accessoiriste',
+        description: `Organise et harmonise l'espace de tournage.\nSimplifie les décors pour éviter la surcharge visuelle à l'image, déplace ou retire les éléments parasites.\nPrépare et gère les accessoires utiles aux scènes (objets de bureau, documents, signalétique, etc.).\nVeille à la cohérence visuelle de l'environnement entre les différentes prises.`,
+      },
+    ],
+  },
+  {
+    categorie: 'Scénariste',
+    roles: [
+      {
+        nom: 'Scénariste (à temps plein)',
+        description: `Supervise le respect du scénario tout au long de la journée de tournage.\nConnaît toutes les scènes sur le bout des doigts et intervient si un acteur s'écarte trop du script initial ou improvise de façon non pertinente.\nAjuste en temps réel les répliques ou le déroulé si nécessaire.\nInterface essentielle entre la vision artistique et la réalité du tournage.`,
+      },
+    ],
+  },
+];
+
+export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: boolean }) {
   const [session, setSession] = useState<BacSession | null>(null);
   const [roles, setRoles] = useState<BacRole[]>([]);
   const [allCasting, setAllCasting] = useState<BacCasting[]>([]);
   const [allChoix, setAllChoix] = useState<BacChoixScene[]>([]);
   const [allSaisies, setAllSaisies] = useState<BacSaisie[]>([]);
+  const [allScenes, setAllScenes] = useState<BacScene[]>([]);
   const [tab, setTab] = useState<TabId>('script');
-  const [selectedGroup, setSelectedGroup] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editingSceneKey, setEditingSceneKey] = useState<string | null>(null);
+  const [editChampPerso, setEditChampPerso] = useState('');
+  const [editActors, setEditActors] = useState<Record<number, string>>({});
 
   useEffect(() => { loadData(); }, []);
 
@@ -26,19 +72,16 @@ export default function TechniqueInterface() {
       setSession(active);
 
       const groups = active.groupes_actifs;
-      if (groups.length > 0) setSelectedGroup(groups[0]);
 
-      const rolesRes = await fetch('/bac/api/roles');
-      setRoles(Array.isArray(await rolesRes.clone().json()) ? await rolesRes.json() : []);
-
-      const castPromises = groups.map((g: string) => fetch(`/bac/api/casting?session_id=${active.id}&groupe_slug=${g}`).then(r => r.json()));
-      const choixPromises = groups.map((g: string) => fetch(`/bac/api/choix-scenes?session_id=${active.id}&groupe_slug=${g}`).then(r => r.json()));
-      const saisiesPromises = groups.map((g: string) => fetch(`/bac/api/saisies?session_id=${active.id}&groupe_slug=${g}`).then(r => r.json()));
-
-      const [castResults, choixResults, saisiesResults] = await Promise.all([
-        Promise.all(castPromises), Promise.all(choixPromises), Promise.all(saisiesPromises),
+      const [rolesData, scenesData, castResults, choixResults, saisiesResults] = await Promise.all([
+        fetch('/bac/api/roles').then(r => r.json()),
+        fetch('/bac/api/scenes').then(r => r.json()),
+        Promise.all(groups.map((g: string) => fetch(`/bac/api/casting?session_id=${active.id}&groupe_slug=${g}`).then(r => r.json()))),
+        Promise.all(groups.map((g: string) => fetch(`/bac/api/choix-scenes?session_id=${active.id}&groupe_slug=${g}`).then(r => r.json()))),
+        Promise.all(groups.map((g: string) => fetch(`/bac/api/saisies?session_id=${active.id}&groupe_slug=${g}`).then(r => r.json()))),
       ]);
-
+      setRoles(Array.isArray(rolesData) ? rolesData : []);
+      setAllScenes(Array.isArray(scenesData) ? scenesData : []);
       setAllCasting(castResults.flat().filter(Boolean));
       setAllChoix(choixResults.flat().filter(Boolean));
       setAllSaisies(saisiesResults.flat().filter(Boolean));
@@ -49,9 +92,12 @@ export default function TechniqueInterface() {
   }
 
   function getGroupScenes(groupSlug: string): BacScene[] {
-    if (!session?.snapshot_scenes_json) return [];
-    const chosenIds = allChoix.filter(c => c.groupe_slug === groupSlug && c.statut === 'valide').map(c => c.scene_id);
-    return (session.snapshot_scenes_json as BacScene[]).filter(s => chosenIds.includes(s.id)).sort((a, b) => String(a.acte).localeCompare(String(b.acte)));
+    const chosenIds = allChoix
+      .filter(c => c.groupe_slug === groupSlug && c.statut === 'valide')
+      .map(c => c.scene_id);
+    return allScenes
+      .filter(s => chosenIds.includes(s.id))
+      .sort((a, b) => String(a.acte).localeCompare(String(b.acte)));
   }
 
   function getGroupCasting(groupSlug: string) {
@@ -62,9 +108,149 @@ export default function TechniqueInterface() {
     return allSaisies.filter(s => s.groupe_slug === groupSlug && s.scene_id === sceneId);
   }
 
+  // All validated scenes from all groups, ordered by acte then group
+  function getAllValidatedEntries() {
+    const entries: Array<{ scene: BacScene; groupSlug: string }> = [];
+    for (const g of (session?.groupes_actifs || [])) {
+      getGroupScenes(g).forEach(s => entries.push({ scene: s, groupSlug: g }));
+    }
+    return entries.sort((a, b) => {
+      const diff = Number(a.scene.acte) - Number(b.scene.acte);
+      if (diff !== 0) return diff;
+      return a.groupSlug.localeCompare(b.groupSlug);
+    });
+  }
+
+  // ITW questions grouped by role across all groups
+  function getAllItwByRole() {
+    const byRole: Record<string, {
+      role: BacRole | { id: string; nom: string; couleur: string };
+      entries: Array<{
+        groupSlug: string;
+        sceneActe: string;
+        sceneTitre: string;
+        question: string;
+        reponses: Record<string, string>;
+        actorName: string | null;
+      }>;
+    }> = {};
+
+    for (const g of (session?.groupes_actifs || [])) {
+      const scenes = getGroupScenes(g);
+      const casting = getGroupCasting(g);
+      for (const scene of scenes) {
+        for (const itw of ((scene as any).itw_json || []) as any[]) {
+          const roleId = itw.role_id;
+          if (!byRole[roleId]) {
+            const role = roles.find(r => r.id === roleId) || { id: roleId, nom: roleId, couleur: 'var(--bac-text)' };
+            byRole[roleId] = { role, entries: [] };
+          }
+          const actor = casting.find(c => c.role_id === roleId) || null;
+          byRole[roleId].entries.push({
+            groupSlug: g,
+            sceneActe: String(scene.acte),
+            sceneTitre: scene.titre,
+            question: itw.question,
+            reponses: itw.reponses_par_variant || {},
+            actorName: actor ? actor.prenom : null,
+          });
+        }
+      }
+    }
+    return Object.values(byRole);
+  }
+
+  // Per-scene: unique actors (deduped), preserving order of first appearance
+  function getSceneActors(groupSlug: string, scene: BacScene) {
+    const saisies = getSceneSaisies(groupSlug, scene.id);
+    const casting = allCasting;
+    const scriptJson = (scene.script_json || []) as any[];
+    const actorMap = new Map<string, { actor: BacCasting; roleNames: string[] }>();
+    scriptJson.forEach((bloc: any, i: number) => {
+      if (bloc.type !== 'replique') return;
+      const saisie = saisies.find(s => s.bloc_index === i);
+      if (!saisie?.acteur_id) return;
+      const actor = casting.find(c => c.id === saisie.acteur_id);
+      if (!actor) return;
+      const role = roles.find(r => r.id === bloc.role_id);
+      const roleName = role?.nom || bloc.role_id;
+      if (actorMap.has(saisie.acteur_id)) {
+        const entry = actorMap.get(saisie.acteur_id)!;
+        if (!entry.roleNames.includes(roleName)) entry.roleNames.push(roleName);
+      } else {
+        actorMap.set(saisie.acteur_id, { actor, roleNames: [roleName] });
+      }
+    });
+    return Array.from(actorMap.values());
+  }
+
+  // Script tab: "Role1 (Actor1) et Role2 (Actor2, Actor3)"
+  function getSceneIntervenants(groupSlug: string, scene: BacScene): string {
+    const saisies = getSceneSaisies(groupSlug, scene.id);
+    const casting = allCasting;
+    const scriptJson = (scene.script_json || []) as any[];
+    const roleMap = new Map<string, { roleName: string; actors: string[] }>();
+    const roleOrder: string[] = [];
+    scriptJson.forEach((bloc: any, i: number) => {
+      if (bloc.type !== 'replique') return;
+      const roleId = bloc.role_id;
+      const role = roles.find(r => r.id === roleId);
+      const roleName = role?.nom || roleId;
+      const saisie = saisies.find(s => s.bloc_index === i);
+      const actorName = saisie?.acteur_id ? (casting.find(c => c.id === saisie.acteur_id)?.prenom || '') : '';
+      if (!roleMap.has(roleId)) {
+        roleMap.set(roleId, { roleName, actors: [] });
+        roleOrder.push(roleId);
+      }
+      const entry = roleMap.get(roleId)!;
+      if (actorName && !entry.actors.includes(actorName)) entry.actors.push(actorName);
+    });
+    if (roleOrder.length === 0) return '';
+    const parts = roleOrder.map(roleId => {
+      const { roleName, actors } = roleMap.get(roleId)!;
+      return actors.length ? `${roleName} (${actors.join(', ')})` : roleName;
+    });
+    return parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ' et ' + parts[parts.length - 1];
+  }
+
+  function startEditing(groupSlug: string, scene: BacScene) {
+    const sceneSaisies = getSceneSaisies(groupSlug, scene.id);
+    const champSaisie = sceneSaisies.find(s => s.bloc_index === -1);
+    setEditChampPerso(champSaisie?.champ_perso_valeur || '');
+    const actors: Record<number, string> = {};
+    sceneSaisies.forEach(s => { if (s.bloc_index >= 0 && s.acteur_id) actors[s.bloc_index] = s.acteur_id; });
+    // Auto-assign when only 1 actor across all groups has this role
+    ((scene.script_json || []) as any[]).forEach((bloc: any, i: number) => {
+      if (bloc.type !== 'replique' || actors[i]) return;
+      const eligible = allCasting.filter(c => c.role_id === bloc.role_id);
+      if (eligible.length === 1) actors[i] = eligible[0].id;
+    });
+    setEditActors(actors);
+    setEditingSceneKey(`${groupSlug}-${scene.id}`);
+  }
+
+  async function saveSceneEdit(groupSlug: string, scene: BacScene) {
+    if (!session) return;
+    const sceneSaisies = getSceneSaisies(groupSlug, scene.id);
+    const scriptJson = (scene.script_json || []) as any[];
+    const saisies: any[] = [];
+    if (scene.champ_perso_label) {
+      const existing = sceneSaisies.find(s => s.bloc_index === -1);
+      saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: scene.id, bloc_index: -1, texte_saisi: existing?.texte_saisi || '', acteur_id: null, champ_perso_valeur: editChampPerso || null });
+    }
+    scriptJson.forEach((bloc: any, i: number) => {
+      if (bloc.type !== 'replique') return;
+      const existing = sceneSaisies.find(s => s.bloc_index === i);
+      saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: scene.id, bloc_index: i, texte_saisi: existing?.texte_saisi || '', acteur_id: editActors[i] || null, champ_perso_valeur: null });
+    });
+    await fetch('/bac/api/saisies', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ saisies }) });
+    setAllSaisies(prev => [...prev.filter(s => !(s.groupe_slug === groupSlug && s.scene_id === scene.id)), ...saisies]);
+    setEditingSceneKey(null);
+  }
+
   async function handleLogout() {
     await fetch('/bac/api/auth', { method: 'DELETE' });
-    window.location.href = '/bac/connexion?profil=technique';
+    window.location.href = '/animation/technique';
   }
 
   if (loading) {
@@ -85,100 +271,216 @@ export default function TechniqueInterface() {
     );
   }
 
-  const groupScenes = getGroupScenes(selectedGroup);
-  const groupCasting = getGroupCasting(selectedGroup);
+  const allEntries = getAllValidatedEntries();
+  const itwByRole = getAllItwByRole();
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 16px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h1 className="bac-h1" style={{ marginBottom: 4 }}>📹 Équipe Technique</h1>
           <p style={{ color: 'var(--bac-text-secondary)', fontSize: '0.875rem' }}>{session.nom_entreprise}</p>
         </div>
-        <button className="bac-btn bac-btn-ghost" onClick={handleLogout}>Déco</button>
-      </div>
-
-      {/* Group selector */}
-      <div className="bac-form-group" style={{ marginBottom: 16 }}>
-        <label className="bac-label">Groupe</label>
-        <select className="bac-input bac-select" value={selectedGroup} onChange={e => setSelectedGroup(e.target.value)}>
-          {session.groupes_actifs.map(g => (
-            <option key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</option>
-          ))}
-        </select>
+        {isAdmin && (
+          <a href="/animation/admin/dashboard" className="bac-btn bac-btn-secondary" style={{ fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
+            ← Tableau de bord
+          </a>
+        )}
       </div>
 
       {/* Tabs */}
-      <div className="bac-tabs" style={{ marginBottom: 24 }}>
+      <div className="bac-tabs" style={{ marginBottom: 24, flexWrap: 'wrap', gap: 4 }}>
         <button className={`bac-tab ${tab === 'script' ? 'active' : ''}`} onClick={() => setTab('script')}>📜 Script</button>
         <button className={`bac-tab ${tab === 'repartition' ? 'active' : ''}`} onClick={() => setTab('repartition')}>👥 Répartition</button>
         <button className={`bac-tab ${tab === 'itw' ? 'active' : ''}`} onClick={() => setTab('itw')}>🎤 ITW</button>
+        {isAdmin && (
+          <button className={`bac-tab ${tab === 'notes' ? 'active' : ''}`} onClick={() => setTab('notes')}>🎥 Notes Réal</button>
+        )}
+        <button className={`bac-tab ${tab === 'pratiques' ? 'active' : ''}`} onClick={() => setTab('pratiques')}>📋 Bonnes pratiques</button>
       </div>
 
-      {/* SCRIPT TAB */}
+
+      {/* ── SCRIPT TAB — global (all groups) ── */}
       {tab === 'script' && (
         <div className="bac-animate-in">
-          {groupScenes.length === 0 ? (
-            <div className="bac-empty"><p>Ce groupe n'a pas encore finalisé ses scènes</p></div>
-          ) : (
-            groupScenes.map(scene => {
-              const sceneSaisies = getSceneSaisies(selectedGroup, scene.id);
-
+          {allEntries.length === 0 ? (
+            <div className="bac-empty"><p>Aucune scène validée pour l'instant</p></div>
+          ) : (() => {
+            let lastActe: any = null;
+            return allEntries.map(({ scene, groupSlug }) => {
+              const isFirstActe = lastActe === null;
+              const showActeHeader = String(scene.acte) !== String(lastActe);
+              if (showActeHeader) lastActe = scene.acte;
+              const sceneKey = `${groupSlug}-${scene.id}`;
+              const isEditing = editingSceneKey === sceneKey;
+              const sceneSaisies = getSceneSaisies(groupSlug, scene.id);
+              const scriptJson = (scene.script_json || []) as any[];
               return (
-                <div key={scene.id} className="bac-card" style={{ marginBottom: 16, padding: 20 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <div>
-                      <span className="bac-badge bac-badge-primary">Acte {scene.acte}</span>
-                      <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginTop: 4 }}>{scene.titre}</h3>
-                    </div>
-                    <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>
-                  </div>
-
-                  {/* Champ perso value */}
-                  {scene.champ_perso_label && (() => {
-                    const champSaisie = sceneSaisies.find(s => s.bloc_index === -1);
-                    return champSaisie?.champ_perso_valeur ? (
-                      <div style={{ marginBottom: 16, padding: 12, background: 'var(--bac-bg-tertiary)', borderRadius: 8, borderLeft: '3px solid var(--bac-info)' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{scene.champ_perso_label}:</span>{' '}
-                        <span style={{ color: 'var(--bac-primary)', fontWeight: 700 }}>{champSaisie.champ_perso_valeur}</span>
+                <Fragment key={sceneKey}>
+                  {showActeHeader && (
+                    <h2 style={{ fontWeight: 800, fontSize: '1.375rem', marginTop: isFirstActe ? 0 : 32, marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid var(--bac-border)' }}>
+                      Acte {scene.acte}
+                    </h2>
+                  )}
+                  <div className="bac-card" style={{ marginBottom: 16, padding: 20 }}>
+                    {/* Card header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                      <div>
+                        <span className="bac-badge bac-badge-primary">Acte {scene.acte}</span>
+                        {' '}
+                        <span className="bac-badge" style={{ background: 'var(--bac-bg-tertiary)', color: 'var(--bac-text-secondary)', fontSize: '0.75rem' }}>
+                          {groupSlug.charAt(0).toUpperCase() + groupSlug.slice(1)}
+                        </span>
+                        <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginTop: 4 }}>{scene.titre}</h3>
                       </div>
-                    ) : null;
-                  })()}
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, marginLeft: 12 }}>
+                        <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', whiteSpace: 'nowrap' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>
+                        {isEditing ? (
+                          <button className="bac-btn bac-btn-primary" style={{ padding: '4px 10px', fontSize: '0.8125rem' }} onClick={() => saveSceneEdit(groupSlug, scene)}>✓ Enregistrer</button>
+                        ) : (
+                          <button className="bac-btn bac-btn-ghost" style={{ padding: '4px 10px', fontSize: '0.8125rem' }} onClick={() => startEditing(groupSlug, scene)}>✏️ Modifier</button>
+                        )}
+                      </div>
+                    </div>
 
-                  {/* Script blocs */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {(scene.script_json || []).map((bloc: ScriptBloc, i: number) => {
-                      if (bloc.type === 'didascalie') {
+                    {/* Intervenants (read mode only) */}
+                    {!isEditing && (() => {
+                      const intervenants = getSceneIntervenants(groupSlug, scene);
+                      return intervenants ? (
+                        <div style={{ marginBottom: 12, fontSize: '0.875rem', color: 'var(--bac-text-secondary)', fontStyle: 'italic' }}>
+                          👥 {intervenants}
+                        </div>
+                      ) : null;
+                    })()}
+
+                    {/* Champ perso */}
+                    {scene.champ_perso_label && (
+                      isEditing ? (
+                        <div className="bac-form-group" style={{ marginBottom: 16 }}>
+                          <label className="bac-label">{scene.champ_perso_label}</label>
+                          <input className="bac-input" value={editChampPerso} onChange={e => setEditChampPerso(e.target.value)} placeholder={scene.champ_perso_label} />
+                        </div>
+                      ) : (() => {
+                        const champSaisie = sceneSaisies.find(s => s.bloc_index === -1);
+                        return champSaisie?.champ_perso_valeur ? (
+                          <div style={{ marginBottom: 16, padding: 12, background: 'var(--bac-bg-tertiary)', borderRadius: 8, borderLeft: '3px solid var(--bac-info)' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{scene.champ_perso_label}:</span>{' '}
+                            <span style={{ color: 'var(--bac-primary)', fontWeight: 700 }}>{champSaisie.champ_perso_valeur}</span>
+                          </div>
+                        ) : null;
+                      })()
+                    )}
+
+                    {/* Script blocs */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {scriptJson.map((bloc: any, i: number) => {
+                        if (bloc.type === 'didascalie') {
+                          return <div key={i} className="bac-script-didascalie">{bloc.texte}</div>;
+                        }
+                        const role = roles.find(r => r.id === bloc.role_id);
+                        const saisie = sceneSaisies.find(s => s.bloc_index === i);
+                        const acteur = saisie?.acteur_id ? allCasting.find(c => c.id === saisie.acteur_id) : null;
+                        const roleActors = allCasting.filter(c => c.role_id === bloc.role_id);
                         return (
-                          <div key={i} className="bac-script-didascalie">
-                            {(bloc as any).texte}
+                          <div key={i} className="bac-script-replique">
+                            {isEditing ? (
+                              <>
+                                <div className="bac-script-role-name" style={{ color: role?.couleur || 'var(--bac-text)', marginBottom: 4 }}>
+                                  {role?.nom || 'Rôle'}
+                                </div>
+                                <div className="bac-script-directive" style={{ marginBottom: 6 }}>{bloc.directive}</div>
+                                <div style={{ fontStyle: 'italic', color: 'var(--bac-text-muted)', fontSize: '0.875rem', marginBottom: 8 }}>"{bloc.exemple}"</div>
+                                {roleActors.length > 0 ? (
+                                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                    {roleActors.map(actor => (
+                                      <label key={actor.id} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', padding: '4px 12px', borderRadius: 6, border: `1px solid ${editActors[i] === actor.id ? 'var(--bac-primary)' : 'var(--bac-border)'}`, background: editActors[i] === actor.id ? 'rgba(99,102,241,0.12)' : 'transparent', fontSize: '0.875rem', fontWeight: editActors[i] === actor.id ? 700 : 400 }}>
+                                        <input type="radio" name={`actor-${sceneKey}-${i}`} value={actor.id} checked={editActors[i] === actor.id} onChange={() => setEditActors(prev => ({ ...prev, [i]: actor.id }))} style={{ display: 'none' }} />
+                                        {actor.prenom}
+                                      </label>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>Aucun acteur pour ce rôle</p>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <div className="bac-script-role-name" style={{ color: role?.couleur || 'var(--bac-text)' }}>
+                                  {role?.nom || 'Rôle'} {acteur ? `(${acteur.prenom})` : ''}
+                                </div>
+                                <div className="bac-script-directive">{bloc.directive}</div>
+                                {saisie?.texte_saisi ? (
+                                  <div style={{ fontStyle: 'italic', color: 'var(--bac-primary)', padding: '8px 12px', background: 'var(--bac-bg-tertiary)', borderRadius: 6 }}>
+                                    "{saisie.texte_saisi}"
+                                  </div>
+                                ) : (
+                                  <div className="bac-script-exemple">"{bloc.exemple}"</div>
+                                )}
+                              </>
+                            )}
                           </div>
                         );
-                      }
-
-                      const repBloc = bloc as any;
-                      const role = roles.find(r => r.id === repBloc.role_id);
-                      const saisie = sceneSaisies.find(s => s.bloc_index === i);
-                      const acteur = saisie?.acteur_id ? groupCasting.find(c => c.id === saisie.acteur_id) : null;
-
-                      return (
-                        <div key={i} className="bac-script-replique">
-                          <div className="bac-script-role-name" style={{ color: role?.couleur || 'var(--bac-text)' }}>
-                            {role?.nom || 'Rôle'} {acteur ? `(${acteur.prenom})` : ''}
-                          </div>
-                          <div className="bac-script-directive">{repBloc.directive}</div>
-                          {saisie?.texte_saisi ? (
-                            <div style={{ fontStyle: 'italic', color: 'var(--bac-primary)', padding: '8px 12px', background: 'var(--bac-bg-tertiary)', borderRadius: 6 }}>
-                              "{saisie.texte_saisi}"
-                            </div>
-                          ) : (
-                            <div className="bac-script-exemple">"{repBloc.exemple}"</div>
-                          )}
-                        </div>
-                      );
-                    })}
+                      })}
+                    </div>
                   </div>
+                </Fragment>
+              );
+            });
+          })()}
+        </div>
+      )}
+
+      {/* ── RÉPARTITION TAB — global (all groups) ── */}
+      {tab === 'repartition' && (
+        <div className="bac-animate-in">
+          {/* Casting par groupe */}
+          {(session?.groupes_actifs || []).map(g => {
+            const gc = getGroupCasting(g);
+            if (gc.length === 0) return null;
+            return (
+              <div key={g} className="bac-card" style={{ padding: 20, marginBottom: 16 }}>
+                <h3 style={{ fontWeight: 700, marginBottom: 12 }}>
+                  {g.charAt(0).toUpperCase() + g.slice(1)}
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {gc.map(c => (
+                    <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
+                      <span style={{ fontWeight: 600 }}>{c.prenom}</span>
+                      <span style={{ color: 'var(--bac-text-secondary)' }}>{(c.role as any)?.nom || '—'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Répartition par scène */}
+          <h3 style={{ fontWeight: 700, margin: '24px 0 12px' }}>Répartition par scène</h3>
+          {allEntries.length === 0 ? (
+            <div className="bac-empty"><p>Aucune scène validée</p></div>
+          ) : (
+            allEntries.map(({ scene, groupSlug }) => {
+              const sceneActors = getSceneActors(groupSlug, scene);
+              return (
+                <div key={`${groupSlug}-${scene.id}`} className="bac-card" style={{ padding: 20, marginBottom: 12 }}>
+                  <h4 style={{ fontWeight: 700, marginBottom: 12 }}>
+                    <span className="bac-badge bac-badge-primary" style={{ marginRight: 8 }}>Acte {scene.acte}</span>
+                    {scene.titre}
+                    <span style={{ marginLeft: 8, fontSize: '0.75rem', color: 'var(--bac-text-muted)', fontWeight: 400 }}>{groupSlug}</span>
+                  </h4>
+                  {sceneActors.length === 0 ? (
+                    <p style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>Aucun acteur assigné</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {sceneActors.map(({ actor, roleNames }) => (
+                        <div key={actor.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
+                          <span style={{ fontWeight: 600 }}>{actor.prenom}</span>
+                          <span style={{ color: 'var(--bac-text-secondary)' }}>{roleNames.join(', ')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })
@@ -186,99 +488,150 @@ export default function TechniqueInterface() {
         </div>
       )}
 
-      {/* RÉPARTITION TAB */}
-      {tab === 'repartition' && (
-        <div className="bac-animate-in">
-          {groupCasting.length === 0 ? (
-            <div className="bac-empty"><p>Casting non défini</p></div>
-          ) : (
-            <>
-              <div className="bac-card" style={{ padding: 20, marginBottom: 16 }}>
-                <h3 style={{ fontWeight: 700, marginBottom: 16 }}>Casting du groupe</h3>
-                <div className="bac-table-wrap">
-                  <table className="bac-table">
-                    <thead>
-                      <tr><th>Prénom</th><th>Rôle</th><th>Variant</th></tr>
-                    </thead>
-                    <tbody>
-                      {groupCasting.map(c => (
-                        <tr key={c.id}>
-                          <td><strong>{c.prenom}</strong></td>
-                          <td>{(c.role as any)?.nom || '—'}</td>
-                          <td>{(c.variant as any)?.emoji || ''} {(c.variant as any)?.nom || '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {groupScenes.map(scene => (
-                <div key={scene.id} className="bac-card" style={{ padding: 20, marginBottom: 16 }}>
-                  <h4 style={{ fontWeight: 700, marginBottom: 12 }}>
-                    <span className="bac-badge bac-badge-primary" style={{ marginRight: 8 }}>Acte {scene.acte}</span>
-                    {scene.titre}
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {(scene.script_json || []).filter((b: ScriptBloc) => b.type === 'replique').map((bloc: any, i: number) => {
-                      const role = roles.find(r => r.id === bloc.role_id);
-                      const sceneSaisies = getSceneSaisies(selectedGroup, scene.id);
-                      const saisie = sceneSaisies.find(s => s.bloc_index === (scene.script_json || []).indexOf(bloc));
-                      const acteur = saisie?.acteur_id ? groupCasting.find(c => c.id === saisie.acteur_id) : null;
-                      return (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
-                          <span style={{ color: role?.couleur || 'var(--bac-text)' }}>{role?.nom || '?'}</span>
-                          <span style={{ fontWeight: 600 }}>{acteur ? acteur.prenom : '—'}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* ITW TAB */}
+      {/* ── ITW TAB — grouped by profil (role) across all groups ── */}
       {tab === 'itw' && (
         <div className="bac-animate-in">
-          {groupScenes.length === 0 ? (
-            <div className="bac-empty"><p>Aucune scène finalisée</p></div>
+          {itwByRole.length === 0 ? (
+            <div className="bac-empty"><p>Aucune interview configurée</p></div>
           ) : (
-            groupScenes.filter(s => (s.itw_json || []).length > 0).map(scene => (
-              <div key={scene.id} className="bac-card" style={{ padding: 20, marginBottom: 16 }}>
-                <h4 style={{ fontWeight: 700, marginBottom: 16 }}>
-                  <span className="bac-badge bac-badge-primary" style={{ marginRight: 8 }}>Acte {scene.acte}</span>
-                  {scene.titre} — ITW
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {(scene.itw_json || []).map((itw: any, i: number) => {
-                    const role = roles.find(r => r.id === itw.role_id);
-                    return (
-                      <div key={i} style={{ padding: 12, background: 'var(--bac-bg-tertiary)', borderRadius: 8 }}>
-                        <div style={{ fontWeight: 700, color: role?.couleur || 'var(--bac-text)', marginBottom: 8 }}>
-                          {role?.nom || 'Rôle'} — Interview
-                        </div>
-                        <p style={{ fontWeight: 600, marginBottom: 4 }}>{itw.question}</p>
-                        {itw.reponses_par_variant && Object.entries(itw.reponses_par_variant).map(([variant, rep]: [string, any]) => (
-                          <div key={variant} style={{ marginLeft: 12, fontSize: '0.875rem', marginBottom: 4 }}>
-                            <span style={{ fontWeight: 600, color: 'var(--bac-text-muted)' }}>{variant}:</span>{' '}
-                            <span style={{ fontStyle: 'italic' }}>{rep}</span>
-                          </div>
-                        ))}
+            itwByRole.map(({ role, entries }) => (
+              <div key={role.id} className="bac-card" style={{ padding: 20, marginBottom: 20 }}>
+                <h3 style={{ fontWeight: 700, fontSize: '1.125rem', color: (role as any).couleur, marginBottom: 16, borderBottom: '2px solid var(--bac-border)', paddingBottom: 10 }}>
+                  🎤 {role.nom}
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {entries.sort((a, b) => a.sceneActe.localeCompare(b.sceneActe) || a.groupSlug.localeCompare(b.groupSlug)).map((entry, i) => (
+                    <div key={i} style={{ padding: 14, background: 'var(--bac-bg-tertiary)', borderRadius: 10, borderLeft: `3px solid ${(role as any).couleur}` }}>
+                      <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span className="bac-badge bac-badge-primary">Acte {entry.sceneActe}</span>
+                        <span style={{ fontSize: '0.875rem', color: 'var(--bac-text-secondary)' }}>{entry.sceneTitre}</span>
+                        <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>· {entry.groupSlug.charAt(0).toUpperCase() + entry.groupSlug.slice(1)}</span>
+                        {entry.actorName && (
+                          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: (role as any).couleur }}>({entry.actorName})</span>
+                        )}
                       </div>
-                    );
-                  })}
+                      <p style={{ fontWeight: 600, marginBottom: 8, fontSize: '0.9375rem' }}>{entry.question}</p>
+                      {Object.entries(entry.reponses).length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {Object.entries(entry.reponses).map(([variant, rep]) => (
+                            <div key={variant} style={{ fontSize: '0.875rem' }}>
+                              <span style={{ fontWeight: 600, color: 'var(--bac-text-muted)' }}>{variant}:</span>{' '}
+                              <span style={{ fontStyle: 'italic' }}>{rep as string}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             ))
           )}
-          {groupScenes.every(s => !(s.itw_json || []).length) && (
-            <div className="bac-empty"><p>Aucune interview configurée</p></div>
+        </div>
+      )}
+
+      {/* ── NOTES RÉAL TAB — admin only ── */}
+      {tab === 'notes' && isAdmin && (
+        <div className="bac-animate-in">
+          {allEntries.length === 0 ? (
+            <div className="bac-empty"><p>Aucune scène finalisée</p></div>
+          ) : (
+            allEntries.map(({ scene, groupSlug }) => {
+              const notes = (scene as any).notes_real_json || {};
+              const fields = [
+                { key: 'cadrage', label: '🎥 Cadrage' },
+                { key: 'rythme', label: '⏱️ Rythme' },
+                { key: 'silences', label: '🤫 Silences' },
+                { key: 'pieges', label: '⚠️ Pièges' },
+                { key: 'astuce', label: '💡 Astuce' },
+              ];
+              const hasNotes = fields.some(f => notes[f.key]);
+              return (
+                <div key={`${groupSlug}-${scene.id}`} className="bac-card" style={{ padding: 20, marginBottom: 16 }}>
+                  <h4 style={{ fontWeight: 700, marginBottom: 16 }}>
+                    <span className="bac-badge bac-badge-primary" style={{ marginRight: 8 }}>Acte {scene.acte}</span>
+                    {scene.titre}
+                    <span style={{ marginLeft: 8, fontSize: '0.75rem', color: 'var(--bac-text-muted)', fontWeight: 400 }}>{groupSlug}</span>
+                  </h4>
+                  {!hasNotes ? (
+                    <p style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>Aucune note de réalisation</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {fields.filter(f => notes[f.key]).map(f => (
+                        <div key={f.key} style={{ padding: '10px 14px', background: 'var(--bac-bg-tertiary)', borderRadius: 8, borderLeft: '3px solid var(--bac-primary)' }}>
+                          <div style={{ fontWeight: 600, fontSize: '0.8125rem', marginBottom: 4, color: 'var(--bac-text-secondary)' }}>{f.label}</div>
+                          <div style={{ fontSize: '0.9375rem' }}>{notes[f.key]}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       )}
+
+      {/* ── BONNES PRATIQUES TAB ── */}
+      {tab === 'pratiques' && (
+        <div className="bac-animate-in">
+          <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            {/* Role list */}
+            <div style={{ flex: '0 0 240px', minWidth: 180 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {ROLES_TECHNIQUES.flatMap(cat => cat.roles).map(role => (
+                      <button
+                        key={role.nom}
+                        onClick={() => setSelectedRole(selectedRole === role.nom ? null : role.nom)}
+                        style={{
+                          textAlign: 'left',
+                          padding: '10px 14px',
+                          borderRadius: 8,
+                          border: `2px solid ${selectedRole === role.nom ? 'var(--bac-primary)' : 'var(--bac-border)'}`,
+                          background: selectedRole === role.nom ? 'rgba(99,102,241,0.1)' : 'var(--bac-surface)',
+                          color: selectedRole === role.nom ? 'var(--bac-primary)' : 'var(--bac-text)',
+                          fontWeight: selectedRole === role.nom ? 700 : 400,
+                          cursor: 'pointer',
+                          fontSize: '0.9375rem',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {role.nom}
+                      </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Description panel */}
+            <div style={{ flex: 1, minWidth: 200 }}>
+              {selectedRole ? (() => {
+                const found = ROLES_TECHNIQUES.flatMap(c => c.roles).find(r => r.nom === selectedRole);
+                return found ? (
+                  <div className="bac-card" style={{ padding: 24 }}>
+                    <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 16 }}>{found.nom}</h3>
+                    <p style={{ lineHeight: 1.75, color: 'var(--bac-text)', fontSize: '0.9375rem', whiteSpace: 'pre-line' }}>{found.description}</p>
+                  </div>
+                ) : null;
+              })() : (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--bac-text-muted)', fontSize: '0.9rem' }}>
+                  Sélectionnez un rôle pour voir sa description
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Déconnexion at bottom */}
+      <div style={{ marginTop: 48, paddingTop: 24, borderTop: '1px solid var(--bac-border)', textAlign: 'center' }}>
+        <button
+          className="bac-btn bac-btn-ghost"
+          onClick={handleLogout}
+          style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}
+        >
+          Déconnexion
+        </button>
+      </div>
     </div>
   );
 }

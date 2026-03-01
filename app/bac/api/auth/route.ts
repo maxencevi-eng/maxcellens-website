@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: BAC_COOKIE_MAX_AGE,
-        path: '/bac',
+        path: '/',
       });
       return response;
     }
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: BAC_COOKIE_MAX_AGE,
-      path: '/bac',
+      path: '/',
     });
 
     return response;
@@ -66,7 +66,7 @@ export async function DELETE() {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 0,
-    path: '/bac',
+    path: '/',
   });
   return response;
 }

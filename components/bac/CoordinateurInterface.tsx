@@ -147,7 +147,7 @@ export default function CoordinateurInterface() {
 
   async function handleLogout() {
     await fetch('/bac/api/auth', { method: 'DELETE' });
-    window.location.href = '/bac/connexion?profil=coordinateur';
+    window.location.href = '/animation/coordinateur';
   }
 
   if (loading) {

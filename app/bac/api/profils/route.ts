@@ -71,13 +71,38 @@ export async function PATCH(request: NextRequest) {
   if (couleur) updates.couleur = couleur;
   if (nb_scenes_requis !== undefined) updates.nb_scenes_requis = nb_scenes_requis;
 
-  const { data, error } = await supabaseAdmin
+  // Try full update first; if it fails (columns may not exist yet), retry with core fields only
+  let result = await supabaseAdmin
     .from('bac_profils_acces')
     .update(updates)
     .eq('id', id)
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  if (result.error) {
+    const coreUpdates: any = {};
+    if (updates.mot_de_passe_hash) coreUpdates.mot_de_passe_hash = updates.mot_de_passe_hash;
+    if (updates.actif !== undefined) coreUpdates.actif = updates.actif;
+    if (updates.nom) coreUpdates.nom = updates.nom;
+    if (updates.couleur) coreUpdates.couleur = updates.couleur;
+
+    if (Object.keys(coreUpdates).length > 0) {
+      result = await supabaseAdmin
+        .from('bac_profils_acces')
+        .update(coreUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+    } else {
+      // Only optional columns → just return current row
+      result = await supabaseAdmin
+        .from('bac_profils_acces')
+        .select()
+        .eq('id', id)
+        .single() as any;
+    }
+  }
+
+  if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 });
+  return NextResponse.json(result.data);
 }
