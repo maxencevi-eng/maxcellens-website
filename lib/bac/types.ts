@@ -44,6 +44,15 @@ export interface BacVariant {
   emoji: string;
 }
 
+// ---- Thème ----
+export interface BacTheme {
+  id: string;
+  titre: string;
+  description: string;
+  actif: boolean;
+  created_at: string;
+}
+
 // ---- Révélation (formerly Thème) — scène d'intro scripted ----
 export interface BacRevelation {
   id: string;
