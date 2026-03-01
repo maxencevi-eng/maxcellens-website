@@ -60,8 +60,10 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const isAdmin = await requireBacAdmin();
-  if (!isAdmin) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  const auth = await getBacSession();
+  if (!auth || (auth.profil_type !== 'admin' && auth.profil_type !== 'technique')) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+  }
 
   const body = await request.json();
   const { id, ...updates } = body;

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { BacSession, BacRole, BacCasting, BacChoixScene, BacScene, ScriptBloc } from '../../lib/bac/types';
+import DeroulAnimation from './DeroulAnimation';
 
 type Phase = 'loading' | 'casting' | 'scenes' | 'personnalisation' | 'pret';
 
@@ -29,6 +30,17 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   const [validatedScenes, setValidatedScenes] = useState<Set<string>>(new Set());
   const [saisies, setSaisies] = useState<Record<string, any>>({});
   const [editingPretSceneId, setEditingPretSceneId] = useState<string | null>(null);
+  // Global script & déroulé
+  const [cameFromPret, setCameFromPret] = useState(false);
+  const [showDeroule, setShowDeroule] = useState(false);
+  const [showGlobalScript, setShowGlobalScript] = useState(false);
+  const [globalLoading, setGlobalLoading] = useState(false);
+  const [globalCasting, setGlobalCasting] = useState<BacCasting[]>([]);
+  const [globalChoix, setGlobalChoix] = useState<BacChoixScene[]>([]);
+  const [globalSaisies, setGlobalSaisies] = useState<Record<string, any>>({});
+  const [globalScenes, setGlobalScenes] = useState<BacScene[]>([]);
+  const [globalIntroScene, setGlobalIntroScene] = useState<BacScene | null>(null);
+  const [globalFinaleScene, setGlobalFinaleScene] = useState<BacScene | null>(null);
 
   // Load initial data
   useEffect(() => {
@@ -117,6 +129,113 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
     setTimeout(() => setToast(null), 3000);
   }
 
+  async function loadGlobalScript() {
+    setShowGlobalScript(true);
+    if (!session || globalScenes.length > 0) return;
+    setGlobalLoading(true);
+    setShowGlobalScript(true);
+    try {
+      const groups: string[] = session.groupes_actifs || [];
+      const [allScenesRes, allRolesRes, ...groupResults] = await Promise.all([
+        fetch('/bac/api/scenes').then(r => r.json()),
+        fetch('/bac/api/roles').then(r => r.json()),
+        ...groups.map(g =>
+          Promise.all([
+            fetch(`/bac/api/casting?session_id=${session.id}&groupe_slug=${g}`).then(r => r.json()),
+            fetch(`/bac/api/choix-scenes?session_id=${session.id}&groupe_slug=${g}`).then(r => r.json()),
+            fetch(`/bac/api/saisies?session_id=${session.id}&groupe_slug=${g}`).then(r => r.json()),
+          ])
+        ),
+        fetch(`/bac/api/saisies?session_id=${session.id}&groupe_slug=intro`).then(r => r.json()),
+        fetch(`/bac/api/saisies?session_id=${session.id}&groupe_slug=finale`).then(r => r.json()),
+      ]);
+
+      const introSaisies = groupResults[groups.length];
+      const finaleSaisies = groupResults[groups.length + 1];
+      const perGroupResults = groupResults.slice(0, groups.length);
+
+      const allCastArr: BacCasting[] = perGroupResults.flatMap(([cast]) => Array.isArray(cast) ? cast : []);
+      const allChoixArr: BacChoixScene[] = perGroupResults.flatMap(([, choix]) => Array.isArray(choix) ? choix : []);
+      const saisiesMap: Record<string, any> = {};
+      perGroupResults.forEach(([, , saisiesArr]) => {
+        if (Array.isArray(saisiesArr)) {
+          saisiesArr.forEach((s: any) => { saisiesMap[`${s.scene_id}_${s.bloc_index}`] = s; });
+        }
+      });
+      if (Array.isArray(introSaisies)) introSaisies.forEach((s: any) => { saisiesMap[`intro_${s.scene_id}_${s.bloc_index}`] = s; });
+      if (Array.isArray(finaleSaisies)) finaleSaisies.forEach((s: any) => { saisiesMap[`finale_${s.scene_id}_${s.bloc_index}`] = s; });
+
+      const allScenesArr: BacScene[] = Array.isArray(allScenesRes) ? allScenesRes : [];
+      setGlobalScenes(allScenesArr);
+      setGlobalCasting(allCastArr);
+      setGlobalChoix(allChoixArr);
+      setGlobalSaisies(saisiesMap);
+      if (session.scene_intro_id) {
+        setGlobalIntroScene(allScenesArr.find(s => s.id === session.scene_intro_id) || null);
+      }
+      if (session.scene_finale_id) {
+        setGlobalFinaleScene(allScenesArr.find(s => s.id === session.scene_finale_id) || null);
+      }
+      setRoles(Array.isArray(allRolesRes) ? allRolesRes.filter((r: BacRole) => r.actif) : roles);
+    } catch (e) { console.error(e); }
+    setGlobalLoading(false);
+  }
+
+  function renderGlobalScriptScene(scene: BacScene, groupSlug: string, prefix: string) {
+    return (
+      <div key={`${prefix}-${scene.id}`} className="bac-card" style={{ marginBottom: 16, padding: 20 }}>
+        <div style={{ marginBottom: 12 }}>
+          {prefix !== 'intro' && prefix !== 'finale' && (
+            <><span className="bac-badge bac-badge-primary" style={{ marginRight: 8 }}>Acte {scene.acte}</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--bac-text-muted)', marginRight: 8 }}>{groupSlug}</span></>
+          )}
+          <h4 style={{ fontWeight: 700, fontSize: '1rem', marginTop: 6 }}>{scene.titre}</h4>
+        </div>
+        {scene.champ_perso_label && (() => {
+          const key = prefix === 'intro' || prefix === 'finale'
+            ? `${prefix}_${scene.id}_-1`
+            : `${scene.id}_-1`;
+          const champSaisie = globalSaisies[key];
+          return champSaisie?.champ_perso_valeur ? (
+            <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--bac-bg-tertiary)', borderRadius: 8, borderLeft: '3px solid var(--bac-info)' }}>
+              <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{scene.champ_perso_label} :</span>{' '}
+              <span style={{ color: 'var(--bac-primary)', fontWeight: 700 }}>{champSaisie.champ_perso_valeur}</span>
+            </div>
+          ) : null;
+        })()}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {(scene.script_json || []).map((bloc: ScriptBloc, i: number) => {
+            if (bloc.type === 'didascalie') {
+              return <div key={i} className="bac-script-didascalie">{(bloc as any).texte}</div>;
+            }
+            const repBloc = bloc as any;
+            const role = roles.find(r => r.id === repBloc.role_id);
+            const saisieKey = prefix === 'intro' || prefix === 'finale'
+              ? `${prefix}_${scene.id}_${i}`
+              : `${scene.id}_${i}`;
+            const saisie = globalSaisies[saisieKey] || {};
+            const acteur = saisie.acteur_id ? globalCasting.find((c: BacCasting) => c.id === saisie.acteur_id) : null;
+            return (
+              <div key={i} className="bac-script-replique">
+                <div className="bac-script-role-name" style={{ color: role?.couleur || 'var(--bac-text)' }}>
+                  {role?.nom || repBloc.role_id || 'Rôle'}{acteur ? ` — ${acteur.prenom}` : ''}
+                </div>
+                <div className="bac-script-directive">{repBloc.directive}</div>
+                {saisie.texte_saisi ? (
+                  <div style={{ fontStyle: 'italic', color: 'var(--bac-primary)', padding: '8px 12px', background: 'var(--bac-bg-tertiary)', borderRadius: 6 }}>
+                    "{saisie.texte_saisi}"
+                  </div>
+                ) : (
+                  <div className="bac-script-exemple">"{repBloc.exemple}"</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   // ========== CASTING ==========
   function initMembers(count: number) {
     setMemberCount(count);
@@ -200,7 +319,12 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       const data = await res.json();
       setChoix(data);
       showToastMsg('Choix validés !');
-      setPhase('personnalisation');
+      if (cameFromPret) {
+        setCameFromPret(false);
+        setPhase('pret');
+      } else {
+        setPhase('personnalisation');
+      }
     }
   }
 
@@ -276,15 +400,13 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       {/* Header */}
       <div className="bac-mobile-header">
         <h1>🎬 {slug.charAt(0).toUpperCase() + slug.slice(1)}</h1>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {phase === 'pret' && (
-            <span className="bac-badge bac-badge-success" style={{ fontSize: '0.78rem' }}>✅ Votre groupe est prêt</span>
-          )}
-        </div>
+        {phase === 'pret' && (
+          <span className="bac-badge bac-badge-success" style={{ fontSize: '0.78rem', flexShrink: 0 }}>✅ Prêt</span>
+        )}
       </div>
 
       {/* Stepper */}
-      <div style={{ padding: '16px 20px 0' }}>
+      {phase !== 'pret' && <div style={{ padding: '16px 20px 0' }}>
         <div className="bac-stepper">
           <div className={`bac-step ${phase === 'casting' ? 'active' : 'completed'}`}>
             <div className="bac-step-number">{phase === 'casting' ? '1' : '✓'}</div>
@@ -301,7 +423,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
             <span>Perso</span>
           </div>
         </div>
-      </div>
+      </div>}
 
       <div className="bac-mobile-content">
         {/* ===== CASTING PHASE ===== */}
@@ -602,6 +724,71 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
         {/* ===== PRÊT ===== */}
         {phase === 'pret' && (
           <div className="bac-animate-in" style={{ paddingBottom: 40 }}>
+
+            {/* ── Carte d'actions globales ── */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(16,185,129,0.06))',
+              border: '1.5px solid rgba(34,197,94,0.28)',
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 24,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: '50%',
+                  background: 'rgba(34,197,94,0.15)',
+                  border: '2px solid rgba(34,197,94,0.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.375rem', flexShrink: 0,
+                }}>✅</div>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '1rem', color: '#16a34a' }}>Votre groupe est prêt !</div>
+                  <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginTop: 2 }}>
+                    Script validé · Casting confirmé
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {/* Déroulé en premier = info globale de l'animation */}
+                <button
+                  onClick={() => setShowDeroule(true)}
+                  style={{
+                    padding: '12px 10px',
+                    borderRadius: 12,
+                    border: '1.5px solid rgba(99,102,241,0.35)',
+                    background: 'rgba(99,102,241,0.08)',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    outline: 'none',
+                  }}
+                >
+                  <span style={{ fontSize: '1.375rem', lineHeight: 1 }}>🎞️</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.8125rem', color: 'var(--bac-primary)' }}>Déroulé</span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--bac-text-muted)', lineHeight: 1.2 }}>Programme du jour</span>
+                </button>
+                {/* Script global */}
+                <button
+                  onClick={() => loadGlobalScript()}
+                  style={{
+                    padding: '12px 10px',
+                    borderRadius: 12,
+                    border: '1.5px solid rgba(6,182,212,0.35)',
+                    background: 'rgba(6,182,212,0.08)',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    outline: 'none',
+                  }}
+                >
+                  <span style={{ fontSize: '1.375rem', lineHeight: 1 }}>🌍</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.8125rem', color: 'var(--bac-info)' }}>Script global</span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--bac-text-muted)', lineHeight: 1.2 }}>Tous les groupes</span>
+                </button>
+              </div>
+            </div>
+
             {/* Résumé casting */}
             {casting.length > 0 && (
               <div className="bac-card" style={{ marginBottom: 16, padding: 16 }}>
@@ -745,10 +932,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
             {/* Boutons modification */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
-              <button className="bac-btn bac-btn-secondary bac-btn-lg" style={{ width: '100%' }} onClick={() => setPhase('personnalisation')}>
-                ✏️ Modifier la personnalisation
-              </button>
-              <button className="bac-btn bac-btn-ghost bac-btn-lg" style={{ width: '100%' }} onClick={() => setPhase('scenes')}>
+              <button className="bac-btn bac-btn-ghost bac-btn-lg" style={{ width: '100%' }} onClick={() => { setCameFromPret(true); setPhase('scenes'); }}>
                 ← Modifier les scènes
               </button>
             </div>
@@ -757,6 +941,94 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       </div>
 
       {toast && <div className={`bac-toast ${toast.type === 'success' ? 'bac-toast-success' : 'bac-toast-error'}`}>{toast.msg}</div>}
+
+      {/* ── Déroulé modal ── */}
+      {showDeroule && (
+        <div className="bac-modal-overlay" onClick={() => setShowDeroule(false)}>
+          <div className="bac-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 680, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="bac-modal-header">
+              <h2 className="bac-h2">🎞️ Déroulé de l'animation</h2>
+              <button className="bac-btn bac-btn-ghost bac-btn-icon" onClick={() => setShowDeroule(false)}>✕</button>
+            </div>
+            <div className="bac-modal-body" style={{ paddingBottom: 24 }}>
+              <DeroulAnimation compact />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Script global modal ── */}
+      {showGlobalScript && (
+        <div className="bac-modal-overlay" onClick={() => setShowGlobalScript(false)}>
+          <div className="bac-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 740, maxHeight: '92vh', overflowY: 'auto' }}>
+            <div className="bac-modal-header" style={{ position: 'sticky', top: 0, background: 'var(--bac-surface)', zIndex: 1 }}>
+              <h2 className="bac-h2">🌍 Script global</h2>
+              <button className="bac-btn bac-btn-ghost bac-btn-icon" onClick={() => setShowGlobalScript(false)}>✕</button>
+            </div>
+            <div className="bac-modal-body" style={{ paddingBottom: 24 }}>
+              {globalLoading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><div className="bac-spinner" /></div>
+              ) : (
+                <>
+                  {/* INTRO */}
+                  {globalIntroScene && (
+                    <div style={{ marginBottom: 24 }}>
+                      <h3 style={{ fontWeight: 800, fontSize: '1.125rem', color: 'var(--bac-info)', marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid var(--bac-info)' }}>
+                        🎬 INTRO
+                      </h3>
+                      {renderGlobalScriptScene(globalIntroScene, 'intro', 'intro')}
+                    </div>
+                  )}
+
+                  {/* Scènes par acte */}
+                  {(() => {
+                    const validatedEntries = globalChoix
+                      .filter(c => c.statut === 'valide')
+                      .map(c => ({ choix: c, scene: globalScenes.find(s => s.id === c.scene_id) }))
+                      .filter(e => e.scene)
+                      .sort((a, b) => {
+                        const diff = Number(a.choix.acte) - Number(b.choix.acte);
+                        return diff !== 0 ? diff : a.choix.groupe_slug.localeCompare(b.choix.groupe_slug);
+                      });
+                    if (validatedEntries.length === 0) return (
+                      <div className="bac-empty"><p>Aucune scène validée</p></div>
+                    );
+                    let lastActe: string | null = null;
+                    return validatedEntries.map(({ choix, scene }) => {
+                      const showActe = String(choix.acte) !== lastActe;
+                      if (showActe) lastActe = String(choix.acte);
+                      return (
+                        <div key={`${choix.groupe_slug}-${scene!.id}`}>
+                          {showActe && (
+                            <h3 style={{ fontWeight: 800, fontSize: '1.125rem', marginTop: 16, marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid var(--bac-border)' }}>
+                              Acte {choix.acte}
+                            </h3>
+                          )}
+                          {renderGlobalScriptScene(scene!, choix.groupe_slug, `${choix.groupe_slug}`)}
+                        </div>
+                      );
+                    });
+                  })()}
+
+                  {/* FINALE */}
+                  {globalFinaleScene && (
+                    <div style={{ marginTop: 24 }}>
+                      <h3 style={{ fontWeight: 800, fontSize: '1.125rem', color: '#22c55e', marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid #22c55e' }}>
+                        🎤 FINALE
+                      </h3>
+                      {renderGlobalScriptScene(globalFinaleScene, 'finale', 'finale')}
+                    </div>
+                  )}
+
+                  {!globalIntroScene && !globalFinaleScene && globalChoix.filter(c => c.statut === 'valide').length === 0 && (
+                    <div className="bac-empty"><p>Le script global n'est pas encore disponible</p></div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

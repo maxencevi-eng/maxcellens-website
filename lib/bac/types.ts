@@ -138,6 +138,8 @@ export interface BacSession {
   statut: SessionStatut;
   snapshot_scenes_json: BacScene[];
   documents_generes_json: any | null;
+  scene_intro_id: string | null;
+  scene_finale_id: string | null;
   created_at: string;
   updated_at: string;
   // Joined
