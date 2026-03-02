@@ -85,6 +85,28 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
   const [editChampPersos, setEditChampPersos] = useState<Record<number, string>>({});
   // Intro / Finale scene editing
   const [editingSpecial, setEditingSpecial] = useState<'intro' | 'finale' | null>(null);
+  // Collapsed scenes (persisted in localStorage)
+  const [collapsedScenes, setCollapsedScenes] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const stored = localStorage.getItem('bac-collapsed-scenes');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
+  function toggleCollapsed(key: string) {
+    setCollapsedScenes(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      try { localStorage.setItem('bac-collapsed-scenes', JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }
+  function handleTermine(key: string, elementId: string) {
+    toggleCollapsed(key);
+    setTimeout(() => {
+      document.getElementById(elementId)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }
 
   useEffect(() => { loadData(); }, []);
 
@@ -340,6 +362,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     const entity = getSpecialEntity(type);
     const isEditing = editingSpecial === type;
     const groupSlug = type;
+    const isCollapsed = !isEditing && collapsedScenes.has(`special-${type}`);
 
     const sceneSaisies = entity ? getSceneSaisies(groupSlug, entity.id) : [];
     const scriptJson = (entity?.script_json || []) as any[];
@@ -436,40 +459,62 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
           </div>
         ) : entity ? (
           /* ── Read mode ── */
-          <div className="bac-card" style={{ padding: 20, borderLeft: `4px solid ${color}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+          <div id={`scene-special-${type}`} className="bac-card" style={{ padding: 20, borderLeft: `4px solid ${color}`, opacity: isCollapsed ? 0.6 : 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isCollapsed ? 0 : 8 }}>
               <div>
                 <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>{entity.titre}</h3>
-                <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {entity.duree_min}–{entity.duree_max} min</span>
+                {!isCollapsed && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {entity.duree_min}–{entity.duree_max} min</span>}
               </div>
-              <button
-                className="bac-btn bac-btn-ghost"
-                style={{ padding: '4px 10px', fontSize: '0.8125rem', flexShrink: 0, marginLeft: 12 }}
-                onClick={() => { setEditingSceneKey(null); startEditingSpecial(type); }}
-              >
-                ✏️ Modifier
-              </button>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0, marginLeft: 12 }}>
+                <button
+                  className="bac-btn bac-btn-ghost"
+                  style={{ padding: '4px 10px', fontSize: '0.8125rem', color: isCollapsed ? 'var(--bac-text-muted)' : 'var(--bac-success, #22c55e)' }}
+                  onClick={() => toggleCollapsed(`special-${type}`)}
+                >
+                  {isCollapsed ? '↩️ Afficher' : '✓ Scène terminée'}
+                </button>
+                <button
+                  className="bac-btn bac-btn-ghost"
+                  style={{ padding: '4px 10px', fontSize: '0.8125rem', flexShrink: 0 }}
+                  onClick={() => { setEditingSceneKey(null); startEditingSpecial(type); }}
+                >
+                  ✏️ Modifier
+                </button>
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {scriptJson.map((bloc: any, i: number) => {
-                if (bloc.type === 'didascalie') {
-                  return <div key={i} className="bac-script-didascalie">{bloc.texte}</div>;
-                }
-                const role = roles.find(r => r.id === bloc.role_id);
-                const roleName = role?.nom || bloc.role_id || 'Rôle';
-                const saisie = sceneSaisies.find((s: BacSaisie) => s.bloc_index === i);
-                const acteur = saisie?.acteur_id ? allCasting.find(c => c.id === saisie.acteur_id) : null;
-                return (
-                  <div key={i} className="bac-script-replique">
-                    <div className="bac-script-role-name" style={{ color: role?.couleur || color }}>
-                      {roleName} {acteur ? `(${acteur.prenom})` : ''}
-                    </div>
-                    <div className="bac-script-directive">{bloc.directive}</div>
-                    <div className="bac-script-exemple">"{bloc.exemple}"</div>
-                  </div>
-                );
-              })}
-            </div>
+            {!isCollapsed && (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {scriptJson.map((bloc: any, i: number) => {
+                    if (bloc.type === 'didascalie') {
+                      return <div key={i} className="bac-script-didascalie">{bloc.texte}</div>;
+                    }
+                    const role = roles.find(r => r.id === bloc.role_id);
+                    const roleName = role?.nom || bloc.role_id || 'Rôle';
+                    const saisie = sceneSaisies.find((s: BacSaisie) => s.bloc_index === i);
+                    const acteur = saisie?.acteur_id ? allCasting.find(c => c.id === saisie.acteur_id) : null;
+                    return (
+                      <div key={i} className="bac-script-replique">
+                        <div className="bac-script-role-name" style={{ color: role?.couleur || color }}>
+                          {roleName} {acteur ? `(${acteur.prenom})` : ''}
+                        </div>
+                        <div className="bac-script-directive">{bloc.directive}</div>
+                        <div className="bac-script-exemple">"{bloc.exemple}"</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+                  <button
+                    className="bac-btn bac-btn-ghost"
+                    style={{ padding: '6px 20px', fontSize: '0.875rem', color: 'var(--bac-success, #22c55e)' }}
+                    onClick={() => handleTermine(`special-${type}`, `scene-special-${type}`)}
+                  >
+                    ✓ Scène terminée
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           /* ── Not assigned ── */
@@ -580,6 +625,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
               if (showActeHeader) lastActe = scene.acte;
               const sceneKey = `${groupSlug}-${scene.id}`;
               const isEditing = editingSceneKey === sceneKey;
+              const isSceneCollapsed = !isEditing && collapsedScenes.has(sceneKey);
               const sceneSaisies = getSceneSaisies(groupSlug, scene.id);
               const scriptJson = (scene.script_json || []) as any[];
               return (
@@ -589,9 +635,9 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                       Acte {scene.acte}
                     </h2>
                   )}
-                  <div className="bac-card" style={{ marginBottom: 16, padding: 20 }}>
+                  <div id={`scene-${sceneKey}`} className="bac-card" style={{ marginBottom: 16, padding: 20, opacity: isSceneCollapsed ? 0.6 : 1 }}>
                     {/* Card header */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isSceneCollapsed ? 0 : 8 }}>
                       <div>
                         <span className="bac-badge bac-badge-primary">Acte {scene.acte}</span>
                         {' '}
@@ -601,17 +647,26 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                         <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginTop: 4 }}>{scene.titre}</h3>
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, marginLeft: 12 }}>
-                        <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', whiteSpace: 'nowrap' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>
+                        {!isSceneCollapsed && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', whiteSpace: 'nowrap' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>}
                         {isEditing ? (
                           <button className="bac-btn bac-btn-primary" style={{ padding: '4px 10px', fontSize: '0.8125rem' }} onClick={() => saveSceneEdit(groupSlug, scene)}>✓ Enregistrer</button>
                         ) : (
-                          <button className="bac-btn bac-btn-ghost" style={{ padding: '4px 10px', fontSize: '0.8125rem' }} onClick={() => { setEditingSpecial(null); startEditing(groupSlug, scene); }}>✏️ Modifier</button>
+                          <>
+                            <button
+                              className="bac-btn bac-btn-ghost"
+                              style={{ padding: '4px 10px', fontSize: '0.8125rem', color: isSceneCollapsed ? 'var(--bac-text-muted)' : 'var(--bac-success, #22c55e)' }}
+                              onClick={() => toggleCollapsed(sceneKey)}
+                            >
+                              {isSceneCollapsed ? '↩️ Afficher' : '✓ Scène terminée'}
+                            </button>
+                            <button className="bac-btn bac-btn-ghost" style={{ padding: '4px 10px', fontSize: '0.8125rem' }} onClick={() => { setEditingSpecial(null); startEditing(groupSlug, scene); }}>✏️ Modifier</button>
+                          </>
                         )}
                       </div>
                     </div>
 
                     {/* Intervenants (read mode only) */}
-                    {!isEditing && (() => {
+                    {!isEditing && !isSceneCollapsed && (() => {
                       const intervenants = getSceneIntervenants(groupSlug, scene);
                       return intervenants ? (
                         <div style={{ marginBottom: 12, fontSize: '0.875rem', color: 'var(--bac-text-secondary)', fontStyle: 'italic' }}>
@@ -621,7 +676,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                     })()}
 
                     {/* Script blocs */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {!isSceneCollapsed && <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {scriptJson.map((bloc: any, i: number) => {
                         if (bloc.type === 'didascalie') {
                           return <div key={i} className="bac-script-didascalie">{bloc.texte}</div>;
@@ -679,7 +734,18 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                           </div>
                         );
                       })}
-                    </div>
+                    </div>}
+                    {!isSceneCollapsed && !isEditing && (
+                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+                        <button
+                          className="bac-btn bac-btn-ghost"
+                          style={{ padding: '6px 20px', fontSize: '0.875rem', color: 'var(--bac-success, #22c55e)' }}
+                          onClick={() => handleTermine(sceneKey, `scene-${sceneKey}`)}
+                        >
+                          ✓ Scène terminée
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </Fragment>
               );
