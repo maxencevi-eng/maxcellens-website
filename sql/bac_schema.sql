@@ -68,7 +68,25 @@ CREATE TABLE IF NOT EXISTS bac_revelations (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 6. Scènes
+-- 6. Dénouements (scènes de finale scriptées)
+CREATE TABLE IF NOT EXISTS bac_denouements (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  titre TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  ton_principal TEXT DEFAULT '',
+  ton_secondaire TEXT DEFAULT '',
+  duree_min INTEGER DEFAULT 1,
+  duree_max INTEGER DEFAULT 3,
+  fil_rouge TEXT DEFAULT '',
+  script_json JSONB DEFAULT '[]'::jsonb,
+  itw_json JSONB DEFAULT '[]'::jsonb,
+  notes_real_json JSONB DEFAULT '{}'::jsonb,
+  actif BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 7. Scènes
 CREATE TABLE IF NOT EXISTS bac_scenes (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   titre TEXT NOT NULL,
@@ -177,6 +195,7 @@ ALTER TABLE bac_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bac_variants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bac_themes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bac_revelations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bac_denouements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bac_scenes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bac_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bac_casting_groupes ENABLE ROW LEVEL SECURITY;
@@ -190,6 +209,7 @@ CREATE POLICY "anon_read_roles" ON bac_roles FOR SELECT USING (true);
 CREATE POLICY "anon_read_variants" ON bac_variants FOR SELECT USING (true);
 CREATE POLICY "anon_read_themes" ON bac_themes FOR SELECT USING (true);
 CREATE POLICY "anon_read_revelations" ON bac_revelations FOR SELECT USING (true);
+CREATE POLICY "anon_read_denouements" ON bac_denouements FOR SELECT USING (true);
 CREATE POLICY "anon_read_scenes" ON bac_scenes FOR SELECT USING (true);
 CREATE POLICY "anon_read_sessions" ON bac_sessions FOR SELECT USING (true);
 CREATE POLICY "anon_read_casting" ON bac_casting_groupes FOR SELECT USING (true);
