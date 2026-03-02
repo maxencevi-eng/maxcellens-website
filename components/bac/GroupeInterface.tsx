@@ -30,6 +30,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   const [validatedScenes, setValidatedScenes] = useState<Set<string>>(new Set());
   const [saisies, setSaisies] = useState<Record<string, any>>({});
   const [editingPretSceneId, setEditingPretSceneId] = useState<string | null>(null);
+  const [phaseBeforeCasting, setPhaseBeforeCasting] = useState<Phase | null>(null);
   // Global script & déroulé
   const [cameFromPret, setCameFromPret] = useState(false);
   const [showDeroule, setShowDeroule] = useState(false);
@@ -266,9 +267,25 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
     if (res.ok) {
       const data = await res.json();
       setCasting(data);
-      showToastMsg('Casting enregistré !');
-      setPhase(nbScenesRequis === 0 ? 'personnalisation' : 'scenes');
+      showToastMsg('Casting mis à jour !');
+      if (phaseBeforeCasting) {
+        setPhase(phaseBeforeCasting);
+        setPhaseBeforeCasting(null);
+      } else {
+        setPhase(nbScenesRequis === 0 ? 'personnalisation' : 'scenes');
+      }
     }
+  }
+
+  function handleEditCasting(fromPhase: Phase) {
+    setPhaseBeforeCasting(fromPhase);
+    setMembers(casting.map(c => ({
+      prenom: c.prenom,
+      role_id: c.role_id || '',
+      variant_id: c.variant_id || '',
+    })));
+    setMemberCount(casting.length);
+    setPhase('casting');
   }
 
   // ========== SCENE CHOICE ==========
@@ -497,15 +514,24 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                     );
                   })}
                 </div>
-                <div className="bac-mobile-bottom-bar">
+                <div className="bac-mobile-bottom-bar" style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'transparent', boxShadow: 'none', borderTop: 'none' }}>
                   <button
                     className="bac-btn bac-btn-primary bac-btn-lg"
                     style={{ width: '100%' }}
                     onClick={submitCasting}
                     disabled={members.some(m => !m.prenom)}
                   >
-                    C'est parti ! 🎬
+                    {phaseBeforeCasting ? '✅ Valider le nouveau casting' : 'C\'est parti ! 🎬'}
                   </button>
+                  {phaseBeforeCasting && (
+                    <button
+                      className="bac-btn bac-btn-ghost bac-btn-sm"
+                      style={{ width: '100%' }}
+                      onClick={() => { setPhase(phaseBeforeCasting); setPhaseBeforeCasting(null); }}
+                    >
+                      ← Revenir {phaseBeforeCasting === 'scenes' ? 'au choix des scènes' : phaseBeforeCasting === 'personnalisation' ? 'à la personnalisation' : 'à l\'étape précédente'}
+                    </button>
+                  )}
                 </div>
               </>
             )}
@@ -587,8 +613,8 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
               </div>
             )}
 
-            {choix.length >= nbScenesRequis && nbScenesRequis > 0 && (
-              <div className="bac-mobile-bottom-bar" style={{ backdropFilter: 'blur(12px)', background: 'rgba(15,15,26,0.95)', borderTop: '1px solid rgba(99,102,241,0.3)', padding: '14px 20px' }}>
+            <div className="bac-mobile-bottom-bar" style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'transparent', boxShadow: 'none', borderTop: 'none' }}>
+              {choix.length >= nbScenesRequis && nbScenesRequis > 0 && (
                 <button
                   onClick={validateChoices}
                   style={{
@@ -607,8 +633,11 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                 >
                   ✅ Valider les {nbScenesRequis} scène{nbScenesRequis > 1 ? 's' : ''}
                 </button>
-              </div>
-            )}
+              )}
+              <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ width: '100%' }} onClick={() => handleEditCasting('scenes')}>
+                👥 Modifier Casting
+              </button>
+            </div>
           </div>
         )}
 
@@ -709,6 +738,9 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                 onClick={() => validateScene(currentScene.id)}
               >
                 {validatedScenes.has(currentScene.id) ? '✓ Scène validée' : 'Valider cette scène'}
+              </button>
+              <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ width: '100%' }} onClick={() => handleEditCasting('personnalisation')}>
+                👥 Modifier Casting
               </button>
               <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ width: '100%' }} onClick={() => setPhase('scenes')}>
                 ← Modifier les scènes
@@ -928,6 +960,9 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
             {/* Boutons modification */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24 }}>
+              <button className="bac-btn bac-btn-ghost bac-btn-lg" style={{ width: '100%' }} onClick={() => handleEditCasting('pret')}>
+                👥 Modifier Casting
+              </button>
               <button className="bac-btn bac-btn-ghost bac-btn-lg" style={{ width: '100%' }} onClick={() => { setCameFromPret(true); setPhase('scenes'); }}>
                 ← Modifier les scènes
               </button>

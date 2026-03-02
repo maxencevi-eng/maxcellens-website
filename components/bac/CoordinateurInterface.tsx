@@ -207,20 +207,20 @@ export default function CoordinateurInterface({ isAdmin = false, embedded = fals
           <div className="bac-card" style={{ padding: 16, marginBottom: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
               <div>
-                <div style={{ fontSize: '2rem', fontWeight: 800 }}>{groups.filter(g => g.phase === 'pret').length}</div>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)' }}>Prêts</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--bac-primary)' }}>{groups.filter(g => g.phase === 'personnalisation').length}</div>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)' }}>En perso</div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--bac-text-muted)' }}>{groups.filter(g => g.phase === 'attente').length}</div>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)' }}>Attente</div>
               </div>
               <div>
                 <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--bac-warning)' }}>{groups.filter(g => g.phase === 'scenes' || g.phase === 'casting').length}</div>
                 <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)' }}>En cours</div>
               </div>
               <div>
-                <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--bac-text-muted)' }}>{groups.filter(g => g.phase === 'attente').length}</div>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)' }}>Attente</div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--bac-primary)' }}>{groups.filter(g => g.phase === 'personnalisation').length}</div>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)' }}>En perso</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '2rem', fontWeight: 800 }}>{groups.filter(g => g.phase === 'pret').length}</div>
+                <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)' }}>Prêts</div>
               </div>
             </div>
           </div>
@@ -250,7 +250,16 @@ export default function CoordinateurInterface({ isAdmin = false, embedded = fals
                         <span style={{ fontSize: '0.8125rem', color: info.color, fontWeight: 600 }}>{info.label}</span>
                       </div>
                     </div>
-                    <span style={{ fontSize: '1.25rem', transform: expanded ? 'rotate(180deg)' : '', transition: 'transform 0.2s' }}>▼</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <a
+                        href={`/bac/${group.slug}`}
+                        className="bac-btn bac-btn-secondary bac-btn-sm"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        👥 Gérer
+                      </a>
+                      <span style={{ fontSize: '1.25rem', transform: expanded ? 'rotate(180deg)' : '', transition: 'transform 0.2s' }}>▼</span>
+                    </div>
                   </div>
 
                   {expanded && (

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS bac_profils_acces (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   slug TEXT UNIQUE NOT NULL,
   nom TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('admin', 'coordinateur', 'technique', 'groupe-acteur')),
+  type TEXT NOT NULL CHECK (type IN ('admin', 'technique', 'groupe-acteur')),
   couleur TEXT DEFAULT '#6366f1',
   mot_de_passe_hash TEXT,
   actif BOOLEAN DEFAULT true,
@@ -19,7 +19,6 @@ CREATE TABLE IF NOT EXISTS bac_profils_acces (
 -- Insert les profils fixes
 INSERT INTO bac_profils_acces (slug, nom, type, couleur, actif, ordre_affichage)
 VALUES
-  ('coordinateur', 'Coordinateur', 'coordinateur', '#8b5cf6', true, 1),
   ('technique', 'Équipe technique', 'technique', '#06b6d4', true, 2),
   ('managers', 'Managers', 'groupe-acteur', '#f59e0b', true, 10),
   ('assistants', 'Assistants', 'groupe-acteur', '#10b981', true, 11),
