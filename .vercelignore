@@ -1,0 +1,2 @@
+# Ignore proxy during Vercel builds while the DXB incident persists
+/proxy.ts
