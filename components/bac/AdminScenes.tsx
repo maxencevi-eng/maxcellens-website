@@ -386,24 +386,6 @@ function SceneEditor({ scene, groupes, roles, onClose, onToast }: {
             <textarea className="bac-input bac-textarea" value={form.fil_rouge} onChange={e => update('fil_rouge', e.target.value)} placeholder="Comment cette scène s'accroche à la révélation..." />
           </div>
 
-          <div className="bac-divider" />
-
-          <h3 className="bac-h3" style={{ marginBottom: 16 }}>Champ de personnalisation (optionnel)</h3>
-          <div className="bac-form-row">
-            <div className="bac-form-group">
-              <label className="bac-label">Label</label>
-              <input className="bac-input" value={form.champ_perso_label || ''} onChange={e => update('champ_perso_label', e.target.value || null)} placeholder="ex: Un outil interne à citer" />
-            </div>
-            <div className="bac-form-group">
-              <label className="bac-label">Exemple</label>
-              <input className="bac-input" value={form.champ_perso_exemple || ''} onChange={e => update('champ_perso_exemple', e.target.value || null)} placeholder="ex: Teams, Notion, Monday…" />
-            </div>
-            <div className="bac-form-group">
-              <label className="bac-label">Réplique cible (n°)</label>
-              <input type="number" className="bac-input" value={form.champ_perso_replique_cible || ''} onChange={e => update('champ_perso_replique_cible', parseInt(e.target.value) || null)} min={0} />
-            </div>
-          </div>
-
           <div className="bac-form-group" style={{ marginTop: 20, display: 'flex', gap: 12 }}>
             <label className="bac-radio-label" style={{ cursor: 'pointer' }}>
               <input type="checkbox" checked={form.actif} onChange={e => update('actif', e.target.checked)} />
@@ -477,10 +459,6 @@ function SceneEditor({ scene, groupes, roles, onClose, onToast }: {
                         <label className="bac-label">Didascalie de réplique (opt.)</label>
                         <input className="bac-input" value={(block as any).didascalie || ''} onChange={e => updateBlock(i, 'didascalie', e.target.value)} placeholder="ex: en chuchotant" />
                       </div>
-                      <label className="bac-radio-label" style={{ cursor: 'pointer', maxWidth: 280 }}>
-                        <input type="checkbox" checked={(block as any).utilise_champ_perso || false} onChange={e => updateBlock(i, 'utilise_champ_perso', e.target.checked)} />
-                        Utilise [ÉLÉMENT PERSONNALISÉ]
-                      </label>
                     </>
                   )}
                 </div>

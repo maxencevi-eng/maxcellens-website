@@ -103,7 +103,7 @@ export default function AdminProfils() {
   if (showPrintView) {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     // hide admin rows and specific profiles that shouldn\'t be printed
-    const activeProfils = profils.filter(p => p.actif && p.type !== 'admin' && p.slug !== 'coordinateur');
+    const activeProfils = profils.filter(p => p.actif && p.type !== 'admin');
 
     function handlePrintCard(slug: string) {
       const inner = document.querySelector(`[data-card-slug="${slug}"] .bac-jour-j-card`);

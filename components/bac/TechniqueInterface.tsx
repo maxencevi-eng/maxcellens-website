@@ -80,7 +80,6 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
   const [loading, setLoading] = useState(true);
   // Regular scene editing
   const [editingSceneKey, setEditingSceneKey] = useState<string | null>(null);
-  const [editChampPerso, setEditChampPerso] = useState('');
   const [editActors, setEditActors] = useState<Record<number, string>>({});
   const [editTextes, setEditTextes] = useState<Record<number, string>>({});
   // Intro / Finale scene editing
@@ -246,8 +245,6 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
 
   function startEditing(groupSlug: string, scene: BacScene) {
     const sceneSaisies = getSceneSaisies(groupSlug, scene.id);
-    const champSaisie = sceneSaisies.find(s => s.bloc_index === -1);
-    setEditChampPerso(champSaisie?.champ_perso_valeur || '');
     const actors: Record<number, string> = {};
     const textes: Record<number, string> = {};
     sceneSaisies.forEach(s => {
@@ -270,10 +267,6 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     const sceneSaisies = getSceneSaisies(groupSlug, scene.id);
     const scriptJson = (scene.script_json || []) as any[];
     const saisies: any[] = [];
-    if (scene.champ_perso_label) {
-      const existing = sceneSaisies.find(s => s.bloc_index === -1);
-      saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: scene.id, bloc_index: -1, texte_saisi: existing?.texte_saisi || '', acteur_id: null, champ_perso_valeur: editChampPerso || null });
-    }
     scriptJson.forEach((bloc: any, i: number) => {
       if (bloc.type !== 'replique') return;
       saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: scene.id, bloc_index: i, texte_saisi: editTextes[i] || '', acteur_id: editActors[i] || null, champ_perso_valeur: null });
@@ -597,24 +590,6 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                         </div>
                       ) : null;
                     })()}
-
-                    {/* Champ perso */}
-                    {scene.champ_perso_label && (
-                      isEditing ? (
-                        <div className="bac-form-group" style={{ marginBottom: 16 }}>
-                          <label className="bac-label">{scene.champ_perso_label}</label>
-                          <input className="bac-input" value={editChampPerso} onChange={e => setEditChampPerso(e.target.value)} placeholder={scene.champ_perso_label} />
-                        </div>
-                      ) : (() => {
-                        const champSaisie = sceneSaisies.find(s => s.bloc_index === -1);
-                        return champSaisie?.champ_perso_valeur ? (
-                          <div style={{ marginBottom: 16, padding: 12, background: 'var(--bac-bg-tertiary)', borderRadius: 8, borderLeft: '3px solid var(--bac-info)' }}>
-                            <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{scene.champ_perso_label}:</span>{' '}
-                            <span style={{ color: 'var(--bac-primary)', fontWeight: 700 }}>{champSaisie.champ_perso_valeur}</span>
-                          </div>
-                        ) : null;
-                      })()
-                    )}
 
                     {/* Script blocs */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

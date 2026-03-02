@@ -188,18 +188,6 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
           )}
           <h4 style={{ fontWeight: 700, fontSize: '1rem', marginTop: 6 }}>{scene.titre}</h4>
         </div>
-        {scene.champ_perso_label && (() => {
-          const key = prefix === 'intro' || prefix === 'finale'
-            ? `${prefix}_${scene.id}_-1`
-            : `${scene.id}_-1`;
-          const champSaisie = globalSaisies[key];
-          return champSaisie?.champ_perso_valeur ? (
-            <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--bac-bg-tertiary)', borderRadius: 8, borderLeft: '3px solid var(--bac-info)' }}>
-              <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{scene.champ_perso_label} :</span>{' '}
-              <span style={{ color: 'var(--bac-primary)', fontWeight: 700 }}>{champSaisie.champ_perso_valeur}</span>
-            </div>
-          ) : null;
-        })()}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {(scene.script_json || []).map((bloc: ScriptBloc, i: number) => {
             if (bloc.type === 'didascalie') {
@@ -597,11 +585,6 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                     <div style={{ marginTop: 12 }}>
                       <strong>Durée :</strong> {detailScene.duree_min}-{detailScene.duree_max} min • <strong>Difficulté</strong> {detailScene.difficulte}
                     </div>
-                    {detailScene.champ_perso_label && (
-                      <div style={{ marginTop: 12 }}>
-                        <strong>Champ perso :</strong> {detailScene.champ_perso_label} — ex: {detailScene.champ_perso_exemple}
-                      </div>
-                    )}
                   </div>
                   <div className="bac-modal-footer">
                     <button className="bac-btn bac-btn-secondary" onClick={() => { setShowSceneDetail(false); setDetailScene(null); }}>Annuler</button>
@@ -655,23 +638,6 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
               <h3 style={{ fontWeight: 700, fontSize: '1.125rem' }}>{currentScene.titre}</h3>
               <span className="bac-badge bac-badge-primary" style={{ marginTop: 4 }}>Acte {currentScene.acte}</span>
             </div>
-
-            {/* Champ perso */}
-            {currentScene.champ_perso_label && (
-              <div className="bac-card" style={{ marginBottom: 16, padding: 16, borderLeft: '4px solid var(--bac-info)' }}>
-                <label className="bac-label">{currentScene.champ_perso_label}</label>
-                <p className="bac-form-help" style={{ marginBottom: 8 }}>
-                  ex: {currentScene.champ_perso_exemple}
-                </p>
-                <input
-                  className="bac-input"
-                  placeholder={currentScene.champ_perso_exemple || 'Votre élément personnalisé'}
-                  value={saisies[getSaisieKey(currentScene.id, -1)]?.champ_perso_valeur || ''}
-                  onChange={e => saveSaisie(currentScene.id, -1, '', undefined, e.target.value)}
-                  style={{ fontSize: '1rem' }}
-                />
-              </div>
-            )}
 
             {/* Script blocks */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 160 }}>
@@ -867,28 +833,6 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                           )}
                         </div>
                       </div>
-
-                      {/* Champ perso */}
-                      {scene.champ_perso_label && (
-                        isEditing ? (
-                          <div className="bac-card" style={{ marginBottom: 12, padding: 12, borderLeft: '4px solid var(--bac-info)' }}>
-                            <label className="bac-label">{scene.champ_perso_label}</label>
-                            <p className="bac-form-help" style={{ marginBottom: 6 }}>ex: {scene.champ_perso_exemple}</p>
-                            <input
-                              className="bac-input"
-                              placeholder={scene.champ_perso_exemple || ''}
-                              value={champSaisie?.champ_perso_valeur || ''}
-                              onChange={e => saveSaisie(scene.id, -1, '', undefined, e.target.value)}
-                              style={{ fontSize: '1rem' }}
-                            />
-                          </div>
-                        ) : champSaisie?.champ_perso_valeur ? (
-                          <div style={{ marginBottom: 12, padding: '8px 12px', background: 'var(--bac-bg-tertiary)', borderRadius: 8, borderLeft: '3px solid var(--bac-info)' }}>
-                            <span style={{ fontWeight: 600, fontSize: '0.8125rem' }}>{scene.champ_perso_label} :</span>{' '}
-                            <span style={{ color: 'var(--bac-primary)', fontWeight: 700 }}>{champSaisie.champ_perso_valeur}</span>
-                          </div>
-                        ) : null
-                      )}
 
                       {/* Script blocs */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
