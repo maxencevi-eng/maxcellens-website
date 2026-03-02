@@ -471,7 +471,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                   style={{ padding: '4px 10px', fontSize: '0.8125rem', color: isCollapsed ? 'var(--bac-text-muted)' : 'var(--bac-success, #22c55e)' }}
                   onClick={() => toggleCollapsed(`special-${type}`)}
                 >
-                  {isCollapsed ? '↩️ Afficher' : '✓ Scène terminée'}
+                  {isCollapsed ? '↩️ Afficher la scène' : '✓ Scène terminée'}
                 </button>
                 <button
                   className="bac-btn bac-btn-ghost"
