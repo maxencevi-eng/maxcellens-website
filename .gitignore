@@ -21,3 +21,7 @@ yarn-error.log*
 .DS_Store
 # Editor
 .vscode/
+# TypeScript build cache (artifact, not needed in git)
+tsconfig.tsbuildinfo
+# Claude Code settings
+.claude/
