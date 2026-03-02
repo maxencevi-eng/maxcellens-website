@@ -12,7 +12,10 @@
       "Bash(grep -o \"exercice[^\\\\\\\\]*\" /c/Users/Windows/.claude/projects/c--Users-Windows-Documents-CREATION-WEB-Maxcellens-Website/eea9ee05-f9bc-4b4a-a76c-5fafc9260887/tool-results/barircvbb.txt)",
       "Bash(grep -l \"script_json.*audit\\\\|audit.*script_json\\\\|Révélation.*script_json\\\\|script.*révélation\" /c/Users/Windows/.claude/projects/c--Users-Windows-Documents-CREATION-WEB-Maxcellens-Website/eea9ee05-f9bc-4b4a-a76c-5fafc9260887/tool-results/*.txt)",
       "Bash(grep -l \"Coordinateur.*audit\\\\|audit.*Coordinateur\\\\|bonjour.*audit\\\\|48 heures.*script\" /c/Users/Windows/.claude/projects/c--Users-Windows-Documents-CREATION-WEB-Maxcellens-Website/eea9ee05-f9bc-4b4a-a76c-5fafc9260887/tool-results/*.txt)",
-      "Bash(grep -l \"48 heures.*didascalie\\\\|didascalie.*48 heures\\\\|audit.*didascalie\\\\|didascalie.*audit\" /c/Users/Windows/.claude/projects/c--Users-Windows-Documents-CREATION-WEB-Maxcellens-Website/eea9ee05-f9bc-4b4a-a76c-5fafc9260887/tool-results/*.txt)"
+      "Bash(grep -l \"48 heures.*didascalie\\\\|didascalie.*48 heures\\\\|audit.*didascalie\\\\|didascalie.*audit\" /c/Users/Windows/.claude/projects/c--Users-Windows-Documents-CREATION-WEB-Maxcellens-Website/eea9ee05-f9bc-4b4a-a76c-5fafc9260887/tool-results/*.txt)",
+      "Bash(xargs grep -l \"Répartition\\\\|Tournage\\\\|tournage\\\\|managers\\\\|script global\")",
+      "Bash(xargs grep -l \"Répartition\\\\|tournage\\\\|managers\\\\|script.global\\\\|Attribuer acteurs\\\\|Attribuer\")",
+      "Bash(npm install qrcode.react --legacy-peer-deps)"
     ]
   }
 }

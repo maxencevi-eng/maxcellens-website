@@ -56,7 +56,7 @@ const nextConfig = {
   },
   reactCompiler: false,
   experimental: {
-    optimizePackageImports: ['lucide-react', 'framer-motion'],
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'qrcode.react'],
   },
   // Stub @tiptap/react (projet migré sur Lexical) pour éviter erreurs HMR / chunks fantômes
   // Turbopack n'accepte pas les chemins absolus Windows → chemins relatifs au projet

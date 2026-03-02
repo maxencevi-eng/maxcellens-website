@@ -12,7 +12,7 @@ interface GroupeStatusData {
   phase: 'attente' | 'casting' | 'scenes' | 'personnalisation' | 'pret';
 }
 
-export default function CoordinateurInterface({ isAdmin = false }: { isAdmin?: boolean }) {
+export default function CoordinateurInterface({ isAdmin = false, embedded = false }: { isAdmin?: boolean; embedded?: boolean }) {
   const [session, setSession] = useState<BacSession | null>(null);
   const [sessions, setSessions] = useState<BacSession[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState('');
@@ -146,28 +146,30 @@ export default function CoordinateurInterface({ isAdmin = false }: { isAdmin?: b
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', ...(embedded ? { padding: 40 } : { minHeight: '100vh' }) }}>
         <div className="bac-spinner" />
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 16px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <h1 className="bac-h1" style={{ marginBottom: 4 }}>🎬 Coordination</h1>
-          <p style={{ color: 'var(--bac-text-secondary)', fontSize: '0.875rem' }}>
-            MAJ {lastUpdate.toLocaleTimeString('fr-FR')} • Mise à jour en temps réel
-          </p>
+    <div style={embedded ? {} : { maxWidth: 900, margin: '0 auto', padding: '24px 16px' }}>
+      {/* Header — hidden when embedded in dashboard */}
+      {!embedded && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div>
+            <h1 className="bac-h1" style={{ marginBottom: 4 }}>🎬 Coordination</h1>
+            <p style={{ color: 'var(--bac-text-secondary)', fontSize: '0.875rem' }}>
+              MAJ {lastUpdate.toLocaleTimeString('fr-FR')} • Mise à jour en temps réel
+            </p>
+          </div>
+          {isAdmin && (
+            <a href="/animation/admin/dashboard" className="bac-btn bac-btn-secondary" style={{ fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
+              ← Tableau de bord
+            </a>
+          )}
         </div>
-        {isAdmin && (
-          <a href="/animation/admin/dashboard" className="bac-btn bac-btn-secondary" style={{ fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
-            ← Tableau de bord
-          </a>
-        )}
-      </div>
+      )}
 
       {/* Session selector */}
       {sessions.length > 1 && (
@@ -312,16 +314,18 @@ export default function CoordinateurInterface({ isAdmin = false }: { isAdmin?: b
         </>
       )}
 
-      {/* Déconnexion at bottom */}
-      <div style={{ marginTop: 48, paddingTop: 24, borderTop: '1px solid var(--bac-border)', textAlign: 'center' }}>
-        <button
-          className="bac-btn bac-btn-ghost"
-          onClick={handleLogout}
-          style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}
-        >
-          Déconnexion
-        </button>
-      </div>
+      {/* Déconnexion at bottom — hidden when embedded in dashboard */}
+      {!embedded && (
+        <div style={{ marginTop: 48, paddingTop: 24, borderTop: '1px solid var(--bac-border)', textAlign: 'center' }}>
+          <button
+            className="bac-btn bac-btn-ghost"
+            onClick={handleLogout}
+            style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}
+          >
+            Déconnexion
+          </button>
+        </div>
+      )}
     </div>
   );
 }

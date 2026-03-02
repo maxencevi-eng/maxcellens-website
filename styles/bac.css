@@ -380,10 +380,15 @@
   background: var(--bac-surface-active);
   border-radius: var(--bac-radius);
   padding: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.bac-tabs::-webkit-scrollbar { display: none; }
 
 .bac-tab {
   flex: 1;
+  min-width: max-content;
   padding: 10px 16px;
   border-radius: var(--bac-radius-sm);
   font-weight: 600;
@@ -394,6 +399,13 @@
   cursor: pointer;
   transition: all var(--bac-transition);
   white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .bac-tab {
+    padding: 8px 12px;
+    font-size: 0.8125rem;
+  }
 }
 
 .bac-tab:hover {

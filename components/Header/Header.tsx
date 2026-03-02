@@ -181,6 +181,9 @@ export default function Header() {
   const pathname = usePathname();
   // close the mobile menu whenever route changes (robust for programmatic navigation)
   React.useEffect(() => { setOpen(false); }, [pathname]);
+
+  // hide site header on animation sub-pages (bac system at /animation/*)
+  if (pathname?.startsWith('/animation/') || pathname?.startsWith('/bac/')) return null;
   function normalizePath(p: string) {
     try { return String(p || '').replace(/\/+$|\/$/g, '').replace(/\/\//g, '/') || '/'; } catch(_) { return String(p || '').replace(/\/+$/g, '') || '/'; }
   }

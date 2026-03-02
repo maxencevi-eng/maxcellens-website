@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import CoordinateurInterface from './CoordinateurInterface';
 
 interface DashStats {
   profils: number;
@@ -13,21 +14,10 @@ interface DashStats {
   sessionsActives: number;
 }
 
-interface GroupeInfo {
-  id: string;
-  slug: string;
-  nom: string;
-  couleur: string;
-  actif: boolean;
-  activeSession: string | null;
-  activeSessionStatut: string | null;
-}
-
 const defaultStats: DashStats = { profils: 0, roles: 0, scenes: 0, revelations: 0, denouements: 0, sessions: 0, sessionsActives: 0 };
 
 export default function BacAdminDashboard() {
   const [stats, setStats] = useState<DashStats>(defaultStats);
-  const [groupes, setGroupes] = useState<GroupeInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,24 +45,6 @@ export default function BacAdminDashboard() {
         sessionsActives: Array.isArray(sessions) ? sessions.filter((s: any) => s.statut === 'en-cours' || s.statut === 'en-preparation').length : 0,
       });
 
-      // Build groupe info with their active session
-      if (Array.isArray(profils) && Array.isArray(sessions)) {
-        const groupeProfils = profils.filter((p: any) => p.type === 'groupe-acteur');
-        const activeSessions = sessions.filter((s: any) => s.statut === 'en-cours' || s.statut === 'en-preparation');
-        const built: GroupeInfo[] = groupeProfils.map((p: any) => {
-          const sess = activeSessions.find((s: any) => s.groupes_actifs?.includes(p.slug));
-          return {
-            id: p.id,
-            slug: p.slug,
-            nom: p.nom,
-            couleur: p.couleur,
-            actif: p.actif,
-            activeSession: sess?.nom_entreprise || null,
-            activeSessionStatut: sess?.statut || null,
-          };
-        });
-        setGroupes(built);
-      }
     } catch (e) {
       console.error('Failed to load stats', e);
     } finally {
@@ -144,54 +116,12 @@ export default function BacAdminDashboard() {
             ))}
           </div>
 
-          {/* Quick actions */}
-          <div className="bac-card" style={{ marginTop: 24 }}>
-            <h3 className="bac-h3" style={{ marginBottom: 16 }}>Actions rapides</h3>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Link href="/bac/admin/dashboard/sessions?action=new" className="bac-btn bac-btn-primary">
-                + Nouvelle session
-              </Link>
-              <Link href="/bac/admin/dashboard/scenes?action=new" className="bac-btn bac-btn-secondary">
-                + Nouvelle scène
-              </Link>
-              <Link href="/bac/admin/dashboard/profils" className="bac-btn bac-btn-secondary">
-                Gérer les profils
-              </Link>
-            </div>
+          {/* Coordination section */}
+          <div style={{ marginTop: 32 }}>
+            <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: 16 }}>🎬 Coordination</h2>
+            <CoordinateurInterface embedded />
           </div>
 
-          {/* Groupe management */}
-          {groupes.length > 0 && (
-            <div className="bac-card" style={{ marginTop: 24 }}>
-              <h3 className="bac-h3" style={{ marginBottom: 4 }}>Intervenir sur un groupe</h3>
-              <p style={{ color: 'var(--bac-text-secondary)', fontSize: '0.875rem', marginBottom: 16 }}>
-                En tant qu'admin, accédez à l'interface de n'importe quel groupe pour gérer son casting, ses scènes et la personnalisation.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {groupes.map(g => (
-                  <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--bac-radius)', borderLeft: `4px solid ${g.couleur}`, background: 'var(--bac-bg-secondary)', opacity: g.actif ? 1 : 0.5 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span className="bac-color-dot" style={{ backgroundColor: g.couleur }} />
-                      <div>
-                        <strong>{g.nom}</strong>
-                        {g.activeSession && (
-                          <span style={{ marginLeft: 8, fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>
-                            — {g.activeSession} ({g.activeSessionStatut === 'en-cours' ? '🎬 En cours' : '⏳ En préparation'})
-                          </span>
-                        )}
-                        {!g.activeSession && (
-                          <span style={{ marginLeft: 8, fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>— Aucune session active</span>
-                        )}
-                      </div>
-                    </div>
-                    <Link href={`/bac/${g.slug}`} className="bac-btn bac-btn-secondary bac-btn-sm">
-                      👥 Gérer
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </>
       )}
     </div>

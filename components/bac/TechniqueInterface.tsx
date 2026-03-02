@@ -82,6 +82,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
   const [editingSceneKey, setEditingSceneKey] = useState<string | null>(null);
   const [editChampPerso, setEditChampPerso] = useState('');
   const [editActors, setEditActors] = useState<Record<number, string>>({});
+  const [editTextes, setEditTextes] = useState<Record<number, string>>({});
   // Intro / Finale scene editing
   const [editingSpecial, setEditingSpecial] = useState<'intro' | 'finale' | null>(null);
 
@@ -248,7 +249,11 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     const champSaisie = sceneSaisies.find(s => s.bloc_index === -1);
     setEditChampPerso(champSaisie?.champ_perso_valeur || '');
     const actors: Record<number, string> = {};
-    sceneSaisies.forEach(s => { if (s.bloc_index >= 0 && s.acteur_id) actors[s.bloc_index] = s.acteur_id; });
+    const textes: Record<number, string> = {};
+    sceneSaisies.forEach(s => {
+      if (s.bloc_index >= 0 && s.acteur_id) actors[s.bloc_index] = s.acteur_id;
+      if (s.bloc_index >= 0 && s.texte_saisi) textes[s.bloc_index] = s.texte_saisi;
+    });
     // Auto-assign when only 1 actor across all groups has this role
     ((scene.script_json || []) as any[]).forEach((bloc: any, i: number) => {
       if (bloc.type !== 'replique' || actors[i]) return;
@@ -256,6 +261,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
       if (eligible.length === 1) actors[i] = eligible[0].id;
     });
     setEditActors(actors);
+    setEditTextes(textes);
     setEditingSceneKey(`${groupSlug}-${scene.id}`);
   }
 
@@ -270,8 +276,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     }
     scriptJson.forEach((bloc: any, i: number) => {
       if (bloc.type !== 'replique') return;
-      const existing = sceneSaisies.find(s => s.bloc_index === i);
-      saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: scene.id, bloc_index: i, texte_saisi: existing?.texte_saisi || '', acteur_id: editActors[i] || null, champ_perso_valeur: null });
+      saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: scene.id, bloc_index: i, texte_saisi: editTextes[i] || '', acteur_id: editActors[i] || null, champ_perso_valeur: null });
     });
     await fetch('/bac/api/saisies', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ saisies }) });
     setAllSaisies(prev => [...prev.filter(s => !(s.groupe_slug === groupSlug && s.scene_id === scene.id)), ...saisies]);
@@ -290,17 +295,23 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     if (entity) {
       const saisies = getSceneSaisies(type, entity.id);
       const actors: Record<number, string> = {};
-      saisies.forEach(s => { if (s.bloc_index >= 0 && s.acteur_id) actors[s.bloc_index] = s.acteur_id; });
+      const textes: Record<number, string> = {};
+      saisies.forEach(s => {
+        if (s.bloc_index >= 0 && s.acteur_id) actors[s.bloc_index] = s.acteur_id;
+        if (s.bloc_index >= 0 && s.texte_saisi) textes[s.bloc_index] = s.texte_saisi;
+      });
       // Auto-assign when only 1 actor with this role across all groups
       ((entity.script_json || []) as any[]).forEach((bloc: any, i: number) => {
         if (bloc.type !== 'replique' || actors[i]) return;
         const eligible = allCasting.filter(c => c.role_id === bloc.role_id);
         if (eligible.length === 1) actors[i] = eligible[0].id;
       });
+      setEditTextes(textes);
       setEditActors(actors);
     } else {
       setEditChampPerso('');
       setEditActors({});
+      setEditTextes({});
     }
     setEditingSpecial(type);
   }
@@ -310,12 +321,10 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     const entity = getSpecialEntity(type);
     if (entity) {
       const groupSlug = type;
-      const sceneSaisies = getSceneSaisies(groupSlug, entity.id);
       const saisies: any[] = [];
       (entity.script_json as any[]).forEach((bloc: any, i: number) => {
         if (bloc.type !== 'replique') return;
-        const existing = sceneSaisies.find(s => s.bloc_index === i);
-        saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: entity.id, bloc_index: i, texte_saisi: existing?.texte_saisi || '', acteur_id: editActors[i] || null, champ_perso_valeur: null });
+        saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: entity.id, bloc_index: i, texte_saisi: editTextes[i] || '', acteur_id: editActors[i] || null, champ_perso_valeur: null });
       });
       await fetch('/bac/api/saisies', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ saisies }) });
       setAllSaisies(prev => [...prev.filter(s => !(s.groupe_slug === groupSlug && s.scene_id === entity.id)), ...saisies]);
@@ -338,19 +347,10 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     return (
       <div key={`special-${type}`} style={{ marginBottom: 24 }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8, paddingBottom: 8, borderBottom: `2px solid ${color}` }}>
+        <div style={{ marginBottom: 8, paddingBottom: 8, borderBottom: `2px solid ${color}` }}>
           <h2 style={{ fontWeight: 800, fontSize: '1.375rem', color, margin: 0 }}>
             {icon} {label}
           </h2>
-          {!isEditing && entity && (
-            <button
-              className="bac-btn bac-btn-ghost"
-              style={{ padding: '4px 10px', fontSize: '0.8125rem', marginLeft: 'auto' }}
-              onClick={() => { setEditingSceneKey(null); startEditingSpecial(type); }}
-            >
-              ✏️ Attribuer acteurs
-            </button>
-          )}
         </div>
 
         {isEditing ? (
@@ -383,6 +383,17 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                       ) : (
                         <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>Aucun acteur disponible</p>
                       )}
+                      <div style={{ marginTop: 8 }}>
+                        <label style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', display: 'block', marginBottom: 4 }}>Réplique personnalisée</label>
+                        <textarea
+                          className="bac-input"
+                          rows={2}
+                          value={editTextes[i] || ''}
+                          onChange={e => setEditTextes(prev => ({ ...prev, [i]: e.target.value }))}
+                          placeholder={bloc.exemple || '…'}
+                          style={{ width: '100%', resize: 'vertical', fontSize: '0.875rem' }}
+                        />
+                      </div>
                     </div>
                   );
                 })}
@@ -404,9 +415,18 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
         ) : entity ? (
           /* ── Read mode ── */
           <div className="bac-card" style={{ padding: 20, borderLeft: `4px solid ${color}` }}>
-            <div style={{ marginBottom: 8 }}>
-              <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>{entity.titre}</h3>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {entity.duree_min}–{entity.duree_max} min</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+              <div>
+                <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>{entity.titre}</h3>
+                <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {entity.duree_min}–{entity.duree_max} min</span>
+              </div>
+              <button
+                className="bac-btn bac-btn-ghost"
+                style={{ padding: '4px 10px', fontSize: '0.8125rem', flexShrink: 0, marginLeft: 12 }}
+                onClick={() => { setEditingSceneKey(null); startEditingSpecial(type); }}
+              >
+                ✏️ Modifier
+              </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {scriptJson.map((bloc: any, i: number) => {
@@ -511,7 +531,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
       </div>
 
       {/* Sub-tabs */}
-      <div className="bac-tabs" style={{ marginBottom: 24, flexWrap: 'wrap', gap: 4 }}>
+      <div className="bac-tabs" style={{ marginBottom: 24 }}>
         {(section === 'animation'
           ? (['deroule', 'pratiques'] as TabId[])
           : (['script', 'repartition', 'itw', ...(isAdmin ? ['notes' as TabId] : [])] as TabId[])
@@ -627,6 +647,17 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                                 ) : (
                                   <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>Aucun acteur pour ce rôle</p>
                                 )}
+                                <div style={{ marginTop: 8 }}>
+                                  <label style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', display: 'block', marginBottom: 4 }}>Réplique personnalisée</label>
+                                  <textarea
+                                    className="bac-input"
+                                    rows={2}
+                                    value={editTextes[i] || ''}
+                                    onChange={e => setEditTextes(prev => ({ ...prev, [i]: e.target.value }))}
+                                    placeholder={bloc.exemple || '…'}
+                                    style={{ width: '100%', resize: 'vertical', fontSize: '0.875rem' }}
+                                  />
+                                </div>
                               </>
                             ) : (
                               <>
@@ -678,21 +709,20 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {gc.map(c => (
-                    <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
+                    <div key={c.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
                       <span style={{ fontWeight: 600 }}>{c.prenom}</span>
-                      <span style={{ color: 'var(--bac-text-secondary)' }}>
-                        {(c.role as any)?.nom || '—'}
-                        {(c.variant as any)?.emoji || (c.variant as any)?.nom ? (
-                          <span style={{ marginLeft: 6, color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>
-                            {(c.variant as any)?.emoji} {(c.variant as any)?.nom}
-                            {(c.variant as any)?.description ? (
-                              <span style={{ marginLeft: 4, color: 'var(--bac-text-muted)', fontStyle: 'italic', opacity: 0.8 }}>
-                                — {(c.variant as any)?.description}
-                              </span>
-                            ) : null}
-                          </span>
-                        ) : null}
-                      </span>
+                      <span style={{ color: 'var(--bac-text-muted)', margin: '0 6px' }}>—</span>
+                      <span style={{ color: 'var(--bac-text-secondary)' }}>{(c.role as any)?.nom || '—'}</span>
+                      {(c.variant as any)?.emoji || (c.variant as any)?.nom ? (
+                        <span style={{ marginLeft: 6, color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>
+                          {(c.variant as any)?.emoji} {(c.variant as any)?.nom}
+                          {(c.variant as any)?.description ? (
+                            <span style={{ marginLeft: 4, color: 'var(--bac-text-muted)', fontStyle: 'italic', opacity: 0.8 }}>
+                              — {(c.variant as any)?.description}
+                            </span>
+                          ) : null}
+                        </span>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -719,8 +749,9 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {sceneActors.map(({ actor, roleNames }) => (
-                        <div key={actor.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
+                        <div key={actor.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
                           <span style={{ fontWeight: 600 }}>{actor.prenom}</span>
+                          <span style={{ color: 'var(--bac-text-muted)', margin: '0 6px' }}>—</span>
                           <span style={{ color: 'var(--bac-text-secondary)' }}>{roleNames.join(', ')}</span>
                         </div>
                       ))}

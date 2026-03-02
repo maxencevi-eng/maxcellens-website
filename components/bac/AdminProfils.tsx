@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import type { BacProfil } from '../../lib/bac/types';
 
 export default function AdminProfils() {
@@ -93,7 +94,6 @@ export default function AdminProfils() {
 
   const typeLabel = (type: string) => {
     switch (type) {
-      case 'coordinateur': return '🎯 Coordinateur';
       case 'technique': return '🔧 Technique';
       case 'groupe-acteur': return '🎬 Groupe acteur';
       default: return type;
@@ -101,48 +101,134 @@ export default function AdminProfils() {
   };
 
   if (showPrintView) {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const activeProfils = profils.filter(p => p.actif && p.type !== 'admin' && p.type !== 'coordinateur');
+
+    function handlePrintCard(slug: string) {
+      const inner = document.querySelector(`[data-card-slug="${slug}"] .bac-jour-j-card`);
+      if (!inner) return;
+      const w = window.open('', '_blank');
+      if (!w) return;
+      w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{margin:0;padding:0;box-sizing:border-box;}body{background:white;}@page{size:A5 portrait;margin:0;}.bac-jour-j-card{width:148mm!important;height:210mm!important;min-height:unset!important;box-shadow:none!important;border-radius:0!important;}</style></head><body>${inner.outerHTML}<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);};<\/script></body></html>`);
+      w.document.close();
+    }
+
     return (
-      <div style={{ padding: '24px 16px', maxWidth: 600 }}>
-        {/* Header: title on top, buttons below */}
-        <div style={{ marginBottom: 24 }}>
-          <h1 className="bac-h1" style={{ marginBottom: 12 }}>🎬 Bureau à la Carte — Mots de passe du jour</h1>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="bac-btn bac-btn-secondary" onClick={() => setShowPrintView(false)}>← Retour</button>
-            <button className="bac-btn bac-btn-primary" onClick={() => window.print()}>🖨️ Imprimer</button>
-          </div>
+      <div style={{ minHeight: '100vh', background: '#f1f5f9' }}>
+        <style>{`
+          @media print {
+            .bac-jour-j-controls { display: none !important; }
+            body { background: white !important; }
+            .bac-jour-j-grid { display: block !important; padding: 0 !important; background: white !important; }
+            .bac-jour-j-card-wrap { display: block !important; }
+            .bac-jour-j-print-btn { display: none !important; }
+            .bac-jour-j-card {
+              width: 148mm !important;
+              height: 210mm !important;
+              min-height: unset !important;
+              box-shadow: none !important;
+              border-radius: 0 !important;
+              page-break-after: always;
+              break-after: page;
+            }
+            @page { size: A5 portrait; margin: 0; }
+          }
+        `}</style>
+
+        {/* Controls — screen only */}
+        <div className="bac-jour-j-controls" style={{ padding: '14px 24px', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="bac-btn bac-btn-secondary" onClick={() => setShowPrintView(false)}>← Retour</button>
+          <button className="bac-btn bac-btn-primary" onClick={() => window.print()}>
+            🖨️ Imprimer tout ({activeProfils.length} fiche{activeProfils.length > 1 ? 's' : ''})
+          </button>
+          <span style={{ fontSize: '0.8125rem', color: '#94a3b8', marginLeft: 4 }}>Format A5 · Une fiche par page · Cliquez 🖨️ sur une carte pour l'imprimer seule</span>
         </div>
 
-        <div className="bac-stagger">
-          {profils.filter(p => p.actif && p.type !== 'admin').map(p => (
-            <div key={p.id} className="bac-card" style={{ borderLeft: `4px solid ${p.couleur}`, marginBottom: 12, padding: 16 }}>
-              {/* Name + password row */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <strong style={{ fontSize: '1rem' }}>{p.nom}</strong>
-                {p.mot_de_passe_clair ? (
-                  <span style={{ fontFamily: 'var(--bac-font-mono)', fontSize: '1.25rem', fontWeight: 700, color: 'var(--bac-primary)' }}>
-                    {p.mot_de_passe_clair}
-                  </span>
-                ) : (
-                  <span style={{ fontSize: '0.8125rem', color: 'var(--bac-warning)', fontWeight: 600 }}>
-                    ⚠️ Ré-enregistrez le mdp
-                  </span>
-                )}
+        {/* Cards grid */}
+        <div className="bac-jour-j-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: 28, justifyContent: 'center', padding: 36 }}>
+          {activeProfils.map(p => {
+            const url = `${baseUrl}/animation/${p.slug}`;
+            return (
+              <div key={p.id} className="bac-jour-j-card-wrap" data-card-slug={p.slug} style={{ position: 'relative' }}>
+
+                {/* Per-card print button */}
+                <button
+                  className="bac-jour-j-print-btn"
+                  title="Imprimer cette fiche"
+                  onClick={() => handlePrintCard(p.slug)}
+                  style={{
+                    position: 'absolute', top: -13, right: -13, zIndex: 2,
+                    background: 'white', border: '1px solid #e2e8f0', borderRadius: '50%',
+                    width: 34, height: 34, cursor: 'pointer', fontSize: '1rem',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.14)',
+                  }}
+                >
+                  🖨️
+                </button>
+
+                {/* A5 card */}
+                <div
+                  className="bac-jour-j-card"
+                  style={{
+                    width: 559,
+                    minHeight: 794,
+                    background: 'white',
+                    borderRadius: 14,
+                    boxShadow: '0 6px 24px rgba(0,0,0,0.12)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* Top color bar */}
+                  <div style={{ width: '100%', height: 12, background: p.couleur, flexShrink: 0 }} />
+
+                  {/* 3-section layout: space-between for even distribution */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '28px 40px 32px', flex: 1, width: '100%' }}>
+
+                    {/* TOP — branding + name */}
+                    <div style={{ textAlign: 'center', width: '100%' }}>
+                      <div style={{ fontSize: '0.6875rem', color: '#94a3b8', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 14 }}>
+                        🎬 Bureau à la Carte
+                      </div>
+                      <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.1 }}>
+                        {p.nom}
+                      </div>
+                    </div>
+
+                    {/* MIDDLE — QR code + URL */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+                      <div style={{ padding: 14, background: 'white', border: '2px solid #f1f5f9', borderRadius: 14, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+                        <QRCodeSVG value={url} size={240} level="M" />
+                      </div>
+                      <div style={{ fontSize: '0.6875rem', color: '#94a3b8', textAlign: 'center', wordBreak: 'break-all', fontFamily: 'monospace', lineHeight: 1.5 }}>
+                        {url}
+                      </div>
+                    </div>
+
+                    {/* BOTTOM — password */}
+                    <div style={{ width: '100%', borderTop: '2px solid #f1f5f9', paddingTop: 20, textAlign: 'center' }}>
+                      <div style={{ fontSize: '0.6875rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>
+                        Mot de passe
+                      </div>
+                      {p.mot_de_passe_clair ? (
+                        <div style={{ fontSize: '2.5rem', fontWeight: 800, color: p.couleur, fontFamily: 'monospace', letterSpacing: '0.06em' }}>
+                          {p.mot_de_passe_clair}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '0.9375rem', color: '#f59e0b', fontWeight: 600 }}>
+                          ⚠️ Re-saisissez le mot de passe dans les profils
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-              {/* Clickable URL */}
-              <a
-                href={`/animation/${p.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--bac-primary)', marginTop: 6, wordBreak: 'break-all', textDecoration: 'underline' }}
-              >
-                /animation/{p.slug}
-              </a>
-            </div>
-          ))}
+            );
+          })}
         </div>
-        <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginTop: 24 }}>
-          Si un mot de passe affiche "⚠️", cliquez sur 🔑 Modifier dans la liste et re-saisissez le mot de passe pour l'enregistrer en clair.
-        </p>
       </div>
     );
   }
@@ -170,7 +256,7 @@ export default function AdminProfils() {
         </div>
       ) : (
         <div className="bac-animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {profils.filter(p => p.type !== 'admin').map(profil => (
+          {profils.filter(p => p.type !== 'admin' && p.type !== 'coordinateur').map(profil => (
             <div
               key={profil.id}
               className="bac-card"
@@ -233,6 +319,9 @@ export default function AdminProfils() {
               {/* Actions row (groupe-acteur only) */}
               {profil.type === 'groupe-acteur' && (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingTop: 8, borderTop: '1px solid var(--bac-border)' }}>
+                  <a href={`/bac/${profil.slug}`} className="bac-btn bac-btn-secondary bac-btn-sm">
+                    👥 Gérer
+                  </a>
                   <button
                     className="bac-btn bac-btn-ghost bac-btn-sm"
                     onClick={() => handleToggleActive(profil)}

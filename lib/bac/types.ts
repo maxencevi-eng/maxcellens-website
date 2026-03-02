@@ -1,7 +1,7 @@
 // Types pour Bureau à la Carte
 // ============================================================
 
-export type ProfilType = 'admin' | 'coordinateur' | 'technique' | 'groupe-acteur';
+export type ProfilType = 'admin' | 'technique' | 'groupe-acteur';
 export type ActeType = '1' | '2' | '3' | '4' | 'intro' | 'final';
 export type SessionStatut = 'en-preparation' | 'en-cours' | 'terminee' | 'archivee';
 export type ChoixStatut = 'choisi' | 'valide';
@@ -219,16 +219,3 @@ export interface BacAuthPayload {
   exp: number;
 }
 
-// ---- Groupe status (coordinateur) ----
-export type GroupePhase = 'attente' | 'casting' | 'phase1' | 'phase2' | 'pret';
-
-export interface GroupeStatus {
-  slug: string;
-  nom: string;
-  couleur: string;
-  phase: GroupePhase;
-  casting: BacCasting[];
-  choix: BacChoixScene[];
-  progression_phase2: number;
-  connectes: number;
-}

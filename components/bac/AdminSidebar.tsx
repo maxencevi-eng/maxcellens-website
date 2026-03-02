@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation';
 const navItems = [
   { href: '/animation/admin/dashboard', label: 'Tableau de bord', icon: '📊' },
   { href: '/animation/admin/dashboard/profils', label: 'Profils d\'accès', icon: '👥' },
-  { href: '/animation/coordination', label: 'Coordination', icon: '🎯' },
   { href: '/animation/admin/dashboard/roles', label: 'Rôles & Variants', icon: '🎭' },
   { href: '/animation/admin/dashboard/themes', label: 'Révélations', icon: '🌅' },
   { href: '/animation/admin/dashboard/scenes', label: 'Scènes', icon: '🎬' },

@@ -27,14 +27,6 @@ export function middleware(request: NextRequest) {
     }
   }
   
-  // Protect /bac/coordinateur/*
-  if (pathname.startsWith('/bac/coordinateur')) {
-    const sessionCookie = request.cookies.get('bac_session');
-    if (!sessionCookie?.value) {
-      return NextResponse.redirect(new URL('/bac/connexion?profil=coordinateur', request.url));
-    }
-  }
-  
   // Protect /bac/technique/*
   if (pathname.startsWith('/bac/technique')) {
     const sessionCookie = request.cookies.get('bac_session');
@@ -55,5 +47,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/bac/admin/:path+', '/bac/coordinateur/:path*', '/bac/technique/:path*', '/bac/groupe/:path*'],
+  matcher: ['/bac/admin/:path+', '/bac/technique/:path*', '/bac/groupe/:path*'],
 };
