@@ -950,6 +950,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 8px;
+  text-align: center;
 }
 
 .bac-script-directive {
@@ -967,11 +968,11 @@
 
 .bac-script-exemple {
   font-style: italic;
-  font-size: 0.875rem;
-  color: var(--bac-text-muted);
+  font-weight: 700;
+  color: #0f172a;
   padding: 8px 12px;
-  border-left: 2px solid var(--bac-border);
   margin-bottom: 12px;
+  text-align: center;
 }
 
 /* ---- Number selector ---- */

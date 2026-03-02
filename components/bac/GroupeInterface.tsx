@@ -219,9 +219,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                 </div>
                 <div className="bac-script-directive">{repBloc.directive}</div>
                 {saisie.texte_saisi ? (
-                  <div style={{ fontStyle: 'italic', color: 'var(--bac-primary)', padding: '8px 12px', background: 'var(--bac-bg-tertiary)', borderRadius: 6 }}>
-                    "{saisie.texte_saisi}"
-                  </div>
+                  <div className="bac-script-exemple">"{saisie.texte_saisi}"</div>
                 ) : (
                   <div className="bac-script-exemple">"{repBloc.exemple}"</div>
                 )}
@@ -942,9 +940,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                               </div>
                               <div className="bac-script-directive">{repBloc.directive}</div>
                               {saisie.texte_saisi ? (
-                                <div style={{ fontStyle: 'italic', color: 'var(--bac-primary)', padding: '8px 12px', background: 'var(--bac-bg-tertiary)', borderRadius: 6 }}>
-                                  "{saisie.texte_saisi}"
-                                </div>
+                                <div className="bac-script-exemple">"{saisie.texte_saisi}"</div>
                               ) : (
                                 <div className="bac-script-exemple">"{repBloc.exemple}"</div>
                               )}

@@ -63,6 +63,7 @@ export interface BacRevelation {
   duree_min: number;
   duree_max: number;
   fil_rouge: string;
+  groupes_concernes: string[];
   script_json: ScriptBloc[];
   itw_json: ItwQuestion[];
   notes_real_json: NotesRealisation;
@@ -81,6 +82,7 @@ export interface BacDenouement {
   duree_min: number;
   duree_max: number;
   fil_rouge: string;
+  groupes_concernes: string[];
   script_json: ScriptBloc[];
   itw_json: ItwQuestion[];
   notes_real_json: NotesRealisation;

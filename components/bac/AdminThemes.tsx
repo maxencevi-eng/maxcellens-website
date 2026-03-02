@@ -2,7 +2,7 @@
 
 // AdminThemes.tsx — Gestion des Révélations (scènes d'introduction scripted)
 import { useEffect, useState, useCallback } from 'react';
-import type { BacRevelation, BacRole, ScriptBloc, ItwQuestion, NotesRealisation } from '../../lib/bac/types';
+import type { BacRevelation, BacProfil, BacRole, ScriptBloc, ItwQuestion, NotesRealisation } from '../../lib/bac/types';
 
 const EMPTY_NOTES: NotesRealisation = { cadrage: '', rythme: '', silences: '', pieges: '', astuce: '' };
 
@@ -10,11 +10,13 @@ const EMPTY_NOTES: NotesRealisation = { cadrage: '', rythme: '', silences: '', p
 function RevelationEditor({
   item,
   roles,
+  groupes,
   onClose,
   onToast,
 }: {
   item: BacRevelation;
   roles: BacRole[];
+  groupes: BacProfil[];
   onClose: () => void;
   onToast: (msg: string, type?: 'success' | 'error') => void;
 }) {
@@ -27,6 +29,7 @@ function RevelationEditor({
     duree_min: item.duree_min ?? 1,
     duree_max: item.duree_max ?? 3,
     fil_rouge: item.fil_rouge || '',
+    groupes_concernes: (item.groupes_concernes || []) as string[],
     script_json: (item.script_json || []) as ScriptBloc[],
     itw_json: (item.itw_json || []) as ItwQuestion[],
     notes_real_json: (item.notes_real_json || EMPTY_NOTES) as NotesRealisation,
@@ -155,6 +158,32 @@ function RevelationEditor({
             <div className="bac-form-group">
               <label className="bac-label">Durée max (min)</label>
               <input type="number" className="bac-input" value={form.duree_max} min={1} max={60} onChange={e => setField('duree_max', parseInt(e.target.value) || 3)} />
+            </div>
+          </div>
+          <div className="bac-form-group">
+            <label className="bac-label">Groupes avec des rôles dans cette révélation</label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {groupes.map(g => (
+                <label
+                  key={g.slug}
+                  className={`bac-radio-label ${(form.groupes_concernes || []).includes(g.slug) ? 'selected' : ''}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={(form.groupes_concernes || []).includes(g.slug)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setField('groupes_concernes', [...(form.groupes_concernes || []), g.slug]);
+                      } else {
+                        setField('groupes_concernes', (form.groupes_concernes || []).filter((s: string) => s !== g.slug));
+                      }
+                    }}
+                  />
+                  <span className="bac-color-dot" style={{ backgroundColor: g.couleur }} />
+                  {g.nom}
+                </label>
+              ))}
             </div>
           </div>
           <div className="bac-form-group">
@@ -307,6 +336,7 @@ function RevelationEditor({
 export default function AdminRevelations() {
   const [items, setItems] = useState<BacRevelation[]>([]);
   const [roles, setRoles] = useState<BacRole[]>([]);
+  const [groupes, setGroupes] = useState<BacProfil[]>([]);
   const [loading, setLoading] = useState(true);
   const [editItem, setEditItem] = useState<BacRevelation | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
@@ -315,12 +345,14 @@ export default function AdminRevelations() {
 
   async function loadData() {
     try {
-      const [d, r] = await Promise.all([
+      const [d, r, p] = await Promise.all([
         fetch('/bac/api/revelations').then(r => r.json()),
         fetch('/bac/api/roles').then(r => r.json()),
+        fetch('/bac/api/profils').then(r => r.json()),
       ]);
       if (Array.isArray(d)) setItems(d);
       if (Array.isArray(r)) setRoles(r);
+      if (Array.isArray(p)) setGroupes(p.filter((x: BacProfil) => x.type === 'groupe-acteur' && x.actif));
     } catch { } finally { setLoading(false); }
   }
 
@@ -349,6 +381,7 @@ export default function AdminRevelations() {
       <RevelationEditor
         item={editItem}
         roles={roles}
+        groupes={groupes}
         onClose={() => { setEditItem(null); loadData(); }}
         onToast={showToast}
       />
