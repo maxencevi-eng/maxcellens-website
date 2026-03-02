@@ -82,6 +82,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
   const [editingSceneKey, setEditingSceneKey] = useState<string | null>(null);
   const [editActors, setEditActors] = useState<Record<number, string>>({});
   const [editTextes, setEditTextes] = useState<Record<number, string>>({});
+  const [editChampPersos, setEditChampPersos] = useState<Record<number, string>>({});
   // Intro / Finale scene editing
   const [editingSpecial, setEditingSpecial] = useState<'intro' | 'finale' | null>(null);
 
@@ -247,9 +248,11 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     const sceneSaisies = getSceneSaisies(groupSlug, scene.id);
     const actors: Record<number, string> = {};
     const textes: Record<number, string> = {};
+    const champs: Record<number, string> = {};
     sceneSaisies.forEach(s => {
       if (s.bloc_index >= 0 && s.acteur_id) actors[s.bloc_index] = s.acteur_id;
       if (s.bloc_index >= 0 && s.texte_saisi) textes[s.bloc_index] = s.texte_saisi;
+      if (s.bloc_index >= 0 && s.champ_perso_valeur) champs[s.bloc_index] = s.champ_perso_valeur;
     });
     // Auto-assign when only 1 actor across all groups has this role
     ((scene.script_json || []) as any[]).forEach((bloc: any, i: number) => {
@@ -259,6 +262,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     });
     setEditActors(actors);
     setEditTextes(textes);
+    setEditChampPersos(champs);
     setEditingSceneKey(`${groupSlug}-${scene.id}`);
   }
 
@@ -269,7 +273,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     const saisies: any[] = [];
     scriptJson.forEach((bloc: any, i: number) => {
       if (bloc.type !== 'replique') return;
-      saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: scene.id, bloc_index: i, texte_saisi: editTextes[i] || '', acteur_id: editActors[i] || null, champ_perso_valeur: null });
+      saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: scene.id, bloc_index: i, texte_saisi: editTextes[i] || '', acteur_id: editActors[i] || null, champ_perso_valeur: editChampPersos[i] || null });
     });
     await fetch('/bac/api/saisies', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ saisies }) });
     setAllSaisies(prev => [...prev.filter(s => !(s.groupe_slug === groupSlug && s.scene_id === scene.id)), ...saisies]);
@@ -289,9 +293,11 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
       const saisies = getSceneSaisies(type, entity.id);
       const actors: Record<number, string> = {};
       const textes: Record<number, string> = {};
+      const champs: Record<number, string> = {};
       saisies.forEach(s => {
         if (s.bloc_index >= 0 && s.acteur_id) actors[s.bloc_index] = s.acteur_id;
         if (s.bloc_index >= 0 && s.texte_saisi) textes[s.bloc_index] = s.texte_saisi;
+        if (s.bloc_index >= 0 && s.champ_perso_valeur) champs[s.bloc_index] = s.champ_perso_valeur;
       });
       // Auto-assign when only 1 actor with this role across all groups
       ((entity.script_json || []) as any[]).forEach((bloc: any, i: number) => {
@@ -301,8 +307,9 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
       });
       setEditTextes(textes);
       setEditActors(actors);
+      setEditChampPersos(champs);
     } else {
-      setEditChampPerso('');
+      setEditChampPersos({});
       setEditActors({});
       setEditTextes({});
     }
@@ -317,7 +324,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
       const saisies: any[] = [];
       (entity.script_json as any[]).forEach((bloc: any, i: number) => {
         if (bloc.type !== 'replique') return;
-        saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: entity.id, bloc_index: i, texte_saisi: editTextes[i] || '', acteur_id: editActors[i] || null, champ_perso_valeur: null });
+        saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: entity.id, bloc_index: i, texte_saisi: editTextes[i] || '', acteur_id: editActors[i] || null, champ_perso_valeur: editChampPersos[i] || null });
       });
       await fetch('/bac/api/saisies', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ saisies }) });
       setAllSaisies(prev => [...prev.filter(s => !(s.groupe_slug === groupSlug && s.scene_id === entity.id)), ...saisies]);
@@ -386,6 +393,28 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                           placeholder={bloc.exemple || '…'}
                           style={{ width: '100%', resize: 'vertical', fontSize: '0.875rem' }}
                         />
+                        {bloc.utilise_champ_perso && (
+                          <div style={{ marginTop: 8 }}>
+                            <label style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', display: 'block', marginBottom: 4 }}>{bloc.champ_perso_label || 'Champ perso'}</label>
+                            <input
+                              className="bac-input"
+                              value={editChampPersos[i] || ''}
+                              onChange={e => setEditChampPersos(prev => ({ ...prev, [i]: e.target.value }))}
+                              style={{ width: '100%', fontSize: '0.875rem' }}
+                            />
+                          </div>
+                        )}
+                        {bloc.utilise_champ_perso && (
+                          <div style={{ marginTop: 8 }}>
+                            <label style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', display: 'block', marginBottom: 4 }}>{bloc.champ_perso_label || 'Champ perso'}</label>
+                            <input
+                              className="bac-input"
+                              value={editChampPersos[i] || ''}
+                              onChange={e => setEditChampPersos(prev => ({ ...prev, [i]: e.target.value }))}
+                              style={{ width: '100%', fontSize: '0.875rem' }}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
