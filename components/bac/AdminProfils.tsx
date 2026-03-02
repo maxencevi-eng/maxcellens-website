@@ -102,7 +102,7 @@ export default function AdminProfils() {
 
   if (showPrintView) {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const activeProfils = profils.filter(p => p.actif && p.type !== 'admin' && p.type !== 'coordinateur');
+    const activeProfils = profils.filter(p => p.actif && p.type !== 'admin');
 
     function handlePrintCard(slug: string) {
       const inner = document.querySelector(`[data-card-slug="${slug}"] .bac-jour-j-card`);
@@ -256,7 +256,7 @@ export default function AdminProfils() {
         </div>
       ) : (
         <div className="bac-animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {profils.filter(p => p.type !== 'admin' && p.type !== 'coordinateur').map(profil => (
+          {profils.filter(p => p.type !== 'admin').map(profil => (
             <div
               key={profil.id}
               className="bac-card"

@@ -15,7 +15,8 @@
       "Bash(grep -l \"48 heures.*didascalie\\\\|didascalie.*48 heures\\\\|audit.*didascalie\\\\|didascalie.*audit\" /c/Users/Windows/.claude/projects/c--Users-Windows-Documents-CREATION-WEB-Maxcellens-Website/eea9ee05-f9bc-4b4a-a76c-5fafc9260887/tool-results/*.txt)",
       "Bash(xargs grep -l \"Répartition\\\\|Tournage\\\\|tournage\\\\|managers\\\\|script global\")",
       "Bash(xargs grep -l \"Répartition\\\\|tournage\\\\|managers\\\\|script.global\\\\|Attribuer acteurs\\\\|Attribuer\")",
-      "Bash(npm install qrcode.react --legacy-peer-deps)"
+      "Bash(npm install qrcode.react --legacy-peer-deps)",
+      "Bash(npm run build)"
     ]
   }
 }
