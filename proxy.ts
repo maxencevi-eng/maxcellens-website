@@ -1,8 +1,8 @@
-// middleware.ts — Protects /bac/admin/* routes
+// proxy.ts — Protects /bac/admin/* routes (formerly middleware.ts)
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Only protect /bac/admin/* routes (not /bac/admin login page itself)
