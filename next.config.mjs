@@ -14,6 +14,7 @@ try {
 
 const nextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ['sharp'],
   images: {
     remotePatterns: [
       ...(supabaseHostname ? [{ protocol: 'https', hostname: supabaseHostname }] : []),
