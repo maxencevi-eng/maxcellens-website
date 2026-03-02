@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 const navItems = [
   { href: '/animation/admin/dashboard', label: 'Tableau de bord', icon: '📊' },
@@ -17,6 +18,25 @@ const navItems = [
 export default function BacAdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+
+  // enforce auth client‑side as well (defense in depth/cache bounce)
+  useEffect(() => {
+    let cancelled = false;
+    async function checkAuth() {
+      try {
+        const res = await fetch('/bac/api/auth');
+        if (!res.ok) throw new Error('bad');
+        const data = await res.json();
+        if (!data.authenticated || data.profil_type !== 'admin') {
+          router.replace('/animation/admin');
+        }
+      } catch {
+        if (!cancelled) router.replace('/animation/admin');
+      }
+    }
+    checkAuth();
+    return () => { cancelled = true; };
+  }, [router]);
 
   const handleLogout = async () => {
     await fetch('/bac/api/auth', { method: 'DELETE' });
