@@ -63,6 +63,10 @@
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Sortir du Container du layout racine pour occuper 100% de la largeur viewport */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
 }
 
 .bac-root *,

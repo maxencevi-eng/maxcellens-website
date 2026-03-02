@@ -170,7 +170,7 @@ export default function AnimationPageClient() {
   const s1Section = hide("animation_s1") ? null : (
       <div id="animation_s1" className={styles.section} style={sectionStyle(s1.bgColor)}>
         <div className={`container ${blockWidthClass("animation_s1")}`.trim()}>
-          <div style={{ position: "relative" }}>
+          <div className={styles.sectionInner}>
             {isAdmin && (
               <div style={editButtonWrapStyle}>
                 <BlockVisibilityToggle blockId="animation_s1" />
@@ -206,7 +206,7 @@ export default function AnimationPageClient() {
   const s2Section = hide("animation_s2") ? null : (
       <div id="animation_s2" className={`${styles.section} ${styles.sectionAlt}`} style={sectionStyle(s2.bgColor)}>
         <div className={`container ${blockWidthClass("animation_s2")}`.trim()}>
-          <div style={{ position: "relative" }}>
+          <div className={styles.sectionInner}>
             {isAdmin && (
               <div style={editButtonWrapStyle}>
                 <BlockVisibilityToggle blockId="animation_s2" />
@@ -242,7 +242,7 @@ export default function AnimationPageClient() {
   const s3Section = hide("animation_s3") ? null : (
       <div id="animation_s3" className={styles.section} style={sectionStyle(s3.bgColor)}>
         <div className={`container ${blockWidthClass("animation_s3")}`.trim()}>
-          <div style={{ position: "relative" }}>
+          <div className={styles.sectionInner}>
             {isAdmin && (
               <div style={editButtonWrapStyle}>
                 <BlockVisibilityToggle blockId="animation_s3" />
@@ -288,7 +288,7 @@ export default function AnimationPageClient() {
   const ctaSection = hide("animation_cta") ? null : (
       <div id="animation_cta" className={`${styles.section} ${styles.sectionCta}`} style={sectionStyle(cta.bgColor)}>
         <div className={`container ${blockWidthClass("animation_cta")}`.trim()}>
-          <div style={{ position: "relative" }}>
+          <div className={styles.sectionInner}>
             {isAdmin && (
               <div style={editButtonWrapStyle}>
                 <BlockVisibilityToggle blockId="animation_cta" />

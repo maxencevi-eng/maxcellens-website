@@ -4,6 +4,20 @@
   scroll-margin-top: 5rem;
 }
 
+/* Wrapper interne : padding horizontal garanti indépendant des variables CSS du container */
+.sectionInner {
+  position: relative;
+  padding-left: var(--block-inner-padding-desktop, 1.5rem);
+  padding-right: var(--block-inner-padding-desktop, 1.5rem);
+}
+
+@media (max-width: 767px) {
+  .sectionInner {
+    padding-left: var(--block-inner-padding-mobile, 1rem);
+    padding-right: var(--block-inner-padding-mobile, 1rem);
+  }
+}
+
 .sectionAlt {
   background: rgba(0, 0, 0, 0.03);
 }
