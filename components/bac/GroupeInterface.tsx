@@ -42,6 +42,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   const [globalScenes, setGlobalScenes] = useState<BacScene[]>([]);
   const [globalIntroScene, setGlobalIntroScene] = useState<any>(null);
   const [globalFinaleScene, setGlobalFinaleScene] = useState<any>(null);
+  const [globalGroupes, setGlobalGroupes] = useState<any[]>([]);
 
   // Load initial data
   useEffect(() => {
@@ -137,9 +138,10 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
     setShowGlobalScript(true);
     try {
       const groups: string[] = session.groupes_actifs || [];
-      const [allScenesRes, allRolesRes, ...groupResults] = await Promise.all([
+      const [allScenesRes, allRolesRes, allProfilsRes, ...groupResults] = await Promise.all([
         fetch('/bac/api/scenes').then(r => r.json()),
         fetch('/bac/api/roles').then(r => r.json()),
+        fetch('/bac/api/profils').then(r => r.json()),
         ...groups.map(g =>
           Promise.all([
             fetch(`/bac/api/casting?session_id=${session.id}&groupe_slug=${g}`).then(r => r.json()),
@@ -174,6 +176,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       setGlobalIntroScene(session.revelation || null);
       setGlobalFinaleScene(session.denouement || null);
       setRoles(Array.isArray(allRolesRes) ? allRolesRes.filter((r: BacRole) => r.actif) : roles);
+      setGlobalGroupes(Array.isArray(allProfilsRes) ? allProfilsRes.filter((p: any) => p.type === 'groupe-acteur' && p.actif) : []);
     } catch (e) { console.error(e); }
     setGlobalLoading(false);
   }
@@ -195,15 +198,18 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
             }
             const repBloc = bloc as any;
             const role = roles.find(r => r.id === repBloc.role_id);
+            const groupe = !role ? globalGroupes.find((g: any) => g.slug === repBloc.role_id) : null;
             const saisieKey = prefix === 'intro' || prefix === 'finale'
               ? `${prefix}_${scene.id}_${i}`
               : `${scene.id}_${i}`;
             const saisie = globalSaisies[saisieKey] || {};
             const acteur = saisie.acteur_id ? globalCasting.find((c: BacCasting) => c.id === saisie.acteur_id) : null;
+            const color = role?.couleur || groupe?.couleur || 'var(--bac-text)';
+            const label = role?.nom || groupe?.nom || repBloc.role_id || 'Rôle';
             return (
               <div key={i} className="bac-script-replique">
-                <div className="bac-script-role-name" style={{ color: role?.couleur || 'var(--bac-text)' }}>
-                  {role?.nom || repBloc.role_id || 'Rôle'}{acteur ? ` — ${acteur.prenom}` : ''}
+                <div className="bac-script-role-name" style={{ color }}>
+                  {label}{acteur ? ` — ${acteur.prenom}` : ''}
                 </div>
                 <div className="bac-script-directive">{repBloc.directive}</div>
                 {saisie.texte_saisi ? (
@@ -235,6 +241,18 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
     });
   }
 
+  function addMember() {
+    if (members.length >= 8) return;
+    setMembers(prev => [...prev, { prenom: '', role_id: '', variant_id: '' }]);
+    setMemberCount(prev => prev + 1);
+  }
+
+  function removeMember(index: number) {
+    const next = members.filter((_, i) => i !== index);
+    setMembers(next);
+    setMemberCount(Math.max(next.length, 1));
+  }
+
   async function submitCasting() {
     if (!session) return;
     const res = await fetch('/bac/api/casting', {
@@ -263,14 +281,26 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
     }
   }
 
-  function handleEditCasting(fromPhase: Phase) {
+  async function handleEditCasting(fromPhase: Phase) {
     setPhaseBeforeCasting(fromPhase);
-    setMembers(casting.map(c => ({
+    // Always re-fetch fresh casting from DB to avoid stale state
+    let freshCasting = casting;
+    if (session) {
+      try {
+        const res = await fetch(`/bac/api/casting?session_id=${session.id}&groupe_slug=${slug}`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          freshCasting = data;
+          setCasting(data);
+        }
+      } catch (_) {}
+    }
+    setMembers(freshCasting.map(c => ({
       prenom: c.prenom,
       role_id: c.role_id || '',
       variant_id: c.variant_id || '',
     })));
-    setMemberCount(casting.length);
+    setMemberCount(Math.max(freshCasting.length, 1));
     setPhase('casting');
   }
 
@@ -455,7 +485,10 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
                     return (
                       <div key={i} className="bac-card" style={{ padding: 20 }}>
-                        <div style={{ fontWeight: 700, marginBottom: 12 }}>Membre {i + 1}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                          <div style={{ fontWeight: 700 }}>Membre {i + 1}</div>
+                          <button type="button" onClick={() => removeMember(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--bac-text-muted)', fontSize: '1.1rem', padding: '2px 6px', borderRadius: 6 }} title="Supprimer ce membre">✕</button>
+                        </div>
                         <div className="bac-form-group">
                           <label className="bac-label">Prénom</label>
                           <input
@@ -470,7 +503,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                           <label className="bac-label">Rôle</label>
                           <select className="bac-input bac-select" value={member.role_id} onChange={e => updateMember(i, 'role_id', e.target.value)}>
                             <option value="">Choisir un rôle...</option>
-                            {roles.map(r => <option key={r.id} value={r.id}>{r.nom}</option>)}
+                            {roles.filter(r => r.groupe_slug === slug).map(r => <option key={r.id} value={r.id}>{r.nom}</option>)}
                           </select>
                         </div>
                         {member.role_id && variants.length > 0 && (
@@ -499,6 +532,11 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                       </div>
                     );
                   })}
+                  {members.length < 8 && (
+                    <button type="button" className="bac-btn bac-btn-ghost bac-btn-sm" onClick={addMember} style={{ alignSelf: 'center', marginTop: 4 }}>
+                      + Ajouter un membre
+                    </button>
+                  )}
                 </div>
                 <div className="bac-mobile-bottom-bar" style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'transparent', boxShadow: 'none', borderTop: 'none' }}>
                   <button
@@ -661,9 +699,10 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                       {role?.nom || 'Rôle'}
                     </div>
 
-                    {/* Assign actor — only own group, only matching role */}
+                    {/* Assign actor — all group members, only for répliques belonging to this group */}
                     {(() => {
-                      const eligible = casting.filter(c => c.role_id === repBloc.role_id);
+                      const isGroupReplique = casting.some(c => c.role_id === repBloc.role_id);
+                      const eligible = isGroupReplique ? casting : [];
                       if (eligible.length === 0) return null;
                       return (
                         <div style={{ marginBottom: 12 }}>
@@ -852,7 +891,8 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                                   {role?.nom || 'Rôle'}
                                 </div>
                                 {(() => {
-                                  const eligible = casting.filter(c => c.role_id === repBloc.role_id);
+                                  const isGroupReplique = casting.some(c => c.role_id === repBloc.role_id);
+                                  const eligible = isGroupReplique ? casting : [];
                                   if (eligible.length === 0) return null;
                                   return (
                                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>

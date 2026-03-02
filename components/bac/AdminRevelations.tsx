@@ -215,11 +215,10 @@ function DenouementEditor({
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div className="bac-form-row">
                       <div className="bac-form-group" style={{ margin: 0 }}>
-                        <label className="bac-label">Rôle</label>
+                        <label className="bac-label">Groupe</label>
                         <select className="bac-input bac-select" value={bloc.role_id} onChange={e => updateBloc(i, { role_id: e.target.value })}>
                           <option value="">— Choisir —</option>
-                          <option value="coordinateur">🎬 Coordinateur</option>
-                          {roles.map(r => <option key={r.id} value={r.id}>{r.nom}</option>)}
+                          {groupes.map(g => <option key={g.slug} value={g.slug}>{g.nom}</option>)}
                         </select>
                       </div>
                       <div className="bac-form-group" style={{ margin: 0 }}>

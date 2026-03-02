@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, Fragment } from 'react';
-import type { BacSession, BacScene, BacCasting, BacChoixScene, BacSaisie, BacRole, BacRevelation, BacDenouement } from '../../lib/bac/types';
+import type { BacSession, BacScene, BacCasting, BacChoixScene, BacSaisie, BacRole, BacRevelation, BacDenouement, BacProfil } from '../../lib/bac/types';
 import DeroulAnimation from './DeroulAnimation';
 
 type SectionId = 'animation' | 'tournage';
@@ -74,6 +74,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
   const [allChoix, setAllChoix] = useState<BacChoixScene[]>([]);
   const [allSaisies, setAllSaisies] = useState<BacSaisie[]>([]);
   const [allScenes, setAllScenes] = useState<BacScene[]>([]);
+  const [groupes, setGroupes] = useState<BacProfil[]>([]);
   const [section, setSection] = useState<SectionId>('tournage');
   const [tab, setTab] = useState<TabId>('script');
   const [selectedRole, setSelectedRole] = useState<string | null>('Acteur');
@@ -120,9 +121,10 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
 
       const groups = active.groupes_actifs;
 
-      const [rolesData, scenesData, castResults, choixResults, saisiesResults, introSaisies, finaleSaisies] = await Promise.all([
+      const [rolesData, scenesData, profilsData, castResults, choixResults, saisiesResults, introSaisies, finaleSaisies] = await Promise.all([
         fetch('/bac/api/roles').then(r => r.json()),
         fetch('/bac/api/scenes').then(r => r.json()),
+        fetch('/bac/api/profils').then(r => r.json()),
         Promise.all(groups.map((g: string) => fetch(`/bac/api/casting?session_id=${active.id}&groupe_slug=${g}`).then(r => r.json()))),
         Promise.all(groups.map((g: string) => fetch(`/bac/api/choix-scenes?session_id=${active.id}&groupe_slug=${g}`).then(r => r.json()))),
         Promise.all(groups.map((g: string) => fetch(`/bac/api/saisies?session_id=${active.id}&groupe_slug=${g}`).then(r => r.json()))),
@@ -131,6 +133,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
       ]);
       setRoles(Array.isArray(rolesData) ? rolesData : []);
       setAllScenes(Array.isArray(scenesData) ? scenesData : []);
+      setGroupes(Array.isArray(profilsData) ? profilsData.filter((p: BacProfil) => p.type === 'groupe-acteur' && p.actif) : []);
       setAllCasting(castResults.flat().filter(Boolean));
       setAllChoix(choixResults.flat().filter(Boolean));
       setAllSaisies([
@@ -321,10 +324,10 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
         if (s.bloc_index >= 0 && s.texte_saisi) textes[s.bloc_index] = s.texte_saisi;
         if (s.bloc_index >= 0 && s.champ_perso_valeur) champs[s.bloc_index] = s.champ_perso_valeur;
       });
-      // Auto-assign when only 1 actor with this role across all groups
+      // Auto-assign when only 1 actor in the assigned group
       ((entity.script_json || []) as any[]).forEach((bloc: any, i: number) => {
         if (bloc.type !== 'replique' || actors[i]) return;
-        const eligible = allCasting.filter(c => c.role_id === bloc.role_id);
+        const eligible = allCasting.filter(c => c.groupe_slug === bloc.role_id);
         if (eligible.length === 1) actors[i] = eligible[0].id;
       });
       setEditTextes(textes);
@@ -379,28 +382,47 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
         {isEditing ? (
           /* ── Edit mode : attribution des acteurs ── */
           <div className="bac-card" style={{ padding: 20, borderLeft: `4px solid ${color}` }}>
+            {/* Header with title + save/cancel buttons at the top */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+              <div>
+                {entity && <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>{entity.titre}</h3>}
+                {entity && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {entity.duree_min}–{entity.duree_max} min</span>}
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, marginLeft: 12 }}>
+                <button className="bac-btn bac-btn-primary" style={{ padding: '4px 10px', fontSize: '0.8125rem' }} onClick={() => saveSpecialEdit(type)}>✓ Enregistrer</button>
+                <button className="bac-btn bac-btn-ghost" style={{ padding: '4px 10px', fontSize: '0.8125rem' }} onClick={() => setEditingSpecial(null)}>Annuler</button>
+              </div>
+            </div>
             {entity ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {(entity.script_json as any[]).map((bloc: any, i: number) => {
                   if (bloc.type === 'didascalie') {
                     return <div key={i} className="bac-script-didascalie">{bloc.texte}</div>;
                   }
-                  const role = roles.find(r => r.id === bloc.role_id);
-                  const roleName = role?.nom || bloc.role_id || 'Rôle';
-                  const roleActors = allCasting.filter(c => c.role_id === bloc.role_id);
-                  const actorPool = roleActors.length > 0 ? roleActors : allCasting;
+                  const groupe = groupes.find(g => g.slug === bloc.role_id);
+                  const roleName = groupe?.nom || roles.find(r => r.id === bloc.role_id)?.nom || bloc.role_id || 'Groupe';
+                  const groupeColor = groupe?.couleur || color;
+                  const actorPool = allCasting.filter(c => c.groupe_slug === bloc.role_id);
+                  const groupedActors = actorPool.length > 0 ? [{ groupSlug: bloc.role_id, actors: actorPool }] : [];
                   return (
                     <div key={i} className="bac-script-replique">
-                      <div className="bac-script-role-name" style={{ color: role?.couleur || color, marginBottom: 4 }}>{roleName}</div>
+                      <div className="bac-script-role-name" style={{ color: groupeColor, marginBottom: 4 }}>{roleName}</div>
                       <div className="bac-script-directive" style={{ marginBottom: 6 }}>{bloc.directive}</div>
                       <div style={{ fontStyle: 'italic', color: 'var(--bac-text-muted)', fontSize: '0.875rem', marginBottom: 8 }}>"{bloc.exemple}"</div>
-                      {actorPool.length > 0 ? (
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          {actorPool.map(actor => (
-                            <label key={actor.id} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', padding: '4px 12px', borderRadius: 6, border: `1px solid ${editActors[i] === actor.id ? 'var(--bac-primary)' : 'var(--bac-border)'}`, background: editActors[i] === actor.id ? 'rgba(99,102,241,0.12)' : 'transparent', fontSize: '0.875rem', fontWeight: editActors[i] === actor.id ? 700 : 400 }}>
-                              <input type="radio" name={`special-actor-${type}-${i}`} value={actor.id} checked={editActors[i] === actor.id} onChange={() => setEditActors(prev => ({ ...prev, [i]: actor.id }))} style={{ display: 'none' }} />
-                              {actor.prenom}
-                            </label>
+                      {groupedActors.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {groupedActors.map(({ groupSlug, actors }) => (
+                            <div key={groupSlug}>
+                              <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--bac-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{groupSlug}</span>
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 3 }}>
+                                {actors.map(actor => (
+                                  <label key={actor.id} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', padding: '4px 12px', borderRadius: 6, border: `1px solid ${editActors[i] === actor.id ? 'var(--bac-primary)' : 'var(--bac-border)'}`, background: editActors[i] === actor.id ? 'rgba(99,102,241,0.12)' : 'transparent', fontSize: '0.875rem', fontWeight: editActors[i] === actor.id ? 700 : 400 }}>
+                                    <input type="radio" name={`special-actor-${type}-${i}`} value={actor.id} checked={editActors[i] === actor.id} onChange={() => setEditActors(prev => ({ ...prev, [i]: actor.id }))} style={{ display: 'none' }} />
+                                    {actor.prenom}
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
                           ))}
                         </div>
                       ) : (
@@ -427,17 +449,6 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                             />
                           </div>
                         )}
-                        {bloc.utilise_champ_perso && (
-                          <div style={{ marginTop: 8 }}>
-                            <label style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', display: 'block', marginBottom: 4 }}>{bloc.champ_perso_label || 'Champ perso'}</label>
-                            <input
-                              className="bac-input"
-                              value={editChampPersos[i] || ''}
-                              onChange={e => setEditChampPersos(prev => ({ ...prev, [i]: e.target.value }))}
-                              style={{ width: '100%', fontSize: '0.875rem' }}
-                            />
-                          </div>
-                        )}
                       </div>
                     </div>
                   );
@@ -448,14 +459,6 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                 Aucune {type === 'intro' ? 'révélation' : 'dénouement'} assigné à cette session. Configurez-le dans les Sessions.
               </p>
             )}
-            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-              <button className="bac-btn bac-btn-primary" style={{ padding: '6px 16px', fontSize: '0.875rem' }} onClick={() => saveSpecialEdit(type)}>
-                ✓ Enregistrer
-              </button>
-              <button className="bac-btn bac-btn-ghost" style={{ padding: '6px 16px', fontSize: '0.875rem' }} onClick={() => setEditingSpecial(null)}>
-                Annuler
-              </button>
-            </div>
           </div>
         ) : entity ? (
           /* ── Read mode ── */
@@ -489,13 +492,14 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                     if (bloc.type === 'didascalie') {
                       return <div key={i} className="bac-script-didascalie">{bloc.texte}</div>;
                     }
-                    const role = roles.find(r => r.id === bloc.role_id);
-                    const roleName = role?.nom || bloc.role_id || 'Rôle';
+                    const groupe = groupes.find(g => g.slug === bloc.role_id);
+                    const roleName = groupe?.nom || roles.find(r => r.id === bloc.role_id)?.nom || bloc.role_id || 'Groupe';
+                    const groupeColor = groupe?.couleur || color;
                     const saisie = sceneSaisies.find((s: BacSaisie) => s.bloc_index === i);
                     const acteur = saisie?.acteur_id ? allCasting.find(c => c.id === saisie.acteur_id) : null;
                     return (
                       <div key={i} className="bac-script-replique">
-                        <div className="bac-script-role-name" style={{ color: role?.couleur || color }}>
+                        <div className="bac-script-role-name" style={{ color: groupeColor }}>
                           {roleName} {acteur ? `(${acteur.prenom})` : ''}
                         </div>
                         <div className="bac-script-directive">{bloc.directive}</div>

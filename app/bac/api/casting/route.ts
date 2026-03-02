@@ -34,14 +34,46 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Données manquantes' }, { status: 400 });
   }
 
-  // Delete existing casting for this group/session
-  await supabaseAdmin
+  // 1. Fetch old casting members (id + prenom)
+  const { data: oldCasting } = await supabaseAdmin
+    .from('bac_casting_groupes')
+    .select('id, prenom')
+    .eq('session_id', session_id)
+    .eq('groupe_slug', groupe_slug);
+
+  const oldMembers: { id: string; prenom: string }[] = oldCasting || [];
+  const oldIds = oldMembers.map(c => c.id);
+  const oldIdToPrenom: Record<string, string> = {};
+  oldMembers.forEach(c => { oldIdToPrenom[c.id] = c.prenom; });
+
+  // 2. Snapshot saisies that reference old casting members (to remap later)
+  let saisiesSnapshot: { id: string; acteur_id: string }[] = [];
+  if (oldIds.length > 0) {
+    const { data: snap } = await supabaseAdmin
+      .from('bac_saisies_acteurs')
+      .select('id, acteur_id')
+      .in('acteur_id', oldIds);
+    saisiesSnapshot = snap || [];
+  }
+
+  // 3. Clear acteur_id refs to unlock FK for deletion
+  if (oldIds.length > 0) {
+    await supabaseAdmin
+      .from('bac_saisies_acteurs')
+      .update({ acteur_id: null })
+      .in('acteur_id', oldIds);
+  }
+
+  // 4. Delete old casting
+  const { error: deleteError } = await supabaseAdmin
     .from('bac_casting_groupes')
     .delete()
     .eq('session_id', session_id)
     .eq('groupe_slug', groupe_slug);
 
-  // Insert new members
+  if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 500 });
+
+  // 5. Insert new members
   const rows = members.map((m: any, i: number) => ({
     session_id,
     groupe_slug,
@@ -57,6 +89,25 @@ export async function POST(request: NextRequest) {
     .select('*, role:bac_roles(*, variants:bac_variants(*)), variant:bac_variants(*)');
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // 6. Remap acteur_id: for each old saisie, if the member's prenom still exists → restore with new id
+  const newCasting: { id: string; prenom: string }[] = (data as any[]) || [];
+  const prenomToNewId: Record<string, string> = {};
+  newCasting.forEach(c => { prenomToNewId[c.prenom] = c.id; });
+
+  const remaps = saisiesSnapshot
+    .map(s => ({ saisieId: s.id, newActeurId: prenomToNewId[oldIdToPrenom[s.acteur_id]] }))
+    .filter(r => r.newActeurId);
+
+  if (remaps.length > 0) {
+    await Promise.all(remaps.map(r =>
+      supabaseAdmin
+        .from('bac_saisies_acteurs')
+        .update({ acteur_id: r.newActeurId })
+        .eq('id', r.saisieId)
+    ));
+  }
+
   return NextResponse.json(data, { status: 201 });
 }
 
