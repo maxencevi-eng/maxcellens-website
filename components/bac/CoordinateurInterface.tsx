@@ -102,16 +102,15 @@ export default function CoordinateurInterface({ isAdmin = false, embedded = fals
       if (castArr.length === 0) {
         phase = 'attente';
       } else {
-        // once casting exists we need to decide scenes vs personnalisation
-        const totalBlocs = saisiesArr.length;
-        const sceneIds = new Set(choixArr.map(c => c.scene_id));
-        const allChoicesValid = sceneIds.size > 0 && choixArr.every(c => c.statut === 'valide');
+        // once casting exists decide between scenes / personnalisation / prêt
+        const choiceValidCount = choixArr.filter(c => c.statut === 'valide').length;
+        const allChoicesValid = choixArr.length > 0 && choiceValidCount === choixArr.length;
+        const hasReadyMarker = saisiesArr.some(s => s.texte_saisi === '__group_ready__');
 
-        // if all validated we can mark the group ready immediately
-        if (allChoicesValid) {
+        if (allChoicesValid && hasReadyMarker) {
           phase = 'pret';
-        } else if (totalBlocs > 0 || choixArr.some(c => c.statut === 'valide')) {
-          // either some personalization started or at least one choice has been validated
+        } else if (choiceValidCount > 0 || saisiesArr.length > 0) {
+          // at least one validated choice or any personalization input
           phase = 'personnalisation';
         } else {
           phase = 'scenes';

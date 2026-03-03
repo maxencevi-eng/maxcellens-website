@@ -934,8 +934,10 @@
    ever ends up underneath the bar */
 @media (min-width: 768px) {
   .bac-mobile-bottom-bar {
-    position: sticky;
-    bottom: 0;
+    /* on desktop we no longer pin the bar to the viewport; it should sit
+       at the end of the content so users can scroll past it. */
+    position: relative;
+    bottom: auto;
   }
 }
 
