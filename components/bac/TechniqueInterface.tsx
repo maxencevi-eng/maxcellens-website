@@ -1113,7 +1113,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                       })()
                     : getSceneActors(item.groupSlug || '', scene);
                   const border = item.isHistoire ? '4px solid #f59e0b' : undefined;
-                  const labelBadges: JSX.Element[] = [];
+                  const labelBadges: React.ReactElement[] = [];
                   if (item.isHistoire) {
                     labelBadges.push(<span key="histo" className="bac-badge" style={{ background: '#f59e0b', color: 'white', marginRight: 8 }}>📌 HISTOIRE</span>);
                   }
