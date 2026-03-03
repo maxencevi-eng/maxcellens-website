@@ -248,7 +248,7 @@ function SceneEditor({ scene, groupes, roles, onClose, onToast }: {
     update('itw_json', itws);
   }
 
-  const relevantRoles = roles.filter(r => r.actif && (form.groupes_concernes || []).includes(r.groupe_slug));
+  const relevantGroupes = groupes.filter(g => (form.groupes_concernes || []).includes(g.slug));
 
   return (
     <div className="bac-animate-in">
@@ -413,7 +413,7 @@ function SceneEditor({ scene, groupes, roles, onClose, onToast }: {
               {form.script_json.map((block: ScriptBloc, i: number) => (
                 <div key={i} className="bac-card" style={{
                   padding: 16,
-                  borderLeft: block.type === 'replique' ? `4px solid ${relevantRoles.find(r => r.id === (block as any).role_id)?.couleur || 'var(--bac-border)'}` : '4px solid var(--bac-text-muted)',
+                  borderLeft: block.type === 'replique' ? `4px solid ${relevantGroupes.find(g => g.slug === (block as any).role_id)?.couleur || 'var(--bac-border)'}` : '4px solid var(--bac-text-muted)',
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                     <span className="bac-badge" style={{ background: block.type === 'replique' ? 'var(--bac-primary-50)' : 'var(--bac-surface-active)' }}>
@@ -440,10 +440,10 @@ function SceneEditor({ scene, groupes, roles, onClose, onToast }: {
                     <>
                       <div className="bac-form-row">
                         <div className="bac-form-group">
-                          <label className="bac-label">Rôle</label>
+                          <label className="bac-label">Groupe</label>
                           <select className="bac-input bac-select" value={(block as any).role_id} onChange={e => updateBlock(i, 'role_id', e.target.value)}>
                             <option value="">Sélectionner...</option>
-                            {relevantRoles.map(r => <option key={r.id} value={r.id}>{r.nom}</option>)}
+                            {relevantGroupes.map(g => <option key={g.slug} value={g.slug}>{g.nom}</option>)}
                           </select>
                         </div>
                       </div>
@@ -489,10 +489,10 @@ function SceneEditor({ scene, groupes, roles, onClose, onToast }: {
                     <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ color: 'var(--bac-error)' }} onClick={() => removeItw(i)}>✕ Supprimer</button>
                   </div>
                   <div className="bac-form-group">
-                    <label className="bac-label">Rôle ciblé</label>
+                    <label className="bac-label">Groupe ciblé</label>
                     <select className="bac-input bac-select" value={itw.role_id} onChange={e => updateItw(i, 'role_id', e.target.value)}>
                       <option value="">Sélectionner...</option>
-                      {relevantRoles.map(r => <option key={r.id} value={r.id}>{r.nom}</option>)}
+                      {relevantGroupes.map(g => <option key={g.slug} value={g.slug}>{g.nom}</option>)}
                     </select>
                   </div>
                   <div className="bac-form-group">

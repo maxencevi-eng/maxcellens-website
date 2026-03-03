@@ -692,19 +692,19 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                 }
 
                 const repBloc = bloc as any;
-                const role = roles.find(r => r.id === repBloc.role_id);
+                const groupe = globalGroupes.find((g: any) => g.slug === repBloc.role_id);
                 const saisieKey = getSaisieKey(currentScene.id, i);
                 const saisie = saisies[saisieKey] || {};
 
                 return (
                   <div key={i} className="bac-script-replique">
-                    <div className="bac-script-role-name" style={{ color: role?.couleur || 'var(--bac-text)' }}>
-                      {role?.nom || 'Rôle'}
+                    <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>
+                      {groupe?.nom || repBloc.role_id || 'Groupe'}
                     </div>
 
                     {/* Assign actor — all group members, only for répliques belonging to this group */}
                     {(() => {
-                      const isGroupReplique = casting.some(c => c.role_id === repBloc.role_id);
+                      const isGroupReplique = repBloc.role_id === slug;
                       const eligible = isGroupReplique ? casting : [];
                       if (eligible.length === 0) return null;
                       return (
@@ -886,18 +886,18 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                             return <div key={i} className="bac-script-didascalie">{(bloc as any).texte}</div>;
                           }
                           const repBloc = bloc as any;
-                          const role = roles.find(r => r.id === repBloc.role_id);
+                          const groupe = globalGroupes.find((g: any) => g.slug === repBloc.role_id);
                           const saisie = saisies[`${scene.id}_${i}`] || {};
                           const acteur = saisie.acteur_id ? casting.find(cst => cst.id === saisie.acteur_id) : null;
 
                           if (isEditing) {
                             return (
                               <div key={i} className="bac-script-replique">
-                                <div className="bac-script-role-name" style={{ color: role?.couleur || 'var(--bac-text)' }}>
-                                  {role?.nom || 'Rôle'}
+                                <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>
+                                  {groupe?.nom || repBloc.role_id || 'Groupe'}
                                 </div>
                                 {(() => {
-                                  const isGroupReplique = casting.some(c => c.role_id === repBloc.role_id);
+                                  const isGroupReplique = repBloc.role_id === slug;
                                   const eligible = isGroupReplique ? casting : [];
                                   if (eligible.length === 0) return null;
                                   return (
@@ -925,8 +925,8 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
                           return (
                             <div key={i} className="bac-script-replique">
-                              <div className="bac-script-role-name" style={{ color: role?.couleur || 'var(--bac-text)' }}>
-                                {role?.nom || 'Rôle'}{acteur ? ` — ${acteur.prenom}` : ''}
+                              <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>
+                                {groupe?.nom || repBloc.role_id || 'Groupe'}{acteur ? ` — ${acteur.prenom}` : ''}
                               </div>
                               <div className="bac-script-directive">{repBloc.directive}</div>
                               {saisie.texte_saisi ? (

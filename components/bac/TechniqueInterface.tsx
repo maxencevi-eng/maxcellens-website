@@ -198,17 +198,16 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
         for (const itw of ((scene as any).itw_json || []) as any[]) {
           const roleId = itw.role_id;
           if (!byRole[roleId]) {
-            const role = roles.find(r => r.id === roleId) || { id: roleId, nom: roleId, couleur: 'var(--bac-text)' };
-            byRole[roleId] = { role, entries: [] };
+            const groupe = groupes.find(gr => gr.slug === roleId) || { id: roleId, nom: roleId, couleur: 'var(--bac-text)' };
+            byRole[roleId] = { role: groupe, entries: [] };
           }
-          const actor = casting.find(c => c.role_id === roleId) || null;
           byRole[roleId].entries.push({
             groupSlug: g,
             sceneActe: String(scene.acte),
             sceneTitre: scene.titre,
             question: itw.question,
             reponses: itw.reponses_par_variant || {},
-            actorName: actor ? actor.prenom : null,
+            actorName: null,
           });
         }
       }
@@ -220,17 +219,16 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
       for (const itw of (revelationEntity.itw_json || []) as any[]) {
         const roleId = itw.role_id;
         if (!byRole[roleId]) {
-          const role = roles.find(r => r.id === roleId) || { id: roleId, nom: roleId, couleur: 'var(--bac-text)' };
-          byRole[roleId] = { role, entries: [] };
+          const groupe = groupes.find(gr => gr.slug === roleId) || { id: roleId, nom: roleId, couleur: 'var(--bac-text)' };
+          byRole[roleId] = { role: groupe, entries: [] };
         }
-        const actor = allCasting.find(c => c.role_id === roleId) || null;
         byRole[roleId].entries.push({
           groupSlug: 'intro',
           sceneActe: 'intro',
           sceneTitre: revelationEntity.titre,
           question: itw.question,
           reponses: itw.reponses_par_variant || {},
-          actorName: actor ? actor.prenom : null,
+          actorName: null,
         });
       }
     }
@@ -241,17 +239,16 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
       for (const itw of (denouementEntity.itw_json || []) as any[]) {
         const roleId = itw.role_id;
         if (!byRole[roleId]) {
-          const role = roles.find(r => r.id === roleId) || { id: roleId, nom: roleId, couleur: 'var(--bac-text)' };
-          byRole[roleId] = { role, entries: [] };
+          const groupe = groupes.find(gr => gr.slug === roleId) || { id: roleId, nom: roleId, couleur: 'var(--bac-text)' };
+          byRole[roleId] = { role: groupe, entries: [] };
         }
-        const actor = allCasting.find(c => c.role_id === roleId) || null;
         byRole[roleId].entries.push({
           groupSlug: 'finale',
           sceneActe: 'finale',
           sceneTitre: denouementEntity.titre,
           question: itw.question,
           reponses: itw.reponses_par_variant || {},
-          actorName: actor ? actor.prenom : null,
+          actorName: null,
         });
       }
     }
@@ -293,8 +290,8 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     scriptJson.forEach((bloc: any, i: number) => {
       if (bloc.type !== 'replique') return;
       const roleId = bloc.role_id;
-      const role = roles.find(r => r.id === roleId);
-      const roleName = role?.nom || roleId;
+      const groupe = groupes.find(g => g.slug === roleId);
+      const roleName = groupe?.nom || roleId;
       const saisie = saisies.find(s => s.bloc_index === i);
       const actorName = saisie?.acteur_id ? (casting.find(c => c.id === saisie.acteur_id)?.prenom || '') : '';
       if (!roleMap.has(roleId)) {
@@ -748,16 +745,16 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                         if (bloc.type === 'didascalie') {
                           return <div key={i} className="bac-script-didascalie">{bloc.texte}</div>;
                         }
-                        const role = roles.find(r => r.id === bloc.role_id);
+                        const groupe = groupes.find(g => g.slug === bloc.role_id);
                         const saisie = sceneSaisies.find(s => s.bloc_index === i);
                         const acteur = saisie?.acteur_id ? allCasting.find(c => c.id === saisie.acteur_id) : null;
-                        const roleActors = allCasting.filter(c => c.role_id === bloc.role_id);
+                        const roleActors = allCasting.filter(c => c.groupe_slug === bloc.role_id);
                         return (
                           <div key={i} className="bac-script-replique">
                             {isEditing ? (
                               <>
-                                <div className="bac-script-role-name" style={{ color: role?.couleur || 'var(--bac-text)', marginBottom: 4 }}>
-                                  {role?.nom || 'Rôle'}
+                                <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)', marginBottom: 4 }}>
+                                  {groupe?.nom || bloc.role_id || 'Groupe'}
                                 </div>
                                 <div className="bac-script-directive" style={{ marginBottom: 6 }}>{bloc.directive}</div>
                                 <div style={{ fontStyle: 'italic', color: 'var(--bac-text-muted)', fontSize: '0.875rem', marginBottom: 8 }}>"{bloc.exemple}"</div>
@@ -771,7 +768,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                                     ))}
                                   </div>
                                 ) : (
-                                  <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>Aucun acteur pour ce rôle</p>
+                                  <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>Aucun acteur pour ce groupe</p>
                                 )}
                                 <div style={{ marginTop: 8 }}>
                                   <label style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', display: 'block', marginBottom: 4 }}>Réplique personnalisée</label>
@@ -787,8 +784,8 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                               </>
                             ) : (
                               <>
-                                <div className="bac-script-role-name" style={{ color: role?.couleur || 'var(--bac-text)' }}>
-                                  {role?.nom || 'Rôle'} {acteur ? `(${acteur.prenom})` : ''}
+                                <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>
+                                  {groupe?.nom || bloc.role_id || 'Groupe'} {acteur ? `(${acteur.prenom})` : ''}
                                 </div>
                                 <div className="bac-script-directive">{bloc.directive}</div>
                                 {saisie?.texte_saisi ? (
