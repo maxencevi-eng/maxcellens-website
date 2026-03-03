@@ -1114,9 +1114,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                     : getSceneActors(item.groupSlug || '', scene);
                   const border = item.isHistoire ? '4px solid #f59e0b' : undefined;
                   const labelBadges: React.ReactElement[] = [];
-                  if (item.isHistoire) {
-                    labelBadges.push(<span key="histo" className="bac-badge" style={{ background: '#f59e0b', color: 'white', marginRight: 8 }}>📌 HISTOIRE</span>);
-                  }
+                  // histoire scenes no longer get a special badge in repartition
                   labelBadges.push(<span key="act" className="bac-badge bac-badge-primary" style={{ marginRight: 8 }}>Acte {scene.acte}</span>);
                   return (
                     <div key={(item.isHistoire ? 'hist' : item.groupSlug || '') + '-' + scene.id} className="bac-card" style={{ padding: 20, marginBottom: 12, borderLeft: border }}>
