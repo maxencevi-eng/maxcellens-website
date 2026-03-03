@@ -772,9 +772,6 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                               </>
                             )}
                           </div>
-                          <div style={{ marginBottom: 4 }}>
-                            <span className="bac-badge" style={{ background: '#f59e0b', color: 'white' }}>📌 Fil rouge</span>
-                          </div>
                           <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>{scene.titre}</h3>
                           {!isSceneCollapsed && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>}
                         </div>

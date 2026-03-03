@@ -8,6 +8,7 @@ const ACTE_LABELS: Record<string, string> = {
   '2': 'Acte 2',
   '3': 'Acte 3',
   '4': 'Acte 4',
+  // intro/final deliberately omitted from this mapping; they are handled elsewhere
 };
 
 const DIFFICULTY_LABELS = ['⭐', '⭐⭐', '⭐⭐⭐'];
@@ -16,25 +17,29 @@ export default function AdminScenes() {
   const [scenes, setScenes] = useState<BacScene[]>([]);
   const [groupes, setGroupes] = useState<BacProfil[]>([]);
   const [roles, setRoles] = useState<BacRole[]>([]);
+  const [histoires, setHistoires] = useState<BacHistoire[]>([]);
   const [loading, setLoading] = useState(true);
   const [editScene, setEditScene] = useState<BacScene | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [filterActe, setFilterActe] = useState<string>('');
   const [filterGroupe, setFilterGroupe] = useState<string>('');
+  const [filterHistoire, setFilterHistoire] = useState<string>('');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     try {
-      const [s, p, r] = await Promise.all([
+      const [s, p, r, h] = await Promise.all([
         fetch('/bac/api/scenes').then(r => r.json()),
         fetch('/bac/api/profils').then(r => r.json()),
         fetch('/bac/api/roles').then(r => r.json()),
+        fetch('/bac/api/histoires').then(r => r.json()),
       ]);
       if (Array.isArray(s)) setScenes(s);
       if (Array.isArray(p)) setGroupes(p.filter((x: BacProfil) => x.type === 'groupe-acteur' && x.actif));
       if (Array.isArray(r)) setRoles(r);
+      if (Array.isArray(h)) setHistoires(h);
     } catch { } finally { setLoading(false); }
   }
 
@@ -60,6 +65,12 @@ export default function AdminScenes() {
   const filteredScenes = scenes.filter(s => {
     if (filterActe && s.acte !== filterActe) return false;
     if (filterGroupe && s.groupe_acteur !== filterGroupe) return false;
+    if (filterHistoire) {
+      const hist = histoires.find(h => h.id === filterHistoire);
+      if (!hist) return false;
+      const linked = (hist.scenes || []).map((hs: any) => hs.scene_id);
+      if (!linked.includes(s.id)) return false;
+    }
     return true;
   });
 
@@ -88,16 +99,22 @@ export default function AdminScenes() {
       </div>
 
       {/* Filters */}
-      <div className="bac-card bac-animate-in" style={{ marginBottom: 24, padding: 16 }}>
+      <div className="bac-card bac-animate-in" style={{ marginBottom: 12, padding: 12 }}>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>Filtres :</span>
           <select className="bac-input bac-select" style={{ maxWidth: 160, minHeight: 36, padding: '6px 10px' }} value={filterActe} onChange={e => setFilterActe(e.target.value)}>
             <option value="">Tous les actes</option>
-            {Object.entries(ACTE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            {Object.entries(ACTE_LABELS)
+              .filter(([k]) => k !== 'intro' && k !== 'final')
+              .map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
           <select className="bac-input bac-select" style={{ maxWidth: 180, minHeight: 36, padding: '6px 10px' }} value={filterGroupe} onChange={e => setFilterGroupe(e.target.value)}>
             <option value="">Tous les groupes</option>
             {groupes.map(g => <option key={g.slug} value={g.slug}>{g.nom}</option>)}
+          </select>
+          <select className="bac-input bac-select" style={{ maxWidth: 200, minHeight: 36, padding: '6px 10px' }} value={filterHistoire} onChange={e => setFilterHistoire(e.target.value)}>
+            <option value="">Toutes les histoires</option>
+            {histoires.map(h => <option key={h.id} value={h.id}>{h.titre}</option>)}
           </select>
         </div>
       </div>

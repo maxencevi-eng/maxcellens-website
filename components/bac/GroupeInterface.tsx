@@ -191,9 +191,6 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
             <><span className="bac-badge bac-badge-primary" style={{ marginRight: 8 }}>Acte {scene.acte}</span>
             <span style={{ fontSize: '0.75rem', color: 'var(--bac-text-muted)', marginRight: 8 }}>{groupSlug}</span></>
           )}
-          {prefix === 'histoire' && (
-            <span className="bac-badge" style={{ background: '#f59e0b', color: 'white', marginRight: 8 }}>📌 Fil rouge — Acte {scene.acte}</span>
-          )}
           <h4 style={{ fontWeight: 700, fontSize: '1rem', marginTop: 6 }}>{scene.titre}</h4>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -684,7 +681,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
             {/* FINALE locked card */}
             {isInFinale && finaleScene && (
-              <div className="bac-card" style={{ marginBottom: 140, marginTop: 8, borderLeft: '4px solid #22c55e', background: 'rgba(34,197,94,0.05)', padding: 14, cursor: 'pointer' }} onClick={() => setDetailLockedScene(finaleScene)}>
+              <div className="bac-card" style={{ marginBottom: 80, marginTop: 8, borderLeft: '4px solid #22c55e', background: 'rgba(34,197,94,0.05)', padding: 14, cursor: 'pointer' }} onClick={() => setDetailLockedScene(finaleScene)}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
                     <span className="bac-badge" style={{ background: '#22c55e', color: 'white', marginBottom: 4, display: 'inline-block' }}>🎤 FINALE</span>
@@ -894,7 +891,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
             {/* FINALE mandatory section */}
             {isInFinale && finaleScene && (
-              <div style={{ marginTop: 20, marginBottom: 16 }}>
+              <div style={{ marginTop: 20, marginBottom: 40, paddingBottom: 16 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
                   <span className="bac-badge" style={{ background: '#22c55e', color: 'white' }}>🎤 FINALE</span>
                   <strong style={{ fontSize: '0.9375rem' }}>{(finaleScene as any).titre}</strong>
@@ -1051,9 +1048,36 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                 {/* INTRO */}
                 {isInIntro && introScene && (() => {
                   const sc: any = introScene;
+                  const isEditingIntro = editingPretSceneId === 'intro';
                   return (
-                    <div className="bac-card" style={{ marginBottom: 16, padding: 20, borderLeft: '4px solid var(--bac-info)' }}>
+                    <div
+                      className="bac-card"
+                      style={{
+                        marginBottom: 16,
+                        padding: 20,
+                        borderLeft: '4px solid var(--bac-info)',
+                        border: isEditingIntro ? '2px solid var(--bac-primary)' : undefined,
+                      }}
+                    >
                       <div style={{ marginBottom: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
+                          {isEditingIntro ? (
+                            <button
+                              className="bac-btn bac-btn-success bac-btn-sm"
+                              onClick={() => { setEditingPretSceneId(null); showToastMsg('Modifications enregistrées ✓'); }}
+                            >
+                              ✓ Enregistrer
+                            </button>
+                          ) : (
+                            <button
+                              className="bac-btn bac-btn-ghost bac-btn-sm"
+                              onClick={() => setEditingPretSceneId('intro')}
+                            >
+                              ✏️ Modifier
+                            </button>
+                          )}
+                        </div>
+
                         <span className="bac-badge" style={{ background: 'var(--bac-info)', color: 'white', marginBottom: 6, display: 'inline-block' }}>🎬 INTRO</span>
                         <h4 style={{ fontWeight: 700, fontSize: '1.0625rem', marginBottom: 4 }}>{sc.titre}</h4>
                       </div>
@@ -1064,11 +1088,56 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                           const groupe = globalGroupes.find((g: any) => g.slug === repBloc.role_id);
                           const saisie = saisies[`${sc.id}_${i}`] || {};
                           const acteur = saisie.acteur_id ? casting.find(cst => cst.id === saisie.acteur_id) : null;
+                          const isMyBloc = repBloc.role_id === slug;
+
+                          if (isEditingIntro && isMyBloc) {
+                            return (
+                              <div key={i} className="bac-script-replique">
+                                <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>
+                                  {groupe?.nom || repBloc.role_id || 'Groupe'}
+                                </div>
+                                {casting.length > 0 && (
+                                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                                    {casting.map(cst => (
+                                      <label
+                                        key={cst.id}
+                                        className={`bac-radio-label ${saisie.acteur_id === cst.id ? 'selected' : ''}`}
+                                        style={{ padding: '4px 8px', cursor: 'pointer', fontSize: '0.8125rem' }}
+                                      >
+                                        <input
+                                          type="radio"
+                                          name={`pret-intro-${i}`}
+                                          checked={saisie.acteur_id === cst.id}
+                                          onChange={() => saveSaisie(sc.id, i, saisie.texte_saisi || '', cst.id)}
+                                        />
+                                        {cst.prenom}
+                                      </label>
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="bac-script-directive">{repBloc.directive}</div>
+                                <textarea
+                                  className="bac-input"
+                                  style={{ fontSize: '0.9375rem', minHeight: 52, marginTop: 6 }}
+                                  placeholder={`"${repBloc.exemple}" (optionnel)`}
+                                  value={saisie.texte_saisi || ''}
+                                  onChange={e => saveSaisie(sc.id, i, e.target.value, saisie.acteur_id)}
+                                />
+                              </div>
+                            );
+                          }
+
                           return (
-                            <div key={i} className="bac-script-replique" style={repBloc.role_id !== slug ? { opacity: 0.55 } : undefined}>
-                              <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>{groupe?.nom || repBloc.role_id}{acteur ? ` — ${acteur.prenom}` : ''}</div>
+                            <div key={i} className="bac-script-replique" style={!isMyBloc ? { opacity: 0.55 } : undefined}>
+                              <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>
+                                {groupe?.nom || repBloc.role_id}{acteur ? ` — ${acteur.prenom}` : ''}
+                              </div>
                               <div className="bac-script-directive">{repBloc.directive}</div>
-                              {saisie.texte_saisi ? <div className="bac-script-exemple">"{saisie.texte_saisi}"</div> : <div className="bac-script-exemple">"{repBloc.exemple}"</div>}
+                              {saisie.texte_saisi ? (
+                                <div className="bac-script-exemple">"{saisie.texte_saisi}"</div>
+                              ) : (
+                                <div className="bac-script-exemple">"{repBloc.exemple}"</div>
+                              )}
                             </div>
                           );
                         })}
@@ -1240,9 +1309,36 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                 {/* FINALE */}
                 {isInFinale && finaleScene && (() => {
                   const sc: any = finaleScene;
+                  const isEditingFinale = editingPretSceneId === 'finale';
                   return (
-                    <div className="bac-card" style={{ marginBottom: 16, padding: 20, borderLeft: '4px solid #22c55e' }}>
+                    <div
+                      className="bac-card"
+                      style={{
+                        marginBottom: 16,
+                        padding: 20,
+                        borderLeft: '4px solid #22c55e',
+                        border: isEditingFinale ? '2px solid var(--bac-primary)' : undefined,
+                      }}
+                    >
                       <div style={{ marginBottom: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
+                          {isEditingFinale ? (
+                            <button
+                              className="bac-btn bac-btn-success bac-btn-sm"
+                              onClick={() => { setEditingPretSceneId(null); showToastMsg('Modifications enregistrées ✓'); }}
+                            >
+                              ✓ Enregistrer
+                            </button>
+                          ) : (
+                            <button
+                              className="bac-btn bac-btn-ghost bac-btn-sm"
+                              onClick={() => setEditingPretSceneId('finale')}
+                            >
+                              ✏️ Modifier
+                            </button>
+                          )}
+                        </div>
+
                         <span className="bac-badge" style={{ background: '#22c55e', color: 'white', marginBottom: 6, display: 'inline-block' }}>🎤 FINALE</span>
                         <h4 style={{ fontWeight: 700, fontSize: '1.0625rem', marginBottom: 4 }}>{sc.titre}</h4>
                       </div>
@@ -1253,11 +1349,56 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                           const groupe = globalGroupes.find((g: any) => g.slug === repBloc.role_id);
                           const saisie = saisies[`${sc.id}_${i}`] || {};
                           const acteur = saisie.acteur_id ? casting.find(cst => cst.id === saisie.acteur_id) : null;
+                          const isMyBloc = repBloc.role_id === slug;
+
+                          if (isEditingFinale && isMyBloc) {
+                            return (
+                              <div key={i} className="bac-script-replique">
+                                <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>
+                                  {groupe?.nom || repBloc.role_id || 'Groupe'}
+                                </div>
+                                {casting.length > 0 && (
+                                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                                    {casting.map(cst => (
+                                      <label
+                                        key={cst.id}
+                                        className={`bac-radio-label ${saisie.acteur_id === cst.id ? 'selected' : ''}`}
+                                        style={{ padding: '4px 8px', cursor: 'pointer', fontSize: '0.8125rem' }}
+                                      >
+                                        <input
+                                          type="radio"
+                                          name={`pret-finale-${i}`}
+                                          checked={saisie.acteur_id === cst.id}
+                                          onChange={() => saveSaisie(sc.id, i, saisie.texte_saisi || '', cst.id)}
+                                        />
+                                        {cst.prenom}
+                                      </label>
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="bac-script-directive">{repBloc.directive}</div>
+                                <textarea
+                                  className="bac-input"
+                                  style={{ fontSize: '0.9375rem', minHeight: 52, marginTop: 6 }}
+                                  placeholder={`"${repBloc.exemple}" (optionnel)`}
+                                  value={saisie.texte_saisi || ''}
+                                  onChange={e => saveSaisie(sc.id, i, e.target.value, saisie.acteur_id)}
+                                />
+                              </div>
+                            );
+                          }
+
                           return (
-                            <div key={i} className="bac-script-replique" style={repBloc.role_id !== slug ? { opacity: 0.55 } : undefined}>
-                              <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>{groupe?.nom || repBloc.role_id}{acteur ? ` — ${acteur.prenom}` : ''}</div>
+                            <div key={i} className="bac-script-replique" style={!isMyBloc ? { opacity: 0.55 } : undefined}>
+                              <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>
+                                {groupe?.nom || repBloc.role_id}{acteur ? ` — ${acteur.prenom}` : ''}
+                              </div>
                               <div className="bac-script-directive">{repBloc.directive}</div>
-                              {saisie.texte_saisi ? <div className="bac-script-exemple">"{saisie.texte_saisi}"</div> : <div className="bac-script-exemple">"{repBloc.exemple}"</div>}
+                              {saisie.texte_saisi ? (
+                                <div className="bac-script-exemple">"{saisie.texte_saisi}"</div>
+                              ) : (
+                                <div className="bac-script-exemple">"{repBloc.exemple}"</div>
+                              )}
                             </div>
                           );
                         })}
