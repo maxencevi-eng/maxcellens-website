@@ -213,6 +213,49 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
         }
       }
     }
+
+    // Add révélation ITW
+    const revelationEntity = session?.revelation;
+    if (revelationEntity) {
+      for (const itw of (revelationEntity.itw_json || []) as any[]) {
+        const roleId = itw.role_id;
+        if (!byRole[roleId]) {
+          const role = roles.find(r => r.id === roleId) || { id: roleId, nom: roleId, couleur: 'var(--bac-text)' };
+          byRole[roleId] = { role, entries: [] };
+        }
+        const actor = allCasting.find(c => c.role_id === roleId) || null;
+        byRole[roleId].entries.push({
+          groupSlug: 'intro',
+          sceneActe: 'intro',
+          sceneTitre: revelationEntity.titre,
+          question: itw.question,
+          reponses: itw.reponses_par_variant || {},
+          actorName: actor ? actor.prenom : null,
+        });
+      }
+    }
+
+    // Add dénouement ITW
+    const denouementEntity = session?.denouement;
+    if (denouementEntity) {
+      for (const itw of (denouementEntity.itw_json || []) as any[]) {
+        const roleId = itw.role_id;
+        if (!byRole[roleId]) {
+          const role = roles.find(r => r.id === roleId) || { id: roleId, nom: roleId, couleur: 'var(--bac-text)' };
+          byRole[roleId] = { role, entries: [] };
+        }
+        const actor = allCasting.find(c => c.role_id === roleId) || null;
+        byRole[roleId].entries.push({
+          groupSlug: 'finale',
+          sceneActe: 'finale',
+          sceneTitre: denouementEntity.titre,
+          question: itw.question,
+          reponses: itw.reponses_par_variant || {},
+          actorName: actor ? actor.prenom : null,
+        });
+      }
+    }
+
     return Object.values(byRole);
   }
 
@@ -459,16 +502,24 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                 Aucune {type === 'intro' ? 'révélation' : 'dénouement'} assigné à cette session. Configurez-le dans les Sessions.
               </p>
             )}
+            {entity && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+                <button
+                  className="bac-btn bac-btn-primary"
+                  style={{ padding: '6px 20px', fontSize: '0.875rem' }}
+                  onClick={() => saveSpecialEdit(type)}
+                >
+                  ✓ Enregistrer
+                </button>
+              </div>
+            )}
           </div>
         ) : entity ? (
           /* ── Read mode ── */
           <div id={`scene-special-${type}`} className="bac-card" style={{ padding: 20, borderLeft: `4px solid ${color}`, opacity: isCollapsed ? 0.6 : 1 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isCollapsed ? 0 : 8 }}>
-              <div>
-                <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>{entity.titre}</h3>
-                {!isCollapsed && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {entity.duree_min}–{entity.duree_max} min</span>}
-              </div>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0, marginLeft: 12 }}>
+            <div style={{ marginBottom: isCollapsed ? 4 : 8 }}>
+              {/* Line 1 : boutons à droite */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginBottom: 6 }}>
                 <button
                   className="bac-btn bac-btn-ghost"
                   style={{ padding: '4px 10px', fontSize: '0.8125rem', color: isCollapsed ? 'var(--bac-text-muted)' : 'var(--bac-success, #22c55e)' }}
@@ -478,12 +529,16 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                 </button>
                 <button
                   className="bac-btn bac-btn-ghost"
-                  style={{ padding: '4px 10px', fontSize: '0.8125rem', flexShrink: 0 }}
+                  style={{ padding: '4px 10px', fontSize: '0.8125rem' }}
                   onClick={() => { setEditingSceneKey(null); startEditingSpecial(type); }}
                 >
                   ✏️ Modifier
                 </button>
               </div>
+              {/* Line 2 : titre */}
+              <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>{entity.titre}</h3>
+              {/* Line 3 : durée */}
+              {!isCollapsed && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {entity.duree_min}–{entity.duree_max} min</span>}
             </div>
             {!isCollapsed && (
               <>
@@ -508,13 +563,20 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                     );
                   })}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
                   <button
                     className="bac-btn bac-btn-ghost"
                     style={{ padding: '6px 20px', fontSize: '0.875rem', color: 'var(--bac-success, #22c55e)' }}
                     onClick={() => handleTermine(`special-${type}`, `scene-special-${type}`)}
                   >
                     ✓ Scène terminée
+                  </button>
+                  <button
+                    className="bac-btn bac-btn-ghost"
+                    style={{ padding: '6px 20px', fontSize: '0.875rem' }}
+                    onClick={() => { setEditingSceneKey(null); startEditingSpecial(type); }}
+                  >
+                    ✏️ Modifier
                   </button>
                 </div>
               </>
@@ -641,17 +703,9 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                   )}
                   <div id={`scene-${sceneKey}`} className="bac-card" style={{ marginBottom: 16, padding: 20, opacity: isSceneCollapsed ? 0.6 : 1 }}>
                     {/* Card header */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isSceneCollapsed ? 0 : 8 }}>
-                      <div>
-                        <span className="bac-badge bac-badge-primary">Acte {scene.acte}</span>
-                        {' '}
-                        <span className="bac-badge" style={{ background: 'var(--bac-bg-tertiary)', color: 'var(--bac-text-secondary)', fontSize: '0.75rem' }}>
-                          {groupSlug.charAt(0).toUpperCase() + groupSlug.slice(1)}
-                        </span>
-                        <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginTop: 4 }}>{scene.titre}</h3>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, marginLeft: 12 }}>
-                        {!isSceneCollapsed && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', whiteSpace: 'nowrap' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>}
+                    <div style={{ marginBottom: isSceneCollapsed ? 4 : 16 }}>
+                      {/* Line 1 : boutons à droite */}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginBottom: 6 }}>
                         {isEditing ? (
                           <button className="bac-btn bac-btn-primary" style={{ padding: '4px 10px', fontSize: '0.8125rem' }} onClick={() => saveSceneEdit(groupSlug, scene)}>✓ Enregistrer</button>
                         ) : (
@@ -666,6 +720,15 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                             <button className="bac-btn bac-btn-ghost" style={{ padding: '4px 10px', fontSize: '0.8125rem' }} onClick={() => { setEditingSpecial(null); startEditing(groupSlug, scene); }}>✏️ Modifier</button>
                           </>
                         )}
+                      </div>
+                      {/* Line 2 : titre */}
+                      <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>{scene.titre}</h3>
+                      {/* Line 3 : groupe + durée */}
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)' }}>
+                          {groupSlug.charAt(0).toUpperCase() + groupSlug.slice(1)}
+                        </span>
+                        {!isSceneCollapsed && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>}
                       </div>
                     </div>
 
@@ -739,14 +802,32 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                         );
                       })}
                     </div>}
-                    {!isSceneCollapsed && !isEditing && (
+                    {!isSceneCollapsed && isEditing && (
                       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+                        <button
+                          className="bac-btn bac-btn-primary"
+                          style={{ padding: '6px 20px', fontSize: '0.875rem' }}
+                          onClick={() => saveSceneEdit(groupSlug, scene)}
+                        >
+                          ✓ Enregistrer
+                        </button>
+                      </div>
+                    )}
+                    {!isSceneCollapsed && !isEditing && (
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
                         <button
                           className="bac-btn bac-btn-ghost"
                           style={{ padding: '6px 20px', fontSize: '0.875rem', color: 'var(--bac-success, #22c55e)' }}
                           onClick={() => handleTermine(sceneKey, `scene-${sceneKey}`)}
                         >
                           ✓ Scène terminée
+                        </button>
+                        <button
+                          className="bac-btn bac-btn-ghost"
+                          style={{ padding: '6px 20px', fontSize: '0.875rem' }}
+                          onClick={() => { setEditingSpecial(null); startEditing(groupSlug, scene); }}
+                        >
+                          ✏️ Modifier
                         </button>
                       </div>
                     )}
@@ -804,34 +885,91 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
 
           {/* Répartition par scène */}
           <h3 style={{ fontWeight: 700, margin: '24px 0 12px' }}>Répartition par scène</h3>
-          {allEntries.length === 0 ? (
+          {allEntries.length === 0 && !session.revelation && !session.denouement ? (
             <div className="bac-empty"><p>Aucune scène validée</p></div>
           ) : (
-            allEntries.map(({ scene, groupSlug }) => {
-              const sceneActors = getSceneActors(groupSlug, scene);
-              return (
-                <div key={`${groupSlug}-${scene.id}`} className="bac-card" style={{ padding: 20, marginBottom: 12 }}>
-                  <h4 style={{ fontWeight: 700, marginBottom: 12 }}>
-                    <span className="bac-badge bac-badge-primary" style={{ marginRight: 8 }}>Acte {scene.acte}</span>
-                    {scene.titre}
-                    <span style={{ marginLeft: 8, fontSize: '0.75rem', color: 'var(--bac-text-muted)', fontWeight: 400 }}>{groupSlug}</span>
-                  </h4>
-                  {sceneActors.length === 0 ? (
-                    <p style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>Aucun acteur assigné</p>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {sceneActors.map(({ actor, roleNames }) => (
-                        <div key={actor.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
-                          <span style={{ fontWeight: 600 }}>{actor.prenom}</span>
-                          <span style={{ color: 'var(--bac-text-muted)', margin: '0 6px' }}>—</span>
-                          <span style={{ color: 'var(--bac-text-secondary)' }}>{roleNames.join(', ')}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })
+            <>
+              {/* Révélation */}
+              {session.revelation && (() => {
+                const entity = session.revelation;
+                const actors = getSceneActors('intro', entity as any);
+                return (
+                  <div className="bac-card" style={{ padding: 20, marginBottom: 12, borderLeft: '4px solid var(--bac-info)' }}>
+                    <h4 style={{ fontWeight: 700, marginBottom: 12 }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--bac-info)', fontWeight: 700, textTransform: 'uppercase' as const, marginRight: 8 }}>Intro</span>
+                      {entity.titre}
+                    </h4>
+                    {actors.length === 0 ? (
+                      <p style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>Aucun acteur assigné</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {actors.map(({ actor, roleNames }) => (
+                          <div key={actor.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
+                            <span style={{ fontWeight: 600 }}>{actor.prenom}</span>
+                            <span style={{ color: 'var(--bac-text-muted)', margin: '0 6px' }}>—</span>
+                            <span style={{ color: 'var(--bac-text-secondary)' }}>{roleNames.join(', ')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Regular scenes */}
+              {allEntries.map(({ scene, groupSlug }) => {
+                const sceneActors = getSceneActors(groupSlug, scene);
+                return (
+                  <div key={`${groupSlug}-${scene.id}`} className="bac-card" style={{ padding: 20, marginBottom: 12 }}>
+                    <h4 style={{ fontWeight: 700, marginBottom: 12 }}>
+                      <span className="bac-badge bac-badge-primary" style={{ marginRight: 8 }}>Acte {scene.acte}</span>
+                      {scene.titre}
+                      <span style={{ marginLeft: 8, fontSize: '0.75rem', color: 'var(--bac-text-muted)', fontWeight: 400 }}>{groupSlug}</span>
+                    </h4>
+                    {sceneActors.length === 0 ? (
+                      <p style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>Aucun acteur assigné</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {sceneActors.map(({ actor, roleNames }) => (
+                          <div key={actor.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
+                            <span style={{ fontWeight: 600 }}>{actor.prenom}</span>
+                            <span style={{ color: 'var(--bac-text-muted)', margin: '0 6px' }}>—</span>
+                            <span style={{ color: 'var(--bac-text-secondary)' }}>{roleNames.join(', ')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Dénouement */}
+              {session.denouement && (() => {
+                const entity = session.denouement;
+                const actors = getSceneActors('finale', entity as any);
+                return (
+                  <div className="bac-card" style={{ padding: 20, marginBottom: 12, borderLeft: '4px solid var(--bac-success, #22c55e)' }}>
+                    <h4 style={{ fontWeight: 700, marginBottom: 12 }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--bac-success, #22c55e)', fontWeight: 700, textTransform: 'uppercase' as const, marginRight: 8 }}>Finale</span>
+                      {entity.titre}
+                    </h4>
+                    {actors.length === 0 ? (
+                      <p style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>Aucun acteur assigné</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {actors.map(({ actor, roleNames }) => (
+                          <div key={actor.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
+                            <span style={{ fontWeight: 600 }}>{actor.prenom}</span>
+                            <span style={{ color: 'var(--bac-text-muted)', margin: '0 6px' }}>—</span>
+                            <span style={{ color: 'var(--bac-text-secondary)' }}>{roleNames.join(', ')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </>
           )}
         </div>
       )}
@@ -848,15 +986,21 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                   🎤 {role.nom}
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {entries.sort((a, b) => a.sceneActe.localeCompare(b.sceneActe) || a.groupSlug.localeCompare(b.groupSlug)).map((entry, i) => (
+                  {entries.sort((a, b) => {
+                    const order = (acte: string) => acte === 'intro' ? -1 : acte === 'finale' ? 9999 : parseInt(acte) || 0;
+                    const diff = order(a.sceneActe) - order(b.sceneActe);
+                    return diff !== 0 ? diff : a.groupSlug.localeCompare(b.groupSlug);
+                  }).map((entry, i) => (
                     <div key={i} style={{ padding: 14, background: 'var(--bac-bg-tertiary)', borderRadius: 10, borderLeft: `3px solid ${(role as any).couleur}` }}>
                       <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <span className="bac-badge bac-badge-primary">Acte {entry.sceneActe}</span>
-                        <span style={{ fontSize: '0.875rem', color: 'var(--bac-text-secondary)' }}>{entry.sceneTitre}</span>
-                        <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>· {entry.groupSlug.charAt(0).toUpperCase() + entry.groupSlug.slice(1)}</span>
-                        {entry.actorName && (
-                          <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: (role as any).couleur }}>({entry.actorName})</span>
+                        {entry.sceneActe === 'intro' ? (
+                          <span className="bac-badge" style={{ background: 'var(--bac-info)', color: 'white' }}>Intro</span>
+                        ) : entry.sceneActe === 'finale' ? (
+                          <span className="bac-badge" style={{ background: 'var(--bac-success, #22c55e)', color: 'white' }}>Finale</span>
+                        ) : (
+                          <span className="bac-badge bac-badge-primary">Acte {entry.sceneActe}</span>
                         )}
+                        <span style={{ fontSize: '0.875rem', color: 'var(--bac-text-secondary)' }}>{entry.sceneTitre}</span>
                       </div>
                       <p style={{ fontWeight: 600, marginBottom: 8, fontSize: '0.9375rem' }}>{entry.question}</p>
                       {Object.entries(entry.reponses).length > 0 && (
@@ -881,32 +1025,28 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
       {/* ── NOTES RÉAL TAB — admin only ── */}
       {tab === 'notes' && isAdmin && (
         <div className="bac-animate-in">
-          {allEntries.length === 0 ? (
-            <div className="bac-empty"><p>Aucune scène finalisée</p></div>
-          ) : (
-            allEntries.map(({ scene, groupSlug }) => {
-              const notes = (scene as any).notes_real_json || {};
-              const fields = [
-                { key: 'cadrage', label: '🎥 Cadrage' },
-                { key: 'rythme', label: '⏱️ Rythme' },
-                { key: 'silences', label: '🤫 Silences' },
-                { key: 'pieges', label: '⚠️ Pièges' },
-                { key: 'astuce', label: '💡 Astuce' },
-              ];
+          {(() => {
+            const fields = [
+              { key: 'cadrage', label: '🎥 Cadrage' },
+              { key: 'rythme', label: '⏱️ Rythme' },
+              { key: 'silences', label: '🤫 Silences' },
+              { key: 'pieges', label: '⚠️ Pièges' },
+              { key: 'astuce', label: '💡 Astuce' },
+            ];
+            function renderNotesCard(titre: string, notes: any, label: string, color: string, key: string) {
               const hasNotes = fields.some(f => notes[f.key]);
               return (
-                <div key={`${groupSlug}-${scene.id}`} className="bac-card" style={{ padding: 20, marginBottom: 16 }}>
+                <div key={key} className="bac-card" style={{ padding: 20, marginBottom: 16, borderLeft: `4px solid ${color}` }}>
                   <h4 style={{ fontWeight: 700, marginBottom: 16 }}>
-                    <span className="bac-badge bac-badge-primary" style={{ marginRight: 8 }}>Acte {scene.acte}</span>
-                    {scene.titre}
-                    <span style={{ marginLeft: 8, fontSize: '0.75rem', color: 'var(--bac-text-muted)', fontWeight: 400 }}>{groupSlug}</span>
+                    <span style={{ fontSize: '0.75rem', color, fontWeight: 700, textTransform: 'uppercase' as const, marginRight: 8 }}>{label}</span>
+                    {titre}
                   </h4>
                   {!hasNotes ? (
                     <p style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>Aucune note de réalisation</p>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       {fields.filter(f => notes[f.key]).map(f => (
-                        <div key={f.key} style={{ padding: '10px 14px', background: 'var(--bac-bg-tertiary)', borderRadius: 8, borderLeft: '3px solid var(--bac-primary)' }}>
+                        <div key={f.key} style={{ padding: '10px 14px', background: 'var(--bac-bg-tertiary)', borderRadius: 8, borderLeft: `3px solid ${color}` }}>
                           <div style={{ fontWeight: 600, fontSize: '0.8125rem', marginBottom: 4, color: 'var(--bac-text-secondary)' }}>{f.label}</div>
                           <div style={{ fontSize: '0.9375rem' }}>{notes[f.key]}</div>
                         </div>
@@ -915,8 +1055,41 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                   )}
                 </div>
               );
-            })
-          )}
+            }
+            const hasAny = allEntries.length > 0 || session.revelation || session.denouement;
+            if (!hasAny) return <div className="bac-empty"><p>Aucune scène finalisée</p></div>;
+            return (
+              <>
+                {session.revelation && renderNotesCard(session.revelation.titre, session.revelation.notes_real_json || {}, 'Intro', 'var(--bac-info)', 'special-intro')}
+                {allEntries.map(({ scene, groupSlug }) => {
+                  const notes = (scene as any).notes_real_json || {};
+                  const hasNotes = fields.some(f => notes[f.key]);
+                  return (
+                    <div key={`${groupSlug}-${scene.id}`} className="bac-card" style={{ padding: 20, marginBottom: 16 }}>
+                      <h4 style={{ fontWeight: 700, marginBottom: 16 }}>
+                        <span className="bac-badge bac-badge-primary" style={{ marginRight: 8 }}>Acte {scene.acte}</span>
+                        {scene.titre}
+                        <span style={{ marginLeft: 8, fontSize: '0.75rem', color: 'var(--bac-text-muted)', fontWeight: 400 }}>{groupSlug}</span>
+                      </h4>
+                      {!hasNotes ? (
+                        <p style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>Aucune note de réalisation</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {fields.filter(f => notes[f.key]).map(f => (
+                            <div key={f.key} style={{ padding: '10px 14px', background: 'var(--bac-bg-tertiary)', borderRadius: 8, borderLeft: '3px solid var(--bac-primary)' }}>
+                              <div style={{ fontWeight: 600, fontSize: '0.8125rem', marginBottom: 4, color: 'var(--bac-text-secondary)' }}>{f.label}</div>
+                              <div style={{ fontSize: '0.9375rem' }}>{notes[f.key]}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {session.denouement && renderNotesCard(session.denouement.titre, session.denouement.notes_real_json || {}, 'Finale', 'var(--bac-success, #22c55e)', 'special-finale')}
+              </>
+            );
+          })()}
         </div>
       )}
 

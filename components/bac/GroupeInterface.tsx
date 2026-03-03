@@ -7,6 +7,7 @@ import DeroulAnimation from './DeroulAnimation';
 type Phase = 'loading' | 'casting' | 'scenes' | 'personnalisation' | 'pret';
 
 interface CastingMember {
+  id?: string;
   prenom: string;
   role_id: string;
   variant_id: string;
@@ -262,6 +263,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
         session_id: session.id,
         groupe_slug: slug,
         members: members.map(m => ({
+          id: m.id || null,
           prenom: m.prenom,
           role_id: m.role_id || null,
           variant_id: m.variant_id || null,
@@ -296,6 +298,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       } catch (_) {}
     }
     setMembers(freshCasting.map(c => ({
+      id: c.id,
       prenom: c.prenom,
       role_id: c.role_id || '',
       variant_id: c.variant_id || '',
@@ -848,13 +851,9 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                   return (
                     <div key={c.id} className="bac-card" style={{ marginBottom: 16, padding: 20, border: isEditing ? '2px solid var(--bac-primary)' : undefined }}>
                       {/* Scene header */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                        <div>
-                          <span className="bac-badge bac-badge-primary">Acte {c.acte}</span>
-                          <h4 style={{ fontWeight: 700, fontSize: '1.0625rem', marginTop: 6 }}>{scene.titre}</h4>
-                        </div>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                          <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>
+                      <div style={{ marginBottom: 12 }}>
+                        {/* Line 1 : bouton à droite */}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
                           {isEditing ? (
                             <button
                               className="bac-btn bac-btn-success bac-btn-sm"
@@ -870,6 +869,13 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                               ✏️ Modifier
                             </button>
                           )}
+                        </div>
+                        {/* Line 2 : titre */}
+                        <h4 style={{ fontWeight: 700, fontSize: '1.0625rem', marginBottom: 4 }}>{scene.titre}</h4>
+                        {/* Line 3 : acte + durée */}
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                          <span className="bac-badge bac-badge-primary">Acte {c.acte}</span>
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>
                         </div>
                       </div>
 
