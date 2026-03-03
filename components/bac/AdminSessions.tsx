@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { BacSession, BacProfil, BacRevelation, BacDenouement } from '../../lib/bac/types';
+import type { BacSession, BacProfil, BacHistoire } from '../../lib/bac/types';
 
 const STATUT_MAP: Record<string, { label: string; badge: string; icon: string }> = {
   'en-preparation': { label: 'En préparation', badge: 'bac-badge-warning', icon: '⏳' },
@@ -13,8 +13,7 @@ const STATUT_MAP: Record<string, { label: string; badge: string; icon: string }>
 export default function AdminSessions() {
   const [sessions, setSessions] = useState<BacSession[]>([]);
   const [groupes, setGroupes] = useState<BacProfil[]>([]);
-  const [revelations, setRevelations] = useState<BacRevelation[]>([]);
-  const [denouements, setDenouements] = useState<BacDenouement[]>([]);
+  const [histoires, setHistoires] = useState<BacHistoire[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editSession, setEditSession] = useState<BacSession | null>(null);
@@ -25,8 +24,7 @@ export default function AdminSessions() {
     date_jour_j: '',
     lieu: '',
     nb_participants: 10,
-    revelation_id: '',
-    denouement_id: '',
+    histoire_id: '',
     groupes_actifs: [] as string[],
   });
 
@@ -34,16 +32,14 @@ export default function AdminSessions() {
 
   async function loadData() {
     try {
-      const [s, p, r, d] = await Promise.all([
+      const [s, p, h] = await Promise.all([
         fetch('/bac/api/sessions').then(r => r.json()),
         fetch('/bac/api/profils').then(r => r.json()),
-        fetch('/bac/api/revelations').then(r => r.json()),
-        fetch('/bac/api/denouements').then(r => r.json()),
+        fetch('/bac/api/histoires').then(r => r.json()),
       ]);
       if (Array.isArray(s)) setSessions(s);
       if (Array.isArray(p)) setGroupes(p.filter((x: BacProfil) => x.type === 'groupe-acteur' && x.actif));
-      if (Array.isArray(r)) setRevelations(r.filter((x: BacRevelation) => x.actif));
-      if (Array.isArray(d)) setDenouements(d.filter((x: BacDenouement) => x.actif));
+      if (Array.isArray(h)) setHistoires(h.filter((x: BacHistoire) => x.actif));
     } catch { } finally { setLoading(false); }
   }
 
@@ -59,8 +55,7 @@ export default function AdminSessions() {
       date_jour_j: '',
       lieu: '',
       nb_participants: 10,
-      revelation_id: '',
-      denouement_id: '',
+      histoire_id: '',
       groupes_actifs: groupes.map(g => g.slug),
     });
     setShowModal(true);
@@ -73,8 +68,7 @@ export default function AdminSessions() {
       date_jour_j: session.date_jour_j || '',
       lieu: session.lieu,
       nb_participants: session.nb_participants,
-      revelation_id: session.revelation_id || '',
-      denouement_id: session.denouement_id || '',
+      histoire_id: session.histoire_id || '',
       groupes_actifs: session.groupes_actifs,
     });
     setShowModal(true);
@@ -84,8 +78,7 @@ export default function AdminSessions() {
     e.preventDefault();
     const payload = {
       ...form,
-      revelation_id: form.revelation_id || null,
-      denouement_id: form.denouement_id || null,
+      histoire_id: form.histoire_id || null,
     };
 
     const res = editSession
@@ -173,33 +166,21 @@ export default function AdminSessions() {
                       {session.lieu && <span style={{ fontSize: '0.875rem', color: 'var(--bac-text-secondary)' }}>📍 {session.lieu}</span>}
                       <span style={{ fontSize: '0.875rem', color: 'var(--bac-text-secondary)' }}>👥 {session.nb_participants} participants</span>
                     </div>
-                    {session.revelation && <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginTop: 4 }}>🌅 {session.revelation.titre}</p>}
+                    {session.histoire && <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginTop: 4 }}>📖 {session.histoire.titre}</p>}
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <button className="bac-btn bac-btn-secondary bac-btn-sm" onClick={() => openEdit(session)}>
-                      ✏️ Modifier
-                    </button>
+                    <button className="bac-btn bac-btn-secondary bac-btn-sm" onClick={() => openEdit(session)}>✏️ Modifier</button>
                     {session.statut === 'en-preparation' && (
-                      <button className="bac-btn bac-btn-primary bac-btn-sm" onClick={() => updateStatut(session.id, 'en-cours')}>
-                        🎬 Démarrer
-                      </button>
+                      <button className="bac-btn bac-btn-primary bac-btn-sm" onClick={() => updateStatut(session.id, 'en-cours')}>🎬 Démarrer</button>
                     )}
                     {session.statut === 'en-cours' && (
-                      <button className="bac-btn bac-btn-success bac-btn-sm" onClick={() => updateStatut(session.id, 'terminee')}>
-                        ✅ Terminer
-                      </button>
+                      <button className="bac-btn bac-btn-success bac-btn-sm" onClick={() => updateStatut(session.id, 'terminee')}>✅ Terminer</button>
                     )}
-                    <button className="bac-btn bac-btn-ghost bac-btn-sm" onClick={() => exportSession(session)}>
-                      📥 Export JSON
-                    </button>
+                    <button className="bac-btn bac-btn-ghost bac-btn-sm" onClick={() => exportSession(session)}>📥 Export JSON</button>
                     {session.statut !== 'archivee' && (
-                      <button className="bac-btn bac-btn-ghost bac-btn-sm" onClick={() => updateStatut(session.id, 'archivee')}>
-                        📦 Archiver
-                      </button>
+                      <button className="bac-btn bac-btn-ghost bac-btn-sm" onClick={() => updateStatut(session.id, 'archivee')}>📦 Archiver</button>
                     )}
-                    <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ color: 'var(--bac-error)' }} onClick={() => handleDelete(session)}>
-                      🗑️
-                    </button>
+                    <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ color: 'var(--bac-error)' }} onClick={() => handleDelete(session)}>🗑️</button>
                   </div>
                 </div>
                 <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -223,7 +204,7 @@ export default function AdminSessions() {
               <button type="button" className="bac-btn bac-btn-ghost bac-btn-icon" onClick={() => setShowModal(false)}>✕</button>
             </div>
             <div className="bac-modal-body">
-              {/* Bloc 1 */}
+              {/* Informations générales */}
               <h3 className="bac-h3" style={{ marginBottom: 12 }}>Informations générales</h3>
               <div className="bac-form-group">
                 <label className="bac-label">Nom de l'entreprise</label>
@@ -240,13 +221,13 @@ export default function AdminSessions() {
                 </div>
                 <div className="bac-form-group">
                   <label className="bac-label">Participants</label>
-                  <input type="number" className="bac-input" value={form.nb_participants} onChange={e => setForm(p => ({ ...p, nb_participants: parseInt(e.target.value) || 10 }))} min={5} max={20} />
+                  <input type="number" className="bac-input" value={form.nb_participants} onChange={e => setForm(p => ({ ...p, nb_participants: parseInt(e.target.value) || 10 }))} min={5} max={200} />
                 </div>
               </div>
 
               <div className="bac-divider" />
 
-              {/* Bloc 2 */}
+              {/* Groupes actifs */}
               <h3 className="bac-h3" style={{ marginBottom: 12 }}>Groupes actifs</h3>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
                 {groupes.map(g => (
@@ -267,53 +248,35 @@ export default function AdminSessions() {
 
               <div className="bac-divider" />
 
-              {/* Bloc 3 */}
-              <h3 className="bac-h3" style={{ marginBottom: 4 }}>🌅 Révélation <span style={{ fontWeight: 400, fontSize: '0.875rem', color: 'var(--bac-text-muted)' }}>(intro)</span></h3>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginBottom: 12 }}>Scène d'introduction scripted — jouée avant les actes</p>
-              <div className="bac-form-group" style={{ marginBottom: 20 }}>
+              {/* Histoire */}
+              <h3 className="bac-h3" style={{ marginBottom: 4 }}>📖 Histoire</h3>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginBottom: 12 }}>
+                Définit l'intro, le finale et les scènes obligatoires du fil conducteur
+              </p>
+              <div className="bac-form-group">
                 <select
                   className="bac-input bac-select"
-                  value={form.revelation_id}
-                  onChange={e => setForm(p => ({ ...p, revelation_id: e.target.value }))}
+                  value={form.histoire_id}
+                  onChange={e => setForm(p => ({ ...p, histoire_id: e.target.value }))}
                 >
-                  <option value="">— Aucune révélation —</option>
-                  {revelations.map(r => (
-                    <option key={r.id} value={r.id}>{r.titre}</option>
+                  <option value="">— Aucune histoire —</option>
+                  {histoires.map(h => (
+                    <option key={h.id} value={h.id}>{h.titre}</option>
                   ))}
                 </select>
-                {form.revelation_id && (() => {
-                  const selected = revelations.find(r => r.id === form.revelation_id);
-                  return selected?.description ? (
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', marginTop: 8, padding: '10px 12px', background: 'var(--bac-surface-active)', borderRadius: 'var(--bac-radius)', borderLeft: '3px solid #6366f1' }}>
-                      {selected.description}
-                    </p>
-                  ) : null;
-                })()}
-              </div>
-
-              <div className="bac-divider" />
-
-              {/* Bloc 4 */}
-              <h3 className="bac-h3" style={{ marginBottom: 4 }}>🎬 Dénouement <span style={{ fontWeight: 400, fontSize: '0.875rem', color: 'var(--bac-text-muted)' }}>(finale)</span></h3>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginBottom: 12 }}>Scène de clôture scripted — jouée après les actes</p>
-              <div className="bac-form-group" style={{ marginBottom: 8 }}>
-                <select
-                  className="bac-input bac-select"
-                  value={form.denouement_id}
-                  onChange={e => setForm(p => ({ ...p, denouement_id: e.target.value }))}
-                >
-                  <option value="">— Aucun dénouement —</option>
-                  {denouements.map(d => (
-                    <option key={d.id} value={d.id}>{d.titre}</option>
-                  ))}
-                </select>
-                {form.denouement_id && (() => {
-                  const selected = denouements.find(d => d.id === form.denouement_id);
-                  return selected?.description ? (
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', marginTop: 8, padding: '10px 12px', background: 'var(--bac-surface-active)', borderRadius: 'var(--bac-radius)', borderLeft: '3px solid #f97316' }}>
-                      {selected.description}
-                    </p>
-                  ) : null;
+                {form.histoire_id && (() => {
+                  const selected = histoires.find(h => h.id === form.histoire_id);
+                  if (!selected) return null;
+                  return (
+                    <div style={{ marginTop: 10, padding: '10px 12px', background: 'var(--bac-surface-active)', borderRadius: 'var(--bac-radius)', borderLeft: '3px solid var(--bac-primary)', fontSize: '0.8125rem' }}>
+                      {selected.description && <p style={{ color: 'var(--bac-text-secondary)', marginBottom: 6 }}>{selected.description}</p>}
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        {selected.revelation && <span style={{ color: 'var(--bac-info)' }}>🌅 {selected.revelation.titre}</span>}
+                        {selected.denouement && <span style={{ color: 'var(--bac-success)' }}>🎞️ {selected.denouement.titre}</span>}
+                        {(selected.scenes || []).length > 0 && <span style={{ color: 'var(--bac-text-muted)' }}>🎬 {(selected.scenes || []).length} scène(s) fil rouge</span>}
+                      </div>
+                    </div>
+                  );
                 })()}
               </div>
             </div>

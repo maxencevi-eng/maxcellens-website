@@ -549,6 +549,15 @@
   .bac-grid-2 { grid-template-columns: 1fr; }
 }
 
+.bac-grid-stats {
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .bac-grid-stats { grid-template-columns: repeat(3, 1fr); }
+}
+
 /* ---- Stepper ---- */
 .bac-stepper {
   display: flex;

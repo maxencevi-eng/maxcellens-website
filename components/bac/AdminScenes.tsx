@@ -1,15 +1,13 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import type { BacScene, BacProfil, BacRole, ScriptBloc } from '../../lib/bac/types';
+import type { BacScene, BacProfil, BacRole, BacHistoire, ScriptBloc } from '../../lib/bac/types';
 
 const ACTE_LABELS: Record<string, string> = {
-  intro: 'Intro (fixe)',
   '1': 'Acte 1',
   '2': 'Acte 2',
   '3': 'Acte 3',
   '4': 'Acte 4',
-  final: 'Final (fixe)',
 };
 
 const DIFFICULTY_LABELS = ['⭐', '⭐⭐', '⭐⭐⭐'];

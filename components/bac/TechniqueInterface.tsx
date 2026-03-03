@@ -214,7 +214,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     }
 
     // Add révélation ITW
-    const revelationEntity = session?.revelation;
+    const revelationEntity = session?.histoire?.revelation;
     if (revelationEntity) {
       for (const itw of (revelationEntity.itw_json || []) as any[]) {
         const roleId = itw.role_id;
@@ -233,8 +233,29 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
       }
     }
 
+    // Add histoire scenes ITW
+    const histoireScenes = (session?.histoire?.scenes || []).map(hs => hs.scene!).filter((s): s is BacScene => !!s);
+    for (const hScene of histoireScenes) {
+      for (const itw of ((hScene as any).itw_json || []) as any[]) {
+        const roleId = itw.role_id;
+        if (!roleId) continue;
+        if (!byRole[roleId]) {
+          const groupe = groupes.find(gr => gr.slug === roleId) || { id: roleId, nom: roleId, couleur: 'var(--bac-text)' };
+          byRole[roleId] = { role: groupe, entries: [] };
+        }
+        byRole[roleId].entries.push({
+          groupSlug: roleId,
+          sceneActe: String(hScene.acte),
+          sceneTitre: hScene.titre,
+          question: itw.question,
+          reponses: itw.reponses_par_variant || {},
+          actorName: null,
+        });
+      }
+    }
+
     // Add dénouement ITW
-    const denouementEntity = session?.denouement;
+    const denouementEntity = session?.histoire?.denouement;
     if (denouementEntity) {
       for (const itw of (denouementEntity.itw_json || []) as any[]) {
         const roleId = itw.role_id;
@@ -345,11 +366,49 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     setEditingSceneKey(null);
   }
 
+  // ── Histoire scene editing ──────────────────────────────────────
+
+  function startEditingHistoire(scene: BacScene) {
+    const actors: Record<number, string> = {};
+    const textes: Record<number, string> = {};
+    const champs: Record<number, string> = {};
+    ((scene.script_json || []) as any[]).forEach((bloc: any, i: number) => {
+      if (bloc.type !== 'replique') return;
+      const saisie = allSaisies.find(s => s.groupe_slug === bloc.role_id && s.scene_id === scene.id && s.bloc_index === i);
+      if (saisie?.acteur_id) actors[i] = saisie.acteur_id;
+      if (saisie?.texte_saisi) textes[i] = saisie.texte_saisi;
+      if (saisie?.champ_perso_valeur) champs[i] = saisie.champ_perso_valeur;
+    });
+    setEditActors(actors);
+    setEditTextes(textes);
+    setEditChampPersos(champs);
+    setEditingSceneKey(`hist-${scene.id}`);
+  }
+
+  async function saveHistoireEdit(scene: BacScene) {
+    if (!session) return;
+    const saisiesList: any[] = [];
+    ((scene.script_json || []) as any[]).forEach((bloc: any, i: number) => {
+      if (bloc.type !== 'replique') return;
+      saisiesList.push({ session_id: session.id, groupe_slug: bloc.role_id, scene_id: scene.id, bloc_index: i, texte_saisi: editTextes[i] || '', acteur_id: editActors[i] || null, champ_perso_valeur: editChampPersos[i] || null });
+    });
+    await fetch('/bac/api/saisies', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ saisies: saisiesList }) });
+    setAllSaisies(prev => {
+      let updated = [...prev];
+      saisiesList.forEach(ns => {
+        const idx = updated.findIndex(s => s.groupe_slug === ns.groupe_slug && s.scene_id === ns.scene_id && s.bloc_index === ns.bloc_index);
+        if (idx >= 0) updated[idx] = ns; else updated.push(ns);
+      });
+      return updated;
+    });
+    setEditingSceneKey(null);
+  }
+
   // ── Intro / Finale helpers ──────────────────────────────────────
 
   function getSpecialEntity(type: 'intro' | 'finale'): BacRevelation | BacDenouement | null {
     if (!session) return null;
-    return type === 'intro' ? (session.revelation || null) : (session.denouement || null);
+    return type === 'intro' ? (session.histoire?.revelation || null) : (session.histoire?.denouement || null);
   }
 
   function startEditingSpecial(type: 'intro' | 'finale') {
@@ -547,7 +606,10 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                     const groupe = groupes.find(g => g.slug === bloc.role_id);
                     const roleName = groupe?.nom || roles.find(r => r.id === bloc.role_id)?.nom || bloc.role_id || 'Groupe';
                     const groupeColor = groupe?.couleur || color;
-                    const saisie = sceneSaisies.find((s: BacSaisie) => s.bloc_index === i);
+                    // Priority: group saisie (groupe_slug = bloc.role_id), fallback: tech saisie (groupe_slug = 'intro'/'finale')
+                    const saisie = allSaisies.find(s => s.groupe_slug === bloc.role_id && s.scene_id === entity.id && s.bloc_index === i)
+                      || allSaisies.find(s => s.groupe_slug === groupSlug && s.scene_id === entity.id && s.bloc_index === i)
+                      || null;
                     const acteur = saisie?.acteur_id ? allCasting.find(c => c.id === saisie.acteur_id) : null;
                     return (
                       <div key={i} className="bac-script-replique">
@@ -679,26 +741,108 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
           {/* INTRO block */}
           {renderSpecialBlock('intro')}
 
-          {/* Regular scenes by acte */}
-          {allEntries.length > 0 && (() => {
-            let lastActe: any = null;
-            return allEntries.map(({ scene, groupSlug }) => {
-              const isFirstActe = lastActe === null;
-              const showActeHeader = String(scene.acte) !== String(lastActe);
-              if (showActeHeader) lastActe = scene.acte;
-              const sceneKey = `${groupSlug}-${scene.id}`;
+          {/* Scenes by acte: Fil rouge + regular interleaved */}
+          {(() => {
+            const histScenes = (session.histoire?.scenes || []).map(hs => hs.scene!).filter((s): s is BacScene => !!s).sort((a, b) => Number(a.acte) - Number(b.acte));
+            const acteSet = new Set([...histScenes.map(s => String(s.acte)), ...allEntries.map(e => String(e.scene.acte))]);
+            const actes = Array.from(acteSet).sort((a, b) => Number(a) - Number(b));
+            if (actes.length === 0) return !session.histoire_id ? <div className="bac-empty" style={{ marginTop: 16 }}><p>Aucune scène validée pour l'instant</p></div> : null;
+            return actes.map((acte, acteIdx) => {
+              const histScenesForActe = histScenes.filter(s => String(s.acte) === acte);
+              const regularScenesForActe = allEntries.filter(e => String(e.scene.acte) === acte);
+              return (
+                <Fragment key={`acte-${acte}`}>
+                  <h2 style={{ fontWeight: 800, fontSize: '1.375rem', marginTop: acteIdx === 0 ? 0 : 32, marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid var(--bac-border)' }}>Acte {acte}</h2>
+                  {/* Fil rouge scenes for this acte */}
+                  {histScenesForActe.map(scene => {
+                    const sceneKey = `hist-${scene.id}`;
+                    const isEditing = editingSceneKey === sceneKey;
+                    const isSceneCollapsed = !isEditing && collapsedScenes.has(sceneKey);
+                    const scriptJson = (scene.script_json || []) as any[];
+                    return (
+                      <div id={`scene-${sceneKey}`} key={sceneKey} className="bac-card" style={{ marginBottom: 16, padding: 20, borderLeft: '4px solid #f59e0b', opacity: isSceneCollapsed ? 0.6 : 1 }}>
+                        <div style={{ marginBottom: isSceneCollapsed ? 4 : 16 }}>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginBottom: 6 }}>
+                            {isEditing ? (
+                              <button className="bac-btn bac-btn-primary" style={{ padding: '4px 10px', fontSize: '0.8125rem' }} onClick={() => saveHistoireEdit(scene)}>✓ Enregistrer</button>
+                            ) : (
+                              <>
+                                <button className="bac-btn bac-btn-ghost" style={{ padding: '4px 10px', fontSize: '0.8125rem', color: isSceneCollapsed ? 'var(--bac-text-muted)' : 'var(--bac-success, #22c55e)' }} onClick={() => toggleCollapsed(sceneKey)}>{isSceneCollapsed ? '↩️ Afficher' : '✓ Scène terminée'}</button>
+                                <button className="bac-btn bac-btn-ghost" style={{ padding: '4px 10px', fontSize: '0.8125rem' }} onClick={() => { setEditingSpecial(null); startEditingHistoire(scene); }}>✏️ Modifier</button>
+                              </>
+                            )}
+                          </div>
+                          <div style={{ marginBottom: 4 }}>
+                            <span className="bac-badge" style={{ background: '#f59e0b', color: 'white' }}>📌 Fil rouge</span>
+                          </div>
+                          <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>{scene.titre}</h3>
+                          {!isSceneCollapsed && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>}
+                        </div>
+                        {!isSceneCollapsed && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {scriptJson.map((bloc: any, i: number) => {
+                              if (bloc.type === 'didascalie') return <div key={i} className="bac-script-didascalie">{bloc.texte}</div>;
+                              const groupe = groupes.find(g => g.slug === bloc.role_id);
+                              const saisie = allSaisies.find(s => s.groupe_slug === bloc.role_id && s.scene_id === scene.id && s.bloc_index === i);
+                              const acteur = saisie?.acteur_id ? allCasting.find(c => c.id === saisie.acteur_id) : null;
+                              const roleActors = allCasting.filter(c => c.groupe_slug === bloc.role_id);
+                              return (
+                                <div key={i} className="bac-script-replique">
+                                  {isEditing ? (
+                                    <>
+                                      <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)', marginBottom: 4 }}>{groupe?.nom || bloc.role_id || 'Groupe'}</div>
+                                      <div className="bac-script-directive" style={{ marginBottom: 6 }}>{bloc.directive}</div>
+                                      <div style={{ fontStyle: 'italic', color: 'var(--bac-text-muted)', fontSize: '0.875rem', marginBottom: 8 }}>"{bloc.exemple}"</div>
+                                      {roleActors.length > 0 ? (
+                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                          {roleActors.map(actor => (
+                                            <label key={actor.id} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', padding: '4px 12px', borderRadius: 6, border: `1px solid ${editActors[i] === actor.id ? 'var(--bac-primary)' : 'var(--bac-border)'}`, background: editActors[i] === actor.id ? 'rgba(99,102,241,0.12)' : 'transparent', fontSize: '0.875rem', fontWeight: editActors[i] === actor.id ? 700 : 400 }}>
+                                              <input type="radio" name={`actor-hist-${sceneKey}-${i}`} value={actor.id} checked={editActors[i] === actor.id} onChange={() => setEditActors(prev => ({ ...prev, [i]: actor.id }))} style={{ display: 'none' }} />
+                                              {actor.prenom}
+                                            </label>
+                                          ))}
+                                        </div>
+                                      ) : <p style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>Aucun acteur pour ce groupe</p>}
+                                      <div style={{ marginTop: 8 }}>
+                                        <label style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', display: 'block', marginBottom: 4 }}>Réplique personnalisée</label>
+                                        <textarea className="bac-input" rows={2} value={editTextes[i] || ''} onChange={e => setEditTextes(prev => ({ ...prev, [i]: e.target.value }))} placeholder={bloc.exemple || '…'} style={{ width: '100%', resize: 'vertical', fontSize: '0.875rem' }} />
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>{groupe?.nom || bloc.role_id || 'Groupe'} {acteur ? `(${acteur.prenom})` : ''}</div>
+                                      <div className="bac-script-directive">{bloc.directive}</div>
+                                      {saisie?.texte_saisi ? <div className="bac-script-exemple">"{saisie.texte_saisi}"</div> : <div className="bac-script-exemple">"{bloc.exemple}"</div>}
+                                    </>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {!isSceneCollapsed && isEditing && (
+                          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+                            <button className="bac-btn bac-btn-primary" style={{ padding: '6px 20px', fontSize: '0.875rem' }} onClick={() => saveHistoireEdit(scene)}>✓ Enregistrer</button>
+                          </div>
+                        )}
+                        {!isSceneCollapsed && !isEditing && (
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
+                            <button className="bac-btn bac-btn-ghost" style={{ padding: '6px 20px', fontSize: '0.875rem', color: 'var(--bac-success, #22c55e)' }} onClick={() => handleTermine(sceneKey, `scene-${sceneKey}`)}>✓ Scène terminée</button>
+                            <button className="bac-btn bac-btn-ghost" style={{ padding: '6px 20px', fontSize: '0.875rem' }} onClick={() => { setEditingSpecial(null); startEditingHistoire(scene); }}>✏️ Modifier</button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {/* Regular scenes for this acte */}
+                  {regularScenesForActe.map(({ scene, groupSlug }) => {
+                    const sceneKey = `${groupSlug}-${scene.id}`;
               const isEditing = editingSceneKey === sceneKey;
               const isSceneCollapsed = !isEditing && collapsedScenes.has(sceneKey);
               const sceneSaisies = getSceneSaisies(groupSlug, scene.id);
               const scriptJson = (scene.script_json || []) as any[];
               return (
-                <Fragment key={sceneKey}>
-                  {showActeHeader && (
-                    <h2 style={{ fontWeight: 800, fontSize: '1.375rem', marginTop: isFirstActe ? 0 : 32, marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid var(--bac-border)' }}>
-                      Acte {scene.acte}
-                    </h2>
-                  )}
-                  <div id={`scene-${sceneKey}`} className="bac-card" style={{ marginBottom: 16, padding: 20, opacity: isSceneCollapsed ? 0.6 : 1 }}>
+                <div id={`scene-${sceneKey}`} key={sceneKey} className="bac-card" style={{ marginBottom: 16, padding: 20, opacity: isSceneCollapsed ? 0.6 : 1 }}>
                     {/* Card header */}
                     <div style={{ marginBottom: isSceneCollapsed ? 4 : 16 }}>
                       {/* Line 1 : boutons à droite */}
@@ -829,19 +973,17 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                       </div>
                     )}
                   </div>
+              );
+            })}
                 </Fragment>
               );
-            });
+            })
           })()}
 
           {/* FINALE block */}
-          <div style={{ marginTop: allEntries.length > 0 ? 32 : 0 }}>
+          <div style={{ marginTop: 32 }}>
             {renderSpecialBlock('finale')}
           </div>
-
-          {allEntries.length === 0 && !session.revelation_id && !session.denouement_id && (
-            <div className="bac-empty" style={{ marginTop: 16 }}><p>Aucune scène validée pour l'instant</p></div>
-          )}
         </div>
       )}
 
@@ -882,14 +1024,32 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
 
           {/* Répartition par scène */}
           <h3 style={{ fontWeight: 700, margin: '24px 0 12px' }}>Répartition par scène</h3>
-          {allEntries.length === 0 && !session.revelation && !session.denouement ? (
+          {allEntries.length === 0 && !session.histoire?.revelation && !session.histoire?.denouement ? (
             <div className="bac-empty"><p>Aucune scène validée</p></div>
           ) : (
             <>
               {/* Révélation */}
-              {session.revelation && (() => {
-                const entity = session.revelation;
-                const actors = getSceneActors('intro', entity as any);
+              {session.histoire?.revelation && (() => {
+                const entity = session.histoire!.revelation!;
+                // Collect actors from group saisies (priority) + tech saisies
+                const introActorMap = new Map<string, { actor: BacCasting; roleNames: string[] }>();
+                ((entity.script_json || []) as any[]).forEach((bloc: any, i: number) => {
+                  if (bloc.type !== 'replique') return;
+                  const saisie = allSaisies.find(s => s.groupe_slug === bloc.role_id && s.scene_id === entity.id && s.bloc_index === i)
+                    || allSaisies.find(s => s.groupe_slug === 'intro' && s.scene_id === entity.id && s.bloc_index === i);
+                  if (!saisie?.acteur_id) return;
+                  const actor = allCasting.find(c => c.id === saisie.acteur_id);
+                  if (!actor) return;
+                  const groupe = groupes.find(g => g.slug === bloc.role_id);
+                  const roleName = groupe?.nom || bloc.role_id;
+                  if (introActorMap.has(saisie.acteur_id)) {
+                    const entry = introActorMap.get(saisie.acteur_id)!;
+                    if (!entry.roleNames.includes(roleName)) entry.roleNames.push(roleName);
+                  } else {
+                    introActorMap.set(saisie.acteur_id, { actor, roleNames: [roleName] });
+                  }
+                });
+                const actors = Array.from(introActorMap.values());
                 return (
                   <div className="bac-card" style={{ padding: 20, marginBottom: 12, borderLeft: '4px solid var(--bac-info)' }}>
                     <h4 style={{ fontWeight: 700, marginBottom: 12 }}>
@@ -912,6 +1072,52 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                   </div>
                 );
               })()}
+
+              {/* HISTOIRE scenes répartition */}
+              {(session.histoire?.scenes || []).filter(hs => hs.scene).map(hs => {
+                const scene = hs.scene!;
+                const sceneActors = getSceneActors(scene.groupe_acteur || '', scene);
+                // For histoire scenes, collect actors per group from allSaisies
+                const histActorMap = new Map<string, { actor: BacCasting; roleNames: string[] }>();
+                (scene.script_json || [] as any[]).forEach((bloc: any, i: number) => {
+                  if (bloc.type !== 'replique') return;
+                  const saisie = allSaisies.find(s => s.groupe_slug === bloc.role_id && s.scene_id === scene.id && s.bloc_index === i);
+                  if (!saisie?.acteur_id) return;
+                  const actor = allCasting.find(c => c.id === saisie.acteur_id);
+                  if (!actor) return;
+                  const groupe = groupes.find(g => g.slug === bloc.role_id);
+                  const roleName = groupe?.nom || bloc.role_id;
+                  if (histActorMap.has(saisie.acteur_id)) {
+                    const entry = histActorMap.get(saisie.acteur_id)!;
+                    if (!entry.roleNames.includes(roleName)) entry.roleNames.push(roleName);
+                  } else {
+                    histActorMap.set(saisie.acteur_id, { actor, roleNames: [roleName] });
+                  }
+                });
+                const histActors = Array.from(histActorMap.values());
+                return (
+                  <div key={scene.id} className="bac-card" style={{ padding: 20, marginBottom: 12, borderLeft: '4px solid #f59e0b' }}>
+                    <h4 style={{ fontWeight: 700, marginBottom: 12 }}>
+                      <span className="bac-badge" style={{ background: '#f59e0b', color: 'white', marginRight: 8 }}>📌 HISTOIRE</span>
+                      <span className="bac-badge bac-badge-primary" style={{ marginRight: 8 }}>Acte {scene.acte}</span>
+                      {scene.titre}
+                    </h4>
+                    {histActors.length === 0 ? (
+                      <p style={{ color: 'var(--bac-text-muted)', fontSize: '0.875rem' }}>Aucun acteur assigné</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {histActors.map(({ actor, roleNames }) => (
+                          <div key={actor.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
+                            <span style={{ fontWeight: 600 }}>{actor.prenom}</span>
+                            <span style={{ color: 'var(--bac-text-muted)', margin: '0 6px' }}>—</span>
+                            <span style={{ color: 'var(--bac-text-secondary)' }}>{roleNames.join(', ')}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
 
               {/* Regular scenes */}
               {allEntries.map(({ scene, groupSlug }) => {
@@ -941,9 +1147,26 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
               })}
 
               {/* Dénouement */}
-              {session.denouement && (() => {
-                const entity = session.denouement;
-                const actors = getSceneActors('finale', entity as any);
+              {session.histoire?.denouement && (() => {
+                const entity = session.histoire!.denouement!;
+                const finaleActorMap = new Map<string, { actor: BacCasting; roleNames: string[] }>();
+                ((entity.script_json || []) as any[]).forEach((bloc: any, i: number) => {
+                  if (bloc.type !== 'replique') return;
+                  const saisie = allSaisies.find(s => s.groupe_slug === bloc.role_id && s.scene_id === entity.id && s.bloc_index === i)
+                    || allSaisies.find(s => s.groupe_slug === 'finale' && s.scene_id === entity.id && s.bloc_index === i);
+                  if (!saisie?.acteur_id) return;
+                  const actor = allCasting.find(c => c.id === saisie.acteur_id);
+                  if (!actor) return;
+                  const groupe = groupes.find(g => g.slug === bloc.role_id);
+                  const roleName = groupe?.nom || bloc.role_id;
+                  if (finaleActorMap.has(saisie.acteur_id)) {
+                    const entry = finaleActorMap.get(saisie.acteur_id)!;
+                    if (!entry.roleNames.includes(roleName)) entry.roleNames.push(roleName);
+                  } else {
+                    finaleActorMap.set(saisie.acteur_id, { actor, roleNames: [roleName] });
+                  }
+                });
+                const actors = Array.from(finaleActorMap.values());
                 return (
                   <div className="bac-card" style={{ padding: 20, marginBottom: 12, borderLeft: '4px solid var(--bac-success, #22c55e)' }}>
                     <h4 style={{ fontWeight: 700, marginBottom: 12 }}>
@@ -986,7 +1209,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                   {entries.sort((a, b) => {
                     const order = (acte: string) => acte === 'intro' ? -1 : acte === 'finale' ? 9999 : parseInt(acte) || 0;
                     const diff = order(a.sceneActe) - order(b.sceneActe);
-                    return diff !== 0 ? diff : a.groupSlug.localeCompare(b.groupSlug);
+                    return diff !== 0 ? diff : (a.groupSlug || '').localeCompare(b.groupSlug || '');
                   }).map((entry, i) => (
                     <div key={i} style={{ padding: 14, background: 'var(--bac-bg-tertiary)', borderRadius: 10, borderLeft: `3px solid ${(role as any).couleur}` }}>
                       <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1053,11 +1276,13 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                 </div>
               );
             }
-            const hasAny = allEntries.length > 0 || session.revelation || session.denouement;
+            const histScenes = (session.histoire?.scenes || []).filter(hs => hs.scene).map(hs => hs.scene!);
+            const hasAny = allEntries.length > 0 || histScenes.length > 0 || session.histoire?.revelation || session.histoire?.denouement;
             if (!hasAny) return <div className="bac-empty"><p>Aucune scène finalisée</p></div>;
             return (
               <>
-                {session.revelation && renderNotesCard(session.revelation.titre, session.revelation.notes_real_json || {}, 'Intro', 'var(--bac-info)', 'special-intro')}
+                {session.histoire?.revelation && renderNotesCard(session.histoire.revelation.titre, session.histoire.revelation.notes_real_json || {}, 'Intro', 'var(--bac-info)', 'special-intro')}
+                {histScenes.map(scene => renderNotesCard(scene.titre, (scene as any).notes_real_json || {}, 'Fil rouge', '#f59e0b', `hist-${scene.id}`))}
                 {allEntries.map(({ scene, groupSlug }) => {
                   const notes = (scene as any).notes_real_json || {};
                   const hasNotes = fields.some(f => notes[f.key]);
@@ -1083,7 +1308,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                     </div>
                   );
                 })}
-                {session.denouement && renderNotesCard(session.denouement.titre, session.denouement.notes_real_json || {}, 'Finale', 'var(--bac-success, #22c55e)', 'special-finale')}
+                {session.histoire?.denouement && renderNotesCard(session.histoire.denouement.titre, session.histoire.denouement.notes_real_json || {}, 'Finale', 'var(--bac-success, #22c55e)', 'special-finale')}
               </>
             );
           })()}

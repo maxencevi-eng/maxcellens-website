@@ -1,21 +1,21 @@
 // app/bac/api/sessions/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
-import { requireBacAdmin, requireBacProfil, getBacSession } from '../../../../lib/bac/auth';
+import { requireBacAdmin, getBacSession } from '../../../../lib/bac/auth';
+
+const SESSION_SELECT = '*, histoire:bac_histoires(*, revelation:bac_revelations(*), denouement:bac_denouements(*), scenes:bac_histoire_scenes(*, scene:bac_scenes(*)))';
 
 export async function GET() {
-  // Allow all authenticated BAC users to fetch sessions
   const auth = await getBacSession();
   if (!auth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
   const { data, error } = await supabaseAdmin
     .from('bac_sessions')
-    .select('*, revelation:bac_revelations(*), denouement:bac_denouements(*)')
+    .select(SESSION_SELECT)
     .order('created_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // For groupe-acteur and technique: filter to only sessions that include their group
   if (auth.profil_type === 'groupe-acteur') {
     const filtered = (data || []).filter((s: any) =>
       s.groupes_actifs?.includes(auth.profil_slug)
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
 
-  // Create snapshot of available scenes for selected groups
+  // Snapshot of chooseable scenes (histoire scenes loaded via join, not snapshot)
   const { data: scenes } = await supabaseAdmin
     .from('bac_scenes')
     .select('*')
@@ -46,13 +46,12 @@ export async function POST(request: NextRequest) {
       date_jour_j: body.date_jour_j || null,
       lieu: body.lieu || '',
       nb_participants: body.nb_participants || 10,
-      revelation_id: body.revelation_id || null,
-      denouement_id: body.denouement_id || null,
+      histoire_id: body.histoire_id || null,
       groupes_actifs: body.groupes_actifs || [],
       statut: 'en-preparation',
       snapshot_scenes_json: scenes || [],
     })
-    .select('*, revelation:bac_revelations(*), denouement:bac_denouements(*)')
+    .select(SESSION_SELECT)
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -71,7 +70,6 @@ export async function PATCH(request: NextRequest) {
 
   updates.updated_at = new Date().toISOString();
 
-  // If groupes_actifs changed, update snapshot
   if (updates.groupes_actifs) {
     const { data: scenes } = await supabaseAdmin
       .from('bac_scenes')
@@ -85,7 +83,7 @@ export async function PATCH(request: NextRequest) {
     .from('bac_sessions')
     .update(updates)
     .eq('id', id)
-    .select('*, revelation:bac_revelations(*), denouement:bac_denouements(*)')
+    .select(SESSION_SELECT)
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -100,7 +98,6 @@ export async function DELETE(request: NextRequest) {
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 });
 
-  // Delete related data first
   await supabaseAdmin.from('bac_saisies_acteurs').delete().eq('session_id', id);
   await supabaseAdmin.from('bac_choix_scenes').delete().eq('session_id', id);
   await supabaseAdmin.from('bac_casting_groupes').delete().eq('session_id', id);

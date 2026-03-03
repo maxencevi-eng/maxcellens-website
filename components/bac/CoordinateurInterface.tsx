@@ -199,7 +199,7 @@ export default function CoordinateurInterface({ isAdmin = false, embedded = fals
               </div>
             </div>
             <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)' }}>
-              🎭 {(session as any).theme?.titre || '—'} &nbsp;|&nbsp; 💡 {(session as any).revelation?.titre || '—'}
+              📖 {session.histoire?.titre || '—'}
             </div>
           </div>
 

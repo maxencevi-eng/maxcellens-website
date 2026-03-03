@@ -10,11 +10,12 @@ interface DashStats {
   scenes: number;
   revelations: number;
   denouements: number;
+  histoires: number;
   sessions: number;
   sessionsActives: number;
 }
 
-const defaultStats: DashStats = { profils: 0, roles: 0, scenes: 0, revelations: 0, denouements: 0, sessions: 0, sessionsActives: 0 };
+const defaultStats: DashStats = { profils: 0, roles: 0, scenes: 0, revelations: 0, denouements: 0, histoires: 0, sessions: 0, sessionsActives: 0 };
 
 export default function BacAdminDashboard() {
   const [stats, setStats] = useState<DashStats>(defaultStats);
@@ -26,12 +27,13 @@ export default function BacAdminDashboard() {
 
   async function loadStats() {
     try {
-      const [profils, roles, scenes, revelations, denouements, sessions] = await Promise.all([
+      const [profils, roles, scenes, revelations, denouements, histoires, sessions] = await Promise.all([
         fetch('/bac/api/profils').then(r => r.json()),
         fetch('/bac/api/roles').then(r => r.json()),
         fetch('/bac/api/scenes').then(r => r.json()),
         fetch('/bac/api/revelations').then(r => r.json()),
         fetch('/bac/api/denouements').then(r => r.json()),
+        fetch('/bac/api/histoires').then(r => r.json()),
         fetch('/bac/api/sessions').then(r => r.json()),
       ]);
 
@@ -41,6 +43,7 @@ export default function BacAdminDashboard() {
         scenes: Array.isArray(scenes) ? scenes.length : 0,
         revelations: Array.isArray(revelations) ? revelations.length : 0,
         denouements: Array.isArray(denouements) ? denouements.length : 0,
+        histoires: Array.isArray(histoires) ? histoires.length : 0,
         sessions: Array.isArray(sessions) ? sessions.length : 0,
         sessionsActives: Array.isArray(sessions) ? sessions.filter((s: any) => s.statut === 'en-cours' || s.statut === 'en-preparation').length : 0,
       });
@@ -53,11 +56,11 @@ export default function BacAdminDashboard() {
   }
 
   const cards = [
-    { label: 'Profils d\'accès', value: stats.profils, icon: '👥', href: '/bac/admin/dashboard/profils', color: '#8b5cf6' },
     { label: 'Rôles', value: stats.roles, icon: '🎭', href: '/bac/admin/dashboard/roles', color: '#f59e0b' },
     { label: 'Scènes', value: stats.scenes, icon: '🎬', href: '/bac/admin/dashboard/scenes', color: '#3b82f6' },
     { label: 'Révélations', value: stats.revelations, icon: '🌅', href: '/bac/admin/dashboard/themes', color: '#10b981' },
     { label: 'Dénouements', value: stats.denouements, icon: '🎞️', href: '/bac/admin/dashboard/revelations', color: '#ef4444' },
+    { label: 'Histoires', value: stats.histoires, icon: '📖', href: '/bac/admin/dashboard/histoires', color: '#f97316' },
     { label: 'Sessions', value: stats.sessions, icon: '📋', href: '/bac/admin/dashboard/sessions', color: '#06b6d4' },
   ];
 
@@ -100,17 +103,13 @@ export default function BacAdminDashboard() {
           )}
 
           {/* Stat cards */}
-          <div className="bac-grid bac-grid-3 bac-stagger">
+          <div className="bac-grid bac-grid-stats bac-stagger">
             {cards.map((card) => (
               <Link key={card.href} href={card.href} style={{ textDecoration: 'none' }}>
-                <div className="bac-card bac-card-interactive" style={{ borderLeft: `4px solid ${card.color}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                      <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', marginBottom: 4 }}>{card.label}</div>
-                      <div style={{ fontSize: '2rem', fontWeight: 800, color: card.color }}>{card.value}</div>
-                    </div>
-                    <div style={{ fontSize: '2rem', opacity: 0.3 }}>{card.icon}</div>
-                  </div>
+                <div className="bac-card bac-card-interactive" style={{ borderLeft: `4px solid ${card.color}`, padding: '14px 16px' }}>
+                  <div style={{ fontSize: '1.375rem', marginBottom: 6, opacity: 0.6 }}>{card.icon}</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.value}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--bac-text-secondary)', marginTop: 4 }}>{card.label}</div>
                 </div>
               </Link>
             ))}

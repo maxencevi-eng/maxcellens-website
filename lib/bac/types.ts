@@ -153,6 +153,32 @@ export interface BacScene {
   updated_at: string;
 }
 
+// ---- Histoire ----
+export interface BacHistoireScene {
+  id: string;
+  histoire_id: string;
+  scene_id: string;
+  ordre: number;
+  created_at: string;
+  // Joined
+  scene?: BacScene;
+}
+
+export interface BacHistoire {
+  id: string;
+  titre: string;
+  description: string;
+  revelation_id: string | null;
+  denouement_id: string | null;
+  actif: boolean;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  revelation?: BacRevelation;
+  denouement?: BacDenouement;
+  scenes?: BacHistoireScene[];
+}
+
 // ---- Sessions ----
 export interface BacSession {
   id: string;
@@ -160,8 +186,7 @@ export interface BacSession {
   date_jour_j: string | null;
   lieu: string;
   nb_participants: number;
-  revelation_id: string | null;    // formerly theme_id — intro de la session
-  denouement_id: string | null;   // formerly revelation_id — finale de la session
+  histoire_id: string | null;
   groupes_actifs: string[];
   statut: SessionStatut;
   snapshot_scenes_json: BacScene[];
@@ -169,8 +194,7 @@ export interface BacSession {
   created_at: string;
   updated_at: string;
   // Joined
-  revelation?: BacRevelation;
-  denouement?: BacDenouement;
+  histoire?: BacHistoire;
 }
 
 // ---- Casting ----
