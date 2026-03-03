@@ -99,17 +99,27 @@ export default function CoordinateurInterface({ isAdmin = false, embedded = fals
       const saisiesArr = Array.isArray(saisies) ? saisies : [];
 
       let phase: GroupeStatusData['phase'] = 'attente';
-      if (castArr.length === 0) phase = 'attente';
-      else if (choixArr.length < 4 || choixArr.some(c => c.statut !== 'valide')) {
-        if (choixArr.length > 0) phase = 'scenes';
-        else phase = 'casting';
+      if (castArr.length === 0) {
+        phase = 'attente';
       } else {
+        // once casting exists we need to decide scenes vs personnalisation
         const totalBlocs = saisiesArr.length;
-        // Check if all scenes are personalized
+        const hasValidChoice = choixArr.some(c => c.statut === 'valide');
         const sceneIds = new Set(choixArr.map(c => c.scene_id));
-        phase = totalBlocs > 0 ? 'personnalisation' : 'scenes';
-        // If all scenes have at least some saisies
-        if (sceneIds.size === 4 && totalBlocs >= sceneIds.size * 2) phase = 'pret';
+        if (totalBlocs > 0 || hasValidChoice) {
+          // either some personalization started, or the user has explicitly validated scene(s)
+          phase = 'personnalisation';
+        } else {
+          phase = 'scenes';
+        }
+        // compute ready state (pret) based on saisies and valid choices
+        if (
+          sceneIds.size > 0 &&
+          totalBlocs >= sceneIds.size * 2 &&
+          choixArr.every(c => c.statut === 'valide')
+        ) {
+          phase = 'pret';
+        }
       }
 
       results.push({ slug, casting: castArr, choix: choixArr, saisies: saisiesArr, phase });
@@ -134,7 +144,7 @@ export default function CoordinateurInterface({ isAdmin = false, embedded = fals
     let done = 0;
     if (group.casting.length > 0) done += 1;
     const validatedChoix = group.choix.filter(c => c.statut === 'valide');
-    if (validatedChoix.length === 4) done += 1;
+    if (validatedChoix.length > 0) done += 1;
     if (group.phase === 'pret') done += 1;
     return Math.round((done / total) * 100);
   }

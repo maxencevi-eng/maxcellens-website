@@ -102,18 +102,22 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
         const choixData = await choixRes.json();
         if (Array.isArray(choixData)) {
           setChoix(choixData);
-          if (nbScenesRequis === 0 || (choixData.length >= nbScenesRequis && choixData.every((c: BacChoixScene) => c.statut === 'valide'))) {
+          // require at least one valid choice (previously used nbScenesRequis minimum)
+          if (choixData.length >= 1 && choixData.every((c: BacChoixScene) => c.statut === 'valide')) {
             // Load saisies
             const saisiesRes = await fetch(`/bac/api/saisies?session_id=${active.id}&groupe_slug=${slug}`);
             const saisiesData = await saisiesRes.json();
+            let hasSaisies = false;
             if (Array.isArray(saisiesData)) {
               const map: Record<string, any> = {};
               saisiesData.forEach((s: any) => { map[`${s.scene_id}_${s.bloc_index}`] = s; });
               setSaisies(map);
+              hasSaisies = Object.keys(map).length > 0;
             }
             if (choixData.length > 0 && choixData.every((c: BacChoixScene) => c.statut === 'valide')) {
               setValidatedScenes(new Set(choixData.map((c: BacChoixScene) => c.scene_id)));
-              setPhase('pret');
+              // if we already have some saisies, go to pret; otherwise show personnalisation
+              setPhase(hasSaisies ? 'pret' : 'personnalisation');
             } else {
               setPhase('personnalisation');
             }
@@ -334,14 +338,39 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
         const filtered = prev.filter(c => c.acte !== String(acte));
         return [...filtered, data];
       });
+      setValidatedScenes(prev => {
+        const copy = new Set(prev);
+        copy.add(sceneId);
+        return copy;
+      });
       setShowSceneDetail(false);
       setDetailScene(null);
       // Do not auto-advance; user chooses when to go to next act
     }
   }
 
+  async function deselectScene(acte: number, sceneId: string) {
+    if (!session) return;
+    const res = await fetch('/bac/api/choix-scenes', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: session.id, groupe_slug: slug, acte: String(acte) }),
+    });
+    if (res.ok) {
+      setChoix(prev => prev.filter(c => c.acte !== String(acte)));
+      setValidatedScenes(prev => {
+        const copy = new Set(prev);
+        copy.delete(sceneId);
+        return copy;
+      });
+      setShowSceneDetail(false);
+      setDetailScene(null);
+    }
+  }
+
   async function validateChoices() {
-    if (!session || choix.length < nbScenesRequis) return;
+    // allow validation as soon as at least one scene is selected
+    if (!session || choix.length < 1) return;
 
     const res = await fetch('/bac/api/choix-scenes', {
       method: 'PATCH',
@@ -467,7 +496,10 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
         </div>
       </div>}
 
-      <div className="bac-mobile-content">
+      <div
+        className="bac-mobile-content"
+        style={{ paddingBottom: phase === 'scenes' ? (isInFinale ? 260 : 220) : undefined }}
+      >
         {/* ===== CASTING PHASE ===== */}
         {phase === 'casting' && (
           <div className="bac-animate-in">
@@ -581,7 +613,9 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
             <div style={{ textAlign: 'center', marginBottom: 16 }}>
               <h2 className="bac-h2">Vos scènes</h2>
               <p style={{ color: 'var(--bac-text-secondary)' }}>
-                {(isInIntro || histoireScenes.length > 0 || isInFinale) ? 'Scènes obligatoires + 1 choix libre par acte' : 'Choisissez 1 scène par acte'}
+                {(isInIntro || histoireScenes.length > 0 || isInFinale)
+                  ? 'Scènes obligatoires + 1 choix libre'
+                  : 'Choisissez au moins 1 scène'}
               </p>
             </div>
 
@@ -634,7 +668,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
             {(histoireScenes.filter(s => s.acte === String(currentActe)).length > 0 || isInIntro || isInFinale) && (
               <p style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: 6, color: 'var(--bac-text-secondary)' }}>Votre scène libre :</p>
             )}
-            <div className="bac-stagger" style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 120 }}>
+            <div className="bac-stagger" style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: isInFinale ? 20 : 120 }}>
               {getScenesForActe(currentActe).map(scene => {
                 const isChosen = choix.find(c => c.acte === String(currentActe))?.scene_id === scene.id;
                 return (
@@ -673,7 +707,12 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                   </div>
                   <div className="bac-modal-footer">
                     <button className="bac-btn bac-btn-secondary" onClick={() => { setShowSceneDetail(false); setDetailScene(null); }}>Annuler</button>
-                    <button className="bac-btn bac-btn-primary" onClick={() => confirmSelectScene(currentActe, detailScene.id)}>Choisir cette scène</button>
+                    {choix.find(c => c.acte === String(currentActe))?.scene_id === detailScene.id ? (
+                      <button className="bac-btn bac-btn-warning" style={{ marginRight: 8 }} onClick={() => deselectScene(currentActe, detailScene.id)}>Désélectionner</button>
+                    ) : null}
+                    <button className="bac-btn bac-btn-primary" onClick={() => confirmSelectScene(currentActe, detailScene.id)}>
+                      Choisir cette scène
+                    </button>
                   </div>
                 </div>
               </div>
@@ -681,7 +720,8 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
             {/* FINALE locked card */}
             {isInFinale && finaleScene && (
-              <div className="bac-card" style={{ marginBottom: 80, marginTop: 8, borderLeft: '4px solid #22c55e', background: 'rgba(34,197,94,0.05)', padding: 14, cursor: 'pointer' }} onClick={() => setDetailLockedScene(finaleScene)}>
+              <>
+                <div className="bac-card" style={{ marginBottom: 0, marginTop: 8, borderLeft: '4px solid #22c55e', background: 'rgba(34,197,94,0.05)', padding: 14, cursor: 'pointer' }} onClick={() => setDetailLockedScene(finaleScene)}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
                     <span className="bac-badge" style={{ background: '#22c55e', color: 'white', marginBottom: 4, display: 'inline-block' }}>🎤 FINALE</span>
@@ -691,10 +731,12 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                   <span className="bac-badge bac-badge-success" style={{ flexShrink: 0, marginLeft: 8 }}>✓</span>
                 </div>
               </div>
+              <div style={{ height: 120 }} />
+              </>
             )}
 
             <div className="bac-mobile-bottom-bar" style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'transparent', boxShadow: 'none', borderTop: 'none' }}>
-              {choix.length >= nbScenesRequis && nbScenesRequis > 0 && (
+              {choix.length >= 1 && (
                 <button
                   onClick={validateChoices}
                   style={{
@@ -711,7 +753,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                     letterSpacing: '0.01em',
                   }}
                 >
-                  ✅ Valider les {nbScenesRequis} scène{nbScenesRequis > 1 ? 's' : ''}
+                  ✅ Valider la sélection
                 </button>
               )}
               <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ width: '100%' }} onClick={() => handleEditCasting('scenes')}>

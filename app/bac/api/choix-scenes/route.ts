@@ -65,3 +65,25 @@ export async function PATCH(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
 }
+
+// Remove a scene choice (acte) for a group
+export async function DELETE(request: NextRequest) {
+  const auth = await getBacSession();
+  if (!auth) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+
+  const body = await request.json();
+  const { session_id, groupe_slug, acte } = body;
+  if (!session_id || !groupe_slug || acte == null) {
+    return NextResponse.json({ error: 'Données manquantes' }, { status: 400 });
+  }
+
+  const { error } = await supabaseAdmin
+    .from('bac_choix_scenes')
+    .delete()
+    .eq('session_id', session_id)
+    .eq('groupe_slug', groupe_slug)
+    .eq('acte', acte);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
+}
