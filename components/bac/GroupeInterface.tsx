@@ -116,8 +116,8 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
             }
             if (choixData.length > 0 && choixData.every((c: BacChoixScene) => c.statut === 'valide')) {
               setValidatedScenes(new Set(choixData.map((c: BacChoixScene) => c.scene_id)));
-              // if we already have some saisies, go to pret; otherwise show personnalisation
-              setPhase(hasSaisies ? 'pret' : 'personnalisation');
+              // once all choices are validated the group is ready, independent of saisies
+              setPhase('pret');
             } else {
               setPhase('personnalisation');
             }
@@ -381,12 +381,9 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       const data = await res.json();
       setChoix(data);
       showToastMsg('Choix validés !');
-      if (cameFromPret) {
-        setCameFromPret(false);
-        setPhase('pret');
-      } else {
-        setPhase('personnalisation');
-      }
+      const allValid = Array.isArray(data) && data.length > 0 && data.every((c: any) => c.statut === 'valide');
+      // if everything is validated we can immediately consider the group ready
+      setPhase(allValid ? 'pret' : 'personnalisation');
     }
   }
 

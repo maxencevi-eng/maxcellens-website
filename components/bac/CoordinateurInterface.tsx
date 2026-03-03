@@ -104,21 +104,17 @@ export default function CoordinateurInterface({ isAdmin = false, embedded = fals
       } else {
         // once casting exists we need to decide scenes vs personnalisation
         const totalBlocs = saisiesArr.length;
-        const hasValidChoice = choixArr.some(c => c.statut === 'valide');
         const sceneIds = new Set(choixArr.map(c => c.scene_id));
-        if (totalBlocs > 0 || hasValidChoice) {
-          // either some personalization started, or the user has explicitly validated scene(s)
+        const allChoicesValid = sceneIds.size > 0 && choixArr.every(c => c.statut === 'valide');
+
+        // if all validated we can mark the group ready immediately
+        if (allChoicesValid) {
+          phase = 'pret';
+        } else if (totalBlocs > 0 || choixArr.some(c => c.statut === 'valide')) {
+          // either some personalization started or at least one choice has been validated
           phase = 'personnalisation';
         } else {
           phase = 'scenes';
-        }
-        // compute ready state (pret) based on saisies and valid choices
-        if (
-          sceneIds.size > 0 &&
-          totalBlocs >= sceneIds.size * 2 &&
-          choixArr.every(c => c.statut === 'valide')
-        ) {
-          phase = 'pret';
         }
       }
 
