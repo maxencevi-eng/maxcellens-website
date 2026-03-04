@@ -131,7 +131,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
       const [rolesData, scenesData, profilsData, castResults, choixResults, saisiesResults, introSaisies, finaleSaisies] = await Promise.all([
         fetch('/bac/api/roles').then(r => r.json()),
         fetch('/bac/api/scenes').then(r => r.json()),
-        fetch('/bac/api/profils').then(r => r.json()),
+        fetch('/bac/api/profils').then(r => r.ok ? r.json() : []),
         Promise.all(groups.map((g: string) => fetch(`/bac/api/casting?session_id=${active.id}&groupe_slug=${g}`).then(r => r.json()))),
         Promise.all(groups.map((g: string) => fetch(`/bac/api/choix-scenes?session_id=${active.id}&groupe_slug=${g}`).then(r => r.json()))),
         Promise.all(groups.map((g: string) => fetch(`/bac/api/saisies?session_id=${active.id}&groupe_slug=${g}`).then(r => r.json()))),
@@ -878,6 +878,8 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                             {scriptJson.map((bloc: any, i: number) => {
                               if (bloc.type === 'didascalie') return <div key={i} className="bac-script-didascalie">{bloc.texte}</div>;
                               const groupe = groupes.find(g => g.slug === bloc.role_id);
+                              const roleObj = roles.find(r => r.id === bloc.role_id);
+                              const color = roleObj?.couleur || groupe?.couleur || 'var(--bac-text)';
                               const saisie = allSaisies.find(s => s.groupe_slug === bloc.role_id && s.scene_id === scene.id && s.bloc_index === i);
                               const acteur = saisie?.acteur_id ? allCasting.find(c => c.id === saisie.acteur_id) : null;
                               const roleActors = allCasting.filter(c => c.groupe_slug === bloc.role_id);
@@ -885,7 +887,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                                 <div key={i} className="bac-script-replique">
                                   {isEditing ? (
                                     <>
-                                      <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)', marginBottom: 4 }}>{groupe?.nom || bloc.role_id || 'Groupe'}</div>
+                                      <div className="bac-script-role-name" style={{ color, marginBottom: 4 }}>{groupe?.nom || bloc.role_id || 'Groupe'}</div>
                                       <div className="bac-script-directive" style={{ marginBottom: 6 }}>{bloc.directive}</div>
                                       <div style={{ fontStyle: 'italic', color: 'var(--bac-text-muted)', fontSize: '0.875rem', marginBottom: 8 }}>"{bloc.exemple}"</div>
                                       {roleActors.length > 0 ? (
@@ -905,7 +907,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                                     </>
                                   ) : (
                                     <>
-                                      <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>{groupe?.nom || bloc.role_id || 'Groupe'} {acteur ? `(${acteur.prenom})` : ''}</div>
+                                      <div className="bac-script-role-name" style={{ color }}>{groupe?.nom || bloc.role_id || 'Groupe'} {acteur ? `(${acteur.prenom})` : ''}</div>
                                       <div className="bac-script-directive">{bloc.directive}</div>
                                       {saisie?.texte_saisi ? <div className="bac-script-exemple">"{saisie.texte_saisi}"</div> : <div className="bac-script-exemple">"{bloc.exemple}"</div>}
                                     </>
@@ -985,6 +987,8 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                           return <div key={i} className="bac-script-didascalie">{bloc.texte}</div>;
                         }
                         const groupe = groupes.find(g => g.slug === bloc.role_id);
+                        const roleObj = roles.find(r => r.id === bloc.role_id);
+                        const color = roleObj?.couleur || groupe?.couleur || 'var(--bac-text)';
                         const saisie = sceneSaisies.find(s => s.bloc_index === i);
                         const acteur = saisie?.acteur_id ? allCasting.find(c => c.id === saisie.acteur_id) : null;
                         const roleActors = allCasting.filter(c => c.groupe_slug === bloc.role_id);
@@ -992,7 +996,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                           <div key={i} className="bac-script-replique">
                             {isEditing ? (
                               <>
-                                <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)', marginBottom: 4 }}>
+                                <div className="bac-script-role-name" style={{ color, marginBottom: 4 }}>
                                   {groupe?.nom || bloc.role_id || 'Groupe'}
                                 </div>
                                 <div className="bac-script-directive" style={{ marginBottom: 6 }}>{bloc.directive}</div>
@@ -1023,7 +1027,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                               </>
                             ) : (
                               <>
-                                <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>
+                                <div className="bac-script-role-name" style={{ color }}>
                                   {groupe?.nom || bloc.role_id || 'Groupe'} {acteur ? `(${acteur.prenom})` : ''}
                                 </div>
                                 <div className="bac-script-directive">{bloc.directive}</div>

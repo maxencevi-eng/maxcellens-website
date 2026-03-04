@@ -4,17 +4,29 @@ import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 import { requireBacAdmin, hashPassword } from '../../../../lib/bac/auth';
 
 // GET — list all profils
+// This endpoint is now public so that non-admin users can fetch group
+// information (notably colors) for display in the front‑end.  Admin users
+// receive every column (including passwords) while other visitors only get
+// the fields they actually need.
 export async function GET() {
   const isAdmin = await requireBacAdmin();
-  if (!isAdmin) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
-  const { data, error } = await supabaseAdmin
-    .from('bac_profils_acces')
-    .select('*')
-    .order('ordre_affichage');
+  // Build base query; select limited columns for non-admins.
+  const base = supabaseAdmin.from('bac_profils_acces');
+  let query;
+  if (isAdmin) {
+    query = base.select('*');
+  } else {
+    // public view: no sensitive data, filter out admin accounts too
+    query = base
+      .select('id,slug,nom,type,couleur,actif,ordre_affichage,nb_scenes_requis')
+      .not('type','eq','admin');
+  }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  const { data, error } = await query.order('ordre_affichage');
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json(data, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 // POST — create a new groupe-acteur profil
