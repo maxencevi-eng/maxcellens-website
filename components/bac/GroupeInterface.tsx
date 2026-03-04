@@ -62,10 +62,57 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
     }
   }
 
-  // scroll to top automatically when moving into "pret" phase
+  // helper that scrolls both window and the mobile page container
+  function scrollTop() {
+    console.log('[GroupeInterface] scrollTop called');
+    console.log('  window.scrollY before=', window.scrollY);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
+    console.log('  window.scrollY after=', window.scrollY);
+    const el = document.querySelector('.bac-mobile-page');
+    if (el) {
+      console.log('  container scrollTop before=', (el as any).scrollTop);
+      if ('scrollTo' in el) {
+        (el as any).scrollTo({ top: 0, behavior: 'smooth' });
+        (el as any).scrollTo(0, 0);
+      }
+      console.log('  container scrollTop after=', (el as any).scrollTop);
+    }
+  }
+
+  // scroll view to the "Votre groupe est prêt" header when present
+  function scrollToReady() {
+    const header = document.getElementById('group-ready-header');
+    if (header) {
+      header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      scrollTop();
+    }
+  }
+
+  // scroll to ready header when moving into "pret" phase
   useEffect(() => {
     if (phase === 'pret') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollToReady();
+      const t1 = setTimeout(scrollToReady, 100);
+      const t2 = setTimeout(scrollToReady, 300);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
+    }
+  }, [phase]);
+
+  // scroll to stepper when entering casting, scenes or personnalisation phase
+  function scrollToStepper() {
+    const el = document.querySelector('.bac-stepper');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else scrollTop();
+  }
+
+  useEffect(() => {
+    if (phase === 'casting' || phase === 'scenes' || phase === 'personnalisation') {
+      scrollToStepper();
+      const t1 = setTimeout(scrollToStepper, 100);
+      const t2 = setTimeout(scrollToStepper, 300);
+      return () => { clearTimeout(t1); clearTimeout(t2); };
     }
   }, [phase]);
 
@@ -93,7 +140,12 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   }
 
   function markReady() {
+    console.log('[GroupeInterface] markReady invoked, phase=', phase);
     setPhasePersist('pret');
+    // scroll towards ready header repeatedly
+    scrollToReady();
+    setTimeout(scrollToReady, 150);
+    setTimeout(scrollToReady, 400);
     // add a special saisie row so coordination can see the group is truly ready
     if (chosenScenes.length > 0) {
       // use first scene id as target; bloc_index -1 is a sentinel value
@@ -441,6 +493,9 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       } else {
         setPhasePersist(nbScenesRequis === 0 ? 'personnalisation' : 'scenes');
       }
+      // after phase change, ensure viewport moves to the stepper
+      setTimeout(scrollToStepper, 50);
+      setTimeout(scrollToStepper, 200);
     }
   }
 
@@ -467,6 +522,8 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
     setMemberCount(Math.max(freshCasting.length, 1));
     clearReadyMarker();
     setPhasePersist('casting');
+    // ensure scroll after phase updates
+    setTimeout(scrollToStepper, 50);
   }
 
   // ========== SCENE CHOICE ==========
@@ -540,6 +597,8 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       showToastMsg('Choix validés !');
       // go to personnalisation after validating selection; readiness depends on scene validations
       setPhasePersist('personnalisation');
+      setTimeout(scrollToStepper, 50);
+      setTimeout(scrollToStepper, 200);
     }
   }
 
@@ -939,7 +998,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                   ✅ Valider la sélection
                 </button>
               )}
-              <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ width: '100%' }} onClick={() => handleEditCasting('scenes')}>
+              <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ width: '100%' }} onClick={() => { handleEditCasting('scenes'); setTimeout(scrollToStepper, 50); }}>
                 👥 Modifier Casting
               </button>
             </div>
@@ -1164,7 +1223,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
               <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ width: '100%' }} onClick={() => handleEditCasting('personnalisation')}>
                 👥 Modifier Casting
               </button>
-              <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ width: '100%' }} onClick={() => { clearReadyMarker(); setPhasePersist('scenes'); }}>
+              <button className="bac-btn bac-btn-ghost bac-btn-sm" style={{ width: '100%' }} onClick={() => { clearReadyMarker(); setPhasePersist('scenes'); setTimeout(scrollToStepper, 50); }}>
                 ← Modifier les scènes
               </button>
             </div>
@@ -1192,7 +1251,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '1.375rem', flexShrink: 0,
                 }}>✅</div>
-                <div>
+                <div id="group-ready-header">
                   <div style={{ fontWeight: 800, fontSize: '1rem', color: '#16a34a' }}>Votre groupe est prêt !</div>
                   <div style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginTop: 2 }}>
                     Script validé · Casting confirmé
