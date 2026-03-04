@@ -706,7 +706,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       <div className="bac-mobile-header">
         <h1>🎬 {slug.charAt(0).toUpperCase() + slug.slice(1)}</h1>
         {phase === 'pret' && (
-          <span className="bac-badge bac-badge-success" style={{ fontSize: '0.78rem', flexShrink: 0 }}>🎬 C'est l'heure de tourner </span>
+          <span className="bac-badge bac-badge-success" style={{ fontSize: '0.78rem', flexShrink: 0 }}>🎥 C'est l'heure de tourner </span>
         )}
       </div>
 
