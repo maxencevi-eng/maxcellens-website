@@ -1003,7 +1003,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
             {/* INTRO mandatory section */}
             {isInIntro && introScene && (
-              <div style={{ marginBottom: 20 }}>
+              <div className="bac-card" style={{ marginBottom: 20, padding: 20, borderLeft: '4px solid var(--bac-info)' }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
                   <span className="bac-badge" style={{ background: 'var(--bac-info)', color: 'white' }}>🎬 INTRO</span>
                   <strong style={{ fontSize: '0.9375rem' }}>{(introScene as any).titre}</strong>
@@ -1057,7 +1057,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                 <h2 style={{ fontWeight: 800, fontSize: '1.375rem', marginBottom: 12 }}>Acte {acte}</h2>
                 {/* histoire scenes for this acte */}
                 {histoireScenes.filter(s => String(s.acte) === acte).map(hScene => (
-                  <div key={hScene.id} style={{ marginBottom: 20 }}>
+                  <div key={hScene.id} className="bac-card" style={{ marginBottom: 20, padding: 20, borderLeft: '4px solid #f59e0b' }}>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
                       <span className="bac-badge" style={{ background: '#f59e0b', color: 'white' }}>📌 HISTOIRE</span>
                       <strong style={{ fontSize: '0.9375rem' }}>{hScene.titre}</strong>
@@ -1166,7 +1166,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
             {/* FINALE mandatory section */}
             {isInFinale && finaleScene && (
-              <div style={{ marginTop: 20, marginBottom: 40, paddingBottom: 16 }}>
+              <div className="bac-card" style={{ marginTop: 20, marginBottom: 40, padding: 20, borderLeft: '4px solid #22c55e' }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
                   <span className="bac-badge" style={{ background: '#22c55e', color: 'white' }}>🎤 FINALE</span>
                   <strong style={{ fontSize: '0.9375rem' }}>{(finaleScene as any).titre}</strong>
