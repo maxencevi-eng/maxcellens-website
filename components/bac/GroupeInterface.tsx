@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import type { BacSession, BacRole, BacCasting, BacChoixScene, BacScene, ScriptBloc } from '../../lib/bac/types';
 import DeroulAnimation from './DeroulAnimation';
 
@@ -31,6 +31,27 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   const [validatedScenes, setValidatedScenes] = useState<Set<string>>(new Set());
   const [saisies, setSaisies] = useState<Record<string, any>>({});
   const [editingPretSceneId, setEditingPretSceneId] = useState<string | null>(null);
+
+  // whenever we enter editing mode, force textareas to resize to their content
+  useEffect(() => {
+    if (editingPretSceneId !== null) {
+      // delay to allow DOM update
+      setTimeout(() => {
+        document.querySelectorAll<HTMLTextAreaElement>('.bac-input').forEach(el => {
+          el.style.height = 'auto';
+          el.style.height = el.scrollHeight + 'px';
+        });
+      }, 0);
+    }
+  }, [editingPretSceneId]);
+
+  // keep heights in sync when saisies change (fires during pret editing)
+  useLayoutEffect(() => {
+    document.querySelectorAll<HTMLTextAreaElement>('.bac-input').forEach(el => {
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    });
+  }, [saisies, editingPretSceneId]);
   const [phaseBeforeCasting, setPhaseBeforeCasting] = useState<Phase | null>(null);
   // Global script & déroulé
   const [cameFromPret, setCameFromPret] = useState(false);
@@ -44,6 +65,9 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   const [globalIntroScene, setGlobalIntroScene] = useState<any>(null);
   const [globalFinaleScene, setGlobalFinaleScene] = useState<any>(null);
   const [globalGroupes, setGlobalGroupes] = useState<any[]>([]);
+  // helper for current group colour
+  const currentGroup = globalGroupes.find(g => g.slug === slug);
+  const groupColor = currentGroup?.couleur || 'var(--bac-primary)';
 
   // helper that updates phase and keeps localStorage in sync
   function setPhasePersist(p: Phase) {
@@ -1043,7 +1067,15 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                         )}
                         <div className="bac-script-directive">{repBloc.directive}</div>
                         <div className="bac-script-exemple">"{repBloc.exemple}"</div>
-                        <textarea className="bac-input" style={{ fontSize: '1rem', minHeight: 60 }} placeholder="Vos mots..." value={saisie.texte_saisi || ''} onChange={e => saveSaisie((introScene as any).id, bIdx, e.target.value, saisie.acteur_id)} />
+                        <textarea
+                          className="bac-input"
+                          style={{ fontSize: '1rem', minHeight: 60, overflow: 'hidden', resize: 'none' }}
+                          placeholder="Vos mots..."
+                          value={saisie.texte_saisi || ''}
+                          onInput={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; }}
+                          onChange={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; saveSaisie((introScene as any).id, bIdx, e.target.value, saisie.acteur_id); }}
+                                  ref={el => { if (el) { setTimeout(() => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }, 0); } }}
+                        />
                       </div>
                     );
                   })}
@@ -1097,7 +1129,15 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                             )}
                             <div className="bac-script-directive">{repBloc.directive}</div>
                             <div className="bac-script-exemple">"{repBloc.exemple}"</div>
-                            <textarea className="bac-input" style={{ fontSize: '1rem', minHeight: 60 }} placeholder="Vos mots..." value={saisie.texte_saisi || ''} onChange={e => saveSaisie(hScene.id, bIdx, e.target.value, saisie.acteur_id)} />
+                            <textarea
+                              className="bac-input"
+                              style={{ fontSize: '1rem', minHeight: 60, overflow: 'hidden', resize: 'none' }}
+                              placeholder="Vos mots..."
+                              value={saisie.texte_saisi || ''}
+                              onInput={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; }}
+                              onChange={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; saveSaisie(hScene.id, bIdx, e.target.value, saisie.acteur_id); }}
+                              ref={el => { if (el) { setTimeout(() => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }, 0); } }}
+                            />
                           </div>
                         );
                       })}
@@ -1206,7 +1246,15 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                         )}
                         <div className="bac-script-directive">{repBloc.directive}</div>
                         <div className="bac-script-exemple">"{repBloc.exemple}"</div>
-                        <textarea className="bac-input" style={{ fontSize: '1rem', minHeight: 60 }} placeholder="Vos mots..." value={saisie.texte_saisi || ''} onChange={e => saveSaisie((finaleScene as any).id, bIdx, e.target.value, saisie.acteur_id)} />
+                        <textarea
+                          className="bac-input"
+                          style={{ fontSize: '1rem', minHeight: 60, overflow: 'hidden', resize: 'none' }}
+                          placeholder="Vos mots..."
+                          value={saisie.texte_saisi || ''}
+                          onInput={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; }}
+                          onChange={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; saveSaisie((finaleScene as any).id, bIdx, e.target.value, saisie.acteur_id); }}
+                          ref={el => { if (el) { setTimeout(() => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }, 0); } }}
+                        />
                       </div>
                     );
                   })}
@@ -1320,7 +1368,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
             {/* Script personnalisé */}
             {(isInIntro || histoireScenes.length > 0 || isInFinale || choix.length > 0) && (
-              <div style={{ marginTop: 16 }}>
+              <div className="bac-card" style={{ marginTop: 16, padding: 20, borderLeft: `4px solid ${groupColor}` }}>
                 <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 12 }}>📜 Notre script</h3>
 
                 {/* INTRO */}
@@ -1497,7 +1545,15 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                                   </div>
                                 )}
                                 <div className="bac-script-directive">{repBloc.directive}</div>
-                                <textarea className="bac-input" style={{ fontSize: '0.9375rem', minHeight: 52, marginTop: 6 }} placeholder={`"${repBloc.exemple}" (optionnel)`} value={saisie.texte_saisi || ''} onChange={e => saveSaisie(sc.id, i, e.target.value, saisie.acteur_id)} />
+                                <textarea
+                                  className="bac-input"
+                                  style={{ fontSize: '0.9375rem', minHeight: 52, marginTop: 6, overflow: 'hidden', resize: 'none' }}
+                                  placeholder={`"${repBloc.exemple}" (optionnel)`}
+                                  value={saisie.texte_saisi || ''}
+                                  onInput={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; }}
+                                  onChange={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; saveSaisie(sc.id, i, e.target.value, saisie.acteur_id); }}
+                                  ref={el => { if (el) { setTimeout(() => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }, 0); } }}
+                                />
                               </div>
                             );
                           }
@@ -1596,10 +1652,12 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                                 <div className="bac-script-directive">{repBloc.directive}</div>
                                 <textarea
                                   className="bac-input"
-                                  style={{ fontSize: '0.9375rem', minHeight: 52, marginTop: 6 }}
+                                  style={{ fontSize: '0.9375rem', minHeight: 52, marginTop: 6, overflow: 'hidden', resize: 'none' }}
                                   placeholder={`"${repBloc.exemple}" (optionnel)`}
                                   value={saisie.texte_saisi || ''}
-                                  onChange={e => saveSaisie(scene.id, i, e.target.value, saisie.acteur_id)}
+                                  onInput={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; }}
+                                  onChange={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; saveSaisie(scene.id, i, e.target.value, saisie.acteur_id); }}
+                                  ref={el => { if (el) { setTimeout(() => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }, 0); } }}
                                 />
                               </div>
                             );

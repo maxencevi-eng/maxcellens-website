@@ -612,11 +612,12 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                         <label style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)', display: 'block', marginBottom: 4 }}>Réplique personnalisée</label>
                         <textarea
                           className="bac-input"
-                          rows={2}
-                          value={editTextes[i] || ''}
-                          onChange={e => setEditTextes(prev => ({ ...prev, [i]: e.target.value }))}
+                          style={{ width: '100%', resize: 'none', fontSize: '0.875rem', overflow: 'hidden' }}
                           placeholder={bloc.exemple || '…'}
-                          style={{ width: '100%', resize: 'vertical', fontSize: '0.875rem' }}
+                          value={editTextes[i] || ''}
+                          onInput={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; }}
+                          onChange={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; setEditTextes(prev => ({ ...prev, [i]: e.target.value })); }}
+                          ref={el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
                         />
                         {bloc.utilise_champ_perso && (
                           <div style={{ marginTop: 8 }}>
