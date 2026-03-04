@@ -275,10 +275,10 @@ function RevelationEditor({
                 </div>
                 <div className="bac-form-row">
                   <div className="bac-form-group" style={{ margin: 0 }}>
-                    <label className="bac-label">Rôle ciblé</label>
+                    <label className="bac-label">Groupe ciblé</label>
                     <select className="bac-input bac-select" value={q.role_id} onChange={e => updateItw(i, { role_id: e.target.value })}>
                       <option value="">— Choisir —</option>
-                      {roles.map(r => <option key={r.id} value={r.id}>{r.nom}</option>)}
+                      {groupes.map(g => <option key={g.slug} value={g.slug}>{g.nom}</option>)}
                     </select>
                   </div>
                   <div className="bac-form-group" style={{ margin: 0, flex: 2 }}>

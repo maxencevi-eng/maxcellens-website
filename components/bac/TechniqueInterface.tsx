@@ -330,6 +330,56 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     return parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ' et ' + parts[parts.length - 1];
   }
 
+  // helper for the global script used on the technique page; includes casting info even when no saisies exist
+  function getGlobalSceneIntervenants(scene: any): string {
+    const roleMap = new Map<string, { roleName: string; actors: string[] }>();
+    const order: string[] = [];
+    const scriptJson = (scene.script_json || []) as any[];
+
+    scriptJson.forEach((bloc: any, i: number) => {
+      if (bloc.type !== 'replique') return;
+      const roleId = bloc.role_id;
+      const groupe = groupes.find(g => g.slug === roleId);
+      const roleName = groupe?.nom || roleId;
+
+      // try to pick up a saisie (might not exist for intro/histoire/finale)
+      const saisie = allSaisies.find(s => s.scene_id === scene.id && s.bloc_index === i);
+      const actorName = saisie?.acteur_id
+        ? (allCasting.find((c: BacCasting) => c.id === saisie.acteur_id)?.prenom || '')
+        : '';
+
+      if (!roleMap.has(roleId)) {
+        roleMap.set(roleId, { roleName, actors: [] });
+        order.push(roleId);
+      }
+      const entry = roleMap.get(roleId)!;
+      if (actorName && !entry.actors.includes(actorName)) entry.actors.push(actorName);
+    });
+
+    // fallback to casting list when no actor found via saisies
+    order.forEach(rid => {
+      const entry = roleMap.get(rid)!;
+      if (entry.actors.length === 0) {
+        const names = allCasting
+          .filter((c: BacCasting) => c.role_id === rid || c.groupe_slug === rid)
+          .map(c => c.prenom)
+          .filter(n => !!n);
+        names.forEach(n => {
+          if (!entry.actors.includes(n)) entry.actors.push(n);
+        });
+      }
+    });
+
+    if (order.length === 0) return '';
+    const parts = order.map(rid => {
+      const { roleName, actors } = roleMap.get(rid)!;
+      return actors.length ? `${roleName} (${actors.join(', ')})` : roleName;
+    });
+    return parts.length === 1
+      ? parts[0]
+      : parts.slice(0, -1).join(', ') + ' et ' + parts[parts.length - 1];
+  }
+
   function startEditing(groupSlug: string, scene: BacScene) {
     const sceneSaisies = getSceneSaisies(groupSlug, scene.id);
     const actors: Record<number, string> = {};
@@ -592,9 +642,16 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                 </button>
               </div>
               {/* Line 2 : titre */}
-              <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>{entity.titre}</h3>
+              <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>
+                {entity.titre}
+              </h3>
               {/* Line 3 : durée */}
               {!isCollapsed && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {entity.duree_min}–{entity.duree_max} min</span>}
+              {/* Casting summary for intro/histoire/finale */}
+              {!isCollapsed && (() => {
+                const txt = getGlobalSceneIntervenants(entity);
+                return txt ? <div style={{ fontSize: '0.875rem', color: 'var(--bac-text-secondary)', fontStyle: 'italic', marginTop: 4 }}>👥 {txt}</div> : null;
+              })()}
             </div>
             {!isCollapsed && (
               <>
@@ -772,8 +829,14 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                               </>
                             )}
                           </div>
-                          <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>{scene.titre}</h3>
+                          <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 4 }}>
+                            {scene.titre}{/* marker for testing could go here if needed */}
+                          </h3>
                           {!isSceneCollapsed && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>}
+                          {!isSceneCollapsed && (() => {
+                            const txt = getGlobalSceneIntervenants(scene);
+                            return txt ? <div style={{ fontSize: '0.875rem', color: 'var(--bac-text-secondary)', fontStyle: 'italic', marginTop: 4 }}>👥 {txt}</div> : null;
+                          })()}
                         </div>
                         {!isSceneCollapsed && (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

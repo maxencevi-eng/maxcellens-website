@@ -242,6 +242,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       const groupe = globalGroupes.find((g: any) => g.slug === roleId);
       const roleName = groupe?.nom || roleId;
 
+      // try to pick up a saisie (there might not be any for intro/histoire/finale)
       const saisie = Object.values(globalSaisies).find((s: any) =>
         s.scene_id === scene.id && s.bloc_index === i
       );
@@ -255,6 +256,20 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       }
       const entry = roleMap.get(roleId)!;
       if (actorName && !entry.actors.includes(actorName)) entry.actors.push(actorName);
+    });
+
+    // for roles that didn't get an actor via saisies, fall back to any global casting entries
+    order.forEach(rid => {
+      const entry = roleMap.get(rid)!;
+      if (entry.actors.length === 0) {
+        const names = globalCasting
+          .filter((c: BacCasting) => c.role_id === rid || c.groupe_slug === rid)
+          .map(c => c.prenom)
+          .filter(n => !!n);
+        names.forEach(n => {
+          if (!entry.actors.includes(n)) entry.actors.push(n);
+        });
+      }
     });
 
     if (order.length === 0) return '';
@@ -278,7 +293,9 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
             <><span className="bac-badge bac-badge-primary" style={{ marginRight: 8 }}>Acte {scene.acte}</span>
             <span style={{ fontSize: '0.75rem', color: 'var(--bac-text-muted)', marginRight: 8 }}>{groupSlug}</span></>
           )}
-          <h4 style={{ fontWeight: 700, fontSize: '1rem', marginTop: 6 }}>{scene.titre}</h4>
+          <h4 style={{ fontWeight: 700, fontSize: '1rem', marginTop: 6 }}>
+            {scene.titre}
+          </h4>
           {/* duration + casting summary */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 4 }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--bac-text-muted)' }}>
