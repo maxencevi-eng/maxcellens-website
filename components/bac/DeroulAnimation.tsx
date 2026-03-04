@@ -46,7 +46,7 @@ const ETAPES = [
     icon: '🎥',
     titre: 'Tournage',
     description:
-      "Action ! Chaque scène est filmée par l'équipe technique. L'assistant réal donne le clap, le souffleur veille au grain.",
+      "Action (10mn/scène) ! Chaque scène est filmée par l'équipe technique. L'assistant réal donne le clap, le souffleur veille au grain.",
     duree: '2h',
     couleur: '#ef4444',
     bg: 'rgba(239,68,68,0.12)',

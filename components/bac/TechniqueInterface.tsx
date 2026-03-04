@@ -111,6 +111,13 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
 
   useEffect(() => { loadData(); }, []);
 
+  // ensure we refresh saisies when coming back to this page (focus)
+  useEffect(() => {
+    const onFocus = () => { if (!loading) loadData(); };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [loading]);
+
   async function loadData() {
     try {
       const sessRes = await fetch('/bac/api/sessions');
@@ -161,6 +168,11 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
   }
 
   function getSceneSaisies(groupSlug: string, sceneId: string) {
+    // if no specific group is requested we return every saisie for that scene
+    // (used when rendering/editing histoire scenes or global entries)
+    if (!groupSlug) {
+      return allSaisies.filter(s => s.scene_id === sceneId);
+    }
     return allSaisies.filter(s => s.groupe_slug === groupSlug && s.scene_id === sceneId);
   }
 
@@ -424,7 +436,11 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
     const champs: Record<number, string> = {};
     ((scene.script_json || []) as any[]).forEach((bloc: any, i: number) => {
       if (bloc.type !== 'replique') return;
-      const saisie = allSaisies.find(s => s.groupe_slug === bloc.role_id && s.scene_id === scene.id && s.bloc_index === i);
+      // try to match either the specific group or a generic entry (empty groupe_slug)
+      const saisie = allSaisies.find(s =>
+        (s.groupe_slug === bloc.role_id || s.groupe_slug === '') &&
+        s.scene_id === scene.id && s.bloc_index === i
+      );
       if (saisie?.acteur_id) actors[i] = saisie.acteur_id;
       if (saisie?.texte_saisi) textes[i] = saisie.texte_saisi;
       if (saisie?.champ_perso_valeur) champs[i] = saisie.champ_perso_valeur;
@@ -464,7 +480,9 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
   function startEditingSpecial(type: 'intro' | 'finale') {
     const entity = getSpecialEntity(type);
     if (entity) {
-      const saisies = getSceneSaisies(type, entity.id);
+      // grab all saisies for this scene regardless of groupe_slug so we
+      // include entries created from group pages (which use the group slug)
+      const saisies = allSaisies.filter(s => s.scene_id === entity.id);
       const actors: Record<number, string> = {};
       const textes: Record<number, string> = {};
       const champs: Record<number, string> = {};
@@ -498,10 +516,23 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
       const saisies: any[] = [];
       (entity.script_json as any[]).forEach((bloc: any, i: number) => {
         if (bloc.type !== 'replique') return;
-        saisies.push({ session_id: session.id, groupe_slug: groupSlug, scene_id: entity.id, bloc_index: i, texte_saisi: editTextes[i] || '', acteur_id: editActors[i] || null, champ_perso_valeur: editChampPersos[i] || null });
+        const base = { session_id: session.id, groupe_slug: groupSlug, scene_id: entity.id, bloc_index: i, texte_saisi: editTextes[i] || '', acteur_id: editActors[i] || null, champ_perso_valeur: editChampPersos[i] || null };
+        saisies.push(base);
+        // also update any existing entry for this scene/bloc regardless of slug
+        const existing = allSaisies.find(s => s.scene_id === entity.id && s.bloc_index === i && s.groupe_slug !== groupSlug);
+        if (existing) {
+          saisies.push({ ...base, groupe_slug: existing.groupe_slug });
+        }
       });
       await fetch('/bac/api/saisies', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ saisies }) });
-      setAllSaisies(prev => [...prev.filter(s => !(s.groupe_slug === groupSlug && s.scene_id === entity.id)), ...saisies]);
+      setAllSaisies(prev => {
+        let updated = [...prev];
+        saisies.forEach(ns => {
+          const idx = updated.findIndex(s => s.groupe_slug === ns.groupe_slug && s.scene_id === ns.scene_id && s.bloc_index === ns.bloc_index);
+          if (idx >= 0) updated[idx] = ns; else updated.push(ns);
+        });
+        return updated;
+      });
     }
     setEditingSpecial(null);
   }
@@ -674,7 +705,11 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
                           {roleName} {acteur ? `(${acteur.prenom})` : ''}
                         </div>
                         <div className="bac-script-directive">{bloc.directive}</div>
-                        <div className="bac-script-exemple">"{bloc.exemple}"</div>
+                        {saisie?.texte_saisi ? (
+                          <div className="bac-script-exemple">"{saisie.texte_saisi}"</div>
+                        ) : (
+                          <div className="bac-script-exemple">"{bloc.exemple}"</div>
+                        )}
                       </div>
                     );
                   })}

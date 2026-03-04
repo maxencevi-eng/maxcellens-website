@@ -62,6 +62,29 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
     }
   }
 
+  // scroll to top automatically when moving into "pret" phase
+  useEffect(() => {
+    if (phase === 'pret') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [phase]);
+
+  // whenever we enter "pret", prefetch global data so we can overlay other groups' edits
+  useEffect(() => {
+    if (phase === 'pret') {
+      refreshGlobalData();
+    }
+  }, [phase]);
+
+  // also refresh global data when window regains focus (mimic TechniqueInterface behaviour)
+  useEffect(() => {
+    const onFocus = () => {
+      if (phase === 'pret') refreshGlobalData();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [phase]);
+
   // mark group as ready (phase "pret")
   function clearReadyMarker() {
     if (!session || chosenScenes.length === 0) return;
@@ -76,6 +99,21 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       // use first scene id as target; bloc_index -1 is a sentinel value
       saveSaisie(chosenScenes[0].id, -1, '__group_ready__');
     }
+  }
+
+  // helper to return any existing saisie with custom text for the given scene/bloc
+  // across all groups (used in "pret" read-only view to display other groups' edits)
+  function getAnySaisie(sceneId: string, blocIndex: number) {
+    // return any saisie containing custom text or an actor assignment for the given
+    // scene+bloc, regardless of groupe. globalSaisies entries may lack text but
+    // still hold an acteur_id, which we need to propagate.
+    const predicate = (s: any) =>
+      s.scene_id === sceneId && s.bloc_index === blocIndex && (s.texte_saisi || s.acteur_id);
+    // first look in our local saisies
+    const local = Object.values(saisies).find(predicate);
+    if (local) return local;
+    // fall back to any global saisies
+    return Object.values(globalSaisies).find(predicate);
   }
 
   // Load initial data
@@ -185,13 +223,15 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
     setTimeout(() => setToast(null), 3000);
   }
 
-  async function loadGlobalScript() {
-    setShowGlobalScript(true);
-    if (!session || globalScenes.length > 0) return;
+  // fetch the global dataset (casting/choix/saisies etc) but do not toggle modal
+  async function refreshGlobalData() {
+    if (!session) return;
     setGlobalLoading(true);
-    setShowGlobalScript(true);
     try {
       const groups: string[] = session.groupes_actifs || [];
+      // note: we keep fetching data even if scenes were already loaded, because
+      // personalized saisies may change and need refreshing. Scenes/roles/profils
+      // are cheap to refetch.
       const [allScenesRes, allRolesRes, allProfilsRes, ...groupResults] = await Promise.all([
         fetch('/bac/api/scenes').then(r => r.json()),
         fetch('/bac/api/roles').then(r => r.json()),
@@ -228,6 +268,11 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
       setGlobalGroupes(Array.isArray(allProfilsRes) ? allProfilsRes.filter((p: any) => p.type === 'groupe-acteur' && p.actif) : []);
     } catch (e) { console.error(e); }
     setGlobalLoading(false);
+  }
+
+  async function loadGlobalScript() {
+    setShowGlobalScript(true);
+    await refreshGlobalData();
   }
 
   // helper used by global script rendering - mirrors TechniqueInterface.getSceneIntervenants
@@ -505,6 +550,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   // sort selected scenes by acte to respect chronological order
   chosenScenes.sort((a, b) => Number(a.acte) - Number(b.acte));
 
+
   // Histoire-derived mandatory scenes
   const histoireScenes: BacScene[] = session
     ? (session.histoire?.scenes || []).map(hs => hs.scene!).filter((s): s is BacScene => !!(s && (s.groupes_concernes || []).includes(slug)))
@@ -513,6 +559,30 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   const isInIntro = !!(introScene && (introScene.groupes_concernes || []).includes(slug));
   const finaleScene = session?.histoire?.denouement || null;
   const isInFinale = !!(finaleScene && (finaleScene.groupes_concernes || []).includes(slug));
+
+  // auto-assign actor when personalization begins and only one cast member exists
+  useEffect(() => {
+    if (phase === 'personnalisation' && casting.length === 1) {
+      const actorId = casting[0].id;
+      if (!actorId) return;
+      const allRelevant: any[] = [];
+      histoireScenes.forEach(s => allRelevant.push(s));
+      chosenScenes.forEach(s => allRelevant.push(s));
+      if (introScene && isInIntro) allRelevant.push(introScene);
+      if (finaleScene && isInFinale) allRelevant.push(finaleScene);
+      allRelevant.forEach(scene => {
+        (scene.script_json || []).forEach((bloc: any, idx: number) => {
+          if (bloc.type === 'replique' && bloc.role_id === slug) {
+            const key = `${scene.id}_${idx}`;
+            const existing = saisies[key] || {};
+            if (!existing.acteur_id) {
+              saveSaisie(scene.id, idx, existing.texte_saisi || '', actorId);
+            }
+          }
+        });
+      });
+    }
+  }, [phase, casting, chosenScenes, histoireScenes, introScene, finaleScene, isInIntro, isInFinale, slug, saisies]);
 
   // collect all acte numbers used by histoire or chosen scenes
   const actes = Array.from(new Set<string>([
@@ -996,7 +1066,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                           return (
                             <div key={i} className="bac-script-replique">
                               <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>
-                                {groupe?.nom || repBloc.role_id || 'Groupe'}
+                                {groupe?.nom || repBloc.role_id}
                               </div>
                               {(() => {
                                 const isGroupReplique = repBloc.role_id === slug;
@@ -1231,16 +1301,26 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                         {(sc.script_json || []).map((bloc: ScriptBloc, i: number) => {
                           if (bloc.type === 'didascalie') return <div key={i} className="bac-script-didascalie">{(bloc as any).texte}</div>;
                           const repBloc = bloc as any;
+                          const roleObj = roles.find(r => r.id === repBloc.role_id);
                           const groupe = globalGroupes.find((g: any) => g.slug === repBloc.role_id);
-                          const saisie = saisies[`${sc.id}_${i}`] || {};
-                          const acteur = saisie.acteur_id ? casting.find(cst => cst.id === saisie.acteur_id) : null;
+                          let saisie = saisies[`${sc.id}_${i}`] || {};
+                          if (phase === 'pret') {
+                            const alt = getAnySaisie(sc.id, i);
+                            if (alt) {
+                              if (alt.texte_saisi && !saisie.texte_saisi) saisie = { ...saisie, texte_saisi: alt.texte_saisi };
+                              if (alt.acteur_id && !saisie.acteur_id) saisie = { ...saisie, acteur_id: alt.acteur_id };
+                            }
+                          }
+                          const acteur = saisie.acteur_id ? (casting.find(cst => cst.id === saisie.acteur_id) || globalCasting.find(cst => cst.id === saisie.acteur_id)) : null;
                           const isMyBloc = repBloc.role_id === slug;
+                          const color = roleObj?.couleur || groupe?.couleur || 'var(--bac-text)';
+                          const label = roleObj?.nom || groupe?.nom || repBloc.role_id || 'Groupe';
 
                           if (isEditingIntro && isMyBloc) {
                             return (
                               <div key={i} className="bac-script-replique">
-                                <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>
-                                  {groupe?.nom || repBloc.role_id || 'Groupe'}
+                                <div className="bac-script-role-name" style={{ color }}>
+                                  {label}
                                 </div>
                                 {casting.length > 0 && (
                                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -1288,6 +1368,16 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                           );
                         })}
                       </div>
+                      {isEditingIntro && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+                          <button
+                            className="bac-btn bac-btn-success bac-btn-sm"
+                            onClick={() => { setEditingPretSceneId(null); showToastMsg('Modifications enregistrées ✓'); }}
+                          >
+                            ✓ Enregistrer
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -1316,14 +1406,24 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                         {(sc.script_json || []).map((bloc: ScriptBloc, i: number) => {
                           if (bloc.type === 'didascalie') return <div key={i} className="bac-script-didascalie">{(bloc as any).texte}</div>;
                           const repBloc = bloc as any;
+                          const roleObj = roles.find(r => r.id === repBloc.role_id);
                           const groupe = globalGroupes.find((g: any) => g.slug === repBloc.role_id);
-                          const saisie = saisies[`${sc.id}_${i}`] || {};
-                          const acteur = saisie.acteur_id ? casting.find(cst => cst.id === saisie.acteur_id) : null;
+                          let saisie = saisies[`${sc.id}_${i}`] || {};
+                          if (phase === 'pret') {
+                            const alt = getAnySaisie(sc.id, i);
+                            if (alt) {
+                              if (alt.texte_saisi && !saisie.texte_saisi) saisie = { ...saisie, texte_saisi: alt.texte_saisi };
+                              if (alt.acteur_id && !saisie.acteur_id) saisie = { ...saisie, acteur_id: alt.acteur_id };
+                            }
+                          }
+                          const acteur = saisie.acteur_id ? (casting.find(cst => cst.id === saisie.acteur_id) || globalCasting.find(cst => cst.id === saisie.acteur_id)) : null;
                           const isMyBloc = repBloc.role_id === slug;
+                          const color = roleObj?.couleur || groupe?.couleur || 'var(--bac-text)';
+                          const label = roleObj?.nom || groupe?.nom || repBloc.role_id || 'Groupe';
                           if (isEditing && isMyBloc) {
                             return (
                               <div key={i} className="bac-script-replique">
-                                <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>{groupe?.nom || repBloc.role_id || 'Groupe'}</div>
+                                <div className="bac-script-role-name" style={{ color }}>{label}</div>
                                 {casting.length > 0 && (
                                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
                                     {casting.map(cst => (
@@ -1341,7 +1441,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                           }
                           return (
                             <div key={i} className="bac-script-replique" style={!isMyBloc ? { opacity: 0.55 } : undefined}>
-                              <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>{groupe?.nom || repBloc.role_id}{acteur ? ` — ${acteur.prenom}` : ''}</div>
+                              <div className="bac-script-role-name" style={{ color }}>{label}{acteur ? ` — ${acteur.prenom}` : ''}</div>
                               <div className="bac-script-directive">{repBloc.directive}</div>
                               {saisie.texte_saisi ? <div className="bac-script-exemple">"{saisie.texte_saisi}"</div> : <div className="bac-script-exemple">"{repBloc.exemple}"</div>}
                             </div>
@@ -1396,15 +1496,25 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                             return <div key={i} className="bac-script-didascalie">{(bloc as any).texte}</div>;
                           }
                           const repBloc = bloc as any;
+                          const roleObj = roles.find(r => r.id === repBloc.role_id);
                           const groupe = globalGroupes.find((g: any) => g.slug === repBloc.role_id);
-                          const saisie = saisies[`${scene.id}_${i}`] || {};
-                          const acteur = saisie.acteur_id ? casting.find(cst => cst.id === saisie.acteur_id) : null;
+                          let saisie = saisies[`${scene.id}_${i}`] || {};
+                          const color = roleObj?.couleur || groupe?.couleur || 'var(--bac-text)';
+                          const label = roleObj?.nom || groupe?.nom || repBloc.role_id || 'Groupe';
+                          if (phase === 'pret') {
+                            const alt = getAnySaisie(scene.id, i);
+                            if (alt) {
+                              if (alt.texte_saisi && !saisie.texte_saisi) saisie = { ...saisie, texte_saisi: alt.texte_saisi };
+                              if (alt.acteur_id && !saisie.acteur_id) saisie = { ...saisie, acteur_id: alt.acteur_id };
+                            }
+                          }
+                          const acteur = saisie.acteur_id ? (casting.find(cst => cst.id === saisie.acteur_id) || globalCasting.find(cst => cst.id === saisie.acteur_id)) : null;
 
                           if (isEditing) {
                             return (
                               <div key={i} className="bac-script-replique">
-                                <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>
-                                  {groupe?.nom || repBloc.role_id || 'Groupe'}
+                                <div className="bac-script-role-name" style={{ color }}>
+                                  {label}
                                 </div>
                                 {(() => {
                                   const isGroupReplique = repBloc.role_id === slug;
@@ -1435,8 +1545,8 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
                           return (
                             <div key={i} className="bac-script-replique">
-                              <div className="bac-script-role-name" style={{ color: groupe?.couleur || 'var(--bac-text)' }}>
-                                {groupe?.nom || repBloc.role_id || 'Groupe'}{acteur ? ` — ${acteur.prenom}` : ''}
+                              <div className="bac-script-role-name" style={{ color }}>
+                                {label}{acteur ? ` — ${acteur.prenom}` : ''}
                               </div>
                               <div className="bac-script-directive">{repBloc.directive}</div>
                               {saisie.texte_saisi ? (
@@ -1448,6 +1558,16 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                           );
                         })}
                       </div>
+                      {isEditing && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+                          <button
+                            className="bac-btn bac-btn-success bac-btn-sm"
+                            onClick={() => { setEditingPretSceneId(null); showToastMsg('Modifications enregistrées ✓'); }}
+                          >
+                            ✓ Enregistrer
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1492,10 +1612,20 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                         {(sc.script_json || []).map((bloc: ScriptBloc, i: number) => {
                           if (bloc.type === 'didascalie') return <div key={i} className="bac-script-didascalie">{(bloc as any).texte}</div>;
                           const repBloc = bloc as any;
+                          const roleObj = roles.find(r => r.id === repBloc.role_id);
                           const groupe = globalGroupes.find((g: any) => g.slug === repBloc.role_id);
-                          const saisie = saisies[`${sc.id}_${i}`] || {};
-                          const acteur = saisie.acteur_id ? casting.find(cst => cst.id === saisie.acteur_id) : null;
+                          let saisie = saisies[`${sc.id}_${i}`] || {};
+                          if (phase === 'pret') {
+                            const alt = getAnySaisie(sc.id, i);
+                            if (alt) {
+                              if (alt.texte_saisi && !saisie.texte_saisi) saisie = { ...saisie, texte_saisi: alt.texte_saisi };
+                              if (alt.acteur_id && !saisie.acteur_id) saisie = { ...saisie, acteur_id: alt.acteur_id };
+                            }
+                          }
+                          const acteur = saisie.acteur_id ? (casting.find(cst => cst.id === saisie.acteur_id) || globalCasting.find(cst => cst.id === saisie.acteur_id)) : null;
                           const isMyBloc = repBloc.role_id === slug;
+                          const color = roleObj?.couleur || groupe?.couleur || 'var(--bac-text)';
+                          const label = roleObj?.nom || groupe?.nom || repBloc.role_id || 'Groupe';
 
                           if (isEditingFinale && isMyBloc) {
                             return (
@@ -1549,6 +1679,16 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
                           );
                         })}
                       </div>
+                      {isEditingFinale && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+                          <button
+                            className="bac-btn bac-btn-success bac-btn-sm"
+                            onClick={() => { setEditingPretSceneId(null); showToastMsg('Modifications enregistrées ✓'); }}
+                          >
+                            ✓ Enregistrer
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}

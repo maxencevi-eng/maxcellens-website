@@ -20,6 +20,7 @@ const defaultStats: DashStats = { profils: 0, roles: 0, scenes: 0, revelations: 
 export default function BacAdminDashboard() {
   const [stats, setStats] = useState<DashStats>(defaultStats);
   const [loading, setLoading] = useState(true);
+  const [activeStory, setActiveStory] = useState<string | null>(null);
 
   useEffect(() => {
     loadStats();
@@ -37,6 +38,14 @@ export default function BacAdminDashboard() {
         fetch('/bac/api/sessions').then(r => r.json()),
       ]);
 
+      // compute active sessions and derive story title
+      let storyTitle: string | null = null;
+      if (Array.isArray(sessions)) {
+        const active = sessions.find((s: any) => s.statut === 'en-cours' || s.statut === 'en-preparation');
+        if (active && active.histoire && active.histoire.titre) {
+          storyTitle = active.histoire.titre;
+        }
+      }
       setStats({
         profils: Array.isArray(profils) ? profils.length : 0,
         roles: Array.isArray(roles) ? roles.length : 0,
@@ -47,6 +56,7 @@ export default function BacAdminDashboard() {
         sessions: Array.isArray(sessions) ? sessions.length : 0,
         sessionsActives: Array.isArray(sessions) ? sessions.filter((s: any) => s.statut === 'en-cours' || s.statut === 'en-preparation').length : 0,
       });
+      setActiveStory(storyTitle);
 
     } catch (e) {
       console.error('Failed to load stats', e);
@@ -92,11 +102,11 @@ export default function BacAdminDashboard() {
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
-                  <div style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: 4 }}>Sessions actives</div>
-                  <div style={{ fontSize: '2rem', fontWeight: 800 }}>{stats.sessionsActives}</div>
+                  <div style={{ fontSize: '0.875rem', opacity: 0.9, marginBottom: 4 }}>Script global</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{activeStory || '…'}</div>
                 </div>
-                <Link href="/bac/admin/dashboard/sessions" className="bac-btn" style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}>
-                  Voir les sessions →
+                <Link href="/animation/technique" className="bac-btn" style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}>
+                  Voir le script →
                 </Link>
               </div>
             </div>
