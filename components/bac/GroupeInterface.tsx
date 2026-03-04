@@ -64,19 +64,12 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
   // helper that scrolls both window and the mobile page container
   function scrollTop() {
-    console.log('[GroupeInterface] scrollTop called');
-    console.log('  window.scrollY before=', window.scrollY);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     window.scrollTo(0, 0);
-    console.log('  window.scrollY after=', window.scrollY);
     const el = document.querySelector('.bac-mobile-page');
-    if (el) {
-      console.log('  container scrollTop before=', (el as any).scrollTop);
-      if ('scrollTo' in el) {
-        (el as any).scrollTo({ top: 0, behavior: 'smooth' });
-        (el as any).scrollTo(0, 0);
-      }
-      console.log('  container scrollTop after=', (el as any).scrollTop);
+    if (el && 'scrollTo' in el) {
+      (el as any).scrollTo({ top: 0, behavior: 'smooth' });
+      (el as any).scrollTo(0, 0);
     }
   }
 
@@ -140,7 +133,6 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   }
 
   function markReady() {
-    console.log('[GroupeInterface] markReady invoked, phase=', phase);
     setPhasePersist('pret');
     // scroll towards ready header repeatedly
     scrollToReady();
