@@ -153,9 +153,10 @@ export default function AdminScenes() {
               <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {(scene.groupes_concernes || []).map(g => {
                   const groupe = groupes.find(x => x.slug === g);
+                  if (!groupe) return null; // masque les anciens slugs orphelins
                   return (
-                    <span key={g} className="bac-badge" style={{ background: (groupe?.couleur || '#888') + '20', color: groupe?.couleur || '#888' }}>
-                      {groupe?.nom || g}
+                    <span key={g} className="bac-badge" style={{ background: (groupe.couleur || '#888') + '20', color: groupe.couleur || '#888' }}>
+                      {groupe.nom}
                     </span>
                   );
                 })}

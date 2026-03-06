@@ -736,8 +736,9 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
         ) : (
           <div className="bac-empty">
             <div className="bac-empty-icon">🎬</div>
-            <p>Aucune session active pour votre groupe</p>
-            <button className="bac-btn bac-btn-secondary" style={{ marginTop: 16 }} onClick={loadData}>Réessayer</button>
+            <p>Ce lien est incorrect. Veuillez contacter l'administrateur.</p>
+            <p style={{ marginTop: 8, color: 'var(--bac-text-muted)', fontSize: '0.9rem' }}>
+                          </p>
           </div>
         )}
       </div>

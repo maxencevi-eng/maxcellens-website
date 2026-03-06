@@ -13,6 +13,7 @@ export default function AdminProfils() {
   const [editingScenes, setEditingScenes] = useState<string | null>(null);
   const [newNbScenes, setNewNbScenes] = useState(4);
   const [newProfil, setNewProfil] = useState({ nom: '', slug: '', couleur: '#6366f1', password: '' });
+  const [editingProfil, setEditingProfil] = useState<BacProfil | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [showPrintView, setShowPrintView] = useState(false);
 
@@ -89,6 +90,31 @@ export default function AdminProfils() {
     } else {
       const err = await res.json();
       showToast(err.error || 'Erreur', 'error');
+    }
+  }
+
+  async function handleSaveProfilEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingProfil) return;
+
+    const res = await fetch('/bac/api/profils', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: editingProfil.id,
+        nom: editingProfil.nom,
+        slug: editingProfil.slug,
+        couleur: editingProfil.couleur,
+      }),
+    });
+
+    if (res.ok) {
+      showToast('Profil mis à jour');
+      setEditingProfil(null);
+      loadProfils();
+    } else {
+      const err = await res.json().catch(() => null);
+      showToast(err?.error || 'Erreur lors de la mise à jour du profil', 'error');
     }
   }
 
@@ -324,6 +350,12 @@ export default function AdminProfils() {
                     👥 Gérer
                   </a>
                   <button
+                    className="bac-btn bac-btn-secondary bac-btn-sm"
+                    onClick={() => setEditingProfil(profil)}
+                  >
+                    ✏️ Renommer
+                  </button>
+                  <button
                     className="bac-btn bac-btn-ghost bac-btn-sm"
                     onClick={() => handleToggleActive(profil)}
                   >
@@ -424,6 +456,81 @@ export default function AdminProfils() {
               </button>
               <button type="submit" className="bac-btn bac-btn-primary">
                 Créer le groupe
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: edit existing profil (nom + slug + couleur) */}
+      {editingProfil && (
+        <div className="bac-modal-overlay" onClick={() => setEditingProfil(null)}>
+          <form
+            className="bac-modal"
+            onClick={e => e.stopPropagation()}
+            onSubmit={handleSaveProfilEdit}
+          >
+            <div className="bac-modal-header">
+              <h2 className="bac-h2">Renommer le groupe</h2>
+              <button
+                type="button"
+                className="bac-btn bac-btn-ghost bac-btn-icon"
+                onClick={() => setEditingProfil(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="bac-modal-body">
+              <div className="bac-form-group">
+                <label className="bac-label">Nom du groupe</label>
+                <input
+                  type="text"
+                  className="bac-input"
+                  value={editingProfil.nom}
+                  onChange={e =>
+                    setEditingProfil(prev => prev ? { ...prev, nom: e.target.value } : prev)
+                  }
+                  required
+                />
+              </div>
+              <div className="bac-form-group">
+                <label className="bac-label">Slug (URL)</label>
+                <input
+                  type="text"
+                  className="bac-input"
+                  value={editingProfil.slug}
+                  onChange={e =>
+                    setEditingProfil(prev => prev ? { ...prev, slug: e.target.value } : prev)
+                  }
+                  required
+                />
+                <p style={{ fontSize: '0.8rem', color: 'var(--bac-text-muted)', marginTop: 4 }}>
+                  Utilisé dans l’URL `.../animation/&lt;slug&gt;` et pour lier les rôles, sessions, casting, etc.
+                </p>
+              </div>
+              <div className="bac-form-group">
+                <label className="bac-label">Couleur</label>
+                <input
+                  type="color"
+                  className="bac-input"
+                  value={editingProfil.couleur}
+                  onChange={e =>
+                    setEditingProfil(prev => prev ? { ...prev, couleur: e.target.value } : prev)
+                  }
+                  style={{ width: 80, padding: 0, height: 40, cursor: 'pointer' }}
+                />
+              </div>
+            </div>
+            <div className="bac-modal-footer">
+              <button
+                type="button"
+                className="bac-btn bac-btn-secondary"
+                onClick={() => setEditingProfil(null)}
+              >
+                Annuler
+              </button>
+              <button type="submit" className="bac-btn bac-btn-primary">
+                Enregistrer
               </button>
             </div>
           </form>
