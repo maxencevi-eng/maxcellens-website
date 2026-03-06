@@ -24,6 +24,8 @@ export default function AdminSessions() {
     date_jour_j: '',
     lieu: '',
     nb_participants: 10,
+    min_scenes: 1,
+    max_scenes: 3,
     histoire_id: '',
     groupes_actifs: [] as string[],
   });
@@ -55,6 +57,8 @@ export default function AdminSessions() {
       date_jour_j: '',
       lieu: '',
       nb_participants: 10,
+      min_scenes: 1,
+      max_scenes: 3,
       histoire_id: '',
       groupes_actifs: groupes.map(g => g.slug),
     });
@@ -68,6 +72,8 @@ export default function AdminSessions() {
       date_jour_j: session.date_jour_j || '',
       lieu: session.lieu,
       nb_participants: session.nb_participants,
+      min_scenes: session.min_scenes ?? 1,
+      max_scenes: session.max_scenes ?? 3,
       histoire_id: session.histoire_id || '',
       groupes_actifs: session.groupes_actifs,
     });
@@ -98,7 +104,18 @@ export default function AdminSessions() {
       setShowModal(false);
       loadData();
     } else {
-      showToast('Erreur', 'error');
+      let message = 'Erreur lors de l’enregistrement de la session.';
+      try {
+        const data = await res.json();
+        if (data?.error) {
+          message = data.error;
+        }
+      } catch {}
+      // Message plus explicite si la date est requise côté base
+      if (message.toLowerCase().includes('date_jour_j') || message.toLowerCase().includes('date du jour j')) {
+        message = 'La date du Jour J est obligatoire pour enregistrer la session.';
+      }
+      showToast(message, 'error');
     }
   }
 
@@ -222,6 +239,37 @@ export default function AdminSessions() {
                 <div className="bac-form-group">
                   <label className="bac-label">Participants</label>
                   <input type="number" className="bac-input" value={form.nb_participants} onChange={e => setForm(p => ({ ...p, nb_participants: parseInt(e.target.value) || 10 }))} min={5} max={200} />
+                </div>
+              </div>
+
+              <div className="bac-form-row">
+                <div className="bac-form-group">
+                  <label className="bac-label">Scènes minimum à choisir</label>
+                  <input
+                    type="number"
+                    className="bac-input"
+                    min={0}
+                    max={20}
+                    value={form.min_scenes}
+                    onChange={e => {
+                      const v = parseInt(e.target.value || '0');
+                      setForm(p => ({ ...p, min_scenes: isNaN(v) ? 0 : v }));
+                    }}
+                  />
+                </div>
+                <div className="bac-form-group">
+                  <label className="bac-label">Scènes maximum à choisir</label>
+                  <input
+                    type="number"
+                    className="bac-input"
+                    min={0}
+                    max={20}
+                    value={form.max_scenes}
+                    onChange={e => {
+                      const v = parseInt(e.target.value || '0');
+                      setForm(p => ({ ...p, max_scenes: isNaN(v) ? 0 : v }));
+                    }}
+                  />
                 </div>
               </div>
 

@@ -68,6 +68,8 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   // helper for current group colour
   const currentGroup = globalGroupes.find(g => g.slug === slug);
   const groupColor = currentGroup?.couleur || 'var(--bac-primary)';
+  const minScenes = session?.min_scenes ?? 1;
+  const maxScenes = session?.max_scenes ?? nbScenesRequis;
 
   // helper that updates phase and keeps localStorage in sync
   function setPhasePersist(p: Phase) {
@@ -557,6 +559,15 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
   async function confirmSelectScene(acte: number, sceneId: string) {
     if (!session) return;
+
+    // Limite de scènes libres : on bloque si on dépasse maxScenes
+    const existingForAct = choix.find(c => c.acte === String(acte));
+    const currentCount = choix.length;
+    const futureCount = existingForAct ? currentCount : currentCount + 1;
+    if (typeof maxScenes === 'number' && maxScenes > 0 && futureCount > maxScenes) {
+      showToastMsg(`Vous ne pouvez pas sélectionner plus de ${maxScenes} scène(s).`, 'error');
+      return;
+    }
     const res = await fetch('/bac/api/choix-scenes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -599,8 +610,17 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   }
 
   async function validateChoices() {
-    // allow validation as soon as at least one scene is selected
-    if (!session || choix.length < 1) return;
+    if (!session) return;
+
+    const totalSelected = choix.length;
+    if (totalSelected < minScenes) {
+      showToastMsg(`Vous devez choisir au moins ${minScenes} scène(s) pour continuer.`, 'error');
+      return;
+    }
+    if (totalSelected > maxScenes) {
+      showToastMsg(`Vous ne pouvez pas valider plus de ${maxScenes} scène(s).`, 'error');
+      return;
+    }
 
     const res = await fetch('/bac/api/choix-scenes', {
       method: 'PATCH',

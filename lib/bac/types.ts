@@ -186,6 +186,8 @@ export interface BacSession {
   date_jour_j: string | null;
   lieu: string;
   nb_participants: number;
+  min_scenes?: number | null;
+  max_scenes?: number | null;
   histoire_id: string | null;
   groupes_actifs: string[];
   statut: SessionStatut;

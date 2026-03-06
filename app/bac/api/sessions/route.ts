@@ -32,27 +32,50 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
 
+  // Prépare le payload d'insertion, avec min/max scènes optionnels
+  const insertPayload: any = {
+    nom_entreprise: body.nom_entreprise,
+    date_jour_j: body.date_jour_j || null,
+    lieu: body.lieu || '',
+    nb_participants: body.nb_participants || 10,
+    histoire_id: body.histoire_id || null,
+    groupes_actifs: body.groupes_actifs || [],
+    statut: 'en-preparation',
+  };
+
+  if (typeof body.min_scenes === 'number') insertPayload.min_scenes = body.min_scenes;
+  if (typeof body.max_scenes === 'number') insertPayload.max_scenes = body.max_scenes;
+
   // Snapshot of chooseable scenes (histoire scenes loaded via join, not snapshot)
   const { data: scenes } = await supabaseAdmin
     .from('bac_scenes')
     .select('*')
     .eq('actif', true)
     .overlaps('groupes_concernes', body.groupes_actifs || []);
+  insertPayload.snapshot_scenes_json = scenes || [];
 
-  const { data, error } = await supabaseAdmin
+  let { data, error } = await supabaseAdmin
     .from('bac_sessions')
-    .insert({
-      nom_entreprise: body.nom_entreprise,
-      date_jour_j: body.date_jour_j || null,
-      lieu: body.lieu || '',
-      nb_participants: body.nb_participants || 10,
-      histoire_id: body.histoire_id || null,
-      groupes_actifs: body.groupes_actifs || [],
-      statut: 'en-preparation',
-      snapshot_scenes_json: scenes || [],
-    })
+    .insert(insertPayload)
     .select(SESSION_SELECT)
     .single();
+
+  // Si la colonne min_scenes / max_scenes n'existe pas encore (migration non appliquée),
+  // on réessaie sans ces champs pour éviter de tout casser en dev.
+  if (error && error.message && error.message.includes('column') && error.message.includes('min_scenes')) {
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete insertPayload.min_scenes;
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete insertPayload.max_scenes;
+
+    const retry = await supabaseAdmin
+      .from('bac_sessions')
+      .insert(insertPayload)
+      .select(SESSION_SELECT)
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data, { status: 201 });
@@ -70,6 +93,10 @@ export async function PATCH(request: NextRequest) {
 
   updates.updated_at = new Date().toISOString();
 
+  // Ne pousse min/max scènes que si ce sont bien des nombres
+  if (typeof updates.min_scenes !== 'number') delete (updates as any).min_scenes;
+  if (typeof updates.max_scenes !== 'number') delete (updates as any).max_scenes;
+
   if (updates.groupes_actifs) {
     const { data: scenes } = await supabaseAdmin
       .from('bac_scenes')
@@ -79,12 +106,29 @@ export async function PATCH(request: NextRequest) {
     updates.snapshot_scenes_json = scenes || [];
   }
 
-  const { data, error } = await supabaseAdmin
+  let { data, error } = await supabaseAdmin
     .from('bac_sessions')
     .update(updates)
     .eq('id', id)
     .select(SESSION_SELECT)
     .single();
+
+  // Fallback si les colonnes min_scenes / max_scenes n'existent pas
+  if (error && error.message && error.message.includes('column') && error.message.includes('min_scenes')) {
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete (updates as any).min_scenes;
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete (updates as any).max_scenes;
+
+    const retry = await supabaseAdmin
+      .from('bac_sessions')
+      .update(updates)
+      .eq('id', id)
+      .select(SESSION_SELECT)
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
