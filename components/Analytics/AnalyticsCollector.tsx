@@ -15,6 +15,8 @@ import {
 
 export default function AnalyticsCollector() {
   const pathname = usePathname();
+  // Ne pas tracker les sous-pages /animation/* (interfaces acteurs/managers/admin/technique...)
+  const shouldTrack = !pathname || pathname === '/animation' || !pathname.startsWith('/animation/');
   const pathRef = useRef<string | null>(null);
   const isAuthenticatedRef = useRef(false);
   const [authChecked, setAuthChecked] = useState(false);
@@ -46,6 +48,7 @@ export default function AnalyticsCollector() {
   // Validation humaine : après interaction (souris, scroll, touch) ou délai > 1s, on marque la visite comme humaine (une fois par session)
   const humanValidatedSentRef = useRef(false);
   useEffect(() => {
+    if (!shouldTrack) return;
     if (typeof window === 'undefined' || !authChecked) return;
     if (isAuthenticatedRef.current) return;
     const path = pathname || window.location.pathname || '/';
@@ -83,9 +86,10 @@ export default function AnalyticsCollector() {
       window.removeEventListener('scroll', markHuman, { capture: true, passive: true } as EventListenerOptions);
       window.removeEventListener('touchstart', markHuman, { capture: true, passive: true } as EventListenerOptions);
     };
-  }, [pathname, authChecked]);
+  }, [pathname, authChecked, shouldTrack]);
 
   useEffect(() => {
+    if (!shouldTrack) return;
     if (typeof window === 'undefined') return;
     function sendLeave() {
       if (isAuthenticatedRef.current) return; // Ne pas envoyer si connecté
@@ -109,6 +113,7 @@ export default function AnalyticsCollector() {
   }, []);
 
   useEffect(() => {
+    if (!shouldTrack) return;
     if (typeof window === 'undefined' || !authChecked) return; // Attendre la connaissance de l'auth avant d'écouter les clics
     function findClickableInPath(ev: MouseEvent): HTMLElement | null {
       const path = (ev as any).composedPath?.() as HTMLElement[] | undefined;
@@ -250,7 +255,7 @@ export default function AnalyticsCollector() {
     }
     document.addEventListener('click', handleClick, { capture: true, passive: true });
     return () => document.removeEventListener('click', handleClick, { capture: true });
-  }, [authChecked]);
+  }, [authChecked, shouldTrack]);
 
   return null;
 }
