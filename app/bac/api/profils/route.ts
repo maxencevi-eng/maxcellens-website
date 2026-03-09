@@ -202,14 +202,19 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // d) Révélations & dénouements : script_json / itw_json (role_id = slug)
+    // d) Révélations & dénouements : groupes_concernes + script_json / itw_json (role_id = slug)
     const { data: revelations } = await supabaseAdmin
       .from('bac_revelations')
-      .select('id, script_json, itw_json');
+      .select('id, groupes_concernes, script_json, itw_json');
     if (revelations && Array.isArray(revelations)) {
       for (const rev of revelations) {
         let changed = false;
         const payload: any = {};
+
+        if (Array.isArray(rev.groupes_concernes) && rev.groupes_concernes.includes(oldSlug)) {
+          payload.groupes_concernes = rev.groupes_concernes.map((g: string) => (g === oldSlug ? newSlug : g));
+          changed = true;
+        }
 
         if (Array.isArray(rev.script_json)) {
           const newScript = rev.script_json.map((bloc: any) => {
@@ -241,11 +246,16 @@ export async function PATCH(request: NextRequest) {
 
     const { data: denouements } = await supabaseAdmin
       .from('bac_denouements')
-      .select('id, script_json, itw_json');
+      .select('id, groupes_concernes, script_json, itw_json');
     if (denouements && Array.isArray(denouements)) {
       for (const d of denouements) {
         let changed = false;
         const payload: any = {};
+
+        if (Array.isArray(d.groupes_concernes) && d.groupes_concernes.includes(oldSlug)) {
+          payload.groupes_concernes = d.groupes_concernes.map((g: string) => (g === oldSlug ? newSlug : g));
+          changed = true;
+        }
 
         if (Array.isArray(d.script_json)) {
           const newScript = d.script_json.map((bloc: any) => {
