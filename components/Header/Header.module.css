@@ -149,7 +149,13 @@
 .nav.open .link { display: block; padding: 0.75rem 0; text-align: left; }
 
 .mobileOverlay {
-  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 50vw;
+  bottom: 0;
+  background: transparent;
+  z-index: 1100;
 }
 
 @media (max-width: 900px) {

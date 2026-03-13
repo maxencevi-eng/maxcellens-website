@@ -439,6 +439,9 @@ export default function Header() {
 
       {/* DevMeasure removed */}
 
+      {open ? (
+        <div className={styles.mobileOverlay} onClick={() => setOpen(false)} />
+      ) : null}
     </header>
   );
 }
