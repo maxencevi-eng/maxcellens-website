@@ -41,7 +41,7 @@ export async function POST(req: Request) {
         const sharp = (sharpImport?.default || sharpImport) as any;
 
         // try combinations of widths and qualities to find best compression
-        const widths = [1920, 1600, 1280, 1024, 800, 600, 400, 300];
+        const widths = [3200, 2560, 1920, 1600, 1280, 1024, 800, 600, 400, 300];
         const qualities = [95, 85, 75, 65, 55, 45, 35, 25];
         let best: Buffer | null = null;
         let bestSize = Infinity;
