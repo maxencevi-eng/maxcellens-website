@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { supabase } from '../../lib/supabase';
+import { compressImageClient } from '@/lib/compressImageClient';
 import PortraitGallery from "./PortraitGallery";
 
 type ImageItem = { id: string | number; image_url: string; image_path?: string; title?: string; width?: number; height?: number };
@@ -255,8 +256,9 @@ function AddUrl({ onAdd, uploadPage = 'portrait', uploadFolder = 'Portrait/Galer
 
   async function uploadFile(file: File) {
     try {
+      const compressed = await compressImageClient(file);
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', compressed);
       fd.append('page', uploadPage);
       fd.append('kind', 'image');
       fd.append('folder', uploadFolder);
@@ -288,8 +290,9 @@ function SmallReplace({ onReplace, oldPath, uploadPage = 'portrait', uploadFolde
 
   async function uploadFile(file: File) {
     try {
+      const compressed = await compressImageClient(file);
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', compressed);
       fd.append('page', uploadPage);
       fd.append('kind', 'image');
       fd.append('folder', uploadFolder);

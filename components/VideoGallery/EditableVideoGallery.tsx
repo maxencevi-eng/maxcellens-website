@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { compressImageClient } from '@/lib/compressImageClient';
 import VideoGallery from './VideoGallery';
 import type { GallerySettings } from './VideoGallery';
 import styles from './VideoGallery.module.css';
@@ -153,8 +154,9 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
   async function uploadCover(index: number, file: File) {
     setUploadingCoverIndex(index);
     try {
+      const compressed = await compressImageClient(file);
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', compressed);
       fd.append('page', 'home');
       fd.append('kind', 'image');
       fd.append('folder', `videos/${keyName}/${index}`);

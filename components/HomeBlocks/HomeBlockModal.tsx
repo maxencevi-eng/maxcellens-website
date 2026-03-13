@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { compressImageClient } from "@/lib/compressImageClient";
 import type {
   HomeIntroData,
   HomeServicesData,
@@ -371,8 +372,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     setUploadingIndex(index);
     setError(null);
     try {
+      const compressed = await compressImageClient(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressed);
       fd.append("page", "home");
       fd.append("kind", "image");
       fd.append("folder", `home/services/${index + 1}`);
@@ -419,8 +421,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     setUploadingAnimationImage(true);
     setError(null);
     try {
+      const compressed = await compressImageClient(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressed);
       fd.append("page", "home");
       fd.append("kind", "image");
       fd.append("folder", "home/animation/banner");
@@ -442,8 +445,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     setUploadingPortraitIndex(slideIndex);
     setError(null);
     try {
+      const compressed = await compressImageClient(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressed);
       fd.append("page", "home");
       fd.append("kind", "image");
       fd.append("folder", `home/portrait/slide-${slideIndex + 1}`);
@@ -466,8 +470,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     setUploadingPortrait2Index(slideIndex);
     setError(null);
     try {
+      const compressed = await compressImageClient(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressed);
       fd.append("page", "home");
       fd.append("kind", "image");
       fd.append("folder", `home/portrait/slide-${slideIndex + 1}-2`);
@@ -489,8 +494,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   async function uploadBlockImage(file: File, block: "cadreur") {
     setError(null);
     try {
+      const compressed = await compressImageClient(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressed);
       fd.append("page", "home");
       fd.append("kind", "image");
       fd.append("folder", `home/${block}`);

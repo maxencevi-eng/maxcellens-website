@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import Modal from "../Modal/Modal";
+import { compressImageClient } from "@/lib/compressImageClient";
 
 export type GallerySubPageEntry = {
   id: string;
@@ -95,8 +96,9 @@ export default function GalleriesPagesEditor({
     const page = pages.find((p) => p.id === pageId);
     if (!page) return;
     try {
+      const compressed = await compressImageClient(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressed);
       fd.append("page", "galleries");
       fd.append("kind", "image");
       fd.append("folder", `Galleries/${page.slug || "temp"}`);

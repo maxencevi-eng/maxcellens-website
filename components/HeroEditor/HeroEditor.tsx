@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { compressImageClient } from '@/lib/compressImageClient';
 
 type Props = { page: string; onClose: () => void };
 
@@ -64,8 +65,9 @@ export default function HeroEditor({ page, onClose }: Props) {
   async function uploadFile(kind: 'image'|'video'|'slide', file: File, oldPath?: string | null) {
     setError(null); setSuccess(null); setLoading(true);
     try {
+      const toUpload = (kind === 'image' || kind === 'slide') ? await compressImageClient(file) : file;
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', toUpload);
       fd.append('page', page);
       fd.append('kind', kind === 'slide' ? 'image' : kind);
       if (oldPath) fd.append('old_path', oldPath);

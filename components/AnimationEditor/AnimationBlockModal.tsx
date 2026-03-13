@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { compressImageClient } from "@/lib/compressImageClient";
 const RichTextModal = dynamic(() => import("../RichTextModal/RichTextModal"), { ssr: false });
 
 export type TitleStyleKey = 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5';
@@ -134,8 +135,9 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
     setUploading(true);
     setError(null);
     try {
+      const compressed = await compressImageClient(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressed);
       fd.append("page", "animation");
       fd.append("kind", "image");
       fd.append("folder", UPLOAD_FOLDER[blockKey] ?? "animation/block-1");
