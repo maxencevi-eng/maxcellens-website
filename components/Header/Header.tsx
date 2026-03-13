@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -7,6 +7,7 @@ import styles from './Header.module.css';
 
 export default function Header() {
   const [open, setOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const logoUrl = `${supabaseUrl}/storage/v1/object/public/site-assets/logos/site-logo.webp`;
   const [logoSrc, setLogoSrc] = useState<string>(logoUrl);
@@ -138,7 +139,7 @@ export default function Header() {
     let mounted = true;
     async function loadNav() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=navHeight,navGap,navFontFamily,navFontSize,navFontWeight,navTextColor,navHoverTextColor,navActiveTextColor,navBgColor,navMobileActiveTextColor');
+        const resp = await fetch('/api/admin/site-settings?keys=navHeight,navGap,navFontFamily,navFontSize,navFontWeight,navTextColor,navHoverTextColor,navActiveTextColor,navBgColor,navMobileActiveTextColor,navMobileBgColor');
         if (resp.ok) {
           const j = await resp.json();
           const s = j?.settings || {};
@@ -161,6 +162,7 @@ export default function Header() {
           if (s.navActiveTextColor) { try { document.documentElement.style.setProperty('--nav-active-text-color', String(s.navActiveTextColor)); } catch(_){} }
           if (s.navMobileActiveTextColor) { try { document.documentElement.style.setProperty('--nav-mobile-active-text-color', String(s.navMobileActiveTextColor)); } catch(_){} }
           if (s.navBgColor) { try { document.documentElement.style.setProperty('--nav-bg-color', String(s.navBgColor)); } catch(_){} }
+          if (s.navMobileBgColor) { try { document.documentElement.style.setProperty('--nav-mobile-bg-color', String(s.navMobileBgColor)); } catch(_){} } else { try { const v = localStorage.getItem('navMobileBgColor'); if (v) document.documentElement.style.setProperty('--nav-mobile-bg-color', v); } catch(_){} }
           // mark nav as ready after applying server settings
           try { setNavLoaded(true); } catch(_){ }
         } else {
@@ -176,6 +178,19 @@ export default function Header() {
     }
     loadNav();
     return () => { mounted = false; };
+  }, []);
+
+  // Measure actual header height and expose as --header-height CSS variable
+  useEffect(() => {
+    function update() {
+      if (headerRef.current) {
+        const h = headerRef.current.offsetHeight;
+        document.documentElement.style.setProperty('--header-height', `${h}px`);
+      }
+    }
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
   }, []);
 
   const pathname = usePathname();
@@ -279,7 +294,7 @@ export default function Header() {
   };
 
   return (
-    <header className={styles.header}>
+    <header ref={headerRef} className={styles.header}>
       <div className={styles.contentWrap}>
         <div className={styles.inner}>
           <div className={styles.left}>
@@ -424,9 +439,6 @@ export default function Header() {
 
       {/* DevMeasure removed */}
 
-      {open ? (
-        <div className={styles.mobileOverlay} onClick={() => setOpen(false)} />
-      ) : null}
     </header>
   );
 }
