@@ -70,8 +70,13 @@ export default function HeroEditor({ page, onClose }: Props) {
       fd.append('kind', kind === 'slide' ? 'image' : kind);
       if (oldPath) fd.append('old_path', oldPath);
       const res = await fetch('/api/admin/upload-hero-media', { method: 'POST', body: fd });
-      const j = await res.json();
-      if (!res.ok) { setError(j?.error || 'Upload failed'); setLoading(false); return null; }
+      let j: any = null;
+      try { j = await res.json(); } catch (_) {}
+      if (!res.ok) {
+        if (res.status === 413) setError('Fichier trop lourd pour le serveur — essayez une image moins de 4MB ou réduisez sa résolution avant l\'import.');
+        else setError(j?.error || `Erreur serveur (${res.status})`);
+        setLoading(false); return null;
+      }
       // return both url and storage path so caller can persist path on save
       return { url: j?.url || null, path: j?.path || null };
     } catch (e:any) { setError(e?.message || 'Upload failed'); return null; } finally { setLoading(false); }
@@ -209,7 +214,7 @@ export default function HeroEditor({ page, onClose }: Props) {
               <input type="file" accept="image/*" onChange={async (e) => { const f = e.target.files?.[0] || null; await handleImageSelect(f); }} />
             </div>
             <p style={{ fontSize:13, color:'#666', marginTop:8, marginBottom:0, lineHeight:1.4 }}>
-              L'image finale doit être en .webp et ≤ 1 MB.
+              L'image sera convertie en .webp et redimensionnée à 3200px max automatiquement.
             </p>
             {imagePreview ? (
               <div style={{ marginTop:12 }}>
