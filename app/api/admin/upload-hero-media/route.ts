@@ -30,9 +30,6 @@ export async function POST(req: Request) {
     // allow optional folder override (e.g. 'Portrait/Galerie1')
     const folder = String(form.get('folder') || '').replace(/^\/+/, '').replace(/\.+/g, '.');
     if (kind === 'image') {
-      // Compress to webp with reasonable quality — no strict size limit
-      // Sharp will optimize intelligently; final size is not capped
-      const targetBytes = 10 * 1024 * 1024; // 10MB soft target (very generous, just for algo guidance)
       let outBuf = buf;
       let finalContentType = (file as any).type || 'image/webp';
 
@@ -40,35 +37,15 @@ export async function POST(req: Request) {
         const sharpImport = await import('sharp');
         const sharp = (sharpImport?.default || sharpImport) as any;
 
-        // try combinations of widths and qualities to find best compression
-        const widths = [3200, 2560, 1920, 1600, 1280, 1024, 800, 600, 400, 300];
-        const qualities = [95, 85, 75, 65, 55, 45, 35, 25];
-        let best: Buffer | null = null;
-        let bestSize = Infinity;
+        // Compress to WebP at max 3200px wide (beautiful on 32" screens), quality 85
+        // No input size restriction — the image is compressed regardless of original size
+        const compressed = await sharp(buf)
+          .resize({ width: 3200, withoutEnlargement: true })
+          .webp({ quality: 85 })
+          .toBuffer();
 
-        for (const w of widths) {
-          for (const q of qualities) {
-            try {
-              const p = await sharp(buf).resize({ width: w, withoutEnlargement: true }).webp({ quality: q }).toBuffer();
-              if (!p || p.length === 0) continue;
-              if (p.length <= targetBytes) {
-                outBuf = p;
-                finalContentType = 'image/webp';
-                best = p;
-                bestSize = p.length;
-                break;
-              }
-              if (p.length < bestSize) { best = p; bestSize = p.length; }
-            } catch (_) {
-              // ignore individual failures
-            }
-          }
-          if (best && best.length <= targetBytes) break;
-        }
-
-        // Always use the best compression result found, no size limit error
-        if (best) {
-          outBuf = best;
+        if (compressed && compressed.length > 0) {
+          outBuf = compressed;
           finalContentType = 'image/webp';
         }
       } catch (e) {
