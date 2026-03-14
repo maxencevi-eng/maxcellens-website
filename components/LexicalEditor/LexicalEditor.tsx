@@ -166,6 +166,7 @@ function ToolbarPlugin() {
   const [bgColor, setBgColor] = useState<string>('#ffffff');
   const [fontSize, setFontSize] = useState<string>('inherit');
   const [isUppercase, setIsUppercase] = useState(false);
+  const [isHighlight, setIsHighlight] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const emojiPanelRef = useRef<HTMLElement | null>(null);
   const { style: siteStyle } = useSiteStyle();
@@ -220,6 +221,8 @@ function ToolbarPlugin() {
       setFontSize(fs || 'inherit');
       const tt = $getSelectionStyleValueForProperty(selection, 'text-transform', 'none');
       setIsUppercase(tt === 'uppercase');
+      const hl = $getSelectionStyleValueForProperty(selection, 'border-radius', '');
+      setIsHighlight(!!hl && hl !== 'none');
     });
   }, [editor]);
 
@@ -316,6 +319,24 @@ function ToolbarPlugin() {
             title="Majuscules"
           >
             <span style={{ textTransform: 'uppercase', fontSize: '0.85em' }}>Aa</span>
+          </button>
+          <button
+            type="button"
+            className={`lexical-toolbar-btn${isHighlight ? ' active' : ''}`}
+            onClick={() => {
+              editor.update(() => {
+                const selection = $getSelection();
+                if (!$isRangeSelection(selection)) return;
+                if (isHighlight) {
+                  $patchStyleText(selection, { 'background-color': null, 'border-radius': null, padding: null });
+                } else {
+                  $patchStyleText(selection, { 'background-color': '#e8e8e6', 'border-radius': '6px', padding: '2px 8px' });
+                }
+              });
+            }}
+            title="Surlignage arrondi (badge/pastille)"
+          >
+            <span style={{ background: '#e8e8e6', borderRadius: 4, padding: '0 4px', fontSize: '0.8em' }}>Ab</span>
           </button>
           <button
             type="button"

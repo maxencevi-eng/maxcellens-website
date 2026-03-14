@@ -41,6 +41,11 @@ export default function Clients({ logos, title }: Props) {
   const { hiddenBlocks, blockWidthModes, isAdmin: isAdminCtx } = useBlockVisibility();
   const hide = !isAdminCtx && hiddenBlocks.includes('clients');
   const blockWidthClass = blockWidthModes['clients'] === 'max1600' ? 'block-width-1600' : '';
+  const [bgColor, setBgColor] = useState('');
+  const [paddingTop, setPaddingTop] = useState<number | null>(null);
+  const [paddingBottom, setPaddingBottom] = useState<number | null>(null);
+  const [radiusTop, setRadiusTop] = useState<number | null>(null);
+  const [radiusBottom, setRadiusBottom] = useState<number | null>(null);
   const [loadedSet, setLoadedSet] = useState<Set<string>>(new Set());
 
   const markLoaded = useCallback((key: string) => {
@@ -67,12 +72,17 @@ export default function Clients({ logos, title }: Props) {
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_logos,clients_grid');
+        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_logos,clients_grid,clients_bg,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
         if (!mounted) return;
         if (s.clients_title) setHdr(String(s.clients_title));
+        if (s.clients_bg) setBgColor(String(s.clients_bg));
+        if (s.clients_radius_top != null && s.clients_radius_top !== '') setRadiusTop(Number(s.clients_radius_top));
+        if (s.clients_radius_bottom != null && s.clients_radius_bottom !== '') setRadiusBottom(Number(s.clients_radius_bottom));
+        if (s.clients_padding_top != null && s.clients_padding_top !== '') setPaddingTop(Number(s.clients_padding_top));
+        if (s.clients_padding_bottom != null && s.clients_padding_bottom !== '') setPaddingBottom(Number(s.clients_padding_bottom));
         if (s.clients_logos) {
           try {
             const parsed = JSON.parse(String(s.clients_logos));
@@ -152,11 +162,23 @@ export default function Clients({ logos, title }: Props) {
     <section
       className={styles.section}
       style={{
+        width: '100vw',
+        marginLeft: 'calc(50% - 50vw)',
+        marginTop: '-28px',
+        marginBottom: '0',
+        overflow: 'hidden',
+        position: 'relative',
+        boxSizing: 'border-box',
         ['--clients-columns' as string]: String(Math.max(1, gridSettings.columns)),
         ['--clients-item-width' as string]: `${gridSettings.itemWidth}px`,
         ['--clients-row-gap' as string]: `${gridSettings.rowGap}px`,
         ['--clients-col-gap' as string]: `${gridSettings.colGap}px`,
         ['--clients-item-height' as string]: `${Math.max(36, Math.round(gridSettings.itemWidth * (gridSettings.heightRatio || 0.5)))}px`,
+        ...(bgColor ? { background: bgColor } : {}),
+        ...(radiusTop != null ? { borderTopLeftRadius: `${radiusTop}px`, borderTopRightRadius: `${radiusTop}px` } : {}),
+        ...(radiusBottom != null ? { borderBottomLeftRadius: `${radiusBottom}px`, borderBottomRightRadius: `${radiusBottom}px` } : {}),
+        ...(paddingTop != null ? { paddingTop: `${paddingTop}px` } : {}),
+        ...(paddingBottom != null ? { paddingBottom: `${paddingBottom}px` } : {}),
       } as React.CSSProperties}
     >
       <div className={`container ${blockWidthClass}`.trim()}>

@@ -2,21 +2,35 @@
  * Données par défaut des blocs de la page d'accueil (éditables via modale).
  */
 
-/** Taille de titre en px (8–72). */
+/** Taille de titre en px (8–200). */
 export const TITLE_FONT_SIZE_MIN = 8;
-export const TITLE_FONT_SIZE_MAX = 72;
+export const TITLE_FONT_SIZE_MAX = 200;
 
 export type HomeIntroData = {
   title?: string;
   subtitle?: string;
   titleStyle?: TitleStyleKey;
   subtitleStyle?: TitleStyleKey;
-  /** Taille du titre en px (8–72). */
+  /** Taille du titre en px (8–200). */
   titleFontSize?: number;
   subtitleFontSize?: number;
+  /** Couleur personnalisée du titre (hex). */
+  titleColor?: string;
+  /** Couleur personnalisée du sous-titre (hex). */
+  subtitleColor?: string;
+  titleAlign?: 'left' | 'center' | 'right';
+  subtitleAlign?: 'left' | 'center' | 'right';
   html?: string;
   /** Couleur de fond du bloc (remplace le style global des blocs) */
   backgroundColor?: string;
+  /** Arrondi haut de la section (px). Remplace le CSS par défaut si défini. */
+  borderRadiusTop?: number;
+  /** Arrondi bas de la section (px). Remplace le CSS par défaut si défini. */
+  borderRadiusBottom?: number;
+  /** Padding vertical interne haut (px). Remplace le CSS par défaut si défini. */
+  paddingTop?: number;
+  /** Padding vertical interne bas (px). Remplace le CSS par défaut si défini. */
+  paddingBottom?: number;
 };
 
 export type HomeServiceItem = {
@@ -37,12 +51,29 @@ export type HomeServicesData = {
   blockSubtitleStyle?: TitleStyleKey;
   blockTitleFontSize?: number;
   blockSubtitleFontSize?: number;
+  /** Couleur personnalisée du titre du bloc (hex). */
+  blockTitleColor?: string;
+  /** Couleur personnalisée du sous-titre du bloc (hex). */
+  blockSubtitleColor?: string;
+  blockTitleAlign?: 'left' | 'center' | 'right';
+  blockSubtitleAlign?: 'left' | 'center' | 'right';
   items: HomeServiceItem[];
   backgroundColor?: string;
+  borderRadiusTop?: number;
+  borderRadiusBottom?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
 };
 
 export type HomeStatItem = { value: string; label: string };
-export type HomeStatsData = { items: HomeStatItem[]; backgroundColor?: string };
+export type HomeStatsData = {
+  items: HomeStatItem[];
+  backgroundColor?: string;
+  borderRadiusTop?: number;
+  borderRadiusBottom?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
+};
 
 export type FocusPoint = { x: number; y: number };
 
@@ -64,12 +95,19 @@ export type HomePortraitBlockData = {
   blockTitle?: string;
   blockTitleStyle?: TitleStyleKey;
   blockTitleFontSize?: number;
+  /** Couleur personnalisée du titre du bloc (hex). */
+  blockTitleColor?: string;
+  blockTitleAlign?: 'left' | 'center' | 'right';
   ctaLabel?: string;
   ctaHref?: string;
   ctaButtonStyle?: '1' | '2';
   carouselSpeed?: number;
   slides: HomePortraitSlide[];
   backgroundColor?: string;
+  borderRadiusTop?: number;
+  borderRadiusBottom?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
 };
 
 export type CadreurVideoItem = {
@@ -89,6 +127,9 @@ export type HomeCadreurBlockData = {
   title?: string;
   titleStyle?: TitleStyleKey;
   titleFontSize?: number;
+  /** Couleur personnalisée du titre (hex). */
+  titleColor?: string;
+  titleAlign?: 'left' | 'center' | 'right';
   html?: string;
   image?: { url: string; path?: string; focus?: FocusPoint } | null;
   /** Ratio d'image pour le bloc Cadreur. `AnimationImageRatio` utilisé pour compatibilité */
@@ -100,12 +141,45 @@ export type HomeCadreurBlockData = {
   /** Title displayed above the video section */
   videosSectionTitle?: string;
   videosSectionTitleAlign?: 'left' | 'center' | 'right';
+  borderRadiusTop?: number;
+  borderRadiusBottom?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
 };
 
 export type HomeQuoteItem = { text: string; author: string; role?: string; authorStyle?: TitleStyleKey; roleStyle?: TitleStyleKey };
-export type HomeQuoteData = { quotes: HomeQuoteItem[]; carouselSpeed?: number; backgroundColor?: string };
+export type HomeQuoteData = {
+  blockTitle?: string;
+  blockTitleStyle?: TitleStyleKey;
+  blockTitleFontSize?: number;
+  /** Couleur personnalisée du titre du bloc (hex). */
+  blockTitleColor?: string;
+  blockTitleAlign?: 'left' | 'center' | 'right';
+  quotes: HomeQuoteItem[];
+  carouselSpeed?: number;
+  backgroundColor?: string;
+  borderRadiusTop?: number;
+  borderRadiusBottom?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
+};
 
-export type HomeCtaData = { title: string; titleStyle?: TitleStyleKey; titleFontSize?: number; buttonLabel: string; buttonHref: string; buttonStyle?: '1' | '2'; backgroundColor?: string };
+export type HomeCtaData = {
+  title: string;
+  titleStyle?: TitleStyleKey;
+  titleFontSize?: number;
+  /** Couleur personnalisée du titre (hex). */
+  titleColor?: string;
+  titleAlign?: 'left' | 'center' | 'right';
+  buttonLabel: string;
+  buttonHref: string;
+  buttonStyle?: '1' | '2';
+  backgroundColor?: string;
+  borderRadiusTop?: number;
+  borderRadiusBottom?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
+};
 
 export type HomeAnimationBlockData = {
   blockTitle?: string;
@@ -114,6 +188,14 @@ export type HomeAnimationBlockData = {
   blockSubtitleStyle?: TitleStyleKey;
   blockTitleFontSize?: number;
   blockSubtitleFontSize?: number;
+  /** Couleur personnalisée du titre du bloc (hex). */
+  blockTitleColor?: string;
+  /** Couleur personnalisée du sous-titre du bloc (hex). */
+  blockSubtitleColor?: string;
+  blockTitleAlign?: 'left' | 'center' | 'right';
+  blockSubtitleAlign?: 'left' | 'center' | 'right';
+  /** Couleur de fond de la carte de contenu superposée (hex). */
+  contentBgColor?: string;
   /** Bannière / image d'accroche (optionnel) */
   image?: { url: string; path?: string } | null;
   /** Ratio d'image pour le bloc Animation */
@@ -124,6 +206,10 @@ export type HomeAnimationBlockData = {
   ctaHref?: string;
   ctaButtonStyle?: '1' | '2';
   backgroundColor?: string;
+  borderRadiusTop?: number;
+  borderRadiusBottom?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
 };
 
 export const DEFAULT_INTRO: HomeIntroData = {
@@ -194,6 +280,27 @@ export const DEFAULT_CTA: HomeCtaData = {
   buttonLabel: "Contactez-moi",
   buttonHref: "/contact",
   buttonStyle: "1",
+};
+
+export type HomeBannerData = {
+  /** Image de la bannière */
+  image?: { url: string; path?: string; focus?: FocusPoint } | null;
+  /** Ratio d'image */
+  imageRatio?: AnimationImageRatio;
+  /** Couleur de fond (remplace l'image si pas d'image) */
+  backgroundColor?: string;
+  /** Arrondi haut de la section */
+  borderRadiusTop?: number;
+  /** Arrondi bas de la section */
+  borderRadiusBottom?: number;
+  /** Padding vertical interne haut */
+  paddingTop?: number;
+  /** Padding vertical interne bas */
+  paddingBottom?: number;
+};
+
+export const DEFAULT_BANNER: HomeBannerData = {
+  imageRatio: "21:9",
 };
 
 export const DEFAULT_ANIMATION: HomeAnimationBlockData = {

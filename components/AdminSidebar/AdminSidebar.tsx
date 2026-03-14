@@ -521,7 +521,7 @@ export default function AdminSidebar() {
                   {/* Taille et action de modification placées sous l'aperçu */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
                     <label style={{ fontSize: 13, color: 'var(--muted)' }}>Taille :</label>
-                    <input type="range" min={24} max={120} value={footerSize} onChange={(e) => handleFooterSizeChange(Number(e.target.value))} />
+                    <input type="range" min={8} max={120} value={footerSize} onChange={(e) => handleFooterSizeChange(Number(e.target.value))} />
                     <div style={{ fontSize: 13 }}>{footerSize}px</div>
                   </div>
                   <div style={{ marginTop: 8 }}>

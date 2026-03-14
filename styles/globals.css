@@ -3,9 +3,23 @@
 /* Global base styles (no Tailwind) */
 :root {
   --base-line-height: 1.25;
-  --bg: #dfe4dd; /* RVB(223,228,221) */
+  --bg: #F2F0EB; /* Fond de page — blanc cassé chaud et neutre */
   /** Couleur de fond des blocs (zone contenu) — réglable dans Style du site */
   --block-bg: var(--bg);
+
+  /* ── Design tokens — Redesign home page ── */
+  /** Sections claires (cartes flottantes) */
+  --section-bg-light: #FAFAF8;
+  /** Sections sombres (accent) */
+  --section-bg-dark: #1C1C1A;
+  /** Rayon des coins des sections */
+  --section-radius: 28px;
+  /** Ombre des sections flottantes */
+  --section-shadow: 0 4px 32px rgba(0,0,0,0.06);
+  /** Marge latérale des sections (crée l'effet flottant) */
+  --section-margin-x: 16px;
+  /** Espace vertical entre sections */
+  --section-gap: 20px;
   --fg: #213431; /* texte sombre vert/gris */
   --muted: #6b7280;
   /* Navigation customization variables (defaults reflect current styles) */

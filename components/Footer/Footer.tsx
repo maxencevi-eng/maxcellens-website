@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { AnimationImageRatio } from '../HomeBlocks/homeDefaults';
@@ -14,6 +14,20 @@ export default function Footer() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const footerLogoUrl = `${supabaseUrl}/storage/v1/object/public/site-assets/logos/footer-logo.webp`;
   const [logoSrc, setLogoSrc] = useState<string>(footerLogoUrl);
+  const footerRef = useRef<HTMLElement>(null);
+  const [revealed, setRevealed] = useState(false);
+
+  // Fallback pour navigateurs sans CSS scroll-driven animations
+  useEffect(() => {
+    if (CSS.supports('animation-timeline', 'view()')) return;
+    const el = footerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setRevealed(true); observer.disconnect(); }
+    }, { threshold: 0.05 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const v = typeof window !== 'undefined' ? (localStorage.getItem('siteFooterLogoVersion') || '') : '';
@@ -330,7 +344,7 @@ export default function Footer() {
       <h3 className={styles.logo}>
         <Link href="/" aria-label="Accueil" data-analytics-id="Logo-pied de page">
           {!imgError ? (
-            <Image src={logoSrc} alt="Maxcellens" width={160} height={60} onError={() => setImgError(true)} onLoad={() => setImgError(false)} style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain', objectPosition: 'left' }} />
+            <Image src={logoSrc} alt="Maxcellens" width={160} height={60} onError={() => setImgError(true)} onLoad={() => setImgError(false)} style={{ maxWidth: '100%', height: 'var(--site-footer-logo-height, var(--site-logo-height, 36px))', width: 'auto', objectFit: 'contain', objectPosition: 'left' }} />
           ) : (
             <span style={{ fontWeight: 800, color: 'var(--fg)' }}>Maxcellens</span>
           )}
@@ -403,7 +417,7 @@ export default function Footer() {
   })();
 
   return (
-    <footer className={`${styles.footer} ${isMobileFooter ? styles.mobile : ''}`}>
+    <footer ref={footerRef} className={`${styles.footer} ${isMobileFooter ? styles.mobile : ''} ${revealed ? styles.revealed : ''}`}>
       {bannerUrl && !bannerError ? (
         <div className={styles.banner} aria-label="Footer banner wrapper">
           <div

@@ -1,6 +1,10 @@
 .section {
   background: transparent;
   padding: 3rem 0 4rem 0;
+  /* Intègre la section dans le système d'empilement : efface le joint visible
+     entre la section précédente (ex. chiffres-clés) et les logos clients */
+  position: relative;
+  z-index: 1;
 }
 .inner {
   text-align: center;

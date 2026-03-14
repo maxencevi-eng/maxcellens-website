@@ -7,6 +7,7 @@ import { compressImageClient } from "@/lib/compressImageClient";
 import type {
   HomeIntroData,
   HomeServicesData,
+  HomeBannerData,
   HomeStatsData,
   HomePortraitBlockData,
   HomeCadreurBlockData,
@@ -51,6 +52,28 @@ const getValidTitleStyle = (s: any, def: TitleStyleKey = "h2"): TitleStyleKey =>
 
 const parseFontSize = (v: string): number | "" => (v === "" ? "" : clampTitleFontSize(Number(v)));
 
+function FontSizeInput({ value, onChange }: { value: number | ""; onChange: (v: number | "") => void }) {
+  const [raw, setRaw] = React.useState(value === "" ? "" : String(value));
+  React.useEffect(() => { setRaw(value === "" ? "" : String(value)); }, [value]);
+  return (
+    <input
+      type="number"
+      min={TITLE_FONT_SIZE_MIN}
+      max={TITLE_FONT_SIZE_MAX}
+      value={raw}
+      onChange={(e) => setRaw(e.target.value)}
+      onBlur={(e) => {
+        const parsed = parseFontSize(e.target.value);
+        onChange(parsed);
+        setRaw(parsed === "" ? "" : String(parsed));
+      }}
+      placeholder="px"
+      style={{ width: 64, padding: "8px 12px", border: "1px solid #e6e6e6", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+      title={`Taille (${TITLE_FONT_SIZE_MIN}–${TITLE_FONT_SIZE_MAX} px)`}
+    />
+  );
+}
+
 const DEFAULT_PORTRAIT_TITLES = ["Lifestyle", "Studio", "Entreprise", "Couple"];
 
 const TITLE_STYLE_OPTIONS: { value: TitleStyleKey; label: string }[] = [
@@ -67,6 +90,7 @@ const RichTextModal = dynamic(() => import("../RichTextModal/RichTextModal"), { 
 export type HomeBlockKey =
   | "home_intro"
   | "home_services"
+  | "home_banner"
   | "home_stats"
   | "home_portrait"
   | "home_cadreur"
@@ -77,6 +101,7 @@ export type HomeBlockKey =
 type BlockData =
   | HomeIntroData
   | HomeServicesData
+  | HomeBannerData
   | HomeStatsData
   | HomePortraitBlockData
   | HomeCadreurBlockData
@@ -94,6 +119,7 @@ type Props = {
 const LABELS: Record<HomeBlockKey, string> = {
   home_intro: "Bloc Intro",
   home_services: "Bloc Services",
+  home_banner: "Bloc Bannière",
   home_stats: "Bloc Chiffres",
   home_portrait: "Bloc Portrait",
   home_cadreur: "Bloc Cadreur",
@@ -125,9 +151,17 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [introTitleStyle, setIntroTitleStyle] = useState<TitleStyleKey>("h1");
   const [introSubtitleStyle, setIntroSubtitleStyle] = useState<TitleStyleKey>("p");
   const [introTitleFontSize, setIntroTitleFontSize] = useState<number | "">(16);
+  const [introTitleColor, setIntroTitleColor] = useState("");
+  const [introSubtitleColor, setIntroSubtitleColor] = useState("");
   const [introSubtitleFontSize, setIntroSubtitleFontSize] = useState<number | "">(16);
+  const [introTitleAlign, setIntroTitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
+  const [introSubtitleAlign, setIntroSubtitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
   const [introHtml, setIntroHtml] = useState("");
   const [introBackgroundColor, setIntroBackgroundColor] = useState("");
+  const [introRadiusTop, setIntroRadiusTop] = useState<number | "">("");
+  const [introRadiusBottom, setIntroRadiusBottom] = useState<number | "">("");
+  const [introPaddingTop, setIntroPaddingTop] = useState<number | "">("");
+  const [introPaddingBottom, setIntroPaddingBottom] = useState<number | "">("");
 
   // Services (block title/subtitle + items with optional image)
   const [servicesBlockTitle, setServicesBlockTitle] = useState("");
@@ -135,23 +169,51 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [servicesBlockTitleStyle, setServicesBlockTitleStyle] = useState<TitleStyleKey>("h2");
   const [servicesBlockSubtitleStyle, setServicesBlockSubtitleStyle] = useState<TitleStyleKey>("p");
   const [servicesBlockTitleFontSize, setServicesBlockTitleFontSize] = useState<number | "">(22);
-  const [servicesBlockSubtitleFontSize, setServicesBlockSubtitleFontSize] = useState<number | "">(16);
+  const [servicesBlockTitleColor, setServicesBlockTitleColor] = useState("");
+  const [servicesBlockSubtitleColor, setServicesBlockSubtitleColor] = useState("");
+  const [servicesBlockTitleAlign, setServicesBlockTitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
+  const [servicesBlockSubtitleAlign, setServicesBlockSubtitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
   const [servicesBackgroundColor, setServicesBackgroundColor] = useState("");
+  const [servicesRadiusTop, setServicesRadiusTop] = useState<number | "">("");
+  const [servicesRadiusBottom, setServicesRadiusBottom] = useState<number | "">("");
+  const [servicesPaddingTop, setServicesPaddingTop] = useState<number | "">("");
+  const [servicesPaddingBottom, setServicesPaddingBottom] = useState<number | "">("");
+
+  // Banner
+  const [bannerImage, setBannerImage] = useState<{ url: string; path?: string } | null>(null);
+  const [uploadingBannerImage, setUploadingBannerImage] = useState(false);
+  const [bannerImageRatio, setBannerImageRatio] = useState<AnimationImageRatio>("21:9");
+  const [bannerBackgroundColor, setBannerBackgroundColor] = useState("");
+  const [bannerRadiusTop, setBannerRadiusTop] = useState<number | "">("");
+  const [bannerRadiusBottom, setBannerRadiusBottom] = useState<number | "">("");
+  const [bannerPaddingTop, setBannerPaddingTop] = useState<number | "">("");
+  const [bannerPaddingBottom, setBannerPaddingBottom] = useState<number | "">("");
+  const [servicesBlockSubtitleFontSize, setServicesBlockSubtitleFontSize] = useState<number | "">(16);
   const [serviceItems, setServiceItems] = useState<{ title: string; description: string; href: string; image?: { url: string; path?: string } | null; titleStyle?: TitleStyleKey; descriptionStyle?: TitleStyleKey; titleFontSize?: number }[]>([]);
 
   // Stats
   const [statItems, setStatItems] = useState<{ value: string; label: string }[]>([]);
   const [statBackgroundColor, setStatBackgroundColor] = useState("");
+  const [statsRadiusTop, setStatsRadiusTop] = useState<number | "">("");
+  const [statsRadiusBottom, setStatsRadiusBottom] = useState<number | "">("");
+  const [statsPaddingTop, setStatsPaddingTop] = useState<number | "">("");
+  const [statsPaddingBottom, setStatsPaddingBottom] = useState<number | "">("");
 
   // Portrait block (carousel: 4 slides)
   const [portraitBlockTitle, setPortraitBlockTitle] = useState("");
   const [portraitBlockTitleStyle, setPortraitBlockTitleStyle] = useState<TitleStyleKey>("h2");
   const [portraitBlockTitleFontSize, setPortraitBlockTitleFontSize] = useState<number | "">(22);
+  const [portraitBlockTitleColor, setPortraitBlockTitleColor] = useState("");
+  const [portraitBlockTitleAlign, setPortraitBlockTitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
   const [portraitCtaLabel, setPortraitCtaLabel] = useState("");
   const [portraitCtaHref, setPortraitCtaHref] = useState("");
   const [portraitSlides, setPortraitSlides] = useState<{ title: string; text: string; image?: { url: string; path?: string; focus?: { x: number; y: number } } | null; image2?: { url: string; path?: string; focus?: { x: number; y: number } } | null; titleStyle?: TitleStyleKey; titleFontSize?: number; href?: string; linkExternal?: boolean }[]>([]);
   const [portraitCarouselSpeed, setPortraitCarouselSpeed] = useState(5000);
   const [portraitBackgroundColor, setPortraitBackgroundColor] = useState("");
+  const [portraitRadiusTop, setPortraitRadiusTop] = useState<number | "">("");
+  const [portraitRadiusBottom, setPortraitRadiusBottom] = useState<number | "">("");
+  const [portraitPaddingTop, setPortraitPaddingTop] = useState<number | "">("");
+  const [portraitPaddingBottom, setPortraitPaddingBottom] = useState<number | "">("");
   const [editingSlideIndex, setEditingSlideIndex] = useState<number | null>(null);
   const [uploadingPortraitIndex, setUploadingPortraitIndex] = useState<number | null>(null);
   const [uploadingPortrait2Index, setUploadingPortrait2Index] = useState<number | null>(null);
@@ -160,10 +222,16 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [cadreurTitle, setCadreurTitle] = useState("");
   const [cadreurTitleStyle, setCadreurTitleStyle] = useState<TitleStyleKey>("h2");
   const [cadreurTitleFontSize, setCadreurTitleFontSize] = useState<number | "">(28);
+  const [cadreurTitleColor, setCadreurTitleColor] = useState("");
+  const [cadreurTitleAlign, setCadreurTitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
   const [cadreurHtml, setCadreurHtml] = useState("");
   const [cadreurImage, setCadreurImage] = useState<{ url: string; path?: string; focus?: { x: number; y: number } } | null>(null);
   const [cadreurImageRatio, setCadreurImageRatio] = useState<AnimationImageRatio>("4:3" as any); // Using "4:3" or undefined as default if not set, but AnimationImageRatio doesn't obey "4:3". Let's check AnimationImageRatio values.
   const [cadreurBackgroundColor, setCadreurBackgroundColor] = useState("");
+  const [cadreurRadiusTop, setCadreurRadiusTop] = useState<number | "">("");
+  const [cadreurRadiusBottom, setCadreurRadiusBottom] = useState<number | "">("");
+  const [cadreurPaddingTop, setCadreurPaddingTop] = useState<number | "">("");
+  const [cadreurPaddingBottom, setCadreurPaddingBottom] = useState<number | "">("");
   // Cadreur videos
   const [cadreurVideos, setCadreurVideos] = useState<CadreurVideoItem[]>([
     { url: "", title: "", description: "", visible: false },
@@ -179,18 +247,33 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [cadreurVideosSectionTitleAlign, setCadreurVideosSectionTitleAlign] = useState<'left' | 'center' | 'right'>('center');
 
   // Quote (liste de citations + vitesse)
+  const [quoteBlockTitle, setQuoteBlockTitle] = useState("Témoignages");
+  const [quoteBlockTitleStyle, setQuoteBlockTitleStyle] = useState<TitleStyleKey>("h2");
+  const [quoteBlockTitleFontSize, setQuoteBlockTitleFontSize] = useState<number | "">(22);
+  const [quoteBlockTitleColor, setQuoteBlockTitleColor] = useState("");
+  const [quoteTitleAlign, setQuoteTitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
   const [quoteItems, setQuoteItems] = useState<{ text: string; author: string; role?: string; authorStyle?: TitleStyleKey; roleStyle?: TitleStyleKey }[]>([]);
   const [quoteCarouselSpeed, setQuoteCarouselSpeed] = useState(5000);
   const [quoteBackgroundColor, setQuoteBackgroundColor] = useState("");
+  const [quoteRadiusTop, setQuoteRadiusTop] = useState<number | "">("");
+  const [quoteRadiusBottom, setQuoteRadiusBottom] = useState<number | "">("");
+  const [quotePaddingTop, setQuotePaddingTop] = useState<number | "">("");
+  const [quotePaddingBottom, setQuotePaddingBottom] = useState<number | "">("");
 
   // CTA
   const [ctaTitle, setCtaTitle] = useState("");
   const [ctaTitleStyle, setCtaTitleStyle] = useState<TitleStyleKey>("h2");
   const [ctaTitleFontSize, setCtaTitleFontSize] = useState<number | "">(22);
+  const [ctaTitleColor, setCtaTitleColor] = useState("");
+  const [ctaTitleAlign, setCtaTitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
   const [ctaButtonLabel, setCtaButtonLabel] = useState("");
   const [ctaButtonHref, setCtaButtonHref] = useState("");
   const [ctaButtonStyle, setCtaButtonStyle] = useState<"1" | "2">("1");
   const [ctaBackgroundColor, setCtaBackgroundColor] = useState("");
+  const [ctaRadiusTop, setCtaRadiusTop] = useState<number | "">("");
+  const [ctaRadiusBottom, setCtaRadiusBottom] = useState<number | "">("");
+  const [ctaPaddingTop, setCtaPaddingTop] = useState<number | "">("");
+  const [ctaPaddingBottom, setCtaPaddingBottom] = useState<number | "">("");
 
   // Animation block (présentation page Animation)
   const [animationBlockTitle, setAnimationBlockTitle] = useState("");
@@ -198,10 +281,20 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [animationBlockTitleStyle, setAnimationBlockTitleStyle] = useState<TitleStyleKey>("h2");
   const [animationBlockSubtitleStyle, setAnimationBlockSubtitleStyle] = useState<TitleStyleKey>("p");
   const [animationBlockTitleFontSize, setAnimationBlockTitleFontSize] = useState<number | "">(22);
+  const [animationBlockTitleColor, setAnimationBlockTitleColor] = useState("");
+  const [animationBlockSubtitleColor, setAnimationBlockSubtitleColor] = useState("");
+  const [animationBlockTitleAlign, setAnimationBlockTitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
+  const [animationBlockSubtitleAlign, setAnimationBlockSubtitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
+  const [animationContentBgColor, setAnimationContentBgColor] = useState("");
   const [animationBlockSubtitleFontSize, setAnimationBlockSubtitleFontSize] = useState<number | "">(16);
   const [animationImage, setAnimationImage] = useState<{ url: string; path?: string } | null>(null);
   const [uploadingAnimationImage, setUploadingAnimationImage] = useState(false);
   const [animationBackgroundColor, setAnimationBackgroundColor] = useState("");
+  const [animationRadiusTop, setAnimationRadiusTop] = useState<number | "">("");
+  const [animationRadiusBottom, setAnimationRadiusBottom] = useState<number | "">("");
+  const [animationPaddingTop, setAnimationPaddingTop] = useState<number | "">("");
+  const [animationPaddingBottom, setAnimationPaddingBottom] = useState<number | "">("");
+  const [animationCtaButtonStyle, setAnimationCtaButtonStyle] = useState<"" | "1" | "2">("");
   const [animationHtml, setAnimationHtml] = useState("");
   const [editingAnimationHtml, setEditingAnimationHtml] = useState(false);
   const [animationImageRatio, setAnimationImageRatio] = useState<AnimationImageRatio>("21:9");
@@ -226,9 +319,17 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setIntroTitleStyle(getValidTitleStyle(d.titleStyle, "h1"));
       setIntroSubtitleStyle(getValidTitleStyle(d.subtitleStyle, "p"));
       setIntroTitleFontSize(getFontSize(d.titleFontSize));
+      setIntroTitleColor(d.titleColor ?? "");
+      setIntroSubtitleColor(d.subtitleColor ?? "");
+      setIntroTitleAlign(d.titleAlign ?? '');
+      setIntroSubtitleAlign(d.subtitleAlign ?? '');
       setIntroSubtitleFontSize(getFontSize(d.subtitleFontSize));
       setIntroHtml(d.html ?? "");
       setIntroBackgroundColor(d.backgroundColor ?? "");
+      setIntroRadiusTop(d.borderRadiusTop != null ? d.borderRadiusTop : "");
+      setIntroRadiusBottom(d.borderRadiusBottom != null ? d.borderRadiusBottom : "");
+      setIntroPaddingTop(d.paddingTop != null ? d.paddingTop : "");
+      setIntroPaddingBottom(d.paddingBottom != null ? d.paddingBottom : "");
     }
     if (blockKey === "home_services") {
       setServicesBlockTitle(d.blockTitle ?? "Services");
@@ -236,6 +337,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setServicesBlockTitleStyle(getValidTitleStyle(d.blockTitleStyle, "h2"));
       setServicesBlockSubtitleStyle(getValidTitleStyle(d.blockSubtitleStyle, "p"));
       setServicesBlockTitleFontSize(getFontSize(d.blockTitleFontSize));
+      setServicesBlockTitleColor(d.blockTitleColor ?? "");
+      setServicesBlockSubtitleColor(d.blockSubtitleColor ?? "");
+      setServicesBlockTitleAlign(d.blockTitleAlign ?? '');
+      setServicesBlockSubtitleAlign(d.blockSubtitleAlign ?? '');
       setServicesBlockSubtitleFontSize(getFontSize(d.blockSubtitleFontSize));
       if (d.items) {
         const items = d.items.map((it: any) => ({
@@ -250,20 +355,43 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         setServiceItems(items.length ? items : [{ title: "", description: "", href: "", image: null, titleStyle: "h3", descriptionStyle: "p" }]);
       }
       setServicesBackgroundColor(d.backgroundColor ?? "");
+      setServicesRadiusTop(d.borderRadiusTop != null ? d.borderRadiusTop : "");
+      setServicesRadiusBottom(d.borderRadiusBottom != null ? d.borderRadiusBottom : "");
+      setServicesPaddingTop(d.paddingTop != null ? d.paddingTop : "");
+      setServicesPaddingBottom(d.paddingBottom != null ? d.paddingBottom : "");
+    }
+    if (blockKey === "home_banner") {
+      setBannerImage(d.image ?? null);
+      setBannerImageRatio(d.imageRatio ?? "21:9");
+      setBannerBackgroundColor(d.backgroundColor ?? "");
+      setBannerRadiusTop(d.borderRadiusTop != null ? d.borderRadiusTop : "");
+      setBannerRadiusBottom(d.borderRadiusBottom != null ? d.borderRadiusBottom : "");
+      setBannerPaddingTop(d.paddingTop != null ? d.paddingTop : "");
+      setBannerPaddingBottom(d.paddingBottom != null ? d.paddingBottom : "");
     }
     if (blockKey === "home_stats" && d.items) {
       setStatItems(d.items.length ? d.items : [{ value: "", label: "" }]);
       setStatBackgroundColor(d.backgroundColor ?? "");
+      setStatsRadiusTop(d.borderRadiusTop != null ? d.borderRadiusTop : "");
+      setStatsRadiusBottom(d.borderRadiusBottom != null ? d.borderRadiusBottom : "");
+      setStatsPaddingTop(d.paddingTop != null ? d.paddingTop : "");
+      setStatsPaddingBottom(d.paddingBottom != null ? d.paddingBottom : "");
     }
     if (blockKey === "home_portrait") {
       setPortraitBlockTitle(d.blockTitle ?? "Portrait");
       setPortraitBlockTitleStyle(getValidTitleStyle(d.blockTitleStyle, "h2"));
       setPortraitBlockTitleFontSize(getFontSize(d.blockTitleFontSize));
+      setPortraitBlockTitleColor(d.blockTitleColor ?? "");
+      setPortraitBlockTitleAlign(d.blockTitleAlign ?? '');
       setPortraitCtaLabel(d.ctaLabel ?? "Découvrir le portrait");
       setPortraitCtaHref(d.ctaHref ?? "/portrait");
       setPortraitCtaButtonStyle(d.ctaButtonStyle === "2" ? "2" : "1");
       setPortraitCarouselSpeed(typeof d.carouselSpeed === "number" && d.carouselSpeed >= 2000 ? d.carouselSpeed : 5000);
       setPortraitBackgroundColor(d.backgroundColor ?? "");
+      setPortraitRadiusTop(d.borderRadiusTop != null ? d.borderRadiusTop : "");
+      setPortraitRadiusBottom(d.borderRadiusBottom != null ? d.borderRadiusBottom : "");
+      setPortraitPaddingTop(d.paddingTop != null ? d.paddingTop : "");
+      setPortraitPaddingBottom(d.paddingBottom != null ? d.paddingBottom : "");
       if (Array.isArray(d.slides) && d.slides.length) {
         setPortraitSlides(d.slides.slice(0, 4).map((s: any) => ({
           title: s.title ?? "",
@@ -287,10 +415,16 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setCadreurTitle(d.title ?? "");
       setCadreurTitleStyle(getValidTitleStyle(d.titleStyle, "h2"));
       setCadreurTitleFontSize(getFontSize(d.titleFontSize));
+      setCadreurTitleColor(d.titleColor ?? "");
+      setCadreurTitleAlign(d.titleAlign ?? '');
       setCadreurHtml(d.html ?? "");
       setCadreurImage(d.image ? { ...d.image, focus: (d.image as any).focus ?? { x: 50, y: 50 } } : null);
       setCadreurImageRatio(d.imageRatio ?? "4:3");
       setCadreurBackgroundColor(d.backgroundColor ?? "");
+      setCadreurRadiusTop(d.borderRadiusTop != null ? d.borderRadiusTop : "");
+      setCadreurRadiusBottom(d.borderRadiusBottom != null ? d.borderRadiusBottom : "");
+      setCadreurPaddingTop(d.paddingTop != null ? d.paddingTop : "");
+      setCadreurPaddingBottom(d.paddingBottom != null ? d.paddingBottom : "");
       // Videos
       if (Array.isArray(d.videos) && d.videos.length) {
         const vids = d.videos.slice(0, 3).map((v: any) => ({
@@ -324,13 +458,28 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setAnimationBlockTitleStyle(getValidTitleStyle(d.blockTitleStyle, "h2"));
       setAnimationBlockSubtitleStyle(getValidTitleStyle(d.blockSubtitleStyle, "p"));
       setAnimationBlockTitleFontSize(getFontSize(d.blockTitleFontSize));
+      setAnimationBlockTitleColor(d.blockTitleColor ?? "");
+      setAnimationBlockSubtitleColor(d.blockSubtitleColor ?? "");
+      setAnimationBlockTitleAlign(d.blockTitleAlign ?? '');
+      setAnimationBlockSubtitleAlign(d.blockSubtitleAlign ?? '');
+      setAnimationContentBgColor(d.contentBgColor ?? "");
       setAnimationBlockSubtitleFontSize(getFontSize(d.blockSubtitleFontSize));
       setAnimationImage(d.image ?? null);
       setAnimationBackgroundColor(d.backgroundColor ?? "");
+      setAnimationRadiusTop(d.borderRadiusTop != null ? d.borderRadiusTop : "");
+      setAnimationRadiusBottom(d.borderRadiusBottom != null ? d.borderRadiusBottom : "");
+      setAnimationPaddingTop(d.paddingTop != null ? d.paddingTop : "");
+      setAnimationPaddingBottom(d.paddingBottom != null ? d.paddingBottom : "");
+      setAnimationCtaButtonStyle(d.ctaButtonStyle === "1" || d.ctaButtonStyle === "2" ? d.ctaButtonStyle : "");
       setAnimationHtml(d.html ?? "");
       setAnimationImageRatio(d.imageRatio ?? "21:9");
     }
     if (blockKey === "home_quote") {
+      setQuoteBlockTitle(d.blockTitle ?? "Témoignages");
+      setQuoteBlockTitleStyle(getValidTitleStyle(d.blockTitleStyle, "h2"));
+      setQuoteBlockTitleFontSize(getFontSize(d.blockTitleFontSize));
+      setQuoteBlockTitleColor(d.blockTitleColor ?? "");
+      setQuoteTitleAlign(d.blockTitleAlign ?? '');
       if (Array.isArray(d.quotes) && d.quotes.length) {
         setQuoteItems(d.quotes.map((q: any) => ({
           text: q.text ?? "",
@@ -356,15 +505,25 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       }
       setQuoteCarouselSpeed(typeof d.carouselSpeed === "number" && d.carouselSpeed >= 1000 ? d.carouselSpeed : 5000);
       setQuoteBackgroundColor(d.backgroundColor ?? "");
+      setQuoteRadiusTop(d.borderRadiusTop != null ? d.borderRadiusTop : "");
+      setQuoteRadiusBottom(d.borderRadiusBottom != null ? d.borderRadiusBottom : "");
+      setQuotePaddingTop(d.paddingTop != null ? d.paddingTop : "");
+      setQuotePaddingBottom(d.paddingBottom != null ? d.paddingBottom : "");
     }
     if (blockKey === "home_cta") {
       setCtaTitle(d.title ?? "");
       setCtaTitleStyle(getValidTitleStyle(d.titleStyle, "h2"));
       setCtaTitleFontSize(getFontSize(d.titleFontSize));
+      setCtaTitleColor(d.titleColor ?? "");
+      setCtaTitleAlign(d.titleAlign ?? '');
       setCtaButtonLabel(d.buttonLabel ?? "");
       setCtaButtonHref(d.buttonHref ?? "");
       setCtaButtonStyle(d.buttonStyle === "2" ? "2" : "1");
       setCtaBackgroundColor(d.backgroundColor ?? "");
+      setCtaRadiusTop(d.borderRadiusTop != null ? d.borderRadiusTop : "");
+      setCtaRadiusBottom(d.borderRadiusBottom != null ? d.borderRadiusBottom : "");
+      setCtaPaddingTop(d.paddingTop != null ? d.paddingTop : "");
+      setCtaPaddingBottom(d.paddingBottom != null ? d.paddingBottom : "");
     }
   }, [blockKey, initialData]);
 
@@ -438,6 +597,30 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setError(e?.message ?? "Erreur upload");
     } finally {
       setUploadingAnimationImage(false);
+    }
+  }
+
+  async function uploadBannerImage(file: File) {
+    setUploadingBannerImage(true);
+    setError(null);
+    try {
+      const compressed = await compressImageClient(file);
+      const fd = new FormData();
+      fd.append("file", compressed);
+      fd.append("page", "home");
+      fd.append("kind", "image");
+      fd.append("folder", "home/banner");
+      if (bannerImage?.path) fd.append("old_path", bannerImage.path);
+      const resp = await fetch("/api/admin/upload-hero-media", { method: "POST", body: fd });
+      const j = await resp.json();
+      if (!resp.ok) throw new Error(j?.error ?? "Erreur d'upload");
+      if (j?.url) {
+        setBannerImage({ url: j.url, path: j.path ?? undefined });
+      } else throw new Error("Upload: pas d'URL retournée");
+    } catch (e: any) {
+      setError(e?.message ?? "Erreur upload");
+    } finally {
+      setUploadingBannerImage(false);
     }
   }
 
@@ -517,32 +700,36 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     let payload: BlockData;
     switch (blockKey) {
       case "home_intro":
-        payload = { title: introTitle, subtitle: introSubtitle, titleStyle: introTitleStyle, subtitleStyle: introSubtitleStyle, titleFontSize: introTitleFontSize !== "" ? clampTitleFontSize(introTitleFontSize as number) : undefined, subtitleFontSize: introSubtitleFontSize !== "" ? clampTitleFontSize(introSubtitleFontSize as number) : undefined, html: introHtml, backgroundColor: introBackgroundColor?.trim() || undefined };
+        payload = { title: introTitle, subtitle: introSubtitle, titleStyle: introTitleStyle, subtitleStyle: introSubtitleStyle, titleFontSize: introTitleFontSize !== "" ? clampTitleFontSize(introTitleFontSize as number) : undefined, subtitleFontSize: introSubtitleFontSize !== "" ? clampTitleFontSize(introSubtitleFontSize as number) : undefined, titleColor: introTitleColor?.trim() || undefined, subtitleColor: introSubtitleColor?.trim() || undefined, titleAlign: introTitleAlign || undefined, subtitleAlign: introSubtitleAlign || undefined, html: introHtml, backgroundColor: introBackgroundColor?.trim() || undefined, borderRadiusTop: introRadiusTop !== "" ? Number(introRadiusTop) : undefined, borderRadiusBottom: introRadiusBottom !== "" ? Number(introRadiusBottom) : undefined, paddingTop: introPaddingTop !== "" ? Number(introPaddingTop) : undefined, paddingBottom: introPaddingBottom !== "" ? Number(introPaddingBottom) : undefined };
         break;
       case "home_services":
-        payload = { blockTitle: servicesBlockTitle, blockSubtitle: servicesBlockSubtitle, blockTitleStyle: servicesBlockTitleStyle, blockSubtitleStyle: servicesBlockSubtitleStyle, blockTitleFontSize: servicesBlockTitleFontSize !== "" ? clampTitleFontSize(servicesBlockTitleFontSize as number) : undefined, blockSubtitleFontSize: servicesBlockSubtitleFontSize !== "" ? clampTitleFontSize(servicesBlockSubtitleFontSize as number) : undefined, items: serviceItems.map((it) => ({ ...it, titleFontSize: it.titleFontSize != null && it.titleFontSize >= TITLE_FONT_SIZE_MIN && it.titleFontSize <= TITLE_FONT_SIZE_MAX ? it.titleFontSize : undefined })), backgroundColor: servicesBackgroundColor?.trim() || undefined };
+        payload = { blockTitle: servicesBlockTitle, blockSubtitle: servicesBlockSubtitle, blockTitleStyle: servicesBlockTitleStyle, blockSubtitleStyle: servicesBlockSubtitleStyle, blockTitleFontSize: servicesBlockTitleFontSize !== "" ? clampTitleFontSize(servicesBlockTitleFontSize as number) : undefined, blockSubtitleFontSize: servicesBlockSubtitleFontSize !== "" ? clampTitleFontSize(servicesBlockSubtitleFontSize as number) : undefined, blockTitleColor: servicesBlockTitleColor?.trim() || undefined, blockSubtitleColor: servicesBlockSubtitleColor?.trim() || undefined, blockTitleAlign: servicesBlockTitleAlign || undefined, blockSubtitleAlign: servicesBlockSubtitleAlign || undefined, items: serviceItems.map((it) => ({ ...it, titleFontSize: it.titleFontSize != null && it.titleFontSize >= TITLE_FONT_SIZE_MIN && it.titleFontSize <= TITLE_FONT_SIZE_MAX ? it.titleFontSize : undefined })), backgroundColor: servicesBackgroundColor?.trim() || undefined, borderRadiusTop: servicesRadiusTop !== "" ? Number(servicesRadiusTop) : undefined, borderRadiusBottom: servicesRadiusBottom !== "" ? Number(servicesRadiusBottom) : undefined, paddingTop: servicesPaddingTop !== "" ? Number(servicesPaddingTop) : undefined, paddingBottom: servicesPaddingBottom !== "" ? Number(servicesPaddingBottom) : undefined };
+        break;
+      case "home_banner":
+        payload = { image: bannerImage, imageRatio: bannerImageRatio, backgroundColor: bannerBackgroundColor?.trim() || undefined, borderRadiusTop: bannerRadiusTop !== "" ? Number(bannerRadiusTop) : undefined, borderRadiusBottom: bannerRadiusBottom !== "" ? Number(bannerRadiusBottom) : undefined, paddingTop: bannerPaddingTop !== "" ? Number(bannerPaddingTop) : undefined, paddingBottom: bannerPaddingBottom !== "" ? Number(bannerPaddingBottom) : undefined };
         break;
       case "home_stats":
-        payload = { items: statItems, backgroundColor: statBackgroundColor?.trim() || undefined };
+        payload = { items: statItems, backgroundColor: statBackgroundColor?.trim() || undefined, borderRadiusTop: statsRadiusTop !== "" ? Number(statsRadiusTop) : undefined, borderRadiusBottom: statsRadiusBottom !== "" ? Number(statsRadiusBottom) : undefined, paddingTop: statsPaddingTop !== "" ? Number(statsPaddingTop) : undefined, paddingBottom: statsPaddingBottom !== "" ? Number(statsPaddingBottom) : undefined };
         break;
       case "home_portrait":
-        payload = { blockTitle: portraitBlockTitle, blockTitleStyle: portraitBlockTitleStyle, blockTitleFontSize: portraitBlockTitleFontSize !== "" ? clampTitleFontSize(portraitBlockTitleFontSize as number) : undefined, ctaLabel: portraitCtaLabel, ctaHref: portraitCtaHref, ctaButtonStyle: portraitCtaButtonStyle, carouselSpeed: portraitCarouselSpeed, slides: portraitSlides.map((s) => ({ ...s, titleFontSize: s.titleFontSize != null && s.titleFontSize >= TITLE_FONT_SIZE_MIN && s.titleFontSize <= TITLE_FONT_SIZE_MAX ? s.titleFontSize : undefined })), backgroundColor: portraitBackgroundColor?.trim() || undefined };
+        payload = { blockTitle: portraitBlockTitle, blockTitleStyle: portraitBlockTitleStyle, blockTitleFontSize: portraitBlockTitleFontSize !== "" ? clampTitleFontSize(portraitBlockTitleFontSize as number) : undefined, blockTitleColor: portraitBlockTitleColor?.trim() || undefined, blockTitleAlign: portraitBlockTitleAlign || undefined, ctaLabel: portraitCtaLabel, ctaHref: portraitCtaHref, ctaButtonStyle: portraitCtaButtonStyle, carouselSpeed: portraitCarouselSpeed, slides: portraitSlides.map((s) => ({ ...s, titleFontSize: s.titleFontSize != null && s.titleFontSize >= TITLE_FONT_SIZE_MIN && s.titleFontSize <= TITLE_FONT_SIZE_MAX ? s.titleFontSize : undefined })), backgroundColor: portraitBackgroundColor?.trim() || undefined, borderRadiusTop: portraitRadiusTop !== "" ? Number(portraitRadiusTop) : undefined, borderRadiusBottom: portraitRadiusBottom !== "" ? Number(portraitRadiusBottom) : undefined, paddingTop: portraitPaddingTop !== "" ? Number(portraitPaddingTop) : undefined, paddingBottom: portraitPaddingBottom !== "" ? Number(portraitPaddingBottom) : undefined };
         break;
       case "home_cadreur":
-        payload = { title: cadreurTitle, titleStyle: cadreurTitleStyle, titleFontSize: cadreurTitleFontSize !== "" ? clampTitleFontSize(cadreurTitleFontSize as number) : undefined, html: cadreurHtml, image: cadreurImage, imageRatio: cadreurImageRatio, backgroundColor: cadreurBackgroundColor?.trim() || undefined, videos: cadreurVideos, videoSettings: cadreurVideoSettings, videosSectionTitle: cadreurVideosSectionTitle.trim() || undefined, videosSectionTitleAlign: cadreurVideosSectionTitleAlign };
+        payload = { title: cadreurTitle, titleStyle: cadreurTitleStyle, titleFontSize: cadreurTitleFontSize !== "" ? clampTitleFontSize(cadreurTitleFontSize as number) : undefined, titleColor: cadreurTitleColor?.trim() || undefined, titleAlign: cadreurTitleAlign || undefined, html: cadreurHtml, image: cadreurImage, imageRatio: cadreurImageRatio, backgroundColor: cadreurBackgroundColor?.trim() || undefined, videos: cadreurVideos, videoSettings: cadreurVideoSettings, videosSectionTitle: cadreurVideosSectionTitle.trim() || undefined, videosSectionTitleAlign: cadreurVideosSectionTitleAlign, borderRadiusTop: cadreurRadiusTop !== "" ? Number(cadreurRadiusTop) : undefined, borderRadiusBottom: cadreurRadiusBottom !== "" ? Number(cadreurRadiusBottom) : undefined, paddingTop: cadreurPaddingTop !== "" ? Number(cadreurPaddingTop) : undefined, paddingBottom: cadreurPaddingBottom !== "" ? Number(cadreurPaddingBottom) : undefined };
         break;
       case "home_animation": {
         const rawBg = animationBackgroundColor?.trim() || "";
         const hexMatch = rawBg.replace(/^#/, "").match(/^([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/);
         const backgroundColor = hexMatch ? (hexMatch[1].length === 3 ? "#" + hexMatch[1].split("").map((c) => c + c).join("") : "#" + hexMatch[1]) : undefined;
-        payload = { blockTitle: animationBlockTitle, blockSubtitle: animationBlockSubtitle, blockTitleStyle: animationBlockTitleStyle, blockSubtitleStyle: animationBlockSubtitleStyle, blockTitleFontSize: animationBlockTitleFontSize !== "" ? clampTitleFontSize(animationBlockTitleFontSize as number) : undefined, blockSubtitleFontSize: animationBlockSubtitleFontSize !== "" ? clampTitleFontSize(animationBlockSubtitleFontSize as number) : undefined, image: animationImage, imageRatio: animationImageRatio, html: animationHtml, backgroundColor };
+        const contentBgColorVal = animationContentBgColor?.trim() || undefined;
+        payload = { blockTitle: animationBlockTitle, blockSubtitle: animationBlockSubtitle, blockTitleStyle: animationBlockTitleStyle, blockSubtitleStyle: animationBlockSubtitleStyle, blockTitleFontSize: animationBlockTitleFontSize !== "" ? clampTitleFontSize(animationBlockTitleFontSize as number) : undefined, blockSubtitleFontSize: animationBlockSubtitleFontSize !== "" ? clampTitleFontSize(animationBlockSubtitleFontSize as number) : undefined, blockTitleColor: animationBlockTitleColor?.trim() || undefined, blockSubtitleColor: animationBlockSubtitleColor?.trim() || undefined, blockTitleAlign: animationBlockTitleAlign || undefined, blockSubtitleAlign: animationBlockSubtitleAlign || undefined, contentBgColor: contentBgColorVal, image: animationImage, imageRatio: animationImageRatio, html: animationHtml, ctaButtonStyle: animationCtaButtonStyle || undefined, backgroundColor, borderRadiusTop: animationRadiusTop !== "" ? Number(animationRadiusTop) : undefined, borderRadiusBottom: animationRadiusBottom !== "" ? Number(animationRadiusBottom) : undefined, paddingTop: animationPaddingTop !== "" ? Number(animationPaddingTop) : undefined, paddingBottom: animationPaddingBottom !== "" ? Number(animationPaddingBottom) : undefined };
         break;
       }
       case "home_quote":
-        payload = { quotes: quoteItems, carouselSpeed: quoteCarouselSpeed, backgroundColor: quoteBackgroundColor?.trim() || undefined };
+        payload = { blockTitle: quoteBlockTitle.trim() || "Témoignages", blockTitleStyle: quoteBlockTitleStyle, blockTitleFontSize: quoteBlockTitleFontSize !== "" ? quoteBlockTitleFontSize : undefined, blockTitleColor: quoteBlockTitleColor?.trim() || undefined, blockTitleAlign: quoteTitleAlign || undefined, quotes: quoteItems, carouselSpeed: quoteCarouselSpeed, backgroundColor: quoteBackgroundColor?.trim() || undefined, borderRadiusTop: quoteRadiusTop !== "" ? Number(quoteRadiusTop) : undefined, borderRadiusBottom: quoteRadiusBottom !== "" ? Number(quoteRadiusBottom) : undefined, paddingTop: quotePaddingTop !== "" ? Number(quotePaddingTop) : undefined, paddingBottom: quotePaddingBottom !== "" ? Number(quotePaddingBottom) : undefined };
         break;
       case "home_cta":
-        payload = { title: ctaTitle, titleStyle: ctaTitleStyle, titleFontSize: ctaTitleFontSize !== "" ? clampTitleFontSize(ctaTitleFontSize as number) : undefined, buttonLabel: ctaButtonLabel, buttonHref: ctaButtonHref, buttonStyle: ctaButtonStyle, backgroundColor: ctaBackgroundColor?.trim() || undefined };
+        payload = { title: ctaTitle, titleStyle: ctaTitleStyle, titleFontSize: ctaTitleFontSize !== "" ? clampTitleFontSize(ctaTitleFontSize as number) : undefined, titleColor: ctaTitleColor?.trim() || undefined, titleAlign: ctaTitleAlign || undefined, buttonLabel: ctaButtonLabel, buttonHref: ctaButtonHref, buttonStyle: ctaButtonStyle, backgroundColor: ctaBackgroundColor?.trim() || undefined, borderRadiusTop: ctaRadiusTop !== "" ? Number(ctaRadiusTop) : undefined, borderRadiusBottom: ctaRadiusBottom !== "" ? Number(ctaRadiusBottom) : undefined, paddingTop: ctaPaddingTop !== "" ? Number(ctaPaddingTop) : undefined, paddingBottom: ctaPaddingBottom !== "" ? Number(ctaPaddingBottom) : undefined };
         break;
       default:
         setSaving(false);
@@ -578,6 +765,65 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const animationBgComputed = computeAnimationBgValue();
 
   const introHtmlContent = introHtml || "<p style='color:#999'>Aucun</p>";
+  const bannerBgValue = bannerBackgroundColor || "#f8f9fa";
+
+  function AlignmentButtons({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+    return (
+      <div style={{ display: 'inline-flex', gap: 2, border: '1px solid #e6e6e6', borderRadius: 6, overflow: 'hidden' }}>
+        {(['left', 'center', 'right'] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => onChange(value === v ? '' : v)}
+            style={{ padding: '4px 8px', border: 'none', background: value === v ? '#111' : 'transparent', color: value === v ? '#fff' : '#555', cursor: 'pointer', fontSize: 13 }}
+            title={v === 'left' ? 'Gauche' : v === 'center' ? 'Centre' : 'Droite'}
+          >
+            {v === 'left' ? '≡←' : v === 'center' ? '≡' : '≡→'}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  /** Petit bloc UI "Arrondis" réutilisé dans chaque section de modal */
+  function RadiusInputs({ top, setTop, bottom, setBottom }: { top: number | ""; setTop: (v: number | "") => void; bottom: number | ""; setBottom: (v: number | "") => void }) {
+    return (
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>Arrondis de la section</label>
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ fontSize: 11, color: "var(--muted)" }}>Haut (px)</label>
+            <input type="number" min={0} max={120} value={top === "" ? "" : top} onChange={(e) => setTop(e.target.value === "" ? "" : Math.max(0, Math.min(120, Number(e.target.value))))} placeholder="défaut CSS" style={{ ...inputStyle, width: 96 }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ fontSize: 11, color: "var(--muted)" }}>Bas (px)</label>
+            <input type="number" min={0} max={120} value={bottom === "" ? "" : bottom} onChange={(e) => setBottom(e.target.value === "" ? "" : Math.max(0, Math.min(120, Number(e.target.value))))} placeholder="défaut CSS" style={{ ...inputStyle, width: 96 }} />
+          </div>
+          {(top !== "" || bottom !== "") ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => { setTop(""); setBottom(""); }}>↺ Réinitialiser</button> : null}
+        </div>
+      </div>
+    );
+  }
+
+  /** Petit bloc UI "Espacement vertical" réutilisé dans chaque section de modal */
+  function PaddingInputs({ top, setTop, bottom, setBottom }: { top: number | ""; setTop: (v: number | "") => void; bottom: number | ""; setBottom: (v: number | "") => void }) {
+    return (
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>Espacement interne vertical (px)</label>
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ fontSize: 11, color: "var(--muted)" }}>Haut (px)</label>
+            <input type="number" min={0} max={300} value={top === "" ? "" : top} onChange={(e) => setTop(e.target.value === "" ? "" : Math.max(0, Math.min(300, Number(e.target.value))))} placeholder="défaut CSS" style={{ ...inputStyle, width: 96 }} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <label style={{ fontSize: 11, color: "var(--muted)" }}>Bas (px)</label>
+            <input type="number" min={0} max={300} value={bottom === "" ? "" : bottom} onChange={(e) => setBottom(e.target.value === "" ? "" : Math.max(0, Math.min(300, Number(e.target.value))))} placeholder="défaut CSS" style={{ ...inputStyle, width: 96 }} />
+          </div>
+          {(top !== "" || bottom !== "") ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => { setTop(""); setBottom(""); }}>↺ Réinitialiser</button> : null}
+        </div>
+      </div>
+    );
+  }
   const cadreurHtmlContent = cadreurHtml || "<p style='color:#999'>Aucun</p>";
 
   const overlayStyle: React.CSSProperties = {
@@ -622,7 +868,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={introTitleStyle} onChange={(e) => setIntroTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={introTitleFontSize === "" ? "" : introTitleFontSize} onChange={(e) => setIntroTitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <FontSizeInput value={introTitleFontSize} onChange={setIntroTitleFontSize} />
+                  <input type="color" value={introTitleColor || "#1a1a18"} onChange={(e) => setIntroTitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du titre" />
+                  {introTitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setIntroTitleColor("")}>↺</button> : null}
+                  <AlignmentButtons value={introTitleAlign} onChange={(v) => setIntroTitleAlign(v as any)} />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -632,7 +881,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={introSubtitleStyle} onChange={(e) => setIntroSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={introSubtitleFontSize === "" ? "" : introSubtitleFontSize} onChange={(e) => setIntroSubtitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <FontSizeInput value={introSubtitleFontSize} onChange={setIntroSubtitleFontSize} />
+                  <input type="color" value={introSubtitleColor || "#1a1a18"} onChange={(e) => setIntroSubtitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du sous-titre" />
+                  {introSubtitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setIntroSubtitleColor("")}>↺</button> : null}
+                  <AlignmentButtons value={introSubtitleAlign} onChange={(v) => setIntroSubtitleAlign(v as any)} />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -648,6 +900,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   {introBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setIntroBackgroundColor("")}>Effacer</button> : null}
                 </div>
               </div>
+              <RadiusInputs top={introRadiusTop} setTop={setIntroRadiusTop} bottom={introRadiusBottom} setBottom={setIntroRadiusBottom} />
+              <PaddingInputs top={introPaddingTop} setTop={setIntroPaddingTop} bottom={introPaddingBottom} setBottom={setIntroPaddingBottom} />
             </>
           )}
 
@@ -660,7 +914,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={servicesBlockTitleStyle} onChange={(e) => setServicesBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={servicesBlockTitleFontSize === "" ? "" : servicesBlockTitleFontSize} onChange={(e) => setServicesBlockTitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <FontSizeInput value={servicesBlockTitleFontSize} onChange={setServicesBlockTitleFontSize} />
+                  <input type="color" value={servicesBlockTitleColor || "#1a1a18"} onChange={(e) => setServicesBlockTitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du titre" />
+                  {servicesBlockTitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setServicesBlockTitleColor("")}>↺</button> : null}
+                  <AlignmentButtons value={servicesBlockTitleAlign} onChange={(v) => setServicesBlockTitleAlign(v as any)} />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -670,7 +927,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={servicesBlockSubtitleStyle} onChange={(e) => setServicesBlockSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={servicesBlockSubtitleFontSize === "" ? "" : servicesBlockSubtitleFontSize} onChange={(e) => setServicesBlockSubtitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <FontSizeInput value={servicesBlockSubtitleFontSize} onChange={setServicesBlockSubtitleFontSize} />
+                  <input type="color" value={servicesBlockSubtitleColor || "#1a1a18"} onChange={(e) => setServicesBlockSubtitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du sous-titre" />
+                  {servicesBlockSubtitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setServicesBlockSubtitleColor("")}>↺</button> : null}
+                  <AlignmentButtons value={servicesBlockSubtitleAlign} onChange={(v) => setServicesBlockSubtitleAlign(v as any)} />
                 </div>
               </div>
               {serviceItems.map((item, i) => {
@@ -707,7 +967,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                       <select value={itemTitleStyle} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, titleStyle: e.target.value as TitleStyleKey } : p)))} style={{ ...inputStyle, width: 120 }}>
                         {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
-                      <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={itemTitleFontSize} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, titleFontSize: parseFontSize(e.target.value) || undefined } : p)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                      <FontSizeInput value={itemTitleFontSize} onChange={(v) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, titleFontSize: v || undefined } : p)))} />
                     </div>
                   </div>
                   <div style={{ marginBottom: 8 }}>
@@ -733,7 +993,41 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   {servicesBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setServicesBackgroundColor("")}>Effacer</button> : null}
                 </div>
               </div>
+              <RadiusInputs top={servicesRadiusTop} setTop={setServicesRadiusTop} bottom={servicesRadiusBottom} setBottom={setServicesRadiusBottom} />
+              <PaddingInputs top={servicesPaddingTop} setTop={setServicesPaddingTop} bottom={servicesPaddingBottom} setBottom={setServicesPaddingBottom} />
               <button type="button" className="btn-ghost" onClick={() => setServiceItems((prev) => [...prev, { title: "", description: "", href: "", image: null, titleStyle: "h3", descriptionStyle: "p", titleFontSize: undefined }])}>+ Ajouter un service</button>
+            </>
+          )}
+
+          {blockKey === "home_banner" && (
+            <>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Image de la bannière</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  {bannerImage?.url ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <img src={bannerImage.url} alt="" style={{ width: 200, height: 120, objectFit: "cover", borderRadius: 4 }} />
+                      <button type="button" className="btn-ghost" onClick={() => setBannerImage(null)} style={{ fontSize: 12, color: "#dc2626" }}>Supprimer</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadBannerImage(f); }} disabled={uploadingBannerImage} />
+                      {uploadingBannerImage ? <span style={{ fontSize: 12, color: "var(--muted)" }}>Upload…</span> : null}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Ratio de l'image</label>
+                <select value={bannerImageRatio} onChange={(e) => setBannerImageRatio(e.target.value as AnimationImageRatio)} style={inputStyle}>
+                  <option value="21:9">21:9 (ultra large)</option>
+                  <option value="16:9">16:9 (large)</option>
+                  <option value="4:3">4:3 (standard)</option>
+                  <option value="1:1">1:1 (carré)</option>
+                </select>
+              </div>
+              <RadiusInputs top={bannerRadiusTop} setTop={setBannerRadiusTop} bottom={bannerRadiusBottom} setBottom={setBannerRadiusBottom} />
+              <PaddingInputs top={bannerPaddingTop} setTop={setBannerPaddingTop} bottom={bannerPaddingBottom} setBottom={setBannerPaddingBottom} />
             </>
           )}
 
@@ -757,6 +1051,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   {statBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setStatBackgroundColor("")}>Effacer</button> : null}
                 </div>
               </div>
+              <RadiusInputs top={statsRadiusTop} setTop={setStatsRadiusTop} bottom={statsRadiusBottom} setBottom={setStatsRadiusBottom} />
+              <PaddingInputs top={statsPaddingTop} setTop={setStatsPaddingTop} bottom={statsPaddingBottom} setBottom={setStatsPaddingBottom} />
               <button type="button" className="btn-ghost" onClick={() => setStatItems((prev) => [...prev, { value: "", label: "" }])}>+ Ajouter un chiffre</button>
             </>
           )}
@@ -783,7 +1079,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={portraitBlockTitleStyle} onChange={(e) => setPortraitBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={portraitBlockTitleFontSize === "" ? "" : portraitBlockTitleFontSize} onChange={(e) => setPortraitBlockTitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <FontSizeInput value={portraitBlockTitleFontSize} onChange={setPortraitBlockTitleFontSize} />
+                  <input type="color" value={portraitBlockTitleColor || "#1a1a18"} onChange={(e) => setPortraitBlockTitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du titre" />
+                  {portraitBlockTitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setPortraitBlockTitleColor("")}>↺</button> : null}
+                  <AlignmentButtons value={portraitBlockTitleAlign} onChange={(v) => setPortraitBlockTitleAlign(v as any)} />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -809,6 +1108,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   {portraitBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setPortraitBackgroundColor("")}>Effacer</button> : null}
                 </div>
               </div>
+              <RadiusInputs top={portraitRadiusTop} setTop={setPortraitRadiusTop} bottom={portraitRadiusBottom} setBottom={setPortraitRadiusBottom} />
+              <PaddingInputs top={portraitPaddingTop} setTop={setPortraitPaddingTop} bottom={portraitPaddingBottom} setBottom={setPortraitPaddingBottom} />
               <div style={{ marginTop: 20, marginBottom: 8, fontWeight: 600, fontSize: 14 }}>4 slides (Lifestyle, Studio, Entreprise, Couple)</div>
               {portraitSlides.map((slide, i) => {
                 const slideTitleStyle = slide.titleStyle ?? "h3";
@@ -823,7 +1124,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                       <select value={slideTitleStyle} onChange={(e) => setPortraitSlides((prev) => prev.map((s, j) => (j === i ? { ...s, titleStyle: e.target.value as TitleStyleKey } : s)))} style={{ ...inputStyle, width: 120 }}>
                         {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
-                      <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={slideTitleFontSize} onChange={(e) => setPortraitSlides((prev) => prev.map((s, j) => (j === i ? { ...s, titleFontSize: parseFontSize(e.target.value) || undefined } : s)))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                      <FontSizeInput value={slideTitleFontSize} onChange={(v) => setPortraitSlides((prev) => prev.map((s, j) => (j === i ? { ...s, titleFontSize: v || undefined } : s)))} />
                     </div>
                   </div>
                   <div style={{ marginBottom: 8 }}>
@@ -964,7 +1265,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={cadreurTitleStyle} onChange={(e) => setCadreurTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={cadreurTitleFontSize === "" ? "" : cadreurTitleFontSize} onChange={(e) => setCadreurTitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <FontSizeInput value={cadreurTitleFontSize} onChange={setCadreurTitleFontSize} />
+                  <input type="color" value={cadreurTitleColor || "#1a1a18"} onChange={(e) => setCadreurTitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du titre" />
+                  {cadreurTitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setCadreurTitleColor("")}>↺</button> : null}
+                  <AlignmentButtons value={cadreurTitleAlign} onChange={(v) => setCadreurTitleAlign(v as any)} />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -1132,6 +1436,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   {cadreurBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setCadreurBackgroundColor("")}>Effacer</button> : null}
                 </div>
               </div>
+              <RadiusInputs top={cadreurRadiusTop} setTop={setCadreurRadiusTop} bottom={cadreurRadiusBottom} setBottom={setCadreurRadiusBottom} />
+              <PaddingInputs top={cadreurPaddingTop} setTop={setCadreurPaddingTop} bottom={cadreurPaddingBottom} setBottom={setCadreurPaddingBottom} />
             </>
           )}
 
@@ -1153,7 +1459,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={animationBlockTitleStyle} onChange={(e) => setAnimationBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={animationBlockTitleFontSize === "" ? "" : animationBlockTitleFontSize} onChange={(e) => setAnimationBlockTitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <FontSizeInput value={animationBlockTitleFontSize} onChange={setAnimationBlockTitleFontSize} />
+                  <input type="color" value={animationBlockTitleColor || "#1a1a18"} onChange={(e) => setAnimationBlockTitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du titre" />
+                  {animationBlockTitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setAnimationBlockTitleColor("")}>↺</button> : null}
+                  <AlignmentButtons value={animationBlockTitleAlign} onChange={(v) => setAnimationBlockTitleAlign(v as any)} />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -1163,7 +1472,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={animationBlockSubtitleStyle} onChange={(e) => setAnimationBlockSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={animationBlockSubtitleFontSize === "" ? "" : animationBlockSubtitleFontSize} onChange={(e) => setAnimationBlockSubtitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <FontSizeInput value={animationBlockSubtitleFontSize} onChange={setAnimationBlockSubtitleFontSize} />
+                  <input type="color" value={animationBlockSubtitleColor || "#1a1a18"} onChange={(e) => setAnimationBlockSubtitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du sous-titre" />
+                  {animationBlockSubtitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setAnimationBlockSubtitleColor("")}>↺</button> : null}
+                  <AlignmentButtons value={animationBlockSubtitleAlign} onChange={(v) => setAnimationBlockSubtitleAlign(v as any)} />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -1184,7 +1496,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 </select>
               </div>
               <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond de la section (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <input
                     type="color"
@@ -1196,11 +1508,42 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   {animationBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setAnimationBackgroundColor("")}>Effacer</button> : null}
                 </div>
               </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond du bloc de contenu (optionnel)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input type="color" value={animationContentBgColor || "#1c1c1a"} onChange={(e) => setAnimationContentBgColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="text" value={animationContentBgColor} onChange={(e) => setAnimationContentBgColor(e.target.value)} placeholder="hex (ex. #1c1c1a)" style={{ ...inputStyle, width: 140 }} />
+                  {animationContentBgColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setAnimationContentBgColor("")}>Effacer</button> : null}
+                </div>
+              </div>
+              <RadiusInputs top={animationRadiusTop} setTop={setAnimationRadiusTop} bottom={animationRadiusBottom} setBottom={setAnimationRadiusBottom} />
+              <PaddingInputs top={animationPaddingTop} setTop={setAnimationPaddingTop} bottom={animationPaddingBottom} setBottom={setAnimationPaddingBottom} />
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Style des boutons de navigation</label>
+                <select value={animationCtaButtonStyle} onChange={(e) => setAnimationCtaButtonStyle(e.target.value as "" | "1" | "2")} style={inputStyle}>
+                  <option value="">Style 1 (défaut)</option>
+                  <option value="1">Style 1</option>
+                  <option value="2">Style 2</option>
+                </select>
+              </div>
             </>
           )}
 
           {blockKey === "home_quote" && (
             <>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre du bloc</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input type="text" value={quoteBlockTitle} onChange={(e) => setQuoteBlockTitle(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} placeholder="Témoignages" />
+                  <select value={quoteBlockTitleStyle} onChange={(e) => setQuoteBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <FontSizeInput value={quoteBlockTitleFontSize} onChange={setQuoteBlockTitleFontSize} />
+                  <input type="color" value={quoteBlockTitleColor || "#1a1a18"} onChange={(e) => setQuoteBlockTitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du titre" />
+                  {quoteBlockTitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteBlockTitleColor("")}>↺</button> : null}
+                  <AlignmentButtons value={quoteTitleAlign} onChange={(v) => setQuoteTitleAlign(v as any)} />
+                </div>
+              </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Vitesse de défilement</label>
                 <input
@@ -1267,6 +1610,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   {quoteBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteBackgroundColor("")}>Effacer</button> : null}
                 </div>
               </div>
+              <RadiusInputs top={quoteRadiusTop} setTop={setQuoteRadiusTop} bottom={quoteRadiusBottom} setBottom={setQuoteRadiusBottom} />
+              <PaddingInputs top={quotePaddingTop} setTop={setQuotePaddingTop} bottom={quotePaddingBottom} setBottom={setQuotePaddingBottom} />
             </>
           )}
 
@@ -1279,7 +1624,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <select value={ctaTitleStyle} onChange={(e) => setCtaTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
-                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={ctaTitleFontSize === "" ? "" : ctaTitleFontSize} onChange={(e) => setCtaTitleFontSize(parseFontSize(e.target.value))} placeholder="px" style={{ ...inputStyle, width: 64 }} title="Taille (8–72 px)" />
+                  <FontSizeInput value={ctaTitleFontSize} onChange={setCtaTitleFontSize} />
+                  <input type="color" value={ctaTitleColor || "#1a1a18"} onChange={(e) => setCtaTitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du titre" />
+                  {ctaTitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setCtaTitleColor("")}>↺</button> : null}
+                  <AlignmentButtons value={ctaTitleAlign} onChange={(v) => setCtaTitleAlign(v as any)} />
                 </div>
               </div>
               <div style={{ marginBottom: 12 }}>
@@ -1305,6 +1653,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   {ctaBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setCtaBackgroundColor("")}>Effacer</button> : null}
                 </div>
               </div>
+              <RadiusInputs top={ctaRadiusTop} setTop={setCtaRadiusTop} bottom={ctaRadiusBottom} setBottom={setCtaRadiusBottom} />
+              <PaddingInputs top={ctaPaddingTop} setTop={setCtaPaddingTop} bottom={ctaPaddingBottom} setBottom={setCtaPaddingBottom} />
             </>
           )}
 

@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { supabase } from '../../lib/supabase';
 const RichTextModal = dynamic(() => import('../RichTextModal/RichTextModal'), { ssr: false });
@@ -15,6 +16,11 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
+  const [bgColor, setBgColor] = useState('');
+  const [radiusTop, setRadiusTop] = useState<number | ''>('');
+  const [radiusBottom, setRadiusBottom] = useState<number | ''>('');
+  const [paddingTop, setPaddingTop] = useState<number | ''>('');
+  const [paddingBottom, setPaddingBottom] = useState<number | ''>('');
   const [grid, setGrid] = useState<{ columns: number; itemWidth: number; rowGap: number; colGap: number; heightRatio: number; cloudMode?: boolean; rows?: number }>(() => ({
     columns: 5,
     itemWidth: 120,
@@ -29,12 +35,17 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_logos,clients_grid');
+        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_logos,clients_grid,clients_bg,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
         if (!mounted) return;
         if (s.clients_title) setTitle(String(s.clients_title)); else try { const v = localStorage.getItem('clients_title'); if (v) setTitle(v); } catch(_){}
+        if (s.clients_bg) setBgColor(String(s.clients_bg));
+        if (s.clients_radius_top != null && s.clients_radius_top !== '') setRadiusTop(Number(s.clients_radius_top));
+        if (s.clients_radius_bottom != null && s.clients_radius_bottom !== '') setRadiusBottom(Number(s.clients_radius_bottom));
+        if (s.clients_padding_top != null && s.clients_padding_top !== '') setPaddingTop(Number(s.clients_padding_top));
+        if (s.clients_padding_bottom != null && s.clients_padding_bottom !== '') setPaddingBottom(Number(s.clients_padding_bottom));
         if (s.clients_logos) {
           try {
             const parsed = JSON.parse(String(s.clients_logos));
@@ -147,6 +158,12 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_logos', value: JSON.stringify(logos) }) }),
         // persist grid settings
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_grid', value: JSON.stringify(grid) }) }),
+        // persist background color and border radius
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_bg', value: bgColor }) }),
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_radius_top', value: radiusTop !== '' ? String(radiusTop) : '' }) }),
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_radius_bottom', value: radiusBottom !== '' ? String(radiusBottom) : '' }) }),
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_padding_top', value: paddingTop !== '' ? String(paddingTop) : '' }) }),
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_padding_bottom', value: paddingBottom !== '' ? String(paddingBottom) : '' }) }),
       ];
       const res = await Promise.all(tasks);
       for (const r of res) {
@@ -166,7 +183,7 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
     } catch (err: any) { setError(err?.message || 'Erreur'); } finally { setSaving(false); }
   }
 
-  return (
+  const modalContent = (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
       <div style={{ background: '#fff', color: '#000', padding: 20, width: 820, maxWidth: '98%', maxHeight: '86vh', overflowY: 'auto', borderRadius: 10 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -280,6 +297,45 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
             </div>
           </div>
 
+          <div>
+            <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Couleur de fond (optionnel)</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input type="color" value={bgColor || '#fafaf9'} onChange={(e) => setBgColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: '1px solid #e6e6e6', borderRadius: 6 }} />
+              <input type="text" value={bgColor} onChange={(e) => setBgColor(e.target.value)} placeholder="ou hex (ex. #fafaf9)" style={{ padding: '6px 10px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13, width: 140 }} />
+              {bgColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setBgColor('')}>Effacer</button> : null}
+            </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Arrondis de la section</label>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: 'var(--muted)' }}>Haut (px)</label>
+                <input type="number" min={0} max={120} value={radiusTop === '' ? '' : radiusTop} onChange={(e) => setRadiusTop(e.target.value === '' ? '' : Math.max(0, Math.min(120, Number(e.target.value))))} placeholder="défaut CSS" style={{ padding: '6px 10px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13, width: 96 }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: 'var(--muted)' }}>Bas (px)</label>
+                <input type="number" min={0} max={120} value={radiusBottom === '' ? '' : radiusBottom} onChange={(e) => setRadiusBottom(e.target.value === '' ? '' : Math.max(0, Math.min(120, Number(e.target.value))))} placeholder="défaut CSS" style={{ padding: '6px 10px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13, width: 96 }} />
+              </div>
+              {(radiusTop !== '' || radiusBottom !== '') ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => { setRadiusTop(''); setRadiusBottom(''); }}>↺ Réinitialiser</button> : null}
+            </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Espacement interne vertical (px)</label>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: 'var(--muted)' }}>Haut (px)</label>
+                <input type="number" min={0} max={300} value={paddingTop === '' ? '' : paddingTop} onChange={(e) => setPaddingTop(e.target.value === '' ? '' : Math.max(0, Math.min(300, Number(e.target.value))))} placeholder="défaut CSS" style={{ padding: '6px 10px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13, width: 96 }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <label style={{ fontSize: 11, color: 'var(--muted)' }}>Bas (px)</label>
+                <input type="number" min={0} max={300} value={paddingBottom === '' ? '' : paddingBottom} onChange={(e) => setPaddingBottom(e.target.value === '' ? '' : Math.max(0, Math.min(300, Number(e.target.value))))} placeholder="défaut CSS" style={{ padding: '6px 10px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13, width: 96 }} />
+              </div>
+              {(paddingTop !== '' || paddingBottom !== '') ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => { setPaddingTop(''); setPaddingBottom(''); }}>↺ Réinitialiser</button> : null}
+            </div>
+          </div>
+
           {error ? <div style={{ color: 'crimson' }}>{error}</div> : null}
           {success ? <div style={{ color: 'green' }}>{success}</div> : null}
 
@@ -298,4 +354,5 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
       </div>
     </div>
   );
+  return createPortal(modalContent, document.body);
 }

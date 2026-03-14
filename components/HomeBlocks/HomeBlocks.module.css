@@ -1,36 +1,94 @@
-/* Fonds des blocs en pleine largeur (contenu reste centré via .container) */
+/* ── Sections "slides empilées" — effet fixaplan ──
+   Toutes les sections sont pleine largeur. Deux logiques visuelles :
+
+   1. Sections "standard" (services, cadreur, animation, quote) :
+      border-radius uniquement en haut → glissement vers le bas.
+      z-index: 1 → elles passent SOUS les sections flottantes.
+
+   2. Sections "flottantes" (intro, portrait, stats) :
+      border-radius sur les 4 coins → elles flottent entre les sections.
+      z-index: 2 → elles restent AU-DESSUS, leurs coins inférieurs arrondis
+      restent visibles par-dessus le haut de la section suivante.
+
+   Le CTA est hors de ce système : transparent sur fond de page, texte géant. */
+
+/* Base commune */
 .intro,
 .services,
 .portraitBlock,
+.bannerBlock,
 .cadreurBlock,
 .animationBlock,
 .stats,
-.quote,
-.cta {
+.quote {
   width: 100vw;
   margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  margin-top: -28px;
+  margin-bottom: 0;
+  overflow: hidden;
+  position: relative;
   box-sizing: border-box;
+}
+
+/* ── Sections standard — arrondi haut uniquement, passe "en dessous" ── */
+.services,
+.bannerBlock,
+.cadreurBlock,
+.animationBlock,
+.quote {
+  border-radius: 28px 28px 0 0;
+  z-index: 1;
+}
+
+/* ── Sections flottantes — arrondi 4 coins, passe "au-dessus" ──
+   Leurs coins bas arrondis restent visibles par-dessus la section suivante. */
+.intro,
+.portraitBlock,
+.stats {
+  border-radius: 28px;
+  z-index: 2;
+}
+
+/* ── Grand espace vertical partagé (effet fixaplan) ── */
+.intro,
+.services,
+.portraitBlock,
+.bannerBlock,
+.cadreurBlock,
+.animationBlock,
+.quote {
+  padding-top: clamp(5rem, 10vw, 8rem);
+  padding-bottom: clamp(5rem, 10vw, 8rem);
+}
+
+.stats {
+  padding-top: clamp(3.5rem, 7vw, 5.5rem);
+  padding-bottom: clamp(3.5rem, 7vw, 5.5rem);
 }
 
 /* ========== Intro ========== */
 .intro {
-  padding: var(--block-inner-padding-desktop, 24px);
+  padding-left: var(--block-inner-padding-desktop, 2rem);
+  padding-right: var(--block-inner-padding-desktop, 2rem);
   text-align: center;
-  background: var(--block-bg, var(--bg, #fafaf9));
+  background: var(--section-bg-light, #FAFAF8);
+  /* Ferme l'espace entre le PageHeader (padding-bottom: 2.75rem) et l'intro */
+  margin-top: -3rem;
 }
 
 .introTitle {
-  font-size: clamp(1.75rem, 4vw, 2.5rem);
-  font-weight: 700;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 800;
   margin: 0 0 0.5rem;
-  color: var(--fg, #213431);
-  letter-spacing: -0.02em;
+  color: var(--fg, #1C1C1A);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
 }
 
 .introSubtitle {
-  font-size: 1.1rem;
-  color: var(--muted, #6b7280);
+  font-size: 1rem;
+  color: #6B6B6B;
+  font-weight: 400;
   margin: 0 0 1.25rem;
 }
 
@@ -47,24 +105,28 @@
 
 /* ========== Services teaser ========== */
 .services {
-  padding: var(--block-inner-padding-desktop, 24px);
-  background: var(--block-bg, var(--bg, #fafaf9));
+  padding-left: var(--block-inner-padding-desktop, 2rem);
+  padding-right: var(--block-inner-padding-desktop, 2rem);
+  background: var(--section-bg-light, #FAFAF8);
 }
 
 .servicesTitle {
   text-align: center;
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 800;
   margin: 0 0 0.5rem;
-  color: var(--fg, #213431);
+  color: var(--fg, #1C1C1A);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
 }
 
 .servicesSubtitle {
   text-align: center;
   max-width: 560px;
   margin: 0 auto 2.5rem;
-  color: var(--muted, #6b7280);
-  font-size: 0.95rem;
+  color: #6B6B6B;
+  font-size: 1rem;
+  font-weight: 400;
   line-height: 1.5;
 }
 
@@ -86,17 +148,17 @@
   display: block;
   padding: 0;
   background: #fff;
-  border-radius: 12px;
+  border-radius: 16px;
   text-decoration: none;
   color: inherit;
   border: 1px solid rgba(0,0,0,0.06);
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: box-shadow 250ms ease-out, transform 250ms ease-out;
   overflow: hidden;
 }
 
 .serviceCard:hover {
-  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
-  transform: translateY(-2px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.14);
+  transform: scale(1.02);
 }
 
 .serviceCardImageWrap {
@@ -111,6 +173,11 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 400ms ease-out;
+}
+
+.serviceCard:hover .serviceCardImage {
+  transform: scale(1.05);
 }
 
 .serviceCardContent {
@@ -136,17 +203,20 @@
 
 /* ========== Portrait block — carousel (4 slides) ========== */
 .portraitBlock {
-  padding: var(--block-inner-padding-desktop, 24px);
-  background: var(--block-bg, var(--bg, #fafaf9));
+  padding-left: var(--block-inner-padding-desktop, 2rem);
+  padding-right: var(--block-inner-padding-desktop, 2rem);
+  background: var(--section-bg-dark, #1C1C1A);
+  color: #fff;
 }
 
 .portraitBlockTitle {
   text-align: center;
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 800;
   margin: 0 0 2rem;
-  color: var(--fg, #213431);
-  letter-spacing: -0.02em;
+  color: #fff;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
 }
 
 .portraitCarousel {
@@ -159,13 +229,14 @@
   gap: 2rem;
   align-items: center;
   grid-template-columns: 1fr;
+  overflow: visible;
 }
 
 @media (min-width: 900px) {
   .portraitSlideTransition {
-    grid-template-columns: 60% 40%;
-    gap: 3rem;
-    align-items: stretch;
+    grid-template-columns: 55% 45%;
+    gap: 2rem;
+    align-items: center;
   }
 }
 
@@ -208,41 +279,168 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Zone 1 (images) : bloc contenu dans la colonne gauche, les 2 images entièrement visibles, pas de débord sur le texte */
+/* Zone images — 3D Fluid Carousel */
 .portraitCarouselImageWrap {
-  display: flex;
-  justify-content: flex-start;
   width: 100%;
+  display: block;
+  overflow: visible;
+  position: relative;
+  z-index: 3; /* render above the text column sibling in the same grid */
 }
 
-@media (min-width: 900px) {
-  /* Taille de la zone photo 1 pour retrouver le rapport avec l’image 2 */
-  .portraitCarouselImageWrap {
-    width: 76%;
-    max-width: 76%;
-  }
+/* Ensure text column stays readable above overflowing fan cards */
+.portraitCarouselContent {
+  position: relative;
+  z-index: 5;
 }
 
-/* Image à gauche — format carré forcé, effet bords irréguliers (torn paper) */
-.portraitCarouselImage {
+/* ── 3D Fluid Carousel Stage ── */
+
+/* Scène perspective : fan carousel de slides portrait */
+.portrait3DStage {
   position: relative;
   width: 100%;
-  aspect-ratio: 3/4; /* 4:3 vertical (3 largeur, 4 hauteur) */
+  height: 460px;
+  perspective: 1000px;
+  perspective-origin: 50% 55%;
+  transform-style: preserve-3d;
   overflow: visible;
 }
 
-@media (max-width: 899px) {
-  /* Adapter la zone photo pour que les 2 images soient entièrement visibles sur mobile */
-  .portraitCarouselImage {
-    width: 78%;
-    max-width: 320px;
+/* Glow ambiant qui suit le slide actif */
+.portrait3DGlow {
+  position: absolute;
+  inset: -5%;
+  background: radial-gradient(ellipse 60% 70% at 38% 55%, rgba(200,200,220,0.12) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 20px;
+  transition: opacity 600ms ease;
+}
+
+/* Carte commune */
+.portrait3DCardFront,
+.portrait3DCardBack {
+  position: absolute;
+  border-radius: 16px;
+  overflow: hidden;
+  will-change: transform, opacity;
+}
+
+/* Carte avant (image1) — au premier plan, légèrement inclinée */
+.portrait3DCardFront {
+  height: 90%;
+  aspect-ratio: 3/4;
+  left: 5%;
+  bottom: 0;
+  z-index: 2;
+  box-shadow:
+    0 32px 80px rgba(0,0,0,0.7),
+    0 8px 24px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  transform: perspective(1400px) rotateY(-5deg) rotateX(1.5deg);
+}
+
+/* Carte arrière (image2) — derrière, décalée vers la droite */
+.portrait3DCardBack {
+  height: 72%;
+  aspect-ratio: 3/4;
+  right: 3%;
+  top: 8%;
+  z-index: 1;
+  box-shadow:
+    0 20px 55px rgba(0,0,0,0.55),
+    0 4px 12px rgba(0,0,0,0.35);
+  transform: perspective(1400px) rotateY(8deg) rotateX(-1deg) translateZ(-65px) scale(0.93);
+  opacity: 0.82;
+}
+
+/* Image remplissant la carte */
+.portrait3DCardImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* === Animations d’entrée 3D === */
+
+/* Carte avant — depuis la droite */
+.portrait3DFrontFromRight {
+  animation: p3dFrontFromRight 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes p3dFrontFromRight {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) rotateY(-20deg) translateX(90px) translateZ(-200px) scale(0.82);
   }
-  .portraitPhoto2Wrap {
-    top: 2%;
-    right: -18%;
-    width: 45%;
+  to {
+    opacity: 1;
+    transform: perspective(1400px) rotateY(-5deg) rotateX(1.5deg) translateZ(0px) scale(1);
   }
 }
+
+/* Carte avant — depuis la gauche */
+.portrait3DFrontFromLeft {
+  animation: p3dFrontFromLeft 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes p3dFrontFromLeft {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) rotateY(20deg) translateX(-90px) translateZ(-200px) scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1400px) rotateY(-5deg) rotateX(1.5deg) translateZ(0px) scale(1);
+  }
+}
+
+/* Carte arrière — depuis la droite (délai 80ms pour effet séquentiel) */
+.portrait3DBackFromRight {
+  animation: p3dBackFromRight 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 80ms;
+}
+@keyframes p3dBackFromRight {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) rotateY(22deg) translateX(65px) translateZ(-220px) scale(0.72);
+  }
+  to {
+    opacity: 0.82;
+    transform: perspective(1400px) rotateY(8deg) rotateX(-1deg) translateZ(-65px) scale(0.93);
+  }
+}
+
+/* Carte arrière — depuis la gauche */
+.portrait3DBackFromLeft {
+  animation: p3dBackFromLeft 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 80ms;
+}
+@keyframes p3dBackFromLeft {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) rotateY(-22deg) translateX(-65px) translateZ(-220px) scale(0.72);
+  }
+  to {
+    opacity: 0.82;
+    transform: perspective(1400px) rotateY(8deg) rotateX(-1deg) translateZ(-65px) scale(0.93);
+  }
+}
+
+/* Mobile */
+@media (max-width: 899px) {
+  .portrait3DStage { height: 340px; }
+}
+
+/* Legacy — gardé pour compatibilité (non utilisé dans le nouveau design) */
+.portraitCarouselImage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3/4;
+  overflow: visible;
+}
+
+/* (section portrait legacy mobile rules — non utilisées avec le nouveau 3D stage) */
 
 /* Wrappers pour animations séparées (photo 1 = slide L/R, photo 2 = slide haut→bas) */
 .portraitPhoto1Wrap {
@@ -319,20 +517,18 @@
 }
 
 .portraitSlideTitle {
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  font-weight: 700;
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 800;
   margin: 0 0 0.75rem;
-  color: var(--fg, #213431);
+  color: #fff;
   letter-spacing: -0.02em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .portraitSlideText {
   margin: 0 0 1.5rem;
   line-height: var(--base-line-height, 1.25);
-  color: var(--fg, #213431);
-  opacity: 0.92;
+  color: rgba(255,255,255,0.82);
 }
 
 .portraitSlideText p { margin: 0 0 0.5rem; }
@@ -382,15 +578,15 @@
 }
 
 .portraitDot {
-  background: rgba(0,0,0,0.2);
+  background: rgba(255,255,255,0.3);
 }
 
 .portraitDot:hover {
-  background: rgba(0,0,0,0.35);
+  background: rgba(255,255,255,0.5);
 }
 
 .portraitDotActive {
-  background: var(--fg, #213431);
+  background: #fff;
   transform: scale(1.2);
 }
 
@@ -405,18 +601,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
-  border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
   border-radius: 6px;
   cursor: pointer;
   font-size: 1.1rem;
-  color: var(--fg, #213431);
+  color: #fff;
   transition: background 0.2s, border-color 0.2s;
 }
 
 .portraitArrow:hover {
-  background: rgba(0,0,0,0.04);
-  border-color: rgba(0,0,0,0.2);
+  background: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.4);
 }
 
 /* Legacy (kept for grid layout elsewhere if needed) */
@@ -428,9 +624,152 @@
 .portraitMedia { border-radius: 12px; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
 .portraitImage { width: 100%; height: auto; object-fit: cover; aspect-ratio: 4/3; }
 
+/* ========== Banner Block ========== */
+.bannerBlock {
+  padding-left: var(--block-inner-padding-desktop, 2rem);
+  padding-right: var(--block-inner-padding-desktop, 2rem);
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.bannerBlockCard {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.bannerBlockCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+}
+
+.bannerBlockImageWrap {
+  width: 100%;
+  aspect-ratio: 21/9;
+  min-height: 200px;
+  background: rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.bannerBlockImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.bannerBlockContent {
+  position: relative;
+  z-index: 1;
+  padding: 2rem 1.5rem 2.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.bannerBlockContent.contentLeft {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.bannerBlockContent.contentRight {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.bannerBlockTitle {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  margin: 0 0 0.75rem;
+  color: var(--fg, #1C1C1A);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.bannerBlockSubtitle {
+  font-size: clamp(0.95rem, 2vw, 1.25rem);
+  color: var(--muted, #6b7280);
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+.bannerBlockRichText {
+  color: var(--fg, #213431);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0 0 1.5rem;
+  text-align: center;
+}
+
+.bannerBlockContent.contentLeft .bannerBlockRichText {
+  text-align: left;
+}
+
+.bannerBlockContent.contentRight .bannerBlockRichText {
+  text-align: right;
+}
+
+.bannerBlockRichText p { margin: 0 0 0.75rem; }
+.bannerBlockRichText ul { margin: 0 0 1rem; padding-left: 1.25rem; }
+.bannerBlockRichText strong { color: var(--fg, #213431); }
+
+.bannerBlockButton {
+  display: inline-block;
+  padding: 0.9rem 2.5rem;
+  background: var(--fg, #1C1C1A);
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: opacity 0.2s, transform 0.15s;
+  margin-top: 0.5rem;
+}
+
+.bannerBlockButton:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.bannerBlockButton:focus-visible {
+  outline: 2px solid var(--fg, #1C1C1A);
+  outline-offset: 3px;
+}
+
+@media (max-width: 767px) {
+  .bannerBlock {
+    padding-left: var(--block-inner-padding-mobile, 1rem);
+    padding-right: var(--block-inner-padding-mobile, 1rem);
+  }
+  .bannerBlockContent {
+    padding: 1.5rem 1rem 1.75rem;
+  }
+  .bannerBlockTitle {
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+  }
+  .bannerBlockSubtitle {
+    font-size: clamp(0.85rem, 2vw, 1.1rem);
+  }
+  .bannerBlockRichText {
+    font-size: 0.9rem;
+  }
+  .bannerBlockButton {
+    width: 100%;
+    max-width: 280px;
+    text-align: center;
+  }
+}
+
 /* ========== Animation block (présentation page Animation) ========== */
 .animationBlock {
-  padding: var(--block-inner-padding-desktop, 24px);
+  padding-left: var(--block-inner-padding-desktop, 2rem);
+  padding-right: var(--block-inner-padding-desktop, 2rem);
   background: linear-gradient(135deg, #0f0f12 0%, #1a1a22 50%, #12121a 100%);
   position: relative;
   overflow: hidden;
@@ -487,11 +826,12 @@
 }
 
 .animationBlockTitle {
-  font-size: clamp(1.75rem, 4vw, 2.25rem);
-  font-weight: 700;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 800;
   margin: 0 0 0.75rem;
   color: #fff;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
   position: relative;
   display: inline-block;
 }
@@ -564,7 +904,8 @@
 
 @media (max-width: 767px) {
   .animationBlock {
-    padding: var(--block-inner-padding-mobile, 16px);
+    padding-left: var(--block-inner-padding-mobile, 1rem);
+    padding-right: var(--block-inner-padding-mobile, 1rem);
   }
   .animationBlockContent {
     padding: 1.5rem 1rem 1.75rem;
@@ -581,8 +922,9 @@
 
 /* ========== Cadreur block ========== */
 .cadreurBlock {
-  padding: var(--block-inner-padding-desktop, 24px);
-  background: var(--block-bg, var(--bg, #fafaf9));
+  padding-left: var(--block-inner-padding-desktop, 2rem);
+  padding-right: var(--block-inner-padding-desktop, 2rem);
+  background: var(--section-bg-light, #FAFAF8);
 }
 
 .cadreurGrid {
@@ -600,10 +942,12 @@
 .cadreurContent { max-width: 540px; }
 
 .cadreurTitle {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 800;
   margin: 0 0 1rem;
-  color: var(--fg, #213431);
+  color: var(--fg, #1C1C1A);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
 }
 
 .cadreurText {
@@ -750,8 +1094,9 @@
 
 /* ========== Stats ========== */
 .stats {
-  padding: var(--block-inner-padding-desktop, 24px);
-  background: var(--fg, #213431);
+  padding-left: var(--block-inner-padding-desktop, 2rem);
+  padding-right: var(--block-inner-padding-desktop, 2rem);
+  background: var(--section-bg-dark, #1C1C1A);
   color: #fff;
 }
 
@@ -823,9 +1168,21 @@
 .sectionBlockAlt .sectionBlockDesc { color: #d5d5d5; }
 
 /* ========== Quote (défilement continu marquee) ========== */
+.quoteBlockTitle {
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0 0 1.5rem;
+  color: var(--heading-color, #1a1a18);
+  text-align: center;
+}
+
 .quote {
-  padding: var(--block-inner-padding-desktop, 24px);
-  background: var(--block-bg, var(--bg, #fafaf9));
+  padding-left: var(--block-inner-padding-desktop, 2rem);
+  padding-right: var(--block-inner-padding-desktop, 2rem);
+  background: var(--section-bg-light, #FAFAF8);
+  box-shadow: none;
 }
 
 .quoteMarqueeWrap {
@@ -933,40 +1290,58 @@
 }
 
 
-/* ========== CTA ========== */
+/* ========== CTA — style "Gentle planning" ========== */
+/* Hors du système de slides : transparent sur fond de page, texte géant dégradé */
 .cta {
-  padding: var(--block-inner-padding-desktop, 24px);
+  background: transparent;
   text-align: center;
-  background: var(--fg, #213431);
-  color: #fff;
+  padding: 5rem 1rem 3.5rem;
+  position: relative;
+  overflow: visible;
 }
 
 .ctaTitle {
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
-  margin: 0 0 1.5rem;
+  font-size: clamp(4rem, 12vw, 10.5rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.0;
+  margin: 0 0 2.5rem;
+  /* Texte qui s'efface vers le bas comme dans l'exemple */
+  background: linear-gradient(to bottom, #1C1C1A 20%, rgba(28,28,26,0.55) 65%, rgba(28,28,26,0.08) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .ctaButton {
   display: inline-block;
-  padding: 0.9rem 2.25rem;
-  background: #fff;
-  color: var(--fg, #213431);
+  padding: 0.9rem 2.5rem;
+  background: #1C1C1A;
+  color: #fff;
   font-weight: 600;
   font-size: 1rem;
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: 999px;
   transition: opacity 0.2s, transform 0.15s;
 }
 
 .ctaButton:hover {
-  opacity: 0.95;
+  opacity: 0.85;
   transform: translateY(-2px);
 }
 
 .ctaButton:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid #1C1C1A;
   outline-offset: 3px;
+}
+
+@media (max-width: 767px) {
+  .cta {
+    padding: 3.5rem 1rem 2.5rem;
+  }
+  .ctaTitle {
+    margin-bottom: 2rem;
+  }
 }
 
 /* Edit button (admin) */
@@ -998,11 +1373,28 @@
   .intro,
   .services,
   .portraitBlock,
+  .bannerBlock,
   .cadreurBlock,
   .animationBlock,
   .stats,
-  .quote,
-  .cta {
-    padding: var(--block-inner-padding-mobile, 16px);
+  .quote {
+    padding-left: var(--block-inner-padding-mobile, 1rem);
+    padding-right: var(--block-inner-padding-mobile, 1rem);
+    padding-top: clamp(2.5rem, 8vw, 3.5rem);
+    padding-bottom: clamp(2.5rem, 8vw, 3.5rem);
+  }
+  /* Standard mobile */
+  .services,
+  .bannerBlock,
+  .cadreurBlock,
+  .animationBlock,
+  .quote {
+    border-radius: 20px 20px 0 0;
+  }
+  /* Flottantes mobile */
+  .intro,
+  .portraitBlock,
+  .stats {
+    border-radius: 20px;
   }
 }

@@ -1,6 +1,17 @@
 "use client";
 
-import React, { Fragment, useEffect, useState, useRef, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import { useScrollReveal, revealInitialStyle, revealVisibleStyle } from "../../hooks/useScrollReveal";
+
+/** Enveloppe chaque section dans une animation de révélation au scroll */
+function RevealSection({ children }: { children: React.ReactNode }) {
+  const { ref, visible } = useScrollReveal<HTMLDivElement>({ threshold: 0.12 });
+  return (
+    <div ref={ref} style={visible ? revealVisibleStyle : revealInitialStyle}>
+      {children}
+    </div>
+  );
+}
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -18,6 +29,7 @@ import type {
   HomeQuoteData,
   HomeQuoteItem,
   HomeCtaData,
+  HomeBannerData,
   CadreurVideoItem,
 } from "./homeDefaults";
 import {
@@ -29,6 +41,7 @@ import {
   DEFAULT_ANIMATION,
   DEFAULT_QUOTE,
   DEFAULT_CTA,
+  DEFAULT_BANNER,
 } from "./homeDefaults";
 import type { HomeBlockKey } from "./HomeBlockModal";
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
@@ -39,7 +52,7 @@ import styles from "./HomeBlocks.module.css";
 const VideoLightbox = dynamic(() => import("../VideoGallery/VideoLightbox"), { ssr: false });
 
 const SETTINGS_KEYS =
-  "home_intro,home_services,home_stats,home_portrait,home_cadreur,home_animation,home_quote,home_cta";
+  "home_intro,home_services,home_banner,home_stats,home_portrait,home_cadreur,home_animation,home_quote,home_cta";
 
 function parse<T>(val: string | undefined, def: T): T {
   if (!val) return def;
@@ -108,6 +121,51 @@ const IMAGE_RATIO_MAP: Record<string, string> = {
   '1:1': '1/1',
 };
 
+/** Converts an admin-set font size to a responsive CSS font-size value.
+ *  For sizes above 48px uses clamp() so the text scales down on mobile
+ *  rather than wrapping or overflowing. */
+function responsiveFontSize(fs: number): string {
+  if (fs <= 48) return `${fs}px`;
+  // At 1400px viewport the text is at full size; scales down proportionally
+  const vw = (fs / 14).toFixed(2);
+  const min = Math.max(16, Math.round(fs * 0.32));
+  return `clamp(${min}px, ${vw}vw, ${fs}px)`;
+}
+
+/** Compute inline style for a portrait fan card based on its offset from the active slide.
+ *  offset 0 = active (front center), ±1 = adjacent, ±2 = far sides.
+ *  Uses CSS transitions so changing portraitIndex smoothly animates all cards. */
+function getFanCardStyle(offset: number): React.CSSProperties {
+  const abs = Math.abs(offset);
+  const sign = Math.sign(offset);
+  // Side cards spread wide so they're nearly fully visible before coming front
+  const tx = sign * (abs === 0 ? 0 : abs === 1 ? 195 : 340);
+  const tz = abs === 0 ? 0 : abs === 1 ? -20 : -55;
+  const ry = sign * (abs === 0 ? 0 : abs === 1 ? 6 : 12);
+  const sc = abs === 0 ? 1 : abs === 1 ? 0.86 : 0.72;
+  const op = abs === 0 ? 1 : abs === 1 ? 0.82 : 0.55;
+  const zi = abs === 0 ? 4 : abs === 1 ? 3 : 2;
+  const h  = abs === 0 ? '90%' : abs === 1 ? '76%' : '62%';
+  return {
+    position: 'absolute',
+    height: h,
+    aspectRatio: '3/4',
+    left: '50%',
+    bottom: 0,
+    borderRadius: '18px',
+    overflow: 'hidden',
+    zIndex: zi,
+    cursor: offset !== 0 ? 'pointer' : 'default',
+    opacity: op,
+    transition: 'transform 520ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 520ms ease, height 520ms ease',
+    willChange: 'transform, opacity',
+    transform: `translateX(calc(-50% + ${tx}px)) rotateY(${ry}deg) translateZ(${tz}px) scale(${sc})`,
+    boxShadow: abs === 0
+      ? '0 32px 80px rgba(0,0,0,0.75), 0 8px 24px rgba(0,0,0,0.45)'
+      : '0 14px 45px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.3)',
+  };
+}
+
 export default function HomePageClient() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -119,6 +177,7 @@ export default function HomePageClient() {
 
   const [intro, setIntro] = useState<HomeIntroData>(DEFAULT_INTRO);
   const [services, setServices] = useState<HomeServicesData>(DEFAULT_SERVICES);
+  const [banner, setBanner] = useState<HomeBannerData>(DEFAULT_BANNER);
   const [stats, setStats] = useState<HomeStatsData>(DEFAULT_STATS);
   const [portraitBlock, setPortraitBlock] = useState<HomePortraitBlockData>(DEFAULT_PORTRAIT);
   const [cadreurBlock, setCadreurBlock] = useState<HomeCadreurBlockData>(DEFAULT_CADREUR);
@@ -180,6 +239,7 @@ export default function HomePageClient() {
         if (!mounted) return;
         setIntro(parse(s.home_intro, DEFAULT_INTRO));
         setServices(parse(s.home_services, DEFAULT_SERVICES));
+        setBanner(parse(s.home_banner, DEFAULT_BANNER));
         setStats(parse(s.home_stats, DEFAULT_STATS));
         setPortraitBlock(parse(s.home_portrait, DEFAULT_PORTRAIT));
         setCadreurBlock(parse(s.home_cadreur, DEFAULT_CADREUR));
@@ -224,12 +284,13 @@ export default function HomePageClient() {
 
   // Défilement continu : plus d’intervalle, le marquee CSS gère l’animation
 
-  type BlockData = HomeIntroData | HomeServicesData | HomeStatsData | HomePortraitBlockData | HomeCadreurBlockData | HomeAnimationBlockData | HomeQuoteData | HomeCtaData;
+  type BlockData = HomeIntroData | HomeServicesData | HomeBannerData | HomeStatsData | HomePortraitBlockData | HomeCadreurBlockData | HomeAnimationBlockData | HomeQuoteData | HomeCtaData;
 
   const getBlockData = (key: HomeBlockKey): BlockData => {
     switch (key) {
       case "home_intro": return intro;
       case "home_services": return services;
+      case "home_banner": return banner;
       case "home_stats": return stats;
       case "home_portrait": return portraitBlock;
       case "home_cadreur": return cadreurBlock;
@@ -290,7 +351,7 @@ export default function HomePageClient() {
   const btnWrapStyle: React.CSSProperties = { display: 'flex', gap: 8, alignItems: 'center', position: 'absolute', right: 12, top: 12, zIndex: 5 };
 
   const introSection = hide("home_intro") ? null : (
-      <section className={styles.intro} style={(intro as any).backgroundColor ? { backgroundColor: (intro as any).backgroundColor } : undefined}>
+      <section className={styles.intro} style={(() => { const s: React.CSSProperties = {}; if ((intro as any).backgroundColor) s.backgroundColor = (intro as any).backgroundColor; const rt = (intro as any).borderRadiusTop; const rb = (intro as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (intro as any).paddingTop; const pb = (intro as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
         <div className={`container ${blockWidthClass("home_intro")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
@@ -304,8 +365,8 @@ export default function HomePageClient() {
               </div>
             )}
             <AnimateInView variant="fadeUp" viewport={{ once: true, amount: 0 }} initial="visible">
-              {intro.title ? (() => { const Tag = (intro as any).titleStyle || "h2"; const fs = (intro as any).titleFontSize; return <Tag className={`${styles.introTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{intro.title}</Tag>; })() : null}
-              {intro.subtitle ? (() => { const Tag = (intro as any).subtitleStyle || "p"; const fs = (intro as any).subtitleFontSize; return <Tag className={`${styles.introSubtitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{intro.subtitle}</Tag>; })() : null}
+              {intro.title ? (() => { const Tag = (intro as any).titleStyle || "h2"; const fs = (intro as any).titleFontSize; const color = (intro as any).titleColor; const align = (intro as any).titleAlign; return <Tag className={`${styles.introTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{intro.title}</Tag>; })() : null}
+              {intro.subtitle ? (() => { const Tag = (intro as any).subtitleStyle || "p"; const fs = (intro as any).subtitleFontSize; const color = (intro as any).subtitleColor; const align = (intro as any).subtitleAlign; return <Tag className={`${styles.introSubtitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{intro.subtitle}</Tag>; })() : null}
               {intro.html ? <div className={styles.introText} dangerouslySetInnerHTML={{ __html: intro.html }} /> : null}
             </AnimateInView>
           </div>
@@ -313,8 +374,52 @@ export default function HomePageClient() {
       </section>
   );
 
+  const bannerSection = hide("home_banner") ? null : (
+      <section className={styles.bannerBlock} style={(() => { 
+        const s: React.CSSProperties = {}; 
+        if ((banner as any).backgroundColor) s.backgroundColor = (banner as any).backgroundColor; 
+        const rt = (banner as any).borderRadiusTop; 
+        const rb = (banner as any).borderRadiusBottom; 
+        if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } 
+        if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } 
+        const pt = (banner as any).paddingTop; 
+        const pb = (banner as any).paddingBottom; 
+        if (pt != null) s.paddingTop = `${pt}px`; 
+        if (pb != null) s.paddingBottom = `${pb}px`; 
+        return Object.keys(s).length ? s : undefined; 
+      })()}>
+        <div className={`container ${blockWidthClass("home_banner")}`.trim()}>
+          <div className={styles.editWrap}>
+            {isAdmin && (
+              <div style={btnWrapStyle}>
+                <BlockVisibilityToggle blockId="home_banner" />
+                <BlockWidthToggle blockId="home_banner" />
+                <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_banner")}>
+                  Modifier
+                </button>
+                <BlockOrderButtons page="home" blockId="home_banner" />
+              </div>
+            )}
+            <AnimateInView variant="scaleIn">
+            <div className={styles.bannerBlockCard}>
+              {(banner as any).image?.url ? (
+                <div className={styles.bannerBlockImageWrap} style={(banner as any).imageRatio && IMAGE_RATIO_MAP[(banner as any).imageRatio] ? { aspectRatio: IMAGE_RATIO_MAP[(banner as any).imageRatio] } : undefined}>
+                  <Image src={(banner as any).image.url} alt="" className={styles.bannerBlockImage} width={1200} height={600} sizes="(max-width: 768px) 100vw, 1200px" />
+                </div>
+              ) : (
+                <div className={styles.bannerBlockImageWrap} style={{ aspectRatio: '21/9', background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ color: '#6b7280', fontSize: '1.2rem' }}>Bannière - Ajoutez une image depuis l'admin</span>
+                </div>
+              )}
+            </div>
+            </AnimateInView>
+          </div>
+        </div>
+      </section>
+  );
+
   const servicesSection = hide("home_services") ? null : (
-      <section className={styles.services} style={(services as any).backgroundColor ? { backgroundColor: (services as any).backgroundColor } : undefined}>
+      <section className={styles.services} style={(() => { const s: React.CSSProperties = {}; if ((services as any).backgroundColor) s.backgroundColor = (services as any).backgroundColor; const rt = (services as any).borderRadiusTop; const rb = (services as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (services as any).paddingTop; const pb = (services as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
         <div className={`container ${blockWidthClass("home_services")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
@@ -328,8 +433,8 @@ export default function HomePageClient() {
               </div>
             )}
             <AnimateInView variant="fadeUp">
-              {(services as any).blockTitle ? (() => { const Tag = (services as any).blockTitleStyle || "h2"; const fs = (services as any).blockTitleFontSize; return <Tag className={`${styles.servicesTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(services as any).blockTitle}</Tag>; })() : null}
-              {(services as any).blockSubtitle ? (() => { const Tag = (services as any).blockSubtitleStyle || "p"; const fs = (services as any).blockSubtitleFontSize; return <Tag className={`${styles.servicesSubtitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(services as any).blockSubtitle}</Tag>; })() : null}
+              {(services as any).blockTitle ? (() => { const Tag = (services as any).blockTitleStyle || "h2"; const fs = (services as any).blockTitleFontSize; const color = (services as any).blockTitleColor; const align = (services as any).blockTitleAlign; return <Tag className={`${styles.servicesTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{(services as any).blockTitle}</Tag>; })() : null}
+              {(services as any).blockSubtitle ? (() => { const Tag = (services as any).blockSubtitleStyle || "p"; const fs = (services as any).blockSubtitleFontSize; const color = (services as any).blockSubtitleColor; const align = (services as any).blockSubtitleAlign; return <Tag className={`${styles.servicesSubtitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs), maxWidth: 'none' } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{(services as any).blockSubtitle}</Tag>; })() : null}
             </AnimateInView>
             <AnimateInView variant="stagger" className={styles.servicesGrid}>
               {serviceItems.map((item, i) => (
@@ -343,7 +448,7 @@ export default function HomePageClient() {
                       )}
                     </div>
                     <div className={styles.serviceCardContent}>
-                      {(item.title || "Service") ? (() => { const Tag = (item as any).titleStyle || "h3"; const fs = (item as any).titleFontSize; return <Tag className={`${styles.serviceCardTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{item.title || "Service"}</Tag>; })() : null}
+                      {(item.title || "Service") ? (() => { const Tag = (item as any).titleStyle || "h3"; const fs = (item as any).titleFontSize; return <Tag className={`${styles.serviceCardTitle} style-${Tag}`} style={fs != null ? { fontSize: responsiveFontSize(fs) } : undefined}>{item.title || "Service"}</Tag>; })() : null}
                       {(item.description || "") ? (() => { const Tag = (item as any).descriptionStyle || "p"; return <Tag className={`${styles.serviceCardDesc} style-${Tag}`}>{item.description || ""}</Tag>; })() : null}
                     </div>
                   </Link>
@@ -356,7 +461,7 @@ export default function HomePageClient() {
   );
 
   const portraitSection = hide("home_portrait") ? null : (
-      <section className={styles.portraitBlock}>
+      <section className={styles.portraitBlock} style={(() => { const s: React.CSSProperties = {}; if ((portraitBlock as any).backgroundColor) s.backgroundColor = (portraitBlock as any).backgroundColor; const rt = (portraitBlock as any).borderRadiusTop; const rb = (portraitBlock as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (portraitBlock as any).paddingTop; const pb = (portraitBlock as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
         <div className={`container ${blockWidthClass("home_portrait")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
@@ -374,7 +479,9 @@ export default function HomePageClient() {
                 const blockTitleText = (portraitBlock as any).blockTitle ?? (portraitBlock as any).title ?? "Portrait";
                 const Tag = (portraitBlock as any).blockTitleStyle || "h2";
                 const fs = (portraitBlock as any).blockTitleFontSize;
-                return <Tag className={`${styles.portraitBlockTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{blockTitleText}</Tag>;
+                const color = (portraitBlock as any).blockTitleColor;
+                const align = (portraitBlock as any).blockTitleAlign;
+                return <Tag className={`${styles.portraitBlockTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{blockTitleText}</Tag>;
               })()}
             </AnimateInView>
             <AnimateInView variant="slideUp">
@@ -400,49 +507,49 @@ export default function HomePageClient() {
                 }
               }}
             >
-              <div key={portraitIndex} className={styles.portraitSlideTransition}>
+              <div className={styles.portraitSlideTransition}>
+              {/* ── Fan Carousel — zone images ── */}
               <div className={styles.portraitCarouselImageWrap}>
-                <div className={styles.portraitCarouselImage}>
-                  <div className={`${styles.portraitPhoto1Wrap} ${portraitSlideDirection === "next" ? styles.portraitPhoto1FromRight : styles.portraitPhoto1FromLeft}`}>
-                    {activePortraitSlide?.image?.url ? (
-                      <Image
-                        src={activePortraitSlide.image.url}
-                        alt=""
-                        className={styles.portraitImageTorn}
-                        width={800}
-                        height={600}
-                        sizes="(max-width: 768px) 100vw, 800px"
-                        style={
-                          (activePortraitSlide.image as any)?.focus?.x != null
-                            ? { objectPosition: `${(activePortraitSlide.image as any).focus.x}% ${(activePortraitSlide.image as any).focus.y}%` }
-                            : undefined
-                        }
-                      />
-                    ) : (
-                      <div className={styles.portraitImageTorn} style={{ background: "rgba(0,0,0,0.08)" }} />
-                    )}
-                  </div>
-                  {(activePortraitSlide as any)?.image2?.url ? (
-                    <div className={`${styles.portraitPhoto2Wrap} ${styles.portraitPhoto2SlideDown}`}>
-                      <Image
-                        src={(activePortraitSlide as any).image2.url}
-                        alt=""
-                        className={styles.portraitImageSecondary}
-                        width={600}
-                        height={400}
-                        sizes="(max-width: 768px) 100vw, 600px"
-                        style={
-                          (activePortraitSlide as any).image2?.focus?.x != null
-                            ? { objectPosition: `${(activePortraitSlide as any).image2.focus.x}% ${(activePortraitSlide as any).image2.focus.y}%` }
-                            : undefined
-                        }
-                      />
-                    </div>
-                  ) : null}
+                <div className={styles.portrait3DStage}>
+                  <div className={styles.portrait3DGlow} />
+                  {portraitSlides.map((slide, slideIdx) => {
+                    const n = portraitSlides.length;
+                    let offset = slideIdx - portraitIndex;
+                    if (offset > n / 2) offset -= n;
+                    if (offset < -n / 2) offset += n;
+                    if (Math.abs(offset) > 2) return null;
+                    const focusStyle = (slide.image as any)?.focus?.x != null
+                      ? { objectPosition: `${(slide.image as any).focus.x}% ${(slide.image as any).focus.y}%` }
+                      : {};
+                    return (
+                      <div
+                        key={slideIdx}
+                        style={getFanCardStyle(offset)}
+                        onClick={offset !== 0 ? () => {
+                          setPortraitSlideDirection(offset > 0 ? "next" : "prev");
+                          setCurrentPortraitSlide(slideIdx);
+                          resetPortraitInterval();
+                        } : undefined}
+                      >
+                        {slide.image?.url ? (
+                          <Image
+                            src={slide.image.url}
+                            alt=""
+                            width={500}
+                            height={667}
+                            sizes="(max-width: 768px) 60vw, 340px"
+                            style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover', ...focusStyle }}
+                          />
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.06)' }} />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-              <div className={`${styles.portraitCarouselContent} ${styles.portraitContentFade}`}>
-                {activePortraitSlide?.title ? (() => { const Tag = (activePortraitSlide as any).titleStyle || "h3"; const fs = (activePortraitSlide as any).titleFontSize; return <Tag className={`${styles.portraitSlideTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{activePortraitSlide.title}</Tag>; })() : null}
+              <div key={portraitIndex} className={`${styles.portraitCarouselContent} ${styles.portraitContentFade}`}>
+                {activePortraitSlide?.title ? (() => { const Tag = (activePortraitSlide as any).titleStyle || "h3"; const fs = (activePortraitSlide as any).titleFontSize; return <Tag className={`${styles.portraitSlideTitle} style-${Tag}`} style={fs != null ? { fontSize: responsiveFontSize(fs) } : undefined}>{activePortraitSlide.title}</Tag>; })() : null}
                 {activePortraitSlide?.text ? <div className={styles.portraitSlideText} dangerouslySetInnerHTML={{ __html: activePortraitSlide.text }} /> : null}
                 <Link href={portraitSlideHref} className={`${styles.portraitCta} btn-site-${(portraitBlock as any).ctaButtonStyle || "1"}`} data-analytics-id="Accueil|CTA Portrait">
                   {(portraitBlock as any).ctaLabel || "Découvrir le portrait"}
@@ -505,7 +612,7 @@ export default function HomePageClient() {
     const vShadow = SHADOW_MAP[vs.shadow || 'medium'] || 'none';
     const vGlossy = vs.glossy ?? false;
     return (
-      <section className={styles.cadreurBlock} style={(cadreurBlock as any).backgroundColor ? { backgroundColor: (cadreurBlock as any).backgroundColor } : undefined}>
+      <section className={styles.cadreurBlock} style={(() => { const s: React.CSSProperties = {}; if ((cadreurBlock as any).backgroundColor) s.backgroundColor = (cadreurBlock as any).backgroundColor; const rt = (cadreurBlock as any).borderRadiusTop; const rb = (cadreurBlock as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (cadreurBlock as any).paddingTop; const pb = (cadreurBlock as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
         <div className={`container ${blockWidthClass("home_cadreur")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
@@ -520,7 +627,7 @@ export default function HomePageClient() {
             )}
             <div className={styles.cadreurGrid}>
               <AnimateInView variant="slideFromLeft" className={styles.cadreurContent}>
-                {cadreurBlock.title ? (() => { const Tag = (cadreurBlock as any).titleStyle || "h2"; const fs = (cadreurBlock as any).titleFontSize; return <Tag className={`${styles.cadreurTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{cadreurBlock.title}</Tag>; })() : null}
+                {cadreurBlock.title ? (() => { const Tag = (cadreurBlock as any).titleStyle || "h2"; const fs = (cadreurBlock as any).titleFontSize; const color = (cadreurBlock as any).titleColor; const align = (cadreurBlock as any).titleAlign; return <Tag className={`${styles.cadreurTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{cadreurBlock.title}</Tag>; })() : null}
                 {cadreurBlock.html ? <div className={styles.cadreurText} dangerouslySetInnerHTML={{ __html: cadreurBlock.html }} /> : null}
               </AnimateInView>
               <AnimateInView variant="slideFromRight" className={styles.cadreurMedia} style={cadreurBlock.imageRatio && IMAGE_RATIO_MAP[cadreurBlock.imageRatio] ? { aspectRatio: IMAGE_RATIO_MAP[cadreurBlock.imageRatio] } : undefined}>
@@ -608,9 +715,17 @@ export default function HomePageClient() {
       <section
         className={styles.animationBlock}
         style={(() => {
+          const s: React.CSSProperties = {};
           const bg = (animationBlock as any).backgroundColor?.trim();
           const validHex = bg && /^#?[0-9A-Fa-f]{3}$|^#?[0-9A-Fa-f]{6}$/.test(bg);
-          return validHex ? { background: bg.startsWith("#") ? bg : `#${bg}` } : undefined;
+          if (validHex) s.background = bg.startsWith("#") ? bg : `#${bg}`;
+          const rt = (animationBlock as any).borderRadiusTop;
+          const rb = (animationBlock as any).borderRadiusBottom;
+          if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; }
+          if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; }
+          const pt = (animationBlock as any).paddingTop; const pb = (animationBlock as any).paddingBottom;
+          if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`;
+          return Object.keys(s).length ? s : undefined;
         })()}
       >
         <div className={`container ${blockWidthClass("home_animation")}`.trim()}>
@@ -632,16 +747,20 @@ export default function HomePageClient() {
                   <Image src={(animationBlock as any).image.url} alt="" className={styles.animationBlockBanner} width={1200} height={600} sizes="(max-width: 768px) 100vw, 1200px" />
                 </div>
               ) : null}
-              <div className={styles.animationBlockContent}>
+              <div className={styles.animationBlockContent} style={(animationBlock as any).contentBgColor ? { background: (animationBlock as any).contentBgColor } : undefined}>
                 {(animationBlock as any).blockTitle ? (() => {
                   const Tag = (animationBlock as any).blockTitleStyle || "h2";
                   const fs = (animationBlock as any).blockTitleFontSize;
-                  return <Tag className={`${styles.animationBlockTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(animationBlock as any).blockTitle}</Tag>;
+                  const color = (animationBlock as any).blockTitleColor;
+                  const align = (animationBlock as any).blockTitleAlign;
+                  return <Tag className={`${styles.animationBlockTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{(animationBlock as any).blockTitle}</Tag>;
                 })() : null}
                 {(animationBlock as any).blockSubtitle ? (() => {
                   const Tag = (animationBlock as any).blockSubtitleStyle || "p";
                   const fs = (animationBlock as any).blockSubtitleFontSize;
-                  return <Tag className={`${styles.animationBlockSubtitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{(animationBlock as any).blockSubtitle}</Tag>;
+                  const color = (animationBlock as any).blockSubtitleColor;
+                  const align = (animationBlock as any).blockSubtitleAlign;
+                  return <Tag className={`${styles.animationBlockSubtitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{(animationBlock as any).blockSubtitle}</Tag>;
                 })() : null}
                 {(animationBlock as any).html ? (
                   <div className={styles.animationBlockRichText} dangerouslySetInnerHTML={{ __html: (animationBlock as any).html }} />
@@ -651,7 +770,7 @@ export default function HomePageClient() {
                     <button
                       type="button"
                       key={hash}
-                      className={styles.animationBlockCtaSection}
+                      className={`${styles.ctaButton} btn-site-${(animationBlock as any).ctaButtonStyle || "1"}`}
                       data-analytics-id={`Accueil|Animation - ${label}`}
                       onClick={() => router.push(`/animation#${hash}`)}
                     >
@@ -669,7 +788,7 @@ export default function HomePageClient() {
   );
 
   const statsSection = hide("home_stats") ? null : (
-      <section className={styles.stats} style={(stats as any).backgroundColor ? { backgroundColor: (stats as any).backgroundColor } : undefined}>
+      <section className={styles.stats} style={(() => { const s: React.CSSProperties = {}; if ((stats as any).backgroundColor) s.backgroundColor = (stats as any).backgroundColor; const rt = (stats as any).borderRadiusTop; const rb = (stats as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (stats as any).paddingTop; const pb = (stats as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
         <div className={`container ${blockWidthClass("home_stats")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
@@ -704,7 +823,7 @@ export default function HomePageClient() {
     );
 
   const quoteSection = hide("home_quote") ? null : (
-      <section className={styles.quote} style={(quote as any).backgroundColor ? { backgroundColor: (quote as any).backgroundColor } : undefined}>
+      <section className={styles.quote} style={(() => { const s: React.CSSProperties = {}; if ((quote as any).backgroundColor) s.backgroundColor = (quote as any).backgroundColor; const rt = (quote as any).borderRadiusTop; const rb = (quote as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (quote as any).paddingTop; const pb = (quote as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
         <div className={`container ${blockWidthClass("home_quote")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
@@ -717,6 +836,16 @@ export default function HomePageClient() {
                 <BlockOrderButtons page="home" blockId="home_quote" />
               </div>
             )}
+            <AnimateInView variant="fadeUp">
+              {(() => {
+                const blockTitleText = (quote as any).blockTitle ?? "Témoignages";
+                const Tag = (quote as any).blockTitleStyle || "h2";
+                const fs = (quote as any).blockTitleFontSize;
+                const color = (quote as any).blockTitleColor;
+                const align = (quote as any).blockTitleAlign;
+                return <Tag className={`${styles.quoteBlockTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{blockTitleText}</Tag>;
+              })()}
+            </AnimateInView>
             <AnimateInView variant="fade">
             <div className={styles.quoteMarqueeWrap} aria-label="Citations défilantes">
               <div className={styles.quoteMarqueeInner} style={{ animationDuration: `${quoteScrollDuration}s` }}>
@@ -740,7 +869,7 @@ export default function HomePageClient() {
   );
 
   const ctaSection = hide("home_cta") ? null : (
-      <section className={styles.cta} style={(cta as any).backgroundColor ? { backgroundColor: (cta as any).backgroundColor } : undefined}>
+      <section className={styles.cta} style={(() => { const s: React.CSSProperties = {}; if ((cta as any).backgroundColor) s.backgroundColor = (cta as any).backgroundColor; const rt = (cta as any).borderRadiusTop; const rb = (cta as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (cta as any).paddingTop; const pb = (cta as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
         <div className={`container ${blockWidthClass("home_cta")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
@@ -754,7 +883,7 @@ export default function HomePageClient() {
               </div>
             )}
             <AnimateInView variant="fadeUp">
-              {cta.title ? (() => { const Tag = (cta as any).titleStyle || "h2"; const fs = (cta as any).titleFontSize; return <Tag className={`${styles.ctaTitle} style-${Tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{cta.title}</Tag>; })() : null}
+              {cta.title ? (() => { const Tag = (cta as any).titleStyle || "h2"; const fs = (cta as any).titleFontSize; const color = (cta as any).titleColor; const align = (cta as any).titleAlign; return <Tag className={`${styles.ctaTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{cta.title}</Tag>; })() : null}
               <Link href={cta.buttonHref || "/contact"} className={`${styles.ctaButton} btn-site-${cta.buttonStyle || "1"}`} data-analytics-id="Accueil|CTA Contact">
                 {cta.buttonLabel || "Contactez-moi"}
               </Link>
@@ -766,6 +895,7 @@ export default function HomePageClient() {
 
   const sections: Record<string, React.ReactNode> = {
     home_intro: introSection,
+    home_banner: bannerSection,
     home_services: servicesSection,
     home_portrait: portraitSection,
     home_cadreur: cadreurSection,
@@ -778,9 +908,11 @@ export default function HomePageClient() {
 
   return (
     <>
-      {blockOrderHome.map((blockId) => (
-        <Fragment key={blockId}>{sections[blockId] ?? null}</Fragment>
-      ))}
+      {blockOrderHome.map((blockId) =>
+        sections[blockId] ? (
+          <RevealSection key={blockId}>{sections[blockId]}</RevealSection>
+        ) : null
+      )}
       {editBlock && (
         <HomeBlockModal
           blockKey={editBlock}
