@@ -72,6 +72,7 @@ export async function POST(req: Request) {
           allowedTags: sanitizeHtml.default.defaults.allowedTags.concat(['img']),
           allowedAttributes: {
             ...sanitizeHtml.default.defaults.allowedAttributes,
+            '*': ['style'],
             img: ['src','alt','width','height']
           }
         });
