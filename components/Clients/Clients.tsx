@@ -31,6 +31,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import ClientsEditModal from './ClientsEditModal';
 import { supabase } from '../../lib/supabase';
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from '../BlockVisibility';
+import AnimateInView, { AnimateStaggerItem } from '../AnimateInView/AnimateInView';
 
 export default function Clients({ logos, title }: Props) {
   const [items, setItems] = useState<string[]>(logos && logos.length ? logos : defaultLogos);
@@ -183,22 +184,25 @@ export default function Clients({ logos, title }: Props) {
     >
       <div className={`container ${blockWidthClass}`.trim()}>
         <div className={styles.inner}>
-          <div style={{ position: 'relative', display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', marginBottom: 8 }}>
-            <h2 className={styles.title} style={{ flex: 1, margin: 0 }} dangerouslySetInnerHTML={{ __html: hdr || '' }} />
-            {isAdmin ? (
-              <>
-                <BlockVisibilityToggle blockId="clients" />
-                <BlockWidthToggle blockId="clients" />
-                <button onClick={() => setEditing(true)} className="btn-secondary" style={{ background: '#111', color: '#fff', border: 'none' }}>Modifier</button>
-                <BlockOrderButtons page="home" blockId="clients" />
-              </>
-            ) : null}
-          </div>
+          <AnimateInView variant="fadeUp" viewportSoon>
+            <div style={{ position: 'relative', display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', marginBottom: 8 }}>
+              <h2 className={styles.title} style={{ flex: 1, margin: 0 }} dangerouslySetInnerHTML={{ __html: hdr || '' }} />
+              {isAdmin ? (
+                <>
+                  <BlockVisibilityToggle blockId="clients" />
+                  <BlockWidthToggle blockId="clients" />
+                  <button onClick={() => setEditing(true)} className="btn-secondary" style={{ background: '#111', color: '#fff', border: 'none' }}>Modifier</button>
+                  <BlockOrderButtons page="home" blockId="clients" />
+                </>
+              ) : null}
+            </div>
+          </AnimateInView>
 
-          <div className={cloudMode ? styles.gridCloud : styles.grid}>
-            {cloudMode
-              ? cloudRowsContent.map((row, rowIndex) => (
-                  <div key={`row-${rowIndex}`} className={styles.cloudRow}>
+          {cloudMode ? (
+            <AnimateInView variant="stagger" className={styles.gridCloud} viewportSoon>
+              {cloudRowsContent.map((row, rowIndex) => (
+                <AnimateStaggerItem key={`row-${rowIndex}`}>
+                  <div className={styles.cloudRow}>
                     {row.map((it, i) => {
                       const key = `cloud-${rowIndex}-${i}`;
                       return (
@@ -212,7 +216,6 @@ export default function Clients({ logos, title }: Props) {
                             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', opacity: loadedSet.has(key) ? 1 : 0, transition: 'opacity 0.4s ease' }}
                             onError={(e) => {
                               const el = e.currentTarget as HTMLImageElement;
-                              // fallback to an inline SVG data URI to avoid external requests
                               const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='60'><rect fill='%23f3f4f6' width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='14'>Logo</text></svg>`;
                               el.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
                               el.onerror = null;
@@ -222,11 +225,16 @@ export default function Clients({ logos, title }: Props) {
                       );
                     })}
                   </div>
-                ))
-              : logosList.map((it, i) => {
-                  const key = `grid-${i}`;
-                  return (
-                    <div key={i} className={styles.item}>
+                </AnimateStaggerItem>
+              ))}
+            </AnimateInView>
+          ) : (
+            <AnimateInView variant="stagger" className={styles.grid} viewportSoon>
+              {logosList.map((it, i) => {
+                const key = `grid-${i}`;
+                return (
+                  <AnimateStaggerItem key={i}>
+                    <div className={styles.item}>
                       <img
                         ref={(el) => { if (el && el.complete && el.naturalWidth > 0) markLoaded(key); }}
                         src={it.url}
@@ -236,16 +244,17 @@ export default function Clients({ logos, title }: Props) {
                         style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', opacity: loadedSet.has(key) ? 1 : 0, transition: 'opacity 0.4s ease' }}
                         onError={(e) => {
                           const el = e.currentTarget as HTMLImageElement;
-                          // fallback to an inline SVG data URI to avoid external requests
                           const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='60'><rect fill='%23f3f4f6' width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='14'>Logo</text></svg>`;
                           el.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
                           el.onerror = null;
                         }}
                       />
                     </div>
-                  );
-                })}
-          </div>
+                  </AnimateStaggerItem>
+                );
+              })}
+            </AnimateInView>
+          )}
         </div>
       </div>
 

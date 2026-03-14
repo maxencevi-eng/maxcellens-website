@@ -11,7 +11,7 @@ import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
-import { $getRoot, $insertNodes, $getSelection, $findMatchingParent, $isElementNode, COMMAND_PRIORITY_LOW } from 'lexical';
+import { $getRoot, $insertNodes, $getSelection, $findMatchingParent, $isElementNode, $isTextNode, LexicalNode, COMMAND_PRIORITY_LOW } from 'lexical';
 import { $generateNodesFromDOM, $generateHtmlFromNodes } from '@lexical/html';
 import { mergeRegister } from '@lexical/utils';
 import {
@@ -108,8 +108,44 @@ function InitialContentPlugin({ html, onReady }: { html: string; onReady?: () =>
           try {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
+
+            // Lexical's $generateNodesFromDOM only preserves bold/italic/underline,
+            // NOT custom inline CSS (color, background-color, etc.).
+            // Collect these styles from the DOM before import so we can reapply them after.
+            const inlineStyles = new Map<string, string>();
+            const collectInlineStyles = (node: Node): void => {
+              if (node.nodeType === Node.TEXT_NODE) {
+                const text = node.textContent || '';
+                if (!text.trim()) return;
+                let el = (node as Text).parentElement;
+                while (el && el !== doc.body) {
+                  if (el.tagName === 'SPAN') {
+                    const css = el.getAttribute('style') || '';
+                    if (css) { inlineStyles.set(text, css); break; }
+                  }
+                  el = el.parentElement;
+                }
+              } else {
+                Array.from(node.childNodes).forEach(collectInlineStyles);
+              }
+            };
+            collectInlineStyles(doc.body);
+
             const nodesFromDom = $generateNodesFromDOM(editor, doc.body);
             $insertNodes(nodesFromDom);
+
+            // Reapply inline styles to the Lexical TextNodes by text content matching
+            if (inlineStyles.size > 0) {
+              const applyInlineStyles = (lexNode: LexicalNode): void => {
+                if ($isTextNode(lexNode)) {
+                  const style = inlineStyles.get(lexNode.getTextContent());
+                  if (style) lexNode.setStyle(style);
+                } else if ($isElementNode(lexNode)) {
+                  (lexNode as import('lexical').ElementNode).getChildren().forEach(applyInlineStyles);
+                }
+              };
+              root.getChildren().forEach(applyInlineStyles);
+            }
           } catch (e) {
             console.warn('[LexicalEditor] parse initial HTML', e);
           }
@@ -134,7 +170,8 @@ function HtmlOnChangePlugin({
   return (
     <OnChangePlugin
       ignoreSelectionChange
-      onChange={(editorState, ed) => {
+      onChange={(editorState, ed, tags) => {
+        if (tags.has('initial')) return;
         editorState.read(() => {
           try {
             const html = $generateHtmlFromNodes(ed, null);
@@ -167,6 +204,7 @@ function ToolbarPlugin() {
   const [fontSize, setFontSize] = useState<string>('inherit');
   const [isUppercase, setIsUppercase] = useState(false);
   const [isHighlight, setIsHighlight] = useState(false);
+  const [highlightColor, setHighlightColor] = useState<string>('#fde68a');
   const [showEmoji, setShowEmoji] = useState(false);
   const emojiPanelRef = useRef<HTMLElement | null>(null);
   const { style: siteStyle } = useSiteStyle();
@@ -222,7 +260,12 @@ function ToolbarPlugin() {
       const tt = $getSelectionStyleValueForProperty(selection, 'text-transform', 'none');
       setIsUppercase(tt === 'uppercase');
       const hl = $getSelectionStyleValueForProperty(selection, 'border-radius', '');
-      setIsHighlight(!!hl && hl !== 'none');
+      const hlActive = !!hl && hl !== 'none';
+      setIsHighlight(hlActive);
+      if (hlActive) {
+        const hlBg = $getSelectionStyleValueForProperty(selection, 'background-color', '');
+        if (hlBg && hlBg !== 'transparent') setHighlightColor(hlBg);
+      }
     });
   }, [editor]);
 
@@ -330,14 +373,30 @@ function ToolbarPlugin() {
                 if (isHighlight) {
                   $patchStyleText(selection, { 'background-color': null, 'border-radius': null, padding: null });
                 } else {
-                  $patchStyleText(selection, { 'background-color': '#e8e8e6', 'border-radius': '6px', padding: '2px 8px' });
+                  $patchStyleText(selection, { 'background-color': highlightColor, 'border-radius': '3px', padding: null });
                 }
               });
             }}
-            title="Surlignage arrondi (badge/pastille)"
+            title="Surlignage (appliquer/retirer)"
           >
-            <span style={{ background: '#e8e8e6', borderRadius: 4, padding: '0 4px', fontSize: '0.8em' }}>Ab</span>
+            <span style={{ background: highlightColor, borderRadius: 4, padding: '0 4px', fontSize: '0.8em', color: '#1a1a18', fontWeight: 700, border: '1px solid rgba(0,0,0,0.2)' }}>Ab</span>
           </button>
+          <input
+            type="color"
+            value={highlightColor}
+            onChange={(e) => {
+              setHighlightColor(e.target.value);
+              if (isHighlight) {
+                editor.update(() => {
+                  const selection = $getSelection();
+                  if (!$isRangeSelection(selection)) return;
+                  $patchStyleText(selection, { 'background-color': e.target.value });
+                });
+              }
+            }}
+            style={{ width: 20, height: 20, padding: 0, border: '1px solid rgba(0,0,0,0.2)', borderRadius: 3, cursor: 'pointer', verticalAlign: 'middle' }}
+            title="Couleur du surlignage"
+          />
           <button
             type="button"
             className={`lexical-toolbar-btn${isLink ? ' active' : ''}`}

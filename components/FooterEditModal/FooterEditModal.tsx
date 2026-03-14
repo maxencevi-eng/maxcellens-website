@@ -169,8 +169,9 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
     async function sanitize() {
       try {
         const DOMPurify = (await import('dompurify')).default;
-        if (!col1) { if (mounted) setSafeCol1(null); } else { if (mounted) setSafeCol1(DOMPurify.sanitize(col1)); }
-        if (!bottomText) { if (mounted) setSafeBottom(null); } else { if (mounted) setSafeBottom(DOMPurify.sanitize(bottomText)); }
+        const purifyOpts = { ADD_ATTR: ['style', 'target', 'rel'] };
+        if (!col1) { if (mounted) setSafeCol1(null); } else { if (mounted) setSafeCol1(DOMPurify.sanitize(col1, purifyOpts)); }
+        if (!bottomText) { if (mounted) setSafeBottom(null); } else { if (mounted) setSafeBottom(DOMPurify.sanitize(bottomText, purifyOpts)); }
       } catch (_) { if (mounted) { setSafeCol1(null); setSafeBottom(null); } }
     }
     sanitize();
@@ -228,13 +229,12 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
       try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'footerBannerRatio', value: bannerRatio } })); } catch(_){ }
       try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'footerBannerSizeMode', value: bannerSizeMode } })); } catch(_){ }
 
-      // Refresh server components so the new image is rendered server-side too
-      try { router.refresh(); } catch (_) {}
-
       setSuccess('Sauvegardé');
       if (onSaved) onSaved();
       // close after short delay to show success (unless caller asked to keep open)
       if (overrides?.closeOnSuccess !== false) {
+        // Only refresh server components when actually closing (not during inline richtext saves)
+        try { router.refresh(); } catch (_) {}
         setTimeout(() => onClose(), 500);
       }
     } catch (err: any) {

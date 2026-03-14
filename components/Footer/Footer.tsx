@@ -297,11 +297,13 @@ export default function Footer() {
       if (typeof window === 'undefined') return;
       try {
         const DOMPurify = (await import('dompurify')).default;
+        // ADD_ATTR: ['style'] preserves inline styles (text colors, highlight, etc.) from richtext editor
+        const purifyOpts = { ADD_ATTR: ['style', 'target', 'rel'] };
         if (!footerColumn1) { if (mounted) setSanitizedCol1(null); } else {
-          if (mounted) setSanitizedCol1(DOMPurify.sanitize(footerColumn1));
+          if (mounted) setSanitizedCol1(DOMPurify.sanitize(footerColumn1, purifyOpts));
         }
         if (!footerBottomText) { if (mounted) setSanitizedBottom(null); } else {
-          if (mounted) setSanitizedBottom(DOMPurify.sanitize(footerBottomText));
+          if (mounted) setSanitizedBottom(DOMPurify.sanitize(footerBottomText, purifyOpts));
         }
       } catch (_) {
         if (mounted) { setSanitizedCol1(null); setSanitizedBottom(null); }

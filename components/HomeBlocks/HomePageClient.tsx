@@ -374,49 +374,48 @@ export default function HomePageClient() {
       </section>
   );
 
-  const bannerSection = hide("home_banner") ? null : (
-      <section className={styles.bannerBlock} style={(() => { 
-        const s: React.CSSProperties = {}; 
-        if ((banner as any).backgroundColor) s.backgroundColor = (banner as any).backgroundColor; 
-        const rt = (banner as any).borderRadiusTop; 
-        const rb = (banner as any).borderRadiusBottom; 
-        if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } 
-        if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } 
-        const pt = (banner as any).paddingTop; 
-        const pb = (banner as any).paddingBottom; 
-        if (pt != null) s.paddingTop = `${pt}px`; 
-        if (pb != null) s.paddingBottom = `${pb}px`; 
-        return Object.keys(s).length ? s : undefined; 
-      })()}>
-        <div className={`container ${blockWidthClass("home_banner")}`.trim()}>
-          <div className={styles.editWrap}>
-            {isAdmin && (
-              <div style={btnWrapStyle}>
-                <BlockVisibilityToggle blockId="home_banner" />
-                <BlockWidthToggle blockId="home_banner" />
-                <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_banner")}>
-                  Modifier
-                </button>
-                <BlockOrderButtons page="home" blockId="home_banner" />
-              </div>
-            )}
-            <AnimateInView variant="scaleIn">
-            <div className={styles.bannerBlockCard}>
-              {(banner as any).image?.url ? (
-                <div className={styles.bannerBlockImageWrap} style={(banner as any).imageRatio && IMAGE_RATIO_MAP[(banner as any).imageRatio] ? { aspectRatio: IMAGE_RATIO_MAP[(banner as any).imageRatio] } : undefined}>
-                  <Image src={(banner as any).image.url} alt="" className={styles.bannerBlockImage} width={1200} height={600} sizes="(max-width: 768px) 100vw, 1200px" />
-                </div>
-              ) : (
-                <div className={styles.bannerBlockImageWrap} style={{ aspectRatio: '21/9', background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ color: '#6b7280', fontSize: '1.2rem' }}>Bannière - Ajoutez une image depuis l'admin</span>
-                </div>
-              )}
+  const bannerSection = hide("home_banner") ? null : (() => {
+    const b = banner as any;
+    const s: React.CSSProperties = {};
+    if (b.backgroundColor) s.backgroundColor = b.backgroundColor;
+    const rt = b.borderRadiusTop; const rb = b.borderRadiusBottom;
+    if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; }
+    if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; }
+    if (b.paddingTop != null) s.paddingTop = `${b.paddingTop}px`;
+    if (b.paddingBottom != null) s.paddingBottom = `${b.paddingBottom}px`;
+    // Elevate above intro (z-index: 2) when admin is active so admin buttons are always visible
+    if (isAdmin) s.zIndex = 3;
+    const ratio = b.imageRatio && IMAGE_RATIO_MAP[b.imageRatio] ? IMAGE_RATIO_MAP[b.imageRatio] : IMAGE_RATIO_MAP['21:9'];
+    return (
+      <section className={styles.bannerBlock} style={Object.keys(s).length ? s : undefined}>
+        <div className={styles.bannerBlockInner}>
+          {isAdmin && (
+            <div className={styles.bannerBlockAdminBar}>
+              <BlockVisibilityToggle blockId="home_banner" />
+              <BlockWidthToggle blockId="home_banner" />
+              <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_banner")}>
+                Modifier
+              </button>
+              <BlockOrderButtons page="home" blockId="home_banner" />
             </div>
-            </AnimateInView>
-          </div>
+          )}
+          <AnimateInView variant="fade" delay={0.2} viewport={{ once: true, amount: 0.25 }}>
+            <div className={styles.bannerBlockCard}>
+              {b.image?.url ? (
+                <div className={styles.bannerBlockImageWrap} style={{ aspectRatio: ratio }}>
+                  <Image src={b.image.url} alt="" className={styles.bannerBlockImage} width={2400} height={900} sizes="100vw" style={b.image.focus ? { objectPosition: `${b.image.focus.x}% ${b.image.focus.y}%` } : undefined} />
+                </div>
+              ) : isAdmin ? (
+                <div className={styles.bannerBlockImageWrap} style={{ aspectRatio: ratio, background: '#1a1a18', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ color: '#666', fontSize: '1rem' }}>Bannière — cliquez « Modifier » pour ajouter une image</span>
+                </div>
+              ) : null}
+            </div>
+          </AnimateInView>
         </div>
       </section>
-  );
+    );
+  })();
 
   const servicesSection = hide("home_services") ? null : (
       <section className={styles.services} style={(() => { const s: React.CSSProperties = {}; if ((services as any).backgroundColor) s.backgroundColor = (services as any).backgroundColor; const rt = (services as any).borderRadiusTop; const rb = (services as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (services as any).paddingTop; const pb = (services as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
@@ -816,11 +815,7 @@ export default function HomePageClient() {
       </section>
   );
 
-  const clientsSection = hide("clients") ? null : (
-      <AnimateInView variant="slideDown">
-        <Clients />
-      </AnimateInView>
-    );
+  const clientsSection = hide("clients") ? null : <Clients />;
 
   const quoteSection = hide("home_quote") ? null : (
       <section className={styles.quote} style={(() => { const s: React.CSSProperties = {}; if ((quote as any).backgroundColor) s.backgroundColor = (quote as any).backgroundColor; const rt = (quote as any).borderRadiusTop; const rb = (quote as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (quote as any).paddingTop; const pb = (quote as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
@@ -906,11 +901,17 @@ export default function HomePageClient() {
     home_cta: ctaSection,
   };
 
+  // These blocks manage their own internal animations — wrapping them in RevealSection
+  // would animate the background too, which looks wrong (background should always be visible).
+  const noRevealBlocks = new Set(['home_stats', 'clients', 'home_banner']);
+
   return (
     <>
       {blockOrderHome.map((blockId) =>
         sections[blockId] ? (
-          <RevealSection key={blockId}>{sections[blockId]}</RevealSection>
+          noRevealBlocks.has(blockId)
+            ? <React.Fragment key={blockId}>{sections[blockId]}</React.Fragment>
+            : <RevealSection key={blockId}>{sections[blockId]}</RevealSection>
         ) : null
       )}
       {editBlock && (

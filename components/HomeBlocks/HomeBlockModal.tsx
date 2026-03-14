@@ -181,6 +181,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
 
   // Banner
   const [bannerImage, setBannerImage] = useState<{ url: string; path?: string } | null>(null);
+  const [bannerImageFocus, setBannerImageFocus] = useState<{ x: number; y: number } | null>(null);
   const [uploadingBannerImage, setUploadingBannerImage] = useState(false);
   const [bannerImageRatio, setBannerImageRatio] = useState<AnimationImageRatio>("21:9");
   const [bannerBackgroundColor, setBannerBackgroundColor] = useState("");
@@ -361,7 +362,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setServicesPaddingBottom(d.paddingBottom != null ? d.paddingBottom : "");
     }
     if (blockKey === "home_banner") {
-      setBannerImage(d.image ?? null);
+      setBannerImage(d.image ? { url: d.image.url, path: d.image.path } : null);
+      setBannerImageFocus(d.image?.focus ? { x: d.image.focus.x, y: d.image.focus.y } : null);
       setBannerImageRatio(d.imageRatio ?? "21:9");
       setBannerBackgroundColor(d.backgroundColor ?? "");
       setBannerRadiusTop(d.borderRadiusTop != null ? d.borderRadiusTop : "");
@@ -706,7 +708,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         payload = { blockTitle: servicesBlockTitle, blockSubtitle: servicesBlockSubtitle, blockTitleStyle: servicesBlockTitleStyle, blockSubtitleStyle: servicesBlockSubtitleStyle, blockTitleFontSize: servicesBlockTitleFontSize !== "" ? clampTitleFontSize(servicesBlockTitleFontSize as number) : undefined, blockSubtitleFontSize: servicesBlockSubtitleFontSize !== "" ? clampTitleFontSize(servicesBlockSubtitleFontSize as number) : undefined, blockTitleColor: servicesBlockTitleColor?.trim() || undefined, blockSubtitleColor: servicesBlockSubtitleColor?.trim() || undefined, blockTitleAlign: servicesBlockTitleAlign || undefined, blockSubtitleAlign: servicesBlockSubtitleAlign || undefined, items: serviceItems.map((it) => ({ ...it, titleFontSize: it.titleFontSize != null && it.titleFontSize >= TITLE_FONT_SIZE_MIN && it.titleFontSize <= TITLE_FONT_SIZE_MAX ? it.titleFontSize : undefined })), backgroundColor: servicesBackgroundColor?.trim() || undefined, borderRadiusTop: servicesRadiusTop !== "" ? Number(servicesRadiusTop) : undefined, borderRadiusBottom: servicesRadiusBottom !== "" ? Number(servicesRadiusBottom) : undefined, paddingTop: servicesPaddingTop !== "" ? Number(servicesPaddingTop) : undefined, paddingBottom: servicesPaddingBottom !== "" ? Number(servicesPaddingBottom) : undefined };
         break;
       case "home_banner":
-        payload = { image: bannerImage, imageRatio: bannerImageRatio, backgroundColor: bannerBackgroundColor?.trim() || undefined, borderRadiusTop: bannerRadiusTop !== "" ? Number(bannerRadiusTop) : undefined, borderRadiusBottom: bannerRadiusBottom !== "" ? Number(bannerRadiusBottom) : undefined, paddingTop: bannerPaddingTop !== "" ? Number(bannerPaddingTop) : undefined, paddingBottom: bannerPaddingBottom !== "" ? Number(bannerPaddingBottom) : undefined };
+        payload = { image: bannerImage ? { ...bannerImage, focus: bannerImageFocus ?? undefined } : null, imageRatio: bannerImageRatio, backgroundColor: bannerBackgroundColor?.trim() || undefined, borderRadiusTop: bannerRadiusTop !== "" ? Number(bannerRadiusTop) : undefined, borderRadiusBottom: bannerRadiusBottom !== "" ? Number(bannerRadiusBottom) : undefined, paddingTop: bannerPaddingTop !== "" ? Number(bannerPaddingTop) : undefined, paddingBottom: bannerPaddingBottom !== "" ? Number(bannerPaddingBottom) : undefined };
         break;
       case "home_stats":
         payload = { items: statItems, backgroundColor: statBackgroundColor?.trim() || undefined, borderRadiusTop: statsRadiusTop !== "" ? Number(statsRadiusTop) : undefined, borderRadiusBottom: statsRadiusBottom !== "" ? Number(statsRadiusBottom) : undefined, paddingTop: statsPaddingTop !== "" ? Number(statsPaddingTop) : undefined, paddingBottom: statsPaddingBottom !== "" ? Number(statsPaddingBottom) : undefined };
@@ -1005,9 +1007,26 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Image de la bannière</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   {bannerImage?.url ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <img src={bannerImage.url} alt="" style={{ width: 200, height: 120, objectFit: "cover", borderRadius: 4 }} />
-                      <button type="button" className="btn-ghost" onClick={() => setBannerImage(null)} style={{ fontSize: 12, color: "#dc2626" }}>Supprimer</button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div
+                        onClick={(e) => {
+                          const el = e.currentTarget as HTMLDivElement;
+                          const rect = el.getBoundingClientRect();
+                          const x = Math.round(Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)));
+                          const y = Math.round(Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100)));
+                          setBannerImageFocus({ x, y });
+                        }}
+                        style={{ width: 320, maxWidth: '100%', height: 160, borderRadius: 6, backgroundImage: `url(${bannerImage.url})`, backgroundSize: 'cover', backgroundPosition: bannerImageFocus ? `${bannerImageFocus.x}% ${bannerImageFocus.y}%` : 'center', cursor: 'crosshair', position: 'relative' }}
+                      >
+                        {bannerImageFocus && (
+                          <div style={{ position: 'absolute', left: `calc(${bannerImageFocus.x}% - 8px)`, top: `calc(${bannerImageFocus.y}% - 8px)`, width: 16, height: 16, borderRadius: 999, background: '#fff', border: '2px solid rgba(0,0,0,0.6)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', pointerEvents: 'none' }} />
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--muted)' }}>Cliquez sur l'image pour définir le point focal{bannerImageFocus ? ` (${bannerImageFocus.x}%, ${bannerImageFocus.y}%)` : ''}</div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        {bannerImageFocus && <button type="button" className="btn-ghost" onClick={() => setBannerImageFocus(null)} style={{ fontSize: 12 }}>↺ Réinitialiser le point focal</button>}
+                        <button type="button" className="btn-ghost" onClick={() => { setBannerImage(null); setBannerImageFocus(null); }} style={{ fontSize: 12, color: "#dc2626" }}>Supprimer l'image</button>
+                      </div>
                     </div>
                   ) : (
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1020,6 +1039,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Ratio de l'image</label>
                 <select value={bannerImageRatio} onChange={(e) => setBannerImageRatio(e.target.value as AnimationImageRatio)} style={inputStyle}>
+                  <option value="4:1">4:1 (bande fine)</option>
                   <option value="21:9">21:9 (ultra large)</option>
                   <option value="16:9">16:9 (large)</option>
                   <option value="4:3">4:3 (standard)</option>

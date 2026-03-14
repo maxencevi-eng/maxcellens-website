@@ -53,12 +53,17 @@
 .intro,
 .services,
 .portraitBlock,
-.bannerBlock,
 .cadreurBlock,
 .animationBlock,
 .quote {
   padding-top: clamp(5rem, 10vw, 8rem);
   padding-bottom: clamp(5rem, 10vw, 8rem);
+}
+
+/* Bannière : padding vertical réduit — l'image est une bande */
+.bannerBlock {
+  padding-top: clamp(2rem, 5vw, 3.5rem);
+  padding-bottom: clamp(2rem, 5vw, 3.5rem);
 }
 
 .stats {
@@ -626,24 +631,37 @@
 
 /* ========== Banner Block ========== */
 .bannerBlock {
-  padding-left: var(--block-inner-padding-desktop, 2rem);
-  padding-right: var(--block-inner-padding-desktop, 2rem);
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 0;
+  background: transparent;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+}
+
+/* Même marges que le .imageWrap du PageHeader */
+.bannerBlockInner {
+  margin: 0 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .bannerBlockInner { margin: 0 2rem; }
+}
+
+@media (min-width: 1200px) {
+  .bannerBlockInner { margin: 0 40px; }
+}
+
+.bannerBlockAdminBar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 6px;
 }
 
 .bannerBlockCard {
   position: relative;
-  border-radius: 16px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
-  transition: transform 0.35s ease, box-shadow 0.35s ease;
-}
-
-.bannerBlockCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
 }
 
 .bannerBlockImageWrap {
@@ -744,8 +762,8 @@
 
 @media (max-width: 767px) {
   .bannerBlock {
-    padding-left: var(--block-inner-padding-mobile, 1rem);
-    padding-right: var(--block-inner-padding-mobile, 1rem);
+    padding-left: 0;
+    padding-right: 0;
   }
   .bannerBlockContent {
     padding: 1.5rem 1rem 1.75rem;
@@ -1373,7 +1391,6 @@
   .intro,
   .services,
   .portraitBlock,
-  .bannerBlock,
   .cadreurBlock,
   .animationBlock,
   .stats,

@@ -43,7 +43,22 @@ const BlockVisibilityContext = createContext<ContextValue>({
   isLoading: true,
 });
 
-const DEFAULT_ORDER_HOME = ['home_intro', 'home_services', 'home_animation', 'home_portrait', 'home_cadreur', 'home_stats', 'clients', 'home_quote', 'home_cta'];
+const DEFAULT_ORDER_HOME = ['home_intro', 'home_banner', 'home_services', 'home_animation', 'home_portrait', 'home_cadreur', 'home_stats', 'clients', 'home_quote', 'home_cta'];
+
+/** Insère les blocs manquants dans un ordre sauvegardé (migration douce). */
+function mergeKnownBlocks(saved: string[], defaults: string[]): string[] {
+  const result = [...saved];
+  for (const id of defaults) {
+    if (!result.includes(id)) {
+      const defaultIdx = defaults.indexOf(id);
+      const predecessor = defaultIdx > 0 ? defaults[defaultIdx - 1] : null;
+      const insertAfter = predecessor ? result.indexOf(predecessor) : -1;
+      if (insertAfter >= 0) result.splice(insertAfter + 1, 0, id);
+      else result.push(id);
+    }
+  }
+  return result;
+}
 const DEFAULT_ORDER_CONTACT = ['contact_intro', 'contact_zones', 'contact_kit'];
 const DEFAULT_ORDER_ANIMATION = ['animation_s1', 'animation_s2', 'animation_s3', 'animation_cta'];
 const DEFAULT_ORDER_REALISATION = ['production_intro', 'production_videos'];
@@ -90,7 +105,7 @@ export function BlockVisibilityProvider({ children }: { children: React.ReactNod
         setHiddenBlocks(Array.isArray(data?.hiddenBlocks) ? data.hiddenBlocks : []);
         const modes = data?.blockWidthModes;
         setBlockWidthModesState(modes && typeof modes === 'object' && !Array.isArray(modes) ? modes : {});
-        setBlockOrderHome(Array.isArray(data?.blockOrderHome) ? data.blockOrderHome : DEFAULT_ORDER_HOME);
+        setBlockOrderHome(Array.isArray(data?.blockOrderHome) ? mergeKnownBlocks(data.blockOrderHome, DEFAULT_ORDER_HOME) : DEFAULT_ORDER_HOME);
         setBlockOrderContact(Array.isArray(data?.blockOrderContact) ? data.blockOrderContact : DEFAULT_ORDER_CONTACT);
         setBlockOrderAnimation(Array.isArray(data?.blockOrderAnimation) ? data.blockOrderAnimation : DEFAULT_ORDER_ANIMATION);
         setBlockOrderRealisation(Array.isArray(data?.blockOrderRealisation) ? data.blockOrderRealisation : DEFAULT_ORDER_REALISATION);
