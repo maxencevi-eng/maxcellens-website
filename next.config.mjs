@@ -16,6 +16,9 @@ const nextConfig = {
   reactStrictMode: true,
   serverExternalPackages: ['sharp'],
   images: {
+    // Images are already pre-compressed and converted to WebP at upload time.
+    // Disabling Next.js image optimization prevents a second lossy re-encoding pass.
+    unoptimized: true,
     remotePatterns: [
       ...(supabaseHostname ? [{ protocol: 'https', hostname: supabaseHostname }] : []),
       { protocol: 'https', hostname: 'images.unsplash.com' },

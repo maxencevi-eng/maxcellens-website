@@ -69,7 +69,7 @@
   margin-left: calc(50% - 50vw);
 
   /* Espace avant le footer */
-  margin-bottom: 64px;
+  margin-bottom: 20px;
 }
 
 .bac-root *,
