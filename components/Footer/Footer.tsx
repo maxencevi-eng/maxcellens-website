@@ -93,6 +93,7 @@ export default function Footer() {
   const [footerBannerRatio, setFooterBannerRatio] = useState<AnimationImageRatio>('21:9');
   const [footerBannerSizeMode, setFooterBannerSizeMode] = useState<BannerSizeMode>('fixed');
   const [bannerError, setBannerError] = useState(false);
+  const [footerBgColor, setFooterBgColor] = useState<string>('#1C1C1A');
 
   // Update bannerUrl with cache-busting when footerBanner changes
   useEffect(() => {
@@ -111,7 +112,7 @@ export default function Footer() {
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=footerColumn1,footerBottomText,footerMenuVisible,footerBanner,footerBannerFocal,footerBannerHeight,footerBannerRatio,footerBannerSizeMode,socialIcon_instagram,socialIcon_facebook,socialIcon_youtube,socialIcon_tiktok,socialIcon_linkedin');
+        const resp = await fetch('/api/admin/site-settings?keys=footerColumn1,footerBottomText,footerMenuVisible,footerBanner,footerBannerFocal,footerBannerHeight,footerBannerRatio,footerBannerSizeMode,footerBgColor,socialIcon_instagram,socialIcon_facebook,socialIcon_youtube,socialIcon_tiktok,socialIcon_linkedin');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
@@ -168,6 +169,9 @@ export default function Footer() {
             try { const vm = localStorage.getItem('footerBannerSizeMode'); if (vm && VALID_SIZE_MODES.includes(vm as BannerSizeMode)) setFooterBannerSizeMode(vm as BannerSizeMode); } catch(_) {}
           }
 
+          if (s.footerBgColor) setFooterBgColor(String(s.footerBgColor));
+          else { try { const v = localStorage.getItem('footerBgColor'); if (v) setFooterBgColor(v); } catch(_){} }
+
           if (s.socialIcon_instagram) setCustomIcons(prev => ({ ...prev, instagram: String(s.socialIcon_instagram) }));
           if (s.socialIcon_facebook) setCustomIcons(prev => ({ ...prev, facebook: String(s.socialIcon_facebook) }));
           if (s.socialIcon_youtube) setCustomIcons(prev => ({ ...prev, youtube: String(s.socialIcon_youtube) }));
@@ -214,6 +218,9 @@ export default function Footer() {
               const mode = String((det as any).value);
               if (VALID_SIZE_MODES.includes(mode as BannerSizeMode)) setFooterBannerSizeMode(mode as BannerSizeMode);
             } catch(_) {}
+          }
+          if (key === 'footerBgColor' && (det as any).value) {
+            setFooterBgColor(String((det as any).value));
           }
           return;
         }
@@ -419,7 +426,7 @@ export default function Footer() {
   })();
 
   return (
-    <footer ref={footerRef} className={`${styles.footer} ${isMobileFooter ? styles.mobile : ''} ${revealed ? styles.revealed : ''}`}>
+    <footer ref={footerRef} className={`${styles.footer} ${isMobileFooter ? styles.mobile : ''} ${revealed ? styles.revealed : ''}`} style={{ '--footer-bg': footerBgColor } as React.CSSProperties}>
       {bannerUrl && !bannerError ? (
         <div className={styles.banner} aria-label="Footer banner wrapper">
           <div

@@ -71,6 +71,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
   const [bannerHeight, setBannerHeight] = useState<number | null>(null);
   const [bannerRatio, setBannerRatio] = useState<AnimationImageRatio>('21:9');
   const [bannerSizeMode, setBannerSizeMode] = useState<BannerSizeMode>('fixed');
+  const [footerBgColor, setFooterBgColor] = useState<string>('#1C1C1A');
   // banner height limits (px)
   const MAX_BANNER_HEIGHT = 1600;
   const MIN_BANNER_HEIGHT = 60;
@@ -98,7 +99,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
 
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=footerColumn1,footerBottomText,footerMenuVisible,footerBanner,footerBannerFocal,footerBannerHeight,footerBannerRatio,footerBannerSizeMode');
+        const resp = await fetch('/api/admin/site-settings?keys=footerColumn1,footerBottomText,footerMenuVisible,footerBanner,footerBannerFocal,footerBannerHeight,footerBannerRatio,footerBannerSizeMode,footerBgColor');
         if (resp.ok) {
           const j = await resp.json();
           const s = j?.settings || {};
@@ -136,6 +137,9 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
           if (modeVal && VALID_SIZE_MODES.includes(modeVal as BannerSizeMode)) {
             setBannerSizeMode(modeVal as BannerSizeMode);
           }
+
+          const bgColorVal = s.footerBgColor || getStorage('footerBgColor');
+          if (bgColorVal) setFooterBgColor(String(bgColorVal));
           
           return;
         }
@@ -196,7 +200,8 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBannerFocal', value: JSON.stringify(bannerFocal || '') }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBannerHeight', value: bannerHeight || '' }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBannerRatio', value: bannerRatio }) }),
-        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBannerSizeMode', value: bannerSizeMode }) })
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBannerSizeMode', value: bannerSizeMode }) }),
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBgColor', value: footerBgColor }) }),
       ];
 
 
@@ -220,6 +225,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
       setStorage('footerBannerHeight', String(bannerHeight || ''));
       setStorage('footerBannerRatio', bannerRatio);
       setStorage('footerBannerSizeMode', bannerSizeMode);
+      setStorage('footerBgColor', footerBgColor);
 
       // dispatch custom event so in-page components update immediately
       try { window.dispatchEvent(new CustomEvent('site-settings-updated')); } catch(_){ }
@@ -228,6 +234,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
       try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'footerBannerHeight', value: String(bannerHeight || '') } })); } catch(_){ }
       try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'footerBannerRatio', value: bannerRatio } })); } catch(_){ }
       try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'footerBannerSizeMode', value: bannerSizeMode } })); } catch(_){ }
+      try { window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: { key: 'footerBgColor', value: footerBgColor } })); } catch(_){ }
 
       setSuccess('Sauvegardé');
       if (onSaved) onSaved();
@@ -445,6 +452,29 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
                   </label>
                 ))}
               </div>
+            </div>
+
+            <div style={{ marginTop: 16, padding: '12px 14px', border: '1px solid #e0e0e3', borderRadius: 8, background: '#fafafa' }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 10 }}>Couleur de fond</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <input
+                  type="color"
+                  value={footerBgColor}
+                  onChange={(e) => setFooterBgColor(e.target.value)}
+                  style={{ width: 44, height: 36, padding: 2, border: '1px solid #ddd', borderRadius: 6, cursor: 'pointer' }}
+                />
+                <input
+                  type="text"
+                  value={footerBgColor}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (/^#[0-9a-fA-F]{0,6}$/.test(v)) setFooterBgColor(v);
+                  }}
+                  style={{ width: 90, padding: '6px 8px', fontSize: 13, border: '1px solid #ddd', borderRadius: 6, fontFamily: 'monospace' }}
+                />
+                <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setFooterBgColor('#1C1C1A')}>Réinitialiser</button>
+              </div>
+              <div style={{ marginTop: 10, height: 28, borderRadius: 6, background: footerBgColor, border: '1px solid rgba(0,0,0,0.1)' }} />
             </div>
 
           </div>

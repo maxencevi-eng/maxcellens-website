@@ -92,7 +92,7 @@
 }
 
 .top {
-  background: #1C1C1A;
+  background: var(--footer-bg, #1C1C1A);
   color: rgba(255,255,255,0.85);
   border-bottom: 1px solid rgba(255,255,255,0.08);
   padding: 2.25rem 0;
@@ -165,7 +165,7 @@
 }
 
 .bottom {
-  background: #1C1C1A;
+  background: var(--footer-bg, #1C1C1A);
   color: #9ca3af;
   padding: 0.9rem 0;
   position: relative;
