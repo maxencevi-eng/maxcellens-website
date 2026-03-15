@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { compressImageClient } from '@/lib/compressImageClient';
 
@@ -200,9 +201,10 @@ export default function HeroEditor({ page, onClose }: Props) {
     } catch (e:any) { setError(e?.message || 'Erreur'); } finally { setLoading(false); }
   }
 
-  return (
-    <div className="modal-overlay-mobile" style={{ position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.5)', zIndex:9999 }}>
-      <div style={{ background:'#fff', width:760, maxWidth:'98%', maxHeight:'80vh', overflowY:'auto', padding:20, borderRadius:8 }}>
+  if (typeof document === 'undefined') return null;
+  return ReactDOM.createPortal(
+    <div className="modal-overlay-mobile" style={{ position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.5)', zIndex:50001 }}>
+      <div style={{ background:'#fff', width:760, maxWidth:'98%', maxHeight:'90vh', overflowY:'auto', padding:20, borderRadius:8 }}>
         <h3 style={{ marginTop:0 }}>Modifier Hero — {page}</h3>
         <div style={{ display:'flex', gap:12 }}>
           <label style={{ display:'flex', gap:8, alignItems:'center' }}><input type="radio" checked={mode==='image'} onChange={() => setMode('image')} /> Image</label>
@@ -312,6 +314,7 @@ export default function HeroEditor({ page, onClose }: Props) {
         {error ? <div style={{ color:'crimson', marginTop:8 }}>{error}</div> : null}
         {success ? <div style={{ color:'green', marginTop:8 }}>{success}</div> : null}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
