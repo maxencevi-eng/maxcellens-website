@@ -128,7 +128,7 @@ function responsiveFontSize(fs: number): string {
   if (fs <= 48) return `${fs}px`;
   // At 1400px viewport the text is at full size; scales down proportionally
   const vw = (fs / 14).toFixed(2);
-  const min = Math.max(16, Math.round(fs * 0.32));
+  const min = Math.max(24, Math.round(fs * 0.58));
   return `clamp(${min}px, ${vw}vw, ${fs}px)`;
 }
 
