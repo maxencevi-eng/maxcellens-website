@@ -189,6 +189,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [bannerRadiusBottom, setBannerRadiusBottom] = useState<number | "">("");
   const [bannerPaddingTop, setBannerPaddingTop] = useState<number | "">("");
   const [bannerPaddingBottom, setBannerPaddingBottom] = useState<number | "">("");
+  const [bannerTextMode, setBannerTextMode] = useState<'none' | 'text'>('none');
+  const [bannerHtml, setBannerHtml] = useState("");
+  const [bannerTextImagePosition, setBannerTextImagePosition] = useState<'left' | 'right'>('right');
+  const [editingBannerHtml, setEditingBannerHtml] = useState(false);
   const [servicesBlockSubtitleFontSize, setServicesBlockSubtitleFontSize] = useState<number | "">(16);
   const [serviceItems, setServiceItems] = useState<{ title: string; description: string; href: string; image?: { url: string; path?: string } | null; titleStyle?: TitleStyleKey; descriptionStyle?: TitleStyleKey; titleFontSize?: number; descriptionFontSize?: number }[]>([]);
 
@@ -371,6 +375,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setBannerRadiusBottom(d.borderRadiusBottom != null ? d.borderRadiusBottom : "");
       setBannerPaddingTop(d.paddingTop != null ? d.paddingTop : "");
       setBannerPaddingBottom(d.paddingBottom != null ? d.paddingBottom : "");
+      setBannerTextMode(d.textMode ?? 'none');
+      setBannerHtml(d.html ?? "");
+      setBannerTextImagePosition(d.textImagePosition ?? 'right');
     }
     if (blockKey === "home_stats" && d.items) {
       setStatItems(d.items.length ? d.items : [{ value: "", label: "" }]);
@@ -709,7 +716,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         payload = { blockTitle: servicesBlockTitle, blockSubtitle: servicesBlockSubtitle, blockTitleStyle: servicesBlockTitleStyle, blockSubtitleStyle: servicesBlockSubtitleStyle, blockTitleFontSize: servicesBlockTitleFontSize !== "" ? clampTitleFontSize(servicesBlockTitleFontSize as number) : undefined, blockSubtitleFontSize: servicesBlockSubtitleFontSize !== "" ? clampTitleFontSize(servicesBlockSubtitleFontSize as number) : undefined, blockTitleColor: servicesBlockTitleColor?.trim() || undefined, blockSubtitleColor: servicesBlockSubtitleColor?.trim() || undefined, blockTitleAlign: servicesBlockTitleAlign || undefined, blockSubtitleAlign: servicesBlockSubtitleAlign || undefined, items: serviceItems.map((it) => ({ ...it, titleFontSize: it.titleFontSize != null && it.titleFontSize >= TITLE_FONT_SIZE_MIN && it.titleFontSize <= TITLE_FONT_SIZE_MAX ? it.titleFontSize : undefined, descriptionFontSize: it.descriptionFontSize != null && it.descriptionFontSize >= TITLE_FONT_SIZE_MIN && it.descriptionFontSize <= TITLE_FONT_SIZE_MAX ? it.descriptionFontSize : undefined })), backgroundColor: servicesBackgroundColor?.trim() || undefined, borderRadiusTop: servicesRadiusTop !== "" ? Number(servicesRadiusTop) : undefined, borderRadiusBottom: servicesRadiusBottom !== "" ? Number(servicesRadiusBottom) : undefined, paddingTop: servicesPaddingTop !== "" ? Number(servicesPaddingTop) : undefined, paddingBottom: servicesPaddingBottom !== "" ? Number(servicesPaddingBottom) : undefined };
         break;
       case "home_banner":
-        payload = { image: bannerImage ? { ...bannerImage, focus: bannerImageFocus ?? undefined } : null, imageRatio: bannerImageRatio, backgroundColor: bannerBackgroundColor?.trim() || undefined, borderRadiusTop: bannerRadiusTop !== "" ? Number(bannerRadiusTop) : undefined, borderRadiusBottom: bannerRadiusBottom !== "" ? Number(bannerRadiusBottom) : undefined, paddingTop: bannerPaddingTop !== "" ? Number(bannerPaddingTop) : undefined, paddingBottom: bannerPaddingBottom !== "" ? Number(bannerPaddingBottom) : undefined };
+        payload = { image: bannerImage ? { ...bannerImage, focus: bannerImageFocus ?? undefined } : null, imageRatio: bannerImageRatio, backgroundColor: bannerBackgroundColor?.trim() || undefined, borderRadiusTop: bannerRadiusTop !== "" ? Number(bannerRadiusTop) : undefined, borderRadiusBottom: bannerRadiusBottom !== "" ? Number(bannerRadiusBottom) : undefined, paddingTop: bannerPaddingTop !== "" ? Number(bannerPaddingTop) : undefined, paddingBottom: bannerPaddingBottom !== "" ? Number(bannerPaddingBottom) : undefined, textMode: bannerTextMode, html: bannerTextMode === 'text' ? bannerHtml : undefined, textImagePosition: bannerTextMode === 'text' ? bannerTextImagePosition : undefined };
         break;
       case "home_stats":
         payload = { items: statItems, backgroundColor: statBackgroundColor?.trim() || undefined, borderRadiusTop: statsRadiusTop !== "" ? Number(statsRadiusTop) : undefined, borderRadiusBottom: statsRadiusBottom !== "" ? Number(statsRadiusBottom) : undefined, paddingTop: statsPaddingTop !== "" ? Number(statsPaddingTop) : undefined, paddingBottom: statsPaddingBottom !== "" ? Number(statsPaddingBottom) : undefined };
@@ -1006,8 +1013,23 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
 
           {blockKey === "home_banner" && (
             <>
+              {/* Mode d'affichage */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>Mode d'affichage</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {(['none', 'text'] as const).map((mode) => (
+                    <button key={mode} type="button"
+                      onClick={() => setBannerTextMode(mode)}
+                      style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13, cursor: 'pointer', background: bannerTextMode === mode ? 'var(--fg, #1a1a18)' : '#fff', color: bannerTextMode === mode ? '#fff' : 'inherit', fontWeight: bannerTextMode === mode ? 600 : 400 }}>
+                      {mode === 'none' ? 'Image seule' : 'Texte + Image'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Image */}
               <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Image de la bannière</label>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Image{bannerTextMode === 'none' ? ' de la bannière' : ''}</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   {bannerImage?.url ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1039,16 +1061,44 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   )}
                 </div>
               </div>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Ratio de l'image</label>
-                <select value={bannerImageRatio} onChange={(e) => setBannerImageRatio(e.target.value as AnimationImageRatio)} style={inputStyle}>
-                  <option value="4:1">4:1 (bande fine)</option>
-                  <option value="21:9">21:9 (ultra large)</option>
-                  <option value="16:9">16:9 (large)</option>
-                  <option value="4:3">4:3 (standard)</option>
-                  <option value="1:1">1:1 (carré)</option>
-                </select>
-              </div>
+
+              {/* Ratio (mode image seule uniquement) */}
+              {bannerTextMode === 'none' && (
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Ratio de l'image</label>
+                  <select value={bannerImageRatio} onChange={(e) => setBannerImageRatio(e.target.value as AnimationImageRatio)} style={inputStyle}>
+                    <option value="4:1">4:1 (bande fine)</option>
+                    <option value="21:9">21:9 (ultra large)</option>
+                    <option value="16:9">16:9 (large)</option>
+                    <option value="4:3">4:3 (standard)</option>
+                    <option value="1:1">1:1 (carré)</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Options mode Texte + Image */}
+              {bannerTextMode === 'text' && (
+                <>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Position de l'image</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {(['left', 'right'] as const).map((pos) => (
+                        <button key={pos} type="button"
+                          onClick={() => setBannerTextImagePosition(pos)}
+                          style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13, cursor: 'pointer', background: bannerTextImagePosition === pos ? 'var(--fg, #1a1a18)' : '#fff', color: bannerTextImagePosition === pos ? '#fff' : 'inherit' }}>
+                          {pos === 'left' ? 'Image à gauche' : 'Image à droite'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte</label>
+                    <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: bannerHtml || "<p style='color:#999'>Aucun</p>" }} />
+                    <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingBannerHtml(true)}>Éditer le texte</button>
+                  </div>
+                </>
+              )}
+
               <RadiusInputs top={bannerRadiusTop} setTop={setBannerRadiusTop} bottom={bannerRadiusBottom} setBottom={setBannerRadiusBottom} />
               <PaddingInputs top={bannerPaddingTop} setTop={setBannerPaddingTop} bottom={bannerPaddingBottom} setBottom={setBannerPaddingBottom} />
             </>
@@ -1691,6 +1741,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
 
       {editingHtml && blockKey === "home_intro" && (
         <RichTextModal title="Texte intro" initial={introHtml} onClose={() => setEditingHtml(false)} onSave={(h) => { setIntroHtml(h); setEditingHtml(false); }} />
+      )}
+      {editingBannerHtml && blockKey === "home_banner" && (
+        <RichTextModal title="Texte bannière" initial={bannerHtml} onClose={() => setEditingBannerHtml(false)} onSave={(h) => { setBannerHtml(h); setEditingBannerHtml(false); }} />
       )}
       {editingSlideIndex !== null && blockKey === "home_portrait" && portraitSlides[editingSlideIndex] && (
         <RichTextModal

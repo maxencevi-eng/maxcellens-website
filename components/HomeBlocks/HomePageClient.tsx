@@ -387,19 +387,54 @@ export default function HomePageClient() {
     // z-index: 3 en admin pour que les boutons soient toujours visibles
     s.zIndex = isAdmin ? 3 : 2;
     const ratio = b.imageRatio && IMAGE_RATIO_MAP[b.imageRatio] ? IMAGE_RATIO_MAP[b.imageRatio] : IMAGE_RATIO_MAP['21:9'];
+    const isTextMode = b.textMode === 'text';
+    const imgRight = b.textImagePosition !== 'left';
+    const adminBar = isAdmin && (
+      <div className={styles.bannerBlockAdminBar}>
+        <BlockVisibilityToggle blockId="home_banner" />
+        <BlockWidthToggle blockId="home_banner" />
+        <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_banner")}>
+          Modifier
+        </button>
+        <BlockOrderButtons page="home" blockId="home_banner" />
+      </div>
+    );
+
+    if (isTextMode) {
+      const imgEl = b.image?.url ? (
+        <Image
+          src={b.image.url} alt="" className={styles.bannerTextImg}
+          width={800} height={600} sizes="(max-width:768px) 100vw, 45vw"
+          style={b.image.focus ? { objectPosition: `${b.image.focus.x}% ${b.image.focus.y}%` } : undefined}
+        />
+      ) : isAdmin ? (
+        <div className={styles.bannerTextImgPlaceholder}>
+          <span style={{ color: '#aaa', fontSize: '0.9rem' }}>Image — cliquez « Modifier »</span>
+        </div>
+      ) : null;
+
+      return (
+        <section className={styles.bannerBlock} style={Object.keys(s).length ? s : undefined}>
+          <div className={`container ${blockWidthClass("home_banner")}`.trim()}>
+            {adminBar}
+            <AnimateInView variant="fadeUp" delay={0.1} viewport={{ once: true, amount: 0.2 }}>
+              <div className={`${styles.bannerTextLayout} ${imgRight ? styles.bannerTextImgRight : styles.bannerTextImgLeft}`}>
+                {!imgRight && imgEl && <div className={styles.bannerTextImgCol}>{imgEl}</div>}
+                <div className={styles.bannerTextCol}>
+                  {b.html ? <div className={styles.bannerTextRich} dangerouslySetInnerHTML={{ __html: b.html }} /> : null}
+                </div>
+                {imgRight && imgEl && <div className={styles.bannerTextImgCol}>{imgEl}</div>}
+              </div>
+            </AnimateInView>
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section className={styles.bannerBlock} style={Object.keys(s).length ? s : undefined}>
         <div className={styles.bannerBlockInner}>
-          {isAdmin && (
-            <div className={styles.bannerBlockAdminBar}>
-              <BlockVisibilityToggle blockId="home_banner" />
-              <BlockWidthToggle blockId="home_banner" />
-              <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_banner")}>
-                Modifier
-              </button>
-              <BlockOrderButtons page="home" blockId="home_banner" />
-            </div>
-          )}
+          {adminBar}
           <AnimateInView variant="fade" delay={0.2} viewport={{ once: true, amount: 0.25 }}>
             <div className={styles.bannerBlockCard}>
               {b.image?.url ? (

@@ -285,7 +285,7 @@ export const DEFAULT_CTA: HomeCtaData = {
 export type HomeBannerData = {
   /** Image de la bannière */
   image?: { url: string; path?: string; focus?: FocusPoint } | null;
-  /** Ratio d'image */
+  /** Ratio d'image (mode sans texte uniquement) */
   imageRatio?: AnimationImageRatio;
   /** Couleur de fond (remplace l'image si pas d'image) */
   backgroundColor?: string;
@@ -297,6 +297,12 @@ export type HomeBannerData = {
   paddingTop?: number;
   /** Padding vertical interne bas */
   paddingBottom?: number;
+  /** Mode d'affichage : 'none' = bannière image seule, 'text' = texte + image côte à côte */
+  textMode?: 'none' | 'text';
+  /** Texte riche (mode 'text') */
+  html?: string;
+  /** Position de l'image en mode texte : 'left' | 'right' */
+  textImagePosition?: 'left' | 'right';
 };
 
 export const DEFAULT_BANNER: HomeBannerData = {

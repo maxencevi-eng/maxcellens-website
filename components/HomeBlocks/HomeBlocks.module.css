@@ -843,6 +843,84 @@
   outline-offset: 3px;
 }
 
+/* ── Banner text mode (texte + image côte à côte) ── */
+.bannerTextLayout {
+  display: flex;
+  align-items: center;
+  gap: clamp(2rem, 5vw, 4rem);
+}
+
+.bannerTextImgRight {
+  flex-direction: row;
+}
+
+.bannerTextImgLeft {
+  flex-direction: row-reverse;
+}
+
+.bannerTextCol {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.bannerTextImgCol {
+  flex: 0 0 42%;
+  max-width: 42%;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.bannerTextImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.bannerTextImgPlaceholder {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: rgba(0,0,0,0.06);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bannerTextRich {
+  color: var(--fg, #213431);
+  font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+  line-height: 1.6;
+}
+
+.bannerTextRich p { margin: 0 0 0.9em; }
+.bannerTextRich p:last-child { margin-bottom: 0; }
+.bannerTextRich strong {
+  color: var(--fg, #1C1C1A);
+  font-weight: 700;
+}
+.bannerTextRich em { font-style: italic; }
+.bannerTextRich a { color: inherit; text-decoration: underline; }
+
+@media (max-width: 767px) {
+  .bannerTextLayout,
+  .bannerTextImgRight,
+  .bannerTextImgLeft {
+    flex-direction: column !important;
+    gap: 1.5rem;
+  }
+
+  .bannerTextImgCol {
+    flex: none;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .bannerTextRich {
+    font-size: clamp(0.95rem, 4vw, 1.1rem);
+  }
+}
+
 @media (max-width: 767px) {
   .bannerBlock {
     padding-left: 0;
