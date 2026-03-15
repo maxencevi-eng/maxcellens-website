@@ -496,7 +496,7 @@ export default function HomePageClient() {
                   <Link href={item.href || "#"} className={styles.serviceCard} data-analytics-id={`Accueil|Service - ${(item.title || 'Service').toString().slice(0, 40)}`}>
                     <div className={styles.serviceCardImageWrap}>
                       {item.image?.url ? (
-                        <Image src={item.image.url} alt="" className={styles.serviceCardImage} width={800} height={600} sizes="(max-width: 767px) 100vw, 33vw" quality={90} />
+                        <Image src={item.image.url} alt="" className={styles.serviceCardImage} width={800} height={600} sizes="(max-width: 767px) 100vw, 33vw" quality={100} />
                       ) : (
                         <div className={styles.serviceCardImage} style={{ background: "rgba(40,40,40,0.9)", minHeight: "100%" }} />
                       )}
@@ -594,7 +594,7 @@ export default function HomePageClient() {
                             alt=""
                             width={500}
                             height={667}
-                            quality={90}
+                            quality={100}
                             sizes="(max-width: 768px) 60vw, 340px"
                             style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover', ...focusStyle }}
                           />
@@ -696,7 +696,7 @@ export default function HomePageClient() {
                     className={styles.cadreurImage}
                     width={800}
                     height={600}
-                    quality={90}
+                    quality={100}
                     sizes="(max-width: 768px) 100vw, 800px"
                     style={{
                       ...(

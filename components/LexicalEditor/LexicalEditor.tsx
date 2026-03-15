@@ -601,7 +601,7 @@ function ToolbarPlugin() {
         </span>
         <button
           type="button"
-          className="lexical-no-modal-btn"
+          className="lexical-toolbar-btn"
           onClick={() => {
             setBgColor('#ffffff');
             editor.update(() => {
@@ -611,8 +611,8 @@ function ToolbarPlugin() {
             });
           }}
           title="Retirer la couleur de fond"
-          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 28, padding: '0 8px', fontSize: 13, fontWeight: 600, border: '2px solid #e55', borderRadius: 4, background: '#fee', cursor: 'pointer', color: '#c00', letterSpacing: 0 }}
-        >✕ fond</button>
+          style={{ background: '#fee2e2', color: '#dc2626', borderColor: '#fca5a5', fontWeight: 700, fontSize: 12, minWidth: 'auto', padding: '0 7px' }}
+        >✕bg</button>
         <span ref={(el) => { emojiPanelRef.current = el; }} style={{ position: 'relative' }}>
           <button type="button" className="lexical-toolbar-btn" onClick={(e) => { e.stopPropagation(); setShowEmoji((s) => !s); }} title="Insérer un emoji">😀</button>
         {showEmoji && (

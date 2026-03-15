@@ -197,20 +197,7 @@ export default function Header() {
   // close the mobile menu whenever route changes (robust for programmatic navigation)
   React.useEffect(() => { setOpen(false); }, [pathname]);
 
-  // hide site header on animation sub-pages (bac system at /animation/*)
-  if (pathname?.startsWith('/animation/') || pathname?.startsWith('/bac/')) return null;
-  function normalizePath(p: string) {
-    try { return String(p || '').replace(/\/+$|\/$/g, '').replace(/\/\//g, '/') || '/'; } catch(_) { return String(p || '').replace(/\/+$/g, '') || '/'; }
-  }
-
-  function linkClass(href: string) {
-    const p = normalizePath(pathname || '');
-    const h = normalizePath(href || '');
-    // match exact, prefix (/foo and /foo/...), or root
-    const isActive = (h === '/' && p === '/') || (p === h) || (h !== '/' && p.startsWith(h + '/')) || p.startsWith(h);
-    return `${styles.link} ${isActive ? styles.active : ''}`;
-  }
-
+  // ALL hooks must be declared before any conditional return (Rules of Hooks)
   const [imgError, setImgError] = useState(false);
   // start with an empty object on both server and client to avoid hydration mismatch
   const [navVisible, setNavVisible] = useState<{ [k: string]: boolean }>({});
@@ -283,6 +270,21 @@ export default function Header() {
   }, []);
 
   const currentNav = (isMobile ? navMobileVisible : navVisible) || {};
+
+  // hide site header on animation sub-pages (bac system at /animation/*) — after all hooks
+  if (pathname?.startsWith('/animation/') || pathname?.startsWith('/bac/')) return null;
+
+  function normalizePath(p: string) {
+    try { return String(p || '').replace(/\/+$|\/$/g, '').replace(/\/\//g, '/') || '/'; } catch(_) { return String(p || '').replace(/\/+$/g, '') || '/'; }
+  }
+
+  function linkClass(href: string) {
+    const p = normalizePath(pathname || '');
+    const h = normalizePath(href || '');
+    // match exact, prefix (/foo and /foo/...), or root
+    const isActive = (h === '/' && p === '/') || (p === h) || (h !== '/' && p.startsWith(h + '/')) || p.startsWith(h);
+    return `${styles.link} ${isActive ? styles.active : ''}`;
+  }
   const isNavItemVisible = (key: string) => {
     try {
       const value = (currentNav as any)?.[key];
