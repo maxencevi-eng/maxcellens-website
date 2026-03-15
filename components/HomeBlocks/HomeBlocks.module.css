@@ -135,75 +135,158 @@
   line-height: 1.5;
 }
 
+/* Desktop: horizontal flex with smooth expansion on hover */
 .servicesGrid {
-  display: grid;
-  gap: 1.25rem;
-  grid-template-columns: 1fr;
+  display: flex;
+  gap: 10px;
+  height: clamp(360px, 44vw, 540px);
+  align-items: stretch;
 }
 
-@media (min-width: 600px) {
-  .servicesGrid { grid-template-columns: repeat(2, 1fr); }
+/* Mobile/tablet: vertical stack */
+@media (max-width: 767px) {
+  .servicesGrid {
+    flex-direction: column;
+    height: auto;
+    gap: 1rem;
+  }
 }
 
-@media (min-width: 900px) {
-  .servicesGrid { grid-template-columns: repeat(3, 1fr); }
+/* AnimateStaggerItem wrappers are the direct flex children — apply flex here */
+.servicesGrid > * {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  transition: flex 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 767px) {
+  .servicesGrid > * {
+    flex: none;
+    height: auto;
+    transition: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .servicesGrid > *:hover { flex: 2.4; }
 }
 
 .serviceCard {
   display: block;
-  padding: 0;
-  background: #fff;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
   border-radius: 16px;
   text-decoration: none;
-  color: inherit;
-  border: 1px solid rgba(0,0,0,0.06);
-  transition: box-shadow 250ms ease-out, transform 250ms ease-out;
-  overflow: hidden;
+  color: #fff;
+  cursor: pointer;
 }
 
-.serviceCard:hover {
-  box-shadow: 0 16px 48px rgba(0,0,0,0.14);
-  transform: scale(1.02);
+@media (max-width: 767px) {
+  .serviceCard {
+    min-height: 260px;
+    transition: transform 250ms ease-out, box-shadow 250ms ease-out;
+  }
+  .serviceCard:hover {
+    transform: scale(1.01);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+  }
+}
+
+/* Dark gradient overlay (top + bottom) */
+.serviceCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.50) 0%,
+    rgba(0,0,0,0.04) 38%,
+    rgba(0,0,0,0.04) 52%,
+    rgba(0,0,0,0.65) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
 }
 
 .serviceCardImageWrap {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  aspect-ratio: 4/3;
-  background: rgba(0,0,0,0.06);
+  height: 100%;
   overflow: hidden;
+  background: #222;
 }
 
 .serviceCardImage {
-  width: 100%;
-  height: 100%;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
   object-fit: cover;
   display: block;
-  transition: transform 400ms ease-out;
+  transition: transform 0.55s ease;
 }
 
 .serviceCard:hover .serviceCardImage {
-  transform: scale(1.05);
+  transform: scale(1.06);
 }
 
+/* Text overlay */
 .serviceCardContent {
-  padding: 1.25rem 1.25rem 1.5rem;
-  text-align: center;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.4rem 1.4rem 1.3rem;
+  pointer-events: none;
 }
 
 .serviceCardTitle {
   display: block;
-  font-weight: 600;
-  font-size: 1.05rem;
-  margin: 0 0 0.5rem;
-  color: var(--fg, #213431);
+  font-weight: 700;
+  font-size: clamp(1rem, 1.5vw, 1.4rem);
+  margin: 0;
+  color: #fff;
+  line-height: 1.2;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+}
+
+.serviceCardBottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .serviceCardDesc {
   display: block;
-  font-size: 0.875rem;
-  color: var(--muted, #6b7280);
-  line-height: 1.45;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.9);
+  line-height: 1.4;
   margin: 0;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+
+.serviceCardReadMore {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s ease 0.05s, transform 0.3s ease 0.05s;
+}
+
+.serviceCard:hover .serviceCardReadMore {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ========== Portrait block — carousel (4 slides) ========== */

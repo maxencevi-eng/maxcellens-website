@@ -190,7 +190,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [bannerPaddingTop, setBannerPaddingTop] = useState<number | "">("");
   const [bannerPaddingBottom, setBannerPaddingBottom] = useState<number | "">("");
   const [servicesBlockSubtitleFontSize, setServicesBlockSubtitleFontSize] = useState<number | "">(16);
-  const [serviceItems, setServiceItems] = useState<{ title: string; description: string; href: string; image?: { url: string; path?: string } | null; titleStyle?: TitleStyleKey; descriptionStyle?: TitleStyleKey; titleFontSize?: number }[]>([]);
+  const [serviceItems, setServiceItems] = useState<{ title: string; description: string; href: string; image?: { url: string; path?: string } | null; titleStyle?: TitleStyleKey; descriptionStyle?: TitleStyleKey; titleFontSize?: number; descriptionFontSize?: number }[]>([]);
 
   // Stats
   const [statItems, setStatItems] = useState<{ value: string; label: string }[]>([]);
@@ -352,6 +352,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
           titleStyle: getValidTitleStyle(it.titleStyle, "h3"),
           descriptionStyle: getValidTitleStyle(it.descriptionStyle, "p"),
           titleFontSize: isValidFontSize(it.titleFontSize) ? it.titleFontSize : undefined,
+          descriptionFontSize: isValidFontSize(it.descriptionFontSize) ? it.descriptionFontSize : undefined,
         }));
         setServiceItems(items.length ? items : [{ title: "", description: "", href: "", image: null, titleStyle: "h3", descriptionStyle: "p" }]);
       }
@@ -705,7 +706,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         payload = { title: introTitle, subtitle: introSubtitle, titleStyle: introTitleStyle, subtitleStyle: introSubtitleStyle, titleFontSize: introTitleFontSize !== "" ? clampTitleFontSize(introTitleFontSize as number) : undefined, subtitleFontSize: introSubtitleFontSize !== "" ? clampTitleFontSize(introSubtitleFontSize as number) : undefined, titleColor: introTitleColor?.trim() || undefined, subtitleColor: introSubtitleColor?.trim() || undefined, titleAlign: introTitleAlign || undefined, subtitleAlign: introSubtitleAlign || undefined, html: introHtml, backgroundColor: introBackgroundColor?.trim() || undefined, borderRadiusTop: introRadiusTop !== "" ? Number(introRadiusTop) : undefined, borderRadiusBottom: introRadiusBottom !== "" ? Number(introRadiusBottom) : undefined, paddingTop: introPaddingTop !== "" ? Number(introPaddingTop) : undefined, paddingBottom: introPaddingBottom !== "" ? Number(introPaddingBottom) : undefined };
         break;
       case "home_services":
-        payload = { blockTitle: servicesBlockTitle, blockSubtitle: servicesBlockSubtitle, blockTitleStyle: servicesBlockTitleStyle, blockSubtitleStyle: servicesBlockSubtitleStyle, blockTitleFontSize: servicesBlockTitleFontSize !== "" ? clampTitleFontSize(servicesBlockTitleFontSize as number) : undefined, blockSubtitleFontSize: servicesBlockSubtitleFontSize !== "" ? clampTitleFontSize(servicesBlockSubtitleFontSize as number) : undefined, blockTitleColor: servicesBlockTitleColor?.trim() || undefined, blockSubtitleColor: servicesBlockSubtitleColor?.trim() || undefined, blockTitleAlign: servicesBlockTitleAlign || undefined, blockSubtitleAlign: servicesBlockSubtitleAlign || undefined, items: serviceItems.map((it) => ({ ...it, titleFontSize: it.titleFontSize != null && it.titleFontSize >= TITLE_FONT_SIZE_MIN && it.titleFontSize <= TITLE_FONT_SIZE_MAX ? it.titleFontSize : undefined })), backgroundColor: servicesBackgroundColor?.trim() || undefined, borderRadiusTop: servicesRadiusTop !== "" ? Number(servicesRadiusTop) : undefined, borderRadiusBottom: servicesRadiusBottom !== "" ? Number(servicesRadiusBottom) : undefined, paddingTop: servicesPaddingTop !== "" ? Number(servicesPaddingTop) : undefined, paddingBottom: servicesPaddingBottom !== "" ? Number(servicesPaddingBottom) : undefined };
+        payload = { blockTitle: servicesBlockTitle, blockSubtitle: servicesBlockSubtitle, blockTitleStyle: servicesBlockTitleStyle, blockSubtitleStyle: servicesBlockSubtitleStyle, blockTitleFontSize: servicesBlockTitleFontSize !== "" ? clampTitleFontSize(servicesBlockTitleFontSize as number) : undefined, blockSubtitleFontSize: servicesBlockSubtitleFontSize !== "" ? clampTitleFontSize(servicesBlockSubtitleFontSize as number) : undefined, blockTitleColor: servicesBlockTitleColor?.trim() || undefined, blockSubtitleColor: servicesBlockSubtitleColor?.trim() || undefined, blockTitleAlign: servicesBlockTitleAlign || undefined, blockSubtitleAlign: servicesBlockSubtitleAlign || undefined, items: serviceItems.map((it) => ({ ...it, titleFontSize: it.titleFontSize != null && it.titleFontSize >= TITLE_FONT_SIZE_MIN && it.titleFontSize <= TITLE_FONT_SIZE_MAX ? it.titleFontSize : undefined, descriptionFontSize: it.descriptionFontSize != null && it.descriptionFontSize >= TITLE_FONT_SIZE_MIN && it.descriptionFontSize <= TITLE_FONT_SIZE_MAX ? it.descriptionFontSize : undefined })), backgroundColor: servicesBackgroundColor?.trim() || undefined, borderRadiusTop: servicesRadiusTop !== "" ? Number(servicesRadiusTop) : undefined, borderRadiusBottom: servicesRadiusBottom !== "" ? Number(servicesRadiusBottom) : undefined, paddingTop: servicesPaddingTop !== "" ? Number(servicesPaddingTop) : undefined, paddingBottom: servicesPaddingBottom !== "" ? Number(servicesPaddingBottom) : undefined };
         break;
       case "home_banner":
         payload = { image: bannerImage ? { ...bannerImage, focus: bannerImageFocus ?? undefined } : null, imageRatio: bannerImageRatio, backgroundColor: bannerBackgroundColor?.trim() || undefined, borderRadiusTop: bannerRadiusTop !== "" ? Number(bannerRadiusTop) : undefined, borderRadiusBottom: bannerRadiusBottom !== "" ? Number(bannerRadiusBottom) : undefined, paddingTop: bannerPaddingTop !== "" ? Number(bannerPaddingTop) : undefined, paddingBottom: bannerPaddingBottom !== "" ? Number(bannerPaddingBottom) : undefined };
@@ -939,6 +940,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 const itemTitleStyle = item.titleStyle ?? "h3";
                 const itemTitleFontSize = item.titleFontSize ?? "";
                 const itemDescriptionStyle = item.descriptionStyle ?? "p";
+                const itemDescriptionFontSize = item.descriptionFontSize ?? "";
                 return (
                 <div key={i} style={{ marginBottom: 16, padding: 12, border: "1px solid #eee", borderRadius: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -974,11 +976,12 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   </div>
                   <div style={{ marginBottom: 8 }}>
                     <label style={{ fontSize: 12, color: "var(--muted)" }}>Description</label>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
-                      <input type="text" placeholder="Description courte" value={item.description} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, description: e.target.value } : p)))} style={{ ...inputStyle, flex: 1 }} />
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
+                      <input type="text" placeholder="Description courte" value={item.description} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, description: e.target.value } : p)))} style={{ ...inputStyle, flex: 1, minWidth: 100 }} />
                       <select value={itemDescriptionStyle} onChange={(e) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, descriptionStyle: e.target.value as TitleStyleKey } : p)))} style={{ ...inputStyle, width: 120 }}>
                         {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                       </select>
+                      <FontSizeInput value={itemDescriptionFontSize} onChange={(v) => setServiceItems((prev) => prev.map((p, j) => (j === i ? { ...p, descriptionFontSize: v || undefined } : p)))} />
                     </div>
                   </div>
                   <div>
@@ -997,7 +1000,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </div>
               <RadiusInputs top={servicesRadiusTop} setTop={setServicesRadiusTop} bottom={servicesRadiusBottom} setBottom={setServicesRadiusBottom} />
               <PaddingInputs top={servicesPaddingTop} setTop={setServicesPaddingTop} bottom={servicesPaddingBottom} setBottom={setServicesPaddingBottom} />
-              <button type="button" className="btn-ghost" onClick={() => setServiceItems((prev) => [...prev, { title: "", description: "", href: "", image: null, titleStyle: "h3", descriptionStyle: "p", titleFontSize: undefined }])}>+ Ajouter un service</button>
+              <button type="button" className="btn-ghost" onClick={() => setServiceItems((prev) => [...prev, { title: "", description: "", href: "", image: null, titleStyle: "h3", descriptionStyle: "p", titleFontSize: undefined, descriptionFontSize: undefined }])}>+ Ajouter un service</button>
             </>
           )}
 

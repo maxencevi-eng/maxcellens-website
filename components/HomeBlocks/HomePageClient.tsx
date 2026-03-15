@@ -441,14 +441,17 @@ export default function HomePageClient() {
                   <Link href={item.href || "#"} className={styles.serviceCard} data-analytics-id={`Accueil|Service - ${(item.title || 'Service').toString().slice(0, 40)}`}>
                     <div className={styles.serviceCardImageWrap}>
                       {item.image?.url ? (
-                        <Image src={item.image.url} alt="" className={styles.serviceCardImage} width={400} height={300} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
+                        <Image src={item.image.url} alt="" className={styles.serviceCardImage} width={800} height={600} sizes="(max-width: 767px) 100vw, 33vw" />
                       ) : (
-                        <div className={styles.serviceCardImage} style={{ background: "rgba(0,0,0,0.06)", minHeight: "100%" }} />
+                        <div className={styles.serviceCardImage} style={{ background: "rgba(40,40,40,0.9)", minHeight: "100%" }} />
                       )}
                     </div>
                     <div className={styles.serviceCardContent}>
                       {(item.title || "Service") ? (() => { const Tag = (item as any).titleStyle || "h3"; const fs = (item as any).titleFontSize; return <Tag className={`${styles.serviceCardTitle} style-${Tag}`} style={fs != null ? { fontSize: responsiveFontSize(fs) } : undefined}>{item.title || "Service"}</Tag>; })() : null}
-                      {(item.description || "") ? (() => { const Tag = (item as any).descriptionStyle || "p"; return <Tag className={`${styles.serviceCardDesc} style-${Tag}`}>{item.description || ""}</Tag>; })() : null}
+                      <div className={styles.serviceCardBottom}>
+                        {(item.description || "") ? (() => { const Tag = (item as any).descriptionStyle || "p"; const fs = (item as any).descriptionFontSize; return <Tag className={`${styles.serviceCardDesc} style-${Tag}`} style={fs != null ? { fontSize: responsiveFontSize(fs) } : undefined}>{item.description || ""}</Tag>; })() : null}
+                        <div className={styles.serviceCardReadMore}><span>•</span> Découvrir</div>
+                      </div>
                     </div>
                   </Link>
                 </AnimateStaggerItem>
