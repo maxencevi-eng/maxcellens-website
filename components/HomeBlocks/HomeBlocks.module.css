@@ -1471,6 +1471,40 @@
 
 /* Marge intérieure des blocs : mobile (Page > Dimensions) */
 @media (max-width: 767px) {
+  /* Titres principaux : plus grands + line-height confortable sur mobile.
+     clamp(3.5rem, 9vw, 4.5rem) :
+       à 390px → 9vw=35px < 3.5rem=56px → 56px  (ratio ~78% du desktop 72px)
+       à 622px → 9vw=56px → commence à scaler
+       à 767px → 9vw=69px → 69px (transition douce vers le desktop)       */
+  .introTitle,
+  .servicesTitle,
+  .portraitBlockTitle,
+  .cadreurBlockTitle,
+  .animationBlockTitle,
+  .statsTitle,
+  .quoteBlockTitle {
+    font-size: clamp(3.5rem, 9vw, 4.5rem);
+    line-height: 1.15;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+  /* Bannière : titre un peu plus contenu */
+  .bannerBlockTitle {
+    font-size: clamp(2rem, 7vw, 3.5rem);
+    line-height: 1.15;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+  /* Sous-titres : line-height aéré */
+  .introSubtitle,
+  .servicesSubtitle,
+  .cadreurSubtitle,
+  .animationBlockSubtitle {
+    line-height: 1.45;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
   .intro,
   .services,
   .portraitBlock,

@@ -410,7 +410,6 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                             type="color"
                             value={gallerySettings.titleBg || '#000000'}
                             onChange={(e) => {
-                              // Convert hex to rgba with opacity
                               const hex = e.target.value;
                               const r = parseInt(hex.slice(1, 3), 16);
                               const g = parseInt(hex.slice(3, 5), 16);
@@ -423,6 +422,111 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                       </div>
                   </fieldset>
                   )}
+
+                  {/* Display mode */}
+                  <fieldset style={{ border: '1px solid #eee', borderRadius: 8, padding: '10px 14px', margin: 0 }}>
+                    <legend style={{ fontSize: 13, fontWeight: 600, color: '#555', padding: '0 6px' }}>Mode d'affichage</legend>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {(['grid', 'row'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setGallerySettings({ ...gallerySettings, displayMode: mode })}
+                          style={{
+                            padding: '7px 18px', borderRadius: 7, border: '1px solid #ddd', fontSize: 13, cursor: 'pointer',
+                            background: (gallerySettings.displayMode ?? 'grid') === mode ? '#111' : '#fff',
+                            color: (gallerySettings.displayMode ?? 'grid') === mode ? '#fff' : '#333',
+                            fontWeight: (gallerySettings.displayMode ?? 'grid') === mode ? 600 : 400,
+                          }}
+                        >
+                          {mode === 'grid' ? '🟦 Grid (CSS Grid)' : '⬛ Row (disposition manuelle)'}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#999', marginTop: 6, fontStyle: 'italic' }}>
+                      {(gallerySettings.displayMode ?? 'grid') === 'grid'
+                        ? 'Grille uniforme — toutes les tuiles ont le même ratio. Idéal pour un rendu premium propre.'
+                        : 'Disposition par lignes — le nombre de colonnes par vidéo est respecté, ratio natif conservé.'}
+                    </div>
+                  </fieldset>
+
+                  {/* Glass Grid Settings — uniquement en mode grid */}
+                  <fieldset style={{ border: '1px solid #e0eaff', borderRadius: 8, padding: '10px 14px', margin: 0, background: '#f6f9ff' }}>
+                    <legend style={{ fontSize: 13, fontWeight: 600, color: '#3b5bdb', padding: '0 6px' }}>🧊 Glass Grid</legend>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      {(gallerySettings.displayMode ?? 'grid') === 'grid' && (
+                        <>
+                          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '0 0 100px' }}>
+                            <span style={{ fontSize: 11, color: '#555' }}>Colonnes grille</span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={6}
+                              value={gallerySettings.gridColumns ?? 3}
+                              onChange={(e) => setGallerySettings({ ...gallerySettings, gridColumns: Math.max(1, Math.min(6, Number(e.target.value) || 3)) })}
+                              style={{ padding: 5, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
+                            />
+                          </label>
+                          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '0 0 110px' }}>
+                            <span style={{ fontSize: 11, color: '#555' }}>Ratio des tuiles</span>
+                            <select
+                              value={gallerySettings.tileRatio || '16:9'}
+                              onChange={(e) => setGallerySettings({ ...gallerySettings, tileRatio: e.target.value as GallerySettings['tileRatio'] })}
+                              style={{ padding: 5, borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}
+                            >
+                              <option value="16:9">16:9 (paysage)</option>
+                              <option value="4:3">4:3</option>
+                              <option value="3:2">3:2</option>
+                              <option value="1:1">1:1 (carré)</option>
+                            </select>
+                          </label>
+                        </>
+                      )}
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '0 0 110px' }}>
+                        <span style={{ fontSize: 11, color: '#555' }}>Blur verre (px)</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={40}
+                          value={gallerySettings.glassBlur ?? 10}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, glassBlur: Math.max(0, Math.min(40, Number(e.target.value) || 0)) })}
+                          style={{ padding: 5, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '0 0 120px' }}>
+                        <span style={{ fontSize: 11, color: '#555' }}>Opacité fond (0–1)</span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          value={gallerySettings.glassOpacity ?? 0.12}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, glassOpacity: Math.max(0, Math.min(1, Number(e.target.value))) })}
+                          style={{ padding: 5, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '0 0 110px' }}>
+                        <span style={{ fontSize: 11, color: '#555' }}>Échelle hover</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={1.2}
+                          step={0.01}
+                          value={gallerySettings.hoverScale ?? 1.03}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, hoverScale: Math.max(1, Math.min(1.2, Number(e.target.value))) })}
+                          style={{ padding: 5, borderRadius: 6, border: '1px solid #ddd', fontSize: 13, width: '100%' }}
+                        />
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', flex: '0 0 auto', paddingTop: 18 }}>
+                        <input
+                          type="checkbox"
+                          checked={gallerySettings.glassBorder ?? true}
+                          onChange={(e) => setGallerySettings({ ...gallerySettings, glassBorder: e.target.checked })}
+                        />
+                        <span style={{ fontSize: 13 }}>Bordure verre</span>
+                      </label>
+                    </div>
+                  </fieldset>
                 </div>
               )}
             </div>
