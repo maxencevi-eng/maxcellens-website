@@ -4,6 +4,11 @@
   scroll-margin-top: 5rem;
 }
 
+@media (max-width: 767px) {
+  .section { scroll-margin-top: 4rem; }
+  .sectionCta { scroll-margin-top: 4rem; }
+}
+
 /* Wrapper interne : padding horizontal garanti indépendant des variables CSS du container */
 .sectionInner {
   position: relative;

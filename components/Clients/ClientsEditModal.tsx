@@ -75,7 +75,7 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
   const [radiusBottom, setRadiusBottom] = useState<number | ''>('');
   const [paddingTop, setPaddingTop] = useState<number | ''>('');
   const [paddingBottom, setPaddingBottom] = useState<number | ''>('');
-  const [grid, setGrid] = useState<{ columns: number; itemWidth: number; rowGap: number; colGap: number; heightRatio: number; cloudMode?: boolean; rows?: number }>(() => ({
+  const [grid, setGrid] = useState<{ columns: number; itemWidth: number; rowGap: number; colGap: number; heightRatio: number; cloudMode?: boolean; rows?: number; loopMode?: boolean; loopSpeed?: number }>(() => ({
     columns: 5,
     itemWidth: 120,
     rowGap: 12,
@@ -83,6 +83,8 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
     heightRatio: 0.5,
     cloudMode: true,
     rows: 3,
+    loopMode: false,
+    loopSpeed: 20,
   }));
 
   useEffect(() => {
@@ -130,6 +132,8 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
                 heightRatio: typeof parsed.heightRatio !== 'undefined' ? Number(parsed.heightRatio) : prev.heightRatio,
                 cloudMode: typeof parsed.cloudMode === 'boolean' ? parsed.cloudMode : (typeof prev.cloudMode === 'boolean' ? prev.cloudMode : true),
                 rows: parsed.rows != null ? (Number(parsed.rows) || prev.rows || 3) : (prev.rows ?? 3),
+                loopMode: typeof parsed.loopMode === 'boolean' ? parsed.loopMode : (prev.loopMode ?? false),
+                loopSpeed: parsed.loopSpeed != null ? (Number(parsed.loopSpeed) || prev.loopSpeed || 20) : (prev.loopSpeed ?? 20),
               }));
             }
           } catch (_) {}
@@ -327,18 +331,32 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
               </div>
             </div>
 
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--muted)' }}>
-                <input
-                  type="checkbox"
-                  checked={!!grid.cloudMode}
-                  onChange={(e) => setGrid(g => ({ ...g, cloudMode: e.target.checked }))}
-                />
-                <span>Activer le mode « nuage » en desktop (lignes équilibrées, comme en mobile)</span>
-              </label>
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label style={{ fontSize: 13, color: 'var(--muted)' }}>Mode d'affichage</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {([
+                  { value: 'normal', label: 'Normal' },
+                  { value: 'nuage', label: 'Nuage' },
+                  { value: 'loop', label: 'Boucle infinie' },
+                ] as const).map(opt => {
+                  const active = opt.value === 'loop' ? !!grid.loopMode : opt.value === 'nuage' ? (!grid.loopMode && !!grid.cloudMode) : (!grid.loopMode && !grid.cloudMode);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setGrid(g => ({
+                        ...g,
+                        cloudMode: opt.value === 'nuage',
+                        loopMode: opt.value === 'loop',
+                      }))}
+                      style={{ padding: '6px 14px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13, cursor: 'pointer', background: active ? '#111' : '#fff', color: active ? '#fff' : '#111' }}
+                    >{opt.label}</button>
+                  );
+                })}
+              </div>
 
-              {grid.cloudMode && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 24 }}>
+              {!grid.loopMode && !!grid.cloudMode && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 12, color: 'var(--muted)' }}>Nombre de lignes (desktop)</span>
                   <input
                     type="number"
@@ -349,6 +367,20 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
                       const n = Number(e.target.value || 3);
                       setGrid(g => ({ ...g, rows: Math.max(1, Math.min(6, n || 3)) }));
                     }}
+                    style={{ width: 70 }}
+                  />
+                </div>
+              )}
+
+              {!!grid.loopMode && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 12, color: 'var(--muted)' }}>Vitesse (secondes par cycle, plus bas = plus rapide)</span>
+                  <input
+                    type="number"
+                    min={5}
+                    max={60}
+                    value={grid.loopSpeed ?? 20}
+                    onChange={(e) => setGrid(g => ({ ...g, loopSpeed: Math.max(5, Math.min(60, Number(e.target.value || 20))) }))}
                     style={{ width: 70 }}
                   />
                 </div>

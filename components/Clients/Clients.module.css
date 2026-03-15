@@ -69,6 +69,53 @@
   transform: translateY(-4px);
 }
 
+/* Mode boucle infinie */
+.loopWrapper {
+  overflow: hidden;
+  width: 100%;
+  cursor: default;
+}
+
+.loopTrack {
+  display: flex;
+  align-items: center;
+  gap: var(--clients-col-gap, 48px);
+  width: max-content;
+  animation: marquee 20s linear infinite;
+  will-change: transform;
+}
+
+.loopWrapper:hover .loopTrack {
+  animation-play-state: paused;
+}
+
+.loopItem {
+  flex: 0 0 auto;
+  width: var(--clients-item-width, 120px);
+  height: var(--clients-item-height, 60px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loopItem img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: grayscale(100%) opacity(0.45);
+  transition: filter 180ms ease, opacity 180ms ease, transform 180ms ease;
+}
+
+.loopItem:hover img {
+  filter: grayscale(0%) opacity(1);
+  transform: translateY(-4px);
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 /* Mobile : mode nuage (disposition libre) quel que soit le mode desktop */
 @media (max-width: 900px) {
   .section .grid,
@@ -99,6 +146,10 @@
   .section .grid .item:nth-child(5n + 3) { max-width: 130px; }
   .section .grid .item:nth-child(5n + 4) { max-width: 110px; }
   .section .grid .item:nth-child(5n + 5) { max-width: 140px; }
+  /* Loop mode mobile: respect CSS vars, only cap at viewport width */
+  .section .loopItem {
+    max-width: calc(100vw / 2.5);
+  }
 }
 @media (max-width: 600px) {
   .section .grid,
@@ -120,6 +171,10 @@
   .section .grid .item:nth-child(5n + 3) { max-width: 90px; }
   .section .grid .item:nth-child(5n + 4) { max-width: 80px; }
   .section .grid .item:nth-child(5n + 5) { max-width: 100px; }
+  /* Loop mode: still respect CSS vars */
+  .section .loopItem {
+    max-width: calc(100vw / 2);
+  }
 }
 @media (max-width: 380px) {
   .title {
@@ -138,5 +193,9 @@
     min-width: 50px;
     max-width: 80px !important;
     height: 36px !important;
+  }
+  /* Loop mode: still respect CSS vars */
+  .section .loopItem {
+    max-width: 90vw;
   }
 }

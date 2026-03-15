@@ -131,14 +131,19 @@ export default function AnimationPageClient() {
     const scrollToEl = () => {
       const el = document.getElementById(hash);
       if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Use instant behavior to avoid race conditions with browser's native scroll,
+        // especially on mobile where images may cause layout shifts during smooth scroll
+        el.scrollIntoView({ behavior: "instant" as ScrollBehavior, block: "start" });
         return true;
       }
       return false;
     };
+    // Wait longer on mobile for images/fonts to settle before scrolling
+    const delay = window.innerWidth < 768 ? 600 : 250;
+    const retryDelay = window.innerWidth < 768 ? 900 : 400;
     const t1 = setTimeout(() => {
-      if (!scrollToEl()) setTimeout(scrollToEl, 350);
-    }, 250);
+      if (!scrollToEl()) setTimeout(scrollToEl, retryDelay);
+    }, delay);
     return () => clearTimeout(t1);
   }, [loaded]);
 

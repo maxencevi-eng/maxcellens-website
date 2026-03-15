@@ -6,7 +6,7 @@ import ErrorBoundary from '../ErrorBoundary/ErrorBoundary';
 
 const LexicalEditor = dynamic(() => import('./LexicalEditorClient'), { ssr: false });
 
-export default function RichTextModalContent({ title = 'Éditeur', initial = '', onClose, onSave }: { title?: string; initial?: string; onClose: () => void; onSave: (html: string) => void }) {
+export default function RichTextModalContent({ title = 'Éditeur', initial = '', onClose, onSave, editorBackground }: { title?: string; initial?: string; onClose: () => void; onSave: (html: string) => void; editorBackground?: string }) {
   const [value, setValue] = useState(initial);
   const [editorReady, setEditorReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -97,6 +97,7 @@ export default function RichTextModalContent({ title = 'Éditeur', initial = '',
                 onChange={(html) => setValue(html)}
                 onReady={handleEditorReady}
                 onError={handleEditorError}
+                editorBackground={editorBackground}
               />
             </ErrorBoundary>
           ) : null}

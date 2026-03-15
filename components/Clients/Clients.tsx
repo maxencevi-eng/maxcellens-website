@@ -64,7 +64,7 @@ export default function Clients({ logos, title }: Props) {
   }, []);
 
   // grid settings (from site-settings `clients_grid`)
-  const [gridSettings, setGridSettings] = useState<{ columns: number; itemWidth: number; rowGap: number; colGap: number; heightRatio: number; cloudMode?: boolean; rows?: number }>(() => ({
+  const [gridSettings, setGridSettings] = useState<{ columns: number; itemWidth: number; rowGap: number; colGap: number; heightRatio: number; cloudMode?: boolean; rows?: number; loopMode?: boolean; loopSpeed?: number }>(() => ({
     columns: 5,
     itemWidth: 120,
     rowGap: 12,
@@ -72,6 +72,8 @@ export default function Clients({ logos, title }: Props) {
     heightRatio: 0.5,
     cloudMode: true,
     rows: 3,
+    loopMode: false,
+    loopSpeed: 20,
   }));
 
   useEffect(() => {
@@ -126,6 +128,8 @@ export default function Clients({ logos, title }: Props) {
                 heightRatio: typeof g.heightRatio !== 'undefined' ? Number(g.heightRatio) : prev.heightRatio,
                 cloudMode: typeof g.cloudMode === 'boolean' ? g.cloudMode : (typeof prev.cloudMode === 'boolean' ? prev.cloudMode : true),
                 rows: g.rows != null ? (Number(g.rows) || prev.rows || 3) : (prev.rows ?? 3),
+                loopMode: typeof g.loopMode === 'boolean' ? g.loopMode : (prev.loopMode ?? false),
+                loopSpeed: g.loopSpeed != null ? (Number(g.loopSpeed) || prev.loopSpeed || 20) : (prev.loopSpeed ?? 20),
               }));
             }
           } catch (_) {}
@@ -149,7 +153,9 @@ export default function Clients({ logos, title }: Props) {
 
   const logosList = (itemsObjects.length ? itemsObjects : items.map(u => ({ url: u })));
 
-  const cloudMode = !!gridSettings.cloudMode;
+  const loopMode = !!gridSettings.loopMode;
+  const loopSpeed = gridSettings.loopSpeed ?? 20;
+  const cloudMode = !loopMode && !!gridSettings.cloudMode;
   const cloudRows = Math.max(1, gridSettings.rows ?? 3);
 
   // Construction de lignes équilibrées pour le mode nuage :
@@ -194,7 +200,7 @@ export default function Clients({ logos, title }: Props) {
       <div className={`container ${blockWidthClass}`.trim()}>
         <div className={styles.inner}>
           <AnimateInView variant="fadeUp" viewportSoon>
-            <div style={{ position: 'relative', display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ position: 'relative', display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', marginBottom: 28 }}>
               {React.createElement(
                 titleStyle || 'h2',
                 {
@@ -220,7 +226,27 @@ export default function Clients({ logos, title }: Props) {
             </div>
           </AnimateInView>
 
-          {cloudMode ? (
+          {loopMode ? (
+            <div className={styles.loopWrapper}>
+              <div className={styles.loopTrack} style={{ animationDuration: `${loopSpeed}s` }}>
+                {[...logosList, ...logosList].map((it, i) => (
+                  <div key={`loop-${i}`} className={styles.loopItem}>
+                    <img
+                      src={it.url}
+                      alt={`client-loop-${i}`}
+                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                      onError={(e) => {
+                        const el = e.currentTarget as HTMLImageElement;
+                        const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='160' height='60'><rect fill='%23f3f4f6' width='100%' height='100%'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23999' font-size='14'>Logo</text></svg>`;
+                        el.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+                        el.onerror = null;
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : cloudMode ? (
             <AnimateInView variant="stagger" className={styles.gridCloud} viewportSoon>
               {cloudRowsContent.map((row, rowIndex) => (
                 <AnimateStaggerItem key={`row-${rowIndex}`}>

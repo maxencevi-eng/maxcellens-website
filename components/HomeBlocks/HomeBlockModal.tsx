@@ -193,6 +193,20 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [bannerHtml, setBannerHtml] = useState("");
   const [bannerTextImagePosition, setBannerTextImagePosition] = useState<'left' | 'right'>('right');
   const [editingBannerHtml, setEditingBannerHtml] = useState(false);
+  const [bannerEyebrow, setBannerEyebrow] = useState("");
+  const [bannerBlockTitle, setBannerBlockTitle] = useState("");
+  const [bannerBlockTitleStyle, setBannerBlockTitleStyle] = useState<TitleStyleKey>("h2");
+  const [bannerBlockTitleFontSize, setBannerBlockTitleFontSize] = useState<number | "">("");
+  const [bannerBlockTitleColor, setBannerBlockTitleColor] = useState("");
+  const [bannerBlockTitleAlign, setBannerBlockTitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
+  const [bannerBlockSubtitle, setBannerBlockSubtitle] = useState("");
+  const [bannerBlockSubtitleStyle, setBannerBlockSubtitleStyle] = useState<TitleStyleKey>("p");
+  const [bannerBlockSubtitleFontSize, setBannerBlockSubtitleFontSize] = useState<number | "">("");
+  const [bannerBlockSubtitleColor, setBannerBlockSubtitleColor] = useState("");
+  const [bannerBlockSubtitleAlign, setBannerBlockSubtitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
+  const [bannerCtaLabel, setBannerCtaLabel] = useState("");
+  const [bannerCtaHref, setBannerCtaHref] = useState("");
+  const [bannerCtaButtonStyle, setBannerCtaButtonStyle] = useState<'1' | '2'>('1');
   const [servicesBlockSubtitleFontSize, setServicesBlockSubtitleFontSize] = useState<number | "">(16);
   const [serviceItems, setServiceItems] = useState<{ title: string; description: string; href: string; image?: { url: string; path?: string } | null; titleStyle?: TitleStyleKey; descriptionStyle?: TitleStyleKey; titleFontSize?: number; descriptionFontSize?: number }[]>([]);
 
@@ -257,9 +271,17 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [quoteBlockTitleFontSize, setQuoteBlockTitleFontSize] = useState<number | "">(22);
   const [quoteBlockTitleColor, setQuoteBlockTitleColor] = useState("");
   const [quoteTitleAlign, setQuoteTitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
+  const [quoteBlockSubtitle, setQuoteBlockSubtitle] = useState('');
+  const [quoteBlockSubtitleStyle, setQuoteBlockSubtitleStyle] = useState<TitleStyleKey>('p');
+  const [quoteBlockSubtitleFontSize, setQuoteBlockSubtitleFontSize] = useState<number | ''>('');
+  const [quoteBlockSubtitleColor, setQuoteBlockSubtitleColor] = useState('');
+  const [quoteSubtitleAlign, setQuoteSubtitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
   const [quoteItems, setQuoteItems] = useState<{ text: string; author: string; role?: string; authorStyle?: TitleStyleKey; roleStyle?: TitleStyleKey }[]>([]);
   const [quoteCarouselSpeed, setQuoteCarouselSpeed] = useState(5000);
   const [quoteBackgroundColor, setQuoteBackgroundColor] = useState("");
+  const [quoteCardBackground, setQuoteCardBackground] = useState("");
+  const [quoteCardBorderColor, setQuoteCardBorderColor] = useState("");
+  const [quoteCardTextColor, setQuoteCardTextColor] = useState("");
   const [quoteRadiusTop, setQuoteRadiusTop] = useState<number | "">("");
   const [quoteRadiusBottom, setQuoteRadiusBottom] = useState<number | "">("");
   const [quotePaddingTop, setQuotePaddingTop] = useState<number | "">("");
@@ -378,6 +400,20 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setBannerTextMode(d.textMode ?? 'none');
       setBannerHtml(d.html ?? "");
       setBannerTextImagePosition(d.textImagePosition ?? 'right');
+      setBannerEyebrow(d.eyebrow ?? "");
+      setBannerBlockTitle(d.blockTitle ?? "");
+      setBannerBlockTitleStyle(getValidTitleStyle(d.blockTitleStyle, "h2"));
+      setBannerBlockTitleFontSize(d.blockTitleFontSize != null ? d.blockTitleFontSize : "");
+      setBannerBlockTitleColor(d.blockTitleColor ?? "");
+      setBannerBlockTitleAlign(d.blockTitleAlign ?? "");
+      setBannerBlockSubtitle(d.blockSubtitle ?? "");
+      setBannerBlockSubtitleStyle(getValidTitleStyle(d.blockSubtitleStyle, "p"));
+      setBannerBlockSubtitleFontSize(d.blockSubtitleFontSize != null ? d.blockSubtitleFontSize : "");
+      setBannerBlockSubtitleColor(d.blockSubtitleColor ?? "");
+      setBannerBlockSubtitleAlign(d.blockSubtitleAlign ?? "");
+      setBannerCtaLabel(d.ctaLabel ?? "");
+      setBannerCtaHref(d.ctaHref ?? "");
+      setBannerCtaButtonStyle(d.ctaButtonStyle ?? '1');
     }
     if (blockKey === "home_stats" && d.items) {
       setStatItems(d.items.length ? d.items : [{ value: "", label: "" }]);
@@ -490,6 +526,11 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setQuoteBlockTitleFontSize(getFontSize(d.blockTitleFontSize));
       setQuoteBlockTitleColor(d.blockTitleColor ?? "");
       setQuoteTitleAlign(d.blockTitleAlign ?? '');
+      setQuoteBlockSubtitle(d.blockSubtitle ?? "");
+      setQuoteBlockSubtitleStyle(getValidTitleStyle(d.blockSubtitleStyle, "p"));
+      setQuoteBlockSubtitleFontSize(getFontSize(d.blockSubtitleFontSize));
+      setQuoteBlockSubtitleColor(d.blockSubtitleColor ?? "");
+      setQuoteSubtitleAlign(d.blockSubtitleAlign ?? '');
       if (Array.isArray(d.quotes) && d.quotes.length) {
         setQuoteItems(d.quotes.map((q: any) => ({
           text: q.text ?? "",
@@ -515,6 +556,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       }
       setQuoteCarouselSpeed(typeof d.carouselSpeed === "number" && d.carouselSpeed >= 1000 ? d.carouselSpeed : 5000);
       setQuoteBackgroundColor(d.backgroundColor ?? "");
+      setQuoteCardBackground(d.cardBackground ?? "");
+      setQuoteCardBorderColor(d.cardBorderColor ?? "");
+      setQuoteCardTextColor(d.cardTextColor ?? "");
       setQuoteRadiusTop(d.borderRadiusTop != null ? d.borderRadiusTop : "");
       setQuoteRadiusBottom(d.borderRadiusBottom != null ? d.borderRadiusBottom : "");
       setQuotePaddingTop(d.paddingTop != null ? d.paddingTop : "");
@@ -716,7 +760,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         payload = { blockTitle: servicesBlockTitle, blockSubtitle: servicesBlockSubtitle, blockTitleStyle: servicesBlockTitleStyle, blockSubtitleStyle: servicesBlockSubtitleStyle, blockTitleFontSize: servicesBlockTitleFontSize !== "" ? clampTitleFontSize(servicesBlockTitleFontSize as number) : undefined, blockSubtitleFontSize: servicesBlockSubtitleFontSize !== "" ? clampTitleFontSize(servicesBlockSubtitleFontSize as number) : undefined, blockTitleColor: servicesBlockTitleColor?.trim() || undefined, blockSubtitleColor: servicesBlockSubtitleColor?.trim() || undefined, blockTitleAlign: servicesBlockTitleAlign || undefined, blockSubtitleAlign: servicesBlockSubtitleAlign || undefined, items: serviceItems.map((it) => ({ ...it, titleFontSize: it.titleFontSize != null && it.titleFontSize >= TITLE_FONT_SIZE_MIN && it.titleFontSize <= TITLE_FONT_SIZE_MAX ? it.titleFontSize : undefined, descriptionFontSize: it.descriptionFontSize != null && it.descriptionFontSize >= TITLE_FONT_SIZE_MIN && it.descriptionFontSize <= TITLE_FONT_SIZE_MAX ? it.descriptionFontSize : undefined })), backgroundColor: servicesBackgroundColor?.trim() || undefined, borderRadiusTop: servicesRadiusTop !== "" ? Number(servicesRadiusTop) : undefined, borderRadiusBottom: servicesRadiusBottom !== "" ? Number(servicesRadiusBottom) : undefined, paddingTop: servicesPaddingTop !== "" ? Number(servicesPaddingTop) : undefined, paddingBottom: servicesPaddingBottom !== "" ? Number(servicesPaddingBottom) : undefined };
         break;
       case "home_banner":
-        payload = { image: bannerImage ? { ...bannerImage, focus: bannerImageFocus ?? undefined } : null, imageRatio: bannerImageRatio, backgroundColor: bannerBackgroundColor?.trim() || undefined, borderRadiusTop: bannerRadiusTop !== "" ? Number(bannerRadiusTop) : undefined, borderRadiusBottom: bannerRadiusBottom !== "" ? Number(bannerRadiusBottom) : undefined, paddingTop: bannerPaddingTop !== "" ? Number(bannerPaddingTop) : undefined, paddingBottom: bannerPaddingBottom !== "" ? Number(bannerPaddingBottom) : undefined, textMode: bannerTextMode, html: bannerTextMode === 'text' ? bannerHtml : undefined, textImagePosition: bannerTextMode === 'text' ? bannerTextImagePosition : undefined };
+        payload = { image: bannerImage ? { ...bannerImage, focus: bannerImageFocus ?? undefined } : null, imageRatio: bannerImageRatio, backgroundColor: bannerBackgroundColor?.trim() || undefined, borderRadiusTop: bannerRadiusTop !== "" ? Number(bannerRadiusTop) : undefined, borderRadiusBottom: bannerRadiusBottom !== "" ? Number(bannerRadiusBottom) : undefined, paddingTop: bannerPaddingTop !== "" ? Number(bannerPaddingTop) : undefined, paddingBottom: bannerPaddingBottom !== "" ? Number(bannerPaddingBottom) : undefined, textMode: bannerTextMode, html: bannerTextMode === 'text' ? bannerHtml : undefined, textImagePosition: bannerTextMode === 'text' ? bannerTextImagePosition : undefined, eyebrow: bannerTextMode === 'text' ? (bannerEyebrow.trim() || undefined) : undefined, blockTitle: bannerTextMode === 'text' ? (bannerBlockTitle.trim() || undefined) : undefined, blockTitleStyle: bannerTextMode === 'text' ? bannerBlockTitleStyle : undefined, blockTitleFontSize: bannerTextMode === 'text' && bannerBlockTitleFontSize !== "" ? clampTitleFontSize(bannerBlockTitleFontSize as number) : undefined, blockTitleColor: bannerTextMode === 'text' ? (bannerBlockTitleColor.trim() || undefined) : undefined, blockTitleAlign: bannerTextMode === 'text' ? (bannerBlockTitleAlign || undefined) : undefined, blockSubtitle: bannerTextMode === 'text' ? (bannerBlockSubtitle.trim() || undefined) : undefined, blockSubtitleStyle: bannerTextMode === 'text' ? bannerBlockSubtitleStyle : undefined, blockSubtitleFontSize: bannerTextMode === 'text' && bannerBlockSubtitleFontSize !== "" ? clampTitleFontSize(bannerBlockSubtitleFontSize as number) : undefined, blockSubtitleColor: bannerTextMode === 'text' ? (bannerBlockSubtitleColor.trim() || undefined) : undefined, blockSubtitleAlign: bannerTextMode === 'text' ? (bannerBlockSubtitleAlign || undefined) : undefined, ctaLabel: bannerTextMode === 'text' ? (bannerCtaLabel.trim() || undefined) : undefined, ctaHref: bannerTextMode === 'text' ? (bannerCtaHref.trim() || undefined) : undefined, ctaButtonStyle: bannerTextMode === 'text' && bannerCtaLabel.trim() ? bannerCtaButtonStyle : undefined };
         break;
       case "home_stats":
         payload = { items: statItems, backgroundColor: statBackgroundColor?.trim() || undefined, borderRadiusTop: statsRadiusTop !== "" ? Number(statsRadiusTop) : undefined, borderRadiusBottom: statsRadiusBottom !== "" ? Number(statsRadiusBottom) : undefined, paddingTop: statsPaddingTop !== "" ? Number(statsPaddingTop) : undefined, paddingBottom: statsPaddingBottom !== "" ? Number(statsPaddingBottom) : undefined };
@@ -736,7 +780,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         break;
       }
       case "home_quote":
-        payload = { blockTitle: quoteBlockTitle.trim() || "Témoignages", blockTitleStyle: quoteBlockTitleStyle, blockTitleFontSize: quoteBlockTitleFontSize !== "" ? quoteBlockTitleFontSize : undefined, blockTitleColor: quoteBlockTitleColor?.trim() || undefined, blockTitleAlign: quoteTitleAlign || undefined, quotes: quoteItems, carouselSpeed: quoteCarouselSpeed, backgroundColor: quoteBackgroundColor?.trim() || undefined, borderRadiusTop: quoteRadiusTop !== "" ? Number(quoteRadiusTop) : undefined, borderRadiusBottom: quoteRadiusBottom !== "" ? Number(quoteRadiusBottom) : undefined, paddingTop: quotePaddingTop !== "" ? Number(quotePaddingTop) : undefined, paddingBottom: quotePaddingBottom !== "" ? Number(quotePaddingBottom) : undefined };
+        payload = { blockTitle: quoteBlockTitle.trim() || "Témoignages", blockSubtitle: quoteBlockSubtitle?.trim() || undefined, blockTitleStyle: quoteBlockTitleStyle, blockSubtitleStyle: quoteBlockSubtitleStyle, blockTitleFontSize: quoteBlockTitleFontSize !== "" ? quoteBlockTitleFontSize : undefined, blockSubtitleFontSize: quoteBlockSubtitleFontSize !== "" ? quoteBlockSubtitleFontSize : undefined, blockTitleColor: quoteBlockTitleColor?.trim() || undefined, blockSubtitleColor: quoteBlockSubtitleColor?.trim() || undefined, blockTitleAlign: quoteTitleAlign || undefined, blockSubtitleAlign: quoteSubtitleAlign || undefined, quotes: quoteItems, carouselSpeed: quoteCarouselSpeed, backgroundColor: quoteBackgroundColor?.trim() || undefined, cardBackground: quoteCardBackground?.trim() || undefined, cardBorderColor: quoteCardBorderColor?.trim() || undefined, cardTextColor: quoteCardTextColor?.trim() || undefined, borderRadiusTop: quoteRadiusTop !== "" ? Number(quoteRadiusTop) : undefined, borderRadiusBottom: quoteRadiusBottom !== "" ? Number(quoteRadiusBottom) : undefined, paddingTop: quotePaddingTop !== "" ? Number(quotePaddingTop) : undefined, paddingBottom: quotePaddingBottom !== "" ? Number(quotePaddingBottom) : undefined };
         break;
       case "home_cta":
         payload = { title: ctaTitle, titleStyle: ctaTitleStyle, titleFontSize: ctaTitleFontSize !== "" ? clampTitleFontSize(ctaTitleFontSize as number) : undefined, titleColor: ctaTitleColor?.trim() || undefined, titleAlign: ctaTitleAlign || undefined, buttonLabel: ctaButtonLabel, buttonHref: ctaButtonHref, buttonStyle: ctaButtonStyle, backgroundColor: ctaBackgroundColor?.trim() || undefined, borderRadiusTop: ctaRadiusTop !== "" ? Number(ctaRadiusTop) : undefined, borderRadiusBottom: ctaRadiusBottom !== "" ? Number(ctaRadiusBottom) : undefined, paddingTop: ctaPaddingTop !== "" ? Number(ctaPaddingTop) : undefined, paddingBottom: ctaPaddingBottom !== "" ? Number(ctaPaddingBottom) : undefined };
@@ -1079,6 +1123,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               {/* Options mode Texte + Image */}
               {bannerTextMode === 'text' && (
                 <>
+                  {/* Position de l'image */}
                   <div style={{ marginBottom: 12 }}>
                     <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Position de l'image</label>
                     <div style={{ display: "flex", gap: 8 }}>
@@ -1091,10 +1136,66 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                       ))}
                     </div>
                   </div>
+
+                  {/* Eyebrow */}
                   <div style={{ marginBottom: 12 }}>
-                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte</label>
+                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte d'accroche (eyebrow)</label>
+                    <input type="text" value={bannerEyebrow} onChange={(e) => setBannerEyebrow(e.target.value)} placeholder="ex. Nos services · Depuis 2015" style={inputStyle} />
+                  </div>
+
+                  {/* Titre */}
+                  <div style={{ marginBottom: 4 }}>
+                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
+                    <input type="text" value={bannerBlockTitle} onChange={(e) => setBannerBlockTitle(e.target.value)} placeholder="Titre principal" style={inputStyle} />
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                    <select value={bannerBlockTitleStyle} onChange={(e) => setBannerBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 130 }}>
+                      {[{ value: "h1", label: "Titre 1" }, { value: "h2", label: "Titre 2" }, { value: "h3", label: "Titre 3" }, { value: "h4", label: "Titre 4" }, { value: "h5", label: "Titre 5" }, { value: "p", label: "Paragraphe" }].map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    <FontSizeInput value={bannerBlockTitleFontSize} onChange={setBannerBlockTitleFontSize} />
+                    <input type="color" value={bannerBlockTitleColor || "#1a1a18"} onChange={(e) => setBannerBlockTitleColor(e.target.value)} title="Couleur du titre" style={{ width: 40, height: 36, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} />
+                    {bannerBlockTitleColor && <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setBannerBlockTitleColor("")}>Effacer couleur</button>}
+                    {(['left', 'center', 'right'] as const).map(a => (
+                      <button key={a} type="button" onClick={() => setBannerBlockTitleAlign(bannerBlockTitleAlign === a ? '' : a)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 12, cursor: 'pointer', background: bannerBlockTitleAlign === a ? '#111' : '#fff', color: bannerBlockTitleAlign === a ? '#fff' : 'inherit' }}>{a === 'left' ? '←' : a === 'center' ? '↔' : '→'}</button>
+                    ))}
+                  </div>
+
+                  {/* Sous-titre */}
+                  <div style={{ marginBottom: 4 }}>
+                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Sous-titre</label>
+                    <input type="text" value={bannerBlockSubtitle} onChange={(e) => setBannerBlockSubtitle(e.target.value)} placeholder="Sous-titre descriptif" style={inputStyle} />
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                    <select value={bannerBlockSubtitleStyle} onChange={(e) => setBannerBlockSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 130 }}>
+                      {[{ value: "p", label: "Paragraphe" }, { value: "h3", label: "Titre 3" }, { value: "h4", label: "Titre 4" }, { value: "h5", label: "Titre 5" }].map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    <FontSizeInput value={bannerBlockSubtitleFontSize} onChange={setBannerBlockSubtitleFontSize} />
+                    <input type="color" value={bannerBlockSubtitleColor || "#6b7280"} onChange={(e) => setBannerBlockSubtitleColor(e.target.value)} title="Couleur du sous-titre" style={{ width: 40, height: 36, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} />
+                    {bannerBlockSubtitleColor && <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setBannerBlockSubtitleColor("")}>Effacer couleur</button>}
+                    {(['left', 'center', 'right'] as const).map(a => (
+                      <button key={a} type="button" onClick={() => setBannerBlockSubtitleAlign(bannerBlockSubtitleAlign === a ? '' : a)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 12, cursor: 'pointer', background: bannerBlockSubtitleAlign === a ? '#111' : '#fff', color: bannerBlockSubtitleAlign === a ? '#fff' : 'inherit' }}>{a === 'left' ? '←' : a === 'center' ? '↔' : '→'}</button>
+                    ))}
+                  </div>
+
+                  {/* Texte riche */}
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte riche (optionnel)</label>
                     <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: bannerHtml || "<p style='color:#999'>Aucun</p>" }} />
                     <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingBannerHtml(true)}>Éditer le texte</button>
+                  </div>
+
+                  {/* CTA */}
+                  <div style={{ marginBottom: 4 }}>
+                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Bouton CTA (optionnel)</label>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <input type="text" value={bannerCtaLabel} onChange={(e) => setBannerCtaLabel(e.target.value)} placeholder="Texte du bouton" style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
+                      <input type="text" value={bannerCtaHref} onChange={(e) => setBannerCtaHref(e.target.value)} placeholder="/lien ou https://…" style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                    {(['1', '2'] as const).map(s => (
+                      <button key={s} type="button" onClick={() => setBannerCtaButtonStyle(s)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13, cursor: 'pointer', background: bannerCtaButtonStyle === s ? '#111' : '#fff', color: bannerCtaButtonStyle === s ? '#fff' : 'inherit' }}>{s === '1' ? 'Style 1 (plein)' : 'Style 2 (contour)'}</button>
+                    ))}
                   </div>
                 </>
               )}
@@ -1617,6 +1718,19 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <AlignmentButtons value={quoteTitleAlign} onChange={(v) => setQuoteTitleAlign(v as any)} />
                 </div>
               </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Sous-titre (optionnel)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input type="text" value={quoteBlockSubtitle} onChange={(e) => setQuoteBlockSubtitle(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} placeholder="Sous-titre (optionnel)" />
+                  <select value={quoteBlockSubtitleStyle} onChange={(e) => setQuoteBlockSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <FontSizeInput value={quoteBlockSubtitleFontSize} onChange={setQuoteBlockSubtitleFontSize} />
+                  <input type="color" value={quoteBlockSubtitleColor || "#6b7280"} onChange={(e) => setQuoteBlockSubtitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du sous-titre" />
+                  {quoteBlockSubtitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteBlockSubtitleColor("")}>↺</button> : null}
+                  <AlignmentButtons value={quoteSubtitleAlign} onChange={(v) => setQuoteSubtitleAlign(v as any)} />
+                </div>
+              </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Vitesse de défilement</label>
                 <input
@@ -1683,6 +1797,34 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   {quoteBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteBackgroundColor("")}>Effacer</button> : null}
                 </div>
               </div>
+              {/* Couleurs des cartes */}
+              <div style={{ marginBottom: 4, borderTop: '1px solid #eee', paddingTop: 12 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Style des cartes témoignages</label>
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Fond des cartes</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input type="color" value={quoteCardBackground || "#f5f5f2"} onChange={(e) => setQuoteCardBackground(e.target.value)} style={{ width: 40, height: 32, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="text" value={quoteCardBackground} onChange={(e) => setQuoteCardBackground(e.target.value)} placeholder="hex / transparent" style={{ ...inputStyle, width: 140 }} />
+                  {quoteCardBackground ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteCardBackground("")}>Effacer</button> : null}
+                </div>
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Bordure haute des cartes</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input type="color" value={quoteCardBorderColor || "#cccccc"} onChange={(e) => setQuoteCardBorderColor(e.target.value)} style={{ width: 40, height: 32, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="text" value={quoteCardBorderColor} onChange={(e) => setQuoteCardBorderColor(e.target.value)} placeholder="hex" style={{ ...inputStyle, width: 140 }} />
+                  {quoteCardBorderColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteCardBorderColor("")}>Effacer</button> : null}
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur du texte des cartes</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input type="color" value={quoteCardTextColor || "#213431"} onChange={(e) => setQuoteCardTextColor(e.target.value)} style={{ width: 40, height: 32, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="text" value={quoteCardTextColor} onChange={(e) => setQuoteCardTextColor(e.target.value)} placeholder="hex" style={{ ...inputStyle, width: 140 }} />
+                  {quoteCardTextColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteCardTextColor("")}>Effacer</button> : null}
+                </div>
+              </div>
               <RadiusInputs top={quoteRadiusTop} setTop={setQuoteRadiusTop} bottom={quoteRadiusBottom} setBottom={setQuoteRadiusBottom} />
               <PaddingInputs top={quotePaddingTop} setTop={setQuotePaddingTop} bottom={quotePaddingBottom} setBottom={setQuotePaddingBottom} />
             </>
@@ -1743,7 +1885,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         <RichTextModal title="Texte intro" initial={introHtml} onClose={() => setEditingHtml(false)} onSave={(h) => { setIntroHtml(h); setEditingHtml(false); }} />
       )}
       {editingBannerHtml && blockKey === "home_banner" && (
-        <RichTextModal title="Texte bannière" initial={bannerHtml} onClose={() => setEditingBannerHtml(false)} onSave={(h) => { setBannerHtml(h); setEditingBannerHtml(false); }} />
+        <RichTextModal title="Texte bannière" initial={bannerHtml} onClose={() => setEditingBannerHtml(false)} onSave={(h) => { setBannerHtml(h); setEditingBannerHtml(false); }} editorBackground={bannerBackgroundColor || undefined} />
       )}
       {editingSlideIndex !== null && blockKey === "home_portrait" && portraitSlides[editingSlideIndex] && (
         <RichTextModal

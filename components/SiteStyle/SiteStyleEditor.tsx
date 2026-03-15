@@ -3,11 +3,12 @@ import React, { useEffect, useState } from 'react';
 import Modal from '../Modal/Modal';
 import styles from './SiteStyle.module.css';
 import { useSiteStyle } from './SiteStyleProvider';
-import type { SiteStyle } from './SiteStyleProvider';
+import type { SiteStyle, BackgroundStyle } from './SiteStyleProvider';
 
 export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
   const { style, setStyle, saveStyle } = useSiteStyle();
-  const [tab, setTab] = useState<'colors'|'typography'>('colors');
+  const [tab, setTab] = useState<'colors'|'typography'|'background'>('colors');
+  const [uploadingBg, setUploadingBg] = useState(false);
   const [local, setLocal] = useState<SiteStyle>(() => style || {});
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -37,6 +38,32 @@ export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
 
   function updateTypography(key: string, next: Partial<any>) {
     setLocal((s) => ({ ...s, typography: { ...(s.typography || {}), [key]: { ...(s.typography?.[key] || {}), ...next } } }));
+  }
+
+  function updateBackground(next: Partial<any>) {
+    setLocal((s) => ({ ...s, background: { ...(s.background || {}), ...next } }));
+  }
+
+  async function handleBgImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setUploadingBg(true);
+    setMessage(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', f);
+      const resp = await fetch('/api/admin/upload-font', { method: 'POST', body: fd });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json?.error || 'Upload failed');
+      const url = json?.publicUrl || json?.url;
+      if (!url) throw new Error('No url returned');
+      updateBackground({ imageUrl: url, style: 'custom' });
+      setMessage('Image importée');
+    } catch (err: any) {
+      setMessage(err?.message || String(err));
+    } finally {
+      setUploadingBg(false);
+    }
   }
 
   async function handleFontUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -120,9 +147,10 @@ export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
       <div className={styles.tabs} role="tablist">
         <button className={tab === 'colors' ? styles.active : ''} onClick={() => setTab('colors')} role="tab">Couleurs</button>
         <button className={tab === 'typography' ? styles.active : ''} onClick={() => setTab('typography')} role="tab">Typographie</button>
+        <button className={tab === 'background' ? styles.active : ''} onClick={() => setTab('background')} role="tab">Fond</button>
       </div>
 
-      {tab === 'colors' ? (
+      {tab === 'colors' && (
         <div className={`${styles.panel} ${styles.colorsGrid}`}>
           <div>
             <div className={styles.colorRow}>
@@ -184,15 +212,15 @@ export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         </div>
-      ) : (
+      )}
+
+      {tab === 'typography' && (
         <div className={styles.panel}>
           <div style={{ marginBottom: 8 }}>
             <label>Importer une police (.woff/.ttf)</label>
             <input type="file" accept=".woff,.woff2,.ttf,.otf" onChange={handleFontUpload} />
             {uploading ? <div>Import...</div> : null}
             {message ? <div style={{ fontSize: 13, marginTop: 6 }}>{message}</div> : null}
-
-
           </div>
 
           <div style={{ borderTop: '1px solid #eee', paddingTop: 12 }}>
@@ -264,6 +292,102 @@ export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
           </div>
         </div>
       )}
+
+      {tab === 'background' && (() => {
+        const bgStyle = (local.background?.style || 'none') as BackgroundStyle;
+        const bgOpacity = local.background?.opacity != null ? local.background.opacity : 0.08;
+        const bgImageUrl = local.background?.imageUrl || '';
+        const bgImageMode = local.background?.imageMode || 'repeat';
+
+        const presets: { value: BackgroundStyle; label: string; desc: string }[] = [
+          { value: 'none', label: 'Aucun', desc: 'Fond uni sans effet' },
+          { value: 'grain', label: 'Grain', desc: 'Texture granuleuse subtile, effet argentique' },
+          { value: 'dots', label: 'Points', desc: 'Grille de micro-points, style minimaliste' },
+          { value: 'lines', label: 'Lignes', desc: 'Hachures diagonales discrètes, style graphique' },
+          { value: 'custom', label: 'Image personnalisée', desc: 'Importez votre propre texture ou motif' },
+        ];
+
+        return (
+          <div className={styles.panel}>
+            <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>
+              L'effet de fond s'applique par-dessus les couleurs de blocs, comme une texture visible sur toute la page.
+            </p>
+
+            {/* Style selector */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 20 }}>
+              {presets.map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  onClick={() => updateBackground({ style: p.value })}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    border: `2px solid ${bgStyle === p.value ? 'var(--fg, #111)' : '#e6e6e6'}`,
+                    background: bgStyle === p.value ? 'var(--fg, #111)' : '#fff',
+                    color: bgStyle === p.value ? '#fff' : 'inherit',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: 13,
+                  }}
+                >
+                  <div style={{ fontWeight: 600, marginBottom: 2 }}>{p.label}</div>
+                  <div style={{ fontSize: 11, opacity: 0.7 }}>{p.desc}</div>
+                </button>
+              ))}
+            </div>
+
+            {/* Opacity slider */}
+            {bgStyle !== 'none' && (
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--muted)', marginBottom: 6 }}>
+                  <span>Opacité de l'effet</span>
+                  <span style={{ fontWeight: 600, color: 'inherit' }}>{Math.round(bgOpacity * 100)}%</span>
+                </label>
+                <input
+                  type="range" min={0} max={0.4} step={0.01}
+                  value={bgOpacity}
+                  onChange={(e) => updateBackground({ opacity: Number(e.target.value) })}
+                  style={{ width: '100%', accentColor: 'var(--fg, #111)' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+                  <span>Invisible</span><span>Très visible</span>
+                </div>
+              </div>
+            )}
+
+            {/* Custom image options */}
+            {bgStyle === 'custom' && (
+              <div style={{ borderTop: '1px solid #eee', paddingTop: 14, marginTop: 4 }}>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', fontSize: 13, color: 'var(--muted)', marginBottom: 6 }}>Importer une image de fond</label>
+                  <input type="file" accept="image/*" onChange={handleBgImageUpload} disabled={uploadingBg} />
+                  {uploadingBg && <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 8 }}>Upload…</span>}
+                  {bgImageUrl && (
+                    <div style={{ marginTop: 8 }}>
+                      <img src={bgImageUrl} alt="" style={{ maxWidth: 160, maxHeight: 80, borderRadius: 6, objectFit: 'cover', border: '1px solid #eee' }} />
+                      <button type="button" style={{ display: 'block', marginTop: 4, fontSize: 12, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={() => updateBackground({ imageUrl: '' })}>Supprimer l'image</button>
+                    </div>
+                  )}
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', fontSize: 13, color: 'var(--muted)', marginBottom: 6 }}>Mode d'affichage</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {([{ value: 'repeat', label: 'Motif répété' }, { value: 'fixed', label: 'Image fixe (site défile)' }] as const).map(opt => (
+                      <button key={opt.value} type="button" onClick={() => updateBackground({ imageMode: opt.value })}
+                        style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13, cursor: 'pointer', background: bgImageMode === opt.value ? '#111' : '#fff', color: bgImageMode === opt.value ? '#fff' : 'inherit' }}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {message && <div style={{ fontSize: 13, marginTop: 8, color: message.includes('mportée') ? 'green' : '#dc2626' }}>{message}</div>}
+          </div>
+        );
+      })()}
     </Modal>
   );
 }

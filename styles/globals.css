@@ -622,14 +622,16 @@ a:active { color: var(--color-link-active, var(--color-link-hover, var(--color-a
 .tiptap-editor img { max-width: 100%; height: auto; }
 
 /* Lexical editor content area (remplace TipTap dans le modal) */
+/* Couleurs fixes pour l'éditeur admin — indépendantes du thème du site
+   (un site à fond sombre aurait --color-text en clair, rendant le texte invisible sur fond blanc) */
 .lexical-content-editable {
   min-height: 160px;
   padding: 12px;
   font-family: var(--font-body-family);
-  color: var(--color-text);
+  color: #111111 !important;
   line-height: var(--base-line-height);
   font-size: var(--font-body-size);
-  background-color: var(--bg-color);
+  background-color: #ffffff !important;
 }
 .lexical-content-editable .lexical-p,
 .lexical-content-editable p { margin: 0 0 0.4rem; }

@@ -401,29 +401,48 @@ export default function HomePageClient() {
     );
 
     if (isTextMode) {
-      const imgEl = b.image?.url ? (
-        <Image
-          src={b.image.url} alt="" className={styles.bannerTextImg}
-          width={800} height={600} sizes="(max-width:768px) 100vw, 45vw"
-          style={b.image.focus ? { objectPosition: `${b.image.focus.x}% ${b.image.focus.y}%` } : undefined}
-        />
-      ) : isAdmin ? (
-        <div className={styles.bannerTextImgPlaceholder}>
-          <span style={{ color: '#aaa', fontSize: '0.9rem' }}>Image — cliquez « Modifier »</span>
+      const imgFocusStyle = b.image?.focus ? { objectPosition: `${b.image.focus.x}% ${b.image.focus.y}%` } : {};
+      const imgFrame = (
+        <div className={styles.bannerTextImgCol}>
+          <div className={styles.bannerTextImgFrame}>
+            {b.image?.url ? (
+              <Image src={b.image.url} alt="" fill sizes="(max-width:768px) 100vw, 44vw" style={{ objectFit: 'cover', ...imgFocusStyle }} />
+            ) : isAdmin ? (
+              <div className={styles.bannerTextImgPlaceholder}>
+                <span style={{ color: '#aaa', fontSize: '0.9rem' }}>Image — cliquez « Modifier »</span>
+              </div>
+            ) : null}
+          </div>
         </div>
-      ) : null;
-
+      );
+      const titleTag = b.blockTitleStyle || 'h2';
+      const subtitleTag = b.blockSubtitleStyle || 'p';
+      const titleFs = b.blockTitleFontSize;
+      const subtitleFs = b.blockSubtitleFontSize;
+      const bwClass = blockWidthClass("home_banner");
       return (
         <section className={styles.bannerBlock} style={Object.keys(s).length ? s : undefined}>
-          <div className={`container ${blockWidthClass("home_banner")}`.trim()}>
+          <div className={`container ${bwClass}`.trim()}>
             {adminBar}
             <AnimateInView variant="fadeUp" delay={0.1} viewport={{ once: true, amount: 0.2 }}>
               <div className={`${styles.bannerTextLayout} ${imgRight ? styles.bannerTextImgRight : styles.bannerTextImgLeft}`}>
-                {!imgRight && imgEl && <div className={styles.bannerTextImgCol}>{imgEl}</div>}
+                {!imgRight && imgFrame}
                 <div className={styles.bannerTextCol}>
+                  {b.eyebrow && <span className={styles.bannerTextEyebrow} style={b.blockTitleAlign ? { textAlign: b.blockTitleAlign as any, display: 'block' } : undefined}>{b.eyebrow}</span>}
+                  {b.blockTitle && React.createElement(titleTag, {
+                    className: `${styles.bannerTextTitle} style-${titleTag}`,
+                    style: { ...(titleFs != null ? { fontSize: responsiveFontSize(titleFs) } : {}), ...(b.blockTitleColor ? { color: b.blockTitleColor } : {}), ...(b.blockTitleAlign ? { textAlign: b.blockTitleAlign } : {}) },
+                  }, b.blockTitle)}
+                  {b.blockSubtitle && React.createElement(subtitleTag, {
+                    className: `${styles.bannerTextSubtitle} style-${subtitleTag}`,
+                    style: { ...(subtitleFs != null ? { fontSize: responsiveFontSize(subtitleFs) } : {}), ...(b.blockSubtitleColor ? { color: b.blockSubtitleColor } : {}), ...(b.blockSubtitleAlign ? { textAlign: b.blockSubtitleAlign } : {}) },
+                  }, b.blockSubtitle)}
                   {b.html ? <div className={styles.bannerTextRich} dangerouslySetInnerHTML={{ __html: b.html }} /> : null}
+                  {b.ctaLabel && b.ctaHref && (
+                    <Link href={b.ctaHref} className={`${styles.bannerTextCta}${b.ctaButtonStyle === '2' ? ` ${styles.bannerTextCtaStyle2}` : ''}`}>{b.ctaLabel}</Link>
+                  )}
                 </div>
-                {imgRight && imgEl && <div className={styles.bannerTextImgCol}>{imgEl}</div>}
+                {imgRight && imgFrame}
               </div>
             </AnimateInView>
           </div>
@@ -857,7 +876,7 @@ export default function HomePageClient() {
   const clientsSection = hide("clients") ? null : <Clients />;
 
   const quoteSection = hide("home_quote") ? null : (
-      <section className={styles.quote} style={(() => { const s: React.CSSProperties = {}; if ((quote as any).backgroundColor) s.backgroundColor = (quote as any).backgroundColor; const rt = (quote as any).borderRadiusTop; const rb = (quote as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (quote as any).paddingTop; const pb = (quote as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
+      <section className={styles.quote} style={(() => { const s: React.CSSProperties = {}; if ((quote as any).backgroundColor) s.backgroundColor = (quote as any).backgroundColor; const rt = (quote as any).borderRadiusTop; const rb = (quote as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (quote as any).paddingTop; const pb = (quote as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; if ((quote as any).cardBackground) (s as any)['--quote-card-bg'] = (quote as any).cardBackground; if ((quote as any).cardBorderColor) (s as any)['--quote-card-border'] = (quote as any).cardBorderColor; if ((quote as any).cardTextColor) (s as any)['--quote-card-text'] = (quote as any).cardTextColor; return Object.keys(s).length ? s : undefined; })()}>
         <div className={`container ${blockWidthClass("home_quote")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
@@ -879,17 +898,26 @@ export default function HomePageClient() {
                 const align = (quote as any).blockTitleAlign;
                 return <Tag className={`${styles.quoteBlockTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{blockTitleText}</Tag>;
               })()}
+              {(quote as any).blockSubtitle ? (() => {
+                const SubTag = (quote as any).blockSubtitleStyle || 'p';
+                const subFs = (quote as any).blockSubtitleFontSize;
+                const subColor = (quote as any).blockSubtitleColor;
+                const subAlign = (quote as any).blockSubtitleAlign;
+                return <SubTag className={`${styles.quoteBlockSubtitle} style-${SubTag}`} style={{ ...(subFs != null ? { fontSize: responsiveFontSize(subFs) } : {}), ...(subColor ? { color: subColor } : {}), ...(subAlign ? { textAlign: subAlign, width: '100%', display: 'block' } : {}) }}>{(quote as any).blockSubtitle}</SubTag>;
+              })() : null}
             </AnimateInView>
             <AnimateInView variant="fade">
             <div className={styles.quoteMarqueeWrap} aria-label="Citations défilantes">
               <div className={styles.quoteMarqueeInner} style={{ animationDuration: `${quoteScrollDuration}s` }}>
-                {[0, 1].map((copy) => (
+                {[0, 1, 2, 3].map((copy) => (
                   <div key={copy} className={styles.quoteMarqueeGroup}>
                     {quoteList.map((q, i) => (
                       <div key={`${copy}-${i}`} className={styles.quoteCard}>
-                        {q.text ? <p className={styles.quoteText}>« {q.text} »</p> : null}
-                        {q.author ? (() => { const Tag = q.authorStyle || "p"; return <Tag className={`${styles.quoteAuthor} style-${Tag}`}>{q.author}</Tag>; })() : null}
-                        {q.role ? (() => { const Tag = q.roleStyle || "p"; return <Tag className={`${styles.quoteRole} style-${Tag}`}>{q.role}</Tag>; })() : null}
+                        <div className={styles.quoteCardHeader}>
+                          {q.author ? (() => { const Tag = q.authorStyle || "p"; return <Tag className={`${styles.quoteAuthor} style-${Tag}`}>{q.author}</Tag>; })() : null}
+                          {q.role ? (() => { const Tag = q.roleStyle || "p"; return <Tag className={`${styles.quoteRole} style-${Tag}`}>{q.role}</Tag>; })() : null}
+                        </div>
+                        {q.text ? <p className={styles.quoteText}>"{q.text}"</p> : null}
                       </div>
                     ))}
                   </div>

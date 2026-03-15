@@ -150,14 +150,25 @@ export type HomeCadreurBlockData = {
 export type HomeQuoteItem = { text: string; author: string; role?: string; authorStyle?: TitleStyleKey; roleStyle?: TitleStyleKey };
 export type HomeQuoteData = {
   blockTitle?: string;
+  blockSubtitle?: string;
   blockTitleStyle?: TitleStyleKey;
+  blockSubtitleStyle?: TitleStyleKey;
   blockTitleFontSize?: number;
+  blockSubtitleFontSize?: number;
   /** Couleur personnalisée du titre du bloc (hex). */
   blockTitleColor?: string;
+  blockSubtitleColor?: string;
   blockTitleAlign?: 'left' | 'center' | 'right';
+  blockSubtitleAlign?: 'left' | 'center' | 'right';
   quotes: HomeQuoteItem[];
   carouselSpeed?: number;
   backgroundColor?: string;
+  /** Couleur de fond des cartes témoignages */
+  cardBackground?: string;
+  /** Couleur de la bordure haute des cartes témoignages */
+  cardBorderColor?: string;
+  /** Couleur du texte des cartes (nom auteur + citation) */
+  cardTextColor?: string;
   borderRadiusTop?: number;
   borderRadiusBottom?: number;
   paddingTop?: number;
@@ -299,10 +310,28 @@ export type HomeBannerData = {
   paddingBottom?: number;
   /** Mode d'affichage : 'none' = bannière image seule, 'text' = texte + image côte à côte */
   textMode?: 'none' | 'text';
-  /** Texte riche (mode 'text') */
-  html?: string;
   /** Position de l'image en mode texte : 'left' | 'right' */
   textImagePosition?: 'left' | 'right';
+  /** Texte d'accroche (eyebrow/label au-dessus du titre, mode texte) */
+  eyebrow?: string;
+  /** Titre principal (mode texte) */
+  blockTitle?: string;
+  blockTitleStyle?: TitleStyleKey;
+  blockTitleFontSize?: number;
+  blockTitleColor?: string;
+  blockTitleAlign?: 'left' | 'center' | 'right';
+  /** Sous-titre (mode texte) */
+  blockSubtitle?: string;
+  blockSubtitleStyle?: TitleStyleKey;
+  blockSubtitleFontSize?: number;
+  blockSubtitleColor?: string;
+  blockSubtitleAlign?: 'left' | 'center' | 'right';
+  /** Texte riche (mode texte) */
+  html?: string;
+  /** Bouton CTA (mode texte) */
+  ctaLabel?: string;
+  ctaHref?: string;
+  ctaButtonStyle?: '1' | '2';
 };
 
 export const DEFAULT_BANNER: HomeBannerData = {

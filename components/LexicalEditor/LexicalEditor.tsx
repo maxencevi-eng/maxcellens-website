@@ -109,37 +109,53 @@ function InitialContentPlugin({ html, onReady }: { html: string; onReady?: () =>
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
 
-            // Lexical's $generateNodesFromDOM only preserves bold/italic/underline,
-            // NOT custom inline CSS (color, background-color, etc.).
-            // Collect these styles from the DOM before import so we can reapply them after.
-            const inlineStyles = new Map<string, string>();
-            const collectInlineStyles = (node: Node): void => {
+            // Lexical's $generateNodesFromDOM preserves bold/italic/underline but NOT custom
+            // inline CSS (color, background-color, text-transform, etc.).
+            // We collect ALL ancestor inline styles per text node (in DOM order), then reapply
+            // them to Lexical TextNodes matched by text content (with per-text occurrence index
+            // to handle duplicate text strings correctly).
+            const INLINE_TAGS = new Set(['SPAN', 'STRONG', 'B', 'EM', 'I', 'U', 'MARK', 'A', 'CODE', 'S', 'DEL']);
+
+            // Map: trimmed text → array of merged style strings (one per occurrence, DOM order)
+            const stylesByText = new Map<string, string[]>();
+
+            const walkDOM = (node: Node, inheritedStyles: string[]): void => {
               if (node.nodeType === Node.TEXT_NODE) {
-                const text = node.textContent || '';
-                if (!text.trim()) return;
-                let el = (node as Text).parentElement;
-                while (el && el !== doc.body) {
-                  if (el.tagName === 'SPAN') {
-                    const css = el.getAttribute('style') || '';
-                    if (css) { inlineStyles.set(text, css); break; }
-                  }
-                  el = el.parentElement;
-                }
-              } else {
-                Array.from(node.childNodes).forEach(collectInlineStyles);
+                const text = (node.textContent || '').trim();
+                if (!text) return;
+                // Merge all accumulated ancestor inline styles into one CSS string
+                const merged = inheritedStyles.filter(Boolean).join('; ');
+                const arr = stylesByText.get(text) || [];
+                arr.push(merged);
+                stylesByText.set(text, arr);
+              } else if (node.nodeType === Node.ELEMENT_NODE) {
+                const el = node as Element;
+                const elStyle = el.getAttribute('style') || '';
+                // Only accumulate styles from inline elements
+                const nextStyles = INLINE_TAGS.has(el.tagName) ? [...inheritedStyles, elStyle] : inheritedStyles;
+                for (const child of el.childNodes) walkDOM(child, nextStyles);
               }
             };
-            collectInlineStyles(doc.body);
+            walkDOM(doc.body, []);
 
             const nodesFromDom = $generateNodesFromDOM(editor, doc.body);
             $insertNodes(nodesFromDom);
 
-            // Reapply inline styles to the Lexical TextNodes by text content matching
-            if (inlineStyles.size > 0) {
+            // Reapply inline styles to Lexical TextNodes using occurrence-indexed matching
+            if (stylesByText.size > 0) {
+              const textCounters = new Map<string, number>();
               const applyInlineStyles = (lexNode: LexicalNode): void => {
                 if ($isTextNode(lexNode)) {
-                  const style = inlineStyles.get(lexNode.getTextContent());
-                  if (style) lexNode.setStyle(style);
+                  const text = lexNode.getTextContent().trim();
+                  if (text) {
+                    const styles = stylesByText.get(text);
+                    if (styles && styles.length > 0) {
+                      const idx = textCounters.get(text) || 0;
+                      const style = styles[idx < styles.length ? idx : styles.length - 1];
+                      if (style) lexNode.setStyle(style);
+                      textCounters.set(text, idx + 1);
+                    }
+                  }
                 } else if ($isElementNode(lexNode)) {
                   (lexNode as import('lexical').ElementNode).getChildren().forEach(applyInlineStyles);
                 }
@@ -736,11 +752,13 @@ export default function LexicalEditor({
   onChange,
   onReady,
   onError,
+  editorBackground,
 }: {
   initialContent?: string;
   onChange?: (html: string) => void;
   onReady?: () => void;
   onError?: (err: unknown) => void;
+  editorBackground?: string;
 }) {
   const initialConfig = React.useMemo(
     () => ({
@@ -765,7 +783,7 @@ export default function LexicalEditor({
         contentEditable={
           <ContentEditable
             className="lexical-content-editable richtext-content tiptap-editor"
-            style={{ minHeight: 200, padding: 12, border: '1px solid #e6e6e6', borderRadius: 6, outline: 'none', color: 'var(--color-text)', background: 'var(--bg-color)' }}
+            style={{ minHeight: 200, padding: 12, border: '1px solid #e6e6e6', borderRadius: 6, outline: 'none', color: editorBackground ? '#ffffff' : '#111111', background: editorBackground || '#ffffff' }}
             aria-placeholder="Saisir ici..."
             spellCheck={false}
             placeholder={<div style={{ position: 'absolute', top: 12, left: 12, color: 'var(--muted)', pointerEvents: 'none' }}>Saisir ici...</div>}

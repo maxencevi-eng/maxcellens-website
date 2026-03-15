@@ -27,10 +27,24 @@ type TypographySettings = Record<
   { family?: string; size?: string; weight?: string }
 >;
 
+export type BackgroundStyle = 'none' | 'grain' | 'dots' | 'lines' | 'custom';
+
+export type BackgroundSettings = {
+  /** Style de fond sélectionné */
+  style?: BackgroundStyle;
+  /** Opacité de l'effet (0–1) */
+  opacity?: number;
+  /** URL de l'image de fond personnalisée */
+  imageUrl?: string;
+  /** 'repeat' = motif répété, 'fixed' = image fixe (site défile devant) */
+  imageMode?: 'repeat' | 'fixed';
+};
+
 export type SiteStyle = {
   colors?: ColorSettings;
   typography?: TypographySettings;
   fonts?: FontMeta[];
+  background?: BackgroundSettings;
 };
 
 const defaultState: SiteStyle = {};
@@ -150,6 +164,85 @@ export default function SiteStyleProvider({ children }: { children: React.ReactN
           if (t.p.size) root.style.setProperty('--font-body-size', normSize(t.p.size));
           if (t.p.weight) root.style.setProperty('--font-body-weight', t.p.weight);
         }
+
+        // background overlay effect
+        const bg = s.background || {};
+        const bgStyle = bg.style || 'none';
+        const bgOpacity = bg.opacity != null ? bg.opacity : 0.08;
+        // Use a CSS variable for opacity so only a property change is needed, not a full style tag rewrite
+        root.style.setProperty('--site-bg-opacity', String(bgOpacity));
+
+        // Strategy: inject the texture as section::before { z-index: -1 } inside each section.
+        // With isolation: isolate on body/sections, z-index: -1 pseudo-elements paint
+        // AFTER the element's own background-color (step 1) but BEFORE its content (steps 3-5).
+        // This places the texture on top of background colors but behind images/text/buttons.
+        let bgTagContent = '';
+        if (bgStyle !== 'none') {
+          // Base CSS shared by both body and section rules
+          let textureCss = '';
+          if (bgStyle === 'grain') {
+            textureCss = `
+              background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+              background-repeat: repeat;
+              background-size: 200px 200px;`;
+          } else if (bgStyle === 'dots') {
+            textureCss = `
+              background-image: radial-gradient(circle, var(--fg, #1a1a18) 1px, transparent 1px);
+              background-size: 28px 28px;`;
+          } else if (bgStyle === 'lines') {
+            textureCss = `
+              background-image: repeating-linear-gradient(
+                -45deg,
+                transparent,
+                transparent 14px,
+                var(--fg, #1a1a18) 14px,
+                var(--fg, #1a1a18) 15px
+              );`;
+          } else if (bgStyle === 'custom' && bg.imageUrl) {
+            const isFixed = bg.imageMode === 'fixed';
+            textureCss = `
+              background-image: url('${bg.imageUrl.replace(/'/g, "\\'")}');
+              background-size: ${isFixed ? 'cover' : '300px auto'};
+              background-repeat: ${isFixed ? 'no-repeat' : 'repeat'};
+              background-position: center;`;
+          }
+
+          if (textureCss) {
+            // body: isolation creates stacking context; body::after at z-index:-1 sits
+            // between body background and body's children (covers gaps between sections)
+            bgTagContent = `
+              body { isolation: isolate; }
+              body::after {
+                content: ''; position: fixed; inset: 0;
+                pointer-events: none; z-index: -1;
+                opacity: var(--site-bg-opacity, 0.08);
+                ${textureCss}
+              }
+              /* Each section/header creates its own stacking context; ::before at z-index:-1
+                 paints after the element's background-color but before all its content */
+              section, header {
+                position: relative;
+                isolation: isolate;
+              }
+              section::before, header::before {
+                content: ''; position: absolute; inset: 0;
+                pointer-events: none; z-index: -1;
+                opacity: var(--site-bg-opacity, 0.08);
+                ${textureCss}
+              }`;
+          }
+        } else {
+          // Clean up body isolation when effect is removed
+          document.body.style.isolation = '';
+        }
+        const bgTagId = 'site-bg-overlay';
+        let bgTag = document.getElementById(bgTagId) as HTMLStyleElement | null;
+        if (!bgTag) {
+          bgTag = document.createElement('style');
+          bgTag.id = bgTagId;
+          document.head.appendChild(bgTag);
+        }
+        if (bgTag.innerHTML !== bgTagContent) bgTag.innerHTML = bgTagContent;
 
         // fonts: generate @font-face rules
         const fonts = s.fonts || [];
