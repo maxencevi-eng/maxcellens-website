@@ -139,6 +139,9 @@ export default function InitialLoadSplash() {
       // 4. Extra frames so the browser paints the fully-styled page
       await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
+      // 5. Extra 200ms buffer so animations land cleanly
+      await new Promise<void>((r) => setTimeout(r, 200));
+
       if (!cancelled) reveal();
     }
 
