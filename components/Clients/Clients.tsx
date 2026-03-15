@@ -32,10 +32,15 @@ import ClientsEditModal from './ClientsEditModal';
 import { supabase } from '../../lib/supabase';
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from '../BlockVisibility';
 import AnimateInView, { AnimateStaggerItem } from '../AnimateInView/AnimateInView';
+import type { TitleStyleKey } from '../HomeBlocks/homeDefaults';
 
 export default function Clients({ logos, title }: Props) {
   const [items, setItems] = useState<string[]>(logos && logos.length ? logos : defaultLogos);
   const [hdr, setHdr] = useState<string | undefined>(title || 'CLIENTS ET PARTENAIRES PROFESSIONNELS');
+  const [titleStyle, setTitleStyle] = useState<TitleStyleKey>('h2');
+  const [titleFontSize, setTitleFontSize] = useState<number | null>(null);
+  const [titleColor, setTitleColor] = useState('');
+  const [titleAlign, setTitleAlign] = useState('left');
   const [itemsObjects, setItemsObjects] = useState<Array<{ url: string; path?: string }>>([]);
   const [editing, setEditing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -73,12 +78,16 @@ export default function Clients({ logos, title }: Props) {
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_logos,clients_grid,clients_bg,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom');
+        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
         if (!mounted) return;
         if (s.clients_title) setHdr(String(s.clients_title));
+        if (s.clients_title_style && ['p','h1','h2','h3','h4','h5'].includes(s.clients_title_style)) setTitleStyle(s.clients_title_style as TitleStyleKey);
+        if (s.clients_title_font_size != null && s.clients_title_font_size !== '') setTitleFontSize(Number(s.clients_title_font_size));
+        if (s.clients_title_color) setTitleColor(String(s.clients_title_color));
+        if (s.clients_title_align && ['left','center','right'].includes(s.clients_title_align)) setTitleAlign(String(s.clients_title_align));
         if (s.clients_bg) setBgColor(String(s.clients_bg));
         if (s.clients_radius_top != null && s.clients_radius_top !== '') setRadiusTop(Number(s.clients_radius_top));
         if (s.clients_radius_bottom != null && s.clients_radius_bottom !== '') setRadiusBottom(Number(s.clients_radius_bottom));
@@ -186,7 +195,20 @@ export default function Clients({ logos, title }: Props) {
         <div className={styles.inner}>
           <AnimateInView variant="fadeUp" viewportSoon>
             <div style={{ position: 'relative', display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', marginBottom: 8 }}>
-              <h2 className={styles.title} style={{ flex: 1, margin: 0 }} dangerouslySetInnerHTML={{ __html: hdr || '' }} />
+              {React.createElement(
+                titleStyle || 'h2',
+                {
+                  className: styles.title,
+                  style: {
+                    flex: 1,
+                    margin: 0,
+                    ...(titleFontSize ? { fontSize: `${titleFontSize}px` } : {}),
+                    ...(titleColor ? { color: titleColor } : {}),
+                    textAlign: (titleAlign as any) || 'left',
+                  },
+                },
+                hdr || ''
+              )}
               {isAdmin ? (
                 <>
                   <BlockVisibilityToggle blockId="clients" />

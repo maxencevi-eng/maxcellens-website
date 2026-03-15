@@ -383,8 +383,9 @@ export default function HomePageClient() {
     if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; }
     if (b.paddingTop != null) s.paddingTop = `${b.paddingTop}px`;
     if (b.paddingBottom != null) s.paddingBottom = `${b.paddingBottom}px`;
-    // Elevate above intro (z-index: 2) when admin is active so admin buttons are always visible
-    if (isAdmin) s.zIndex = 3;
+    // z-index: 2 pour passer au-dessus de .intro (z-index: 2, DOM antérieur)
+    // z-index: 3 en admin pour que les boutons soient toujours visibles
+    s.zIndex = isAdmin ? 3 : 2;
     const ratio = b.imageRatio && IMAGE_RATIO_MAP[b.imageRatio] ? IMAGE_RATIO_MAP[b.imageRatio] : IMAGE_RATIO_MAP['21:9'];
     return (
       <section className={styles.bannerBlock} style={Object.keys(s).length ? s : undefined}>

@@ -3,15 +3,69 @@
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import dynamic from 'next/dynamic';
 import { supabase } from '../../lib/supabase';
-const RichTextModal = dynamic(() => import('../RichTextModal/RichTextModal'), { ssr: false });
+import type { TitleStyleKey } from '../HomeBlocks/homeDefaults';
+import { TITLE_FONT_SIZE_MIN, TITLE_FONT_SIZE_MAX } from '../HomeBlocks/homeDefaults';
+
+const TITLE_STYLE_OPTIONS: { value: TitleStyleKey; label: string }[] = [
+  { value: 'p', label: 'Paragraphe' },
+  { value: 'h1', label: 'Titre 1' },
+  { value: 'h2', label: 'Titre 2' },
+  { value: 'h3', label: 'Titre 3' },
+  { value: 'h4', label: 'Titre 4' },
+  { value: 'h5', label: 'Titre 5' },
+];
+
+function FontSizeInput({ value, onChange }: { value: number | ''; onChange: (v: number | '') => void }) {
+  const [raw, setRaw] = React.useState(value === '' ? '' : String(value));
+  React.useEffect(() => { setRaw(value === '' ? '' : String(value)); }, [value]);
+  return (
+    <input
+      type="number"
+      min={TITLE_FONT_SIZE_MIN}
+      max={TITLE_FONT_SIZE_MAX}
+      value={raw}
+      onChange={(e) => setRaw(e.target.value)}
+      onBlur={(e) => {
+        const n = e.target.value === '' ? '' : Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(e.target.value) || TITLE_FONT_SIZE_MIN));
+        onChange(n as number | '');
+        setRaw(n === '' ? '' : String(n));
+      }}
+      placeholder="px"
+      style={{ width: 64, padding: '6px 10px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13 }}
+      title={`Taille (${TITLE_FONT_SIZE_MIN}–${TITLE_FONT_SIZE_MAX} px)`}
+    />
+  );
+}
+
+function AlignmentButtons({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const opts = [
+    { v: 'left', label: '⬅' },
+    { v: 'center', label: '≡' },
+    { v: 'right', label: '⮕' },
+  ];
+  return (
+    <div style={{ display: 'flex', gap: 2 }}>
+      {opts.map(o => (
+        <button
+          key={o.v}
+          type="button"
+          onClick={() => onChange(o.v)}
+          style={{ padding: '6px 10px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13, cursor: 'pointer', background: value === o.v ? '#111' : '#fff', color: value === o.v ? '#fff' : '#111' }}
+        >{o.label}</button>
+      ))}
+    </div>
+  );
+}
 
 export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
   const [title, setTitle] = useState('');
+  const [titleStyle, setTitleStyle] = useState<TitleStyleKey>('h2');
+  const [titleFontSize, setTitleFontSize] = useState<number | ''>('');
+  const [titleColor, setTitleColor] = useState('');
+  const [titleAlign, setTitleAlign] = useState('left');
   const [logos, setLogos] = useState<Array<{ url: string; path?: string }>>([]);
   const [uploading, setUploading] = useState(false);
-  const [editingTitle, setEditingTitle] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -35,12 +89,16 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_logos,clients_grid,clients_bg,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom');
+        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
         if (!mounted) return;
         if (s.clients_title) setTitle(String(s.clients_title)); else try { const v = localStorage.getItem('clients_title'); if (v) setTitle(v); } catch(_){}
+        if (s.clients_title_style && ['p','h1','h2','h3','h4','h5'].includes(s.clients_title_style)) setTitleStyle(s.clients_title_style as TitleStyleKey);
+        if (s.clients_title_font_size != null && s.clients_title_font_size !== '') setTitleFontSize(Number(s.clients_title_font_size));
+        if (s.clients_title_color) setTitleColor(String(s.clients_title_color));
+        if (s.clients_title_align && ['left','center','right'].includes(s.clients_title_align)) setTitleAlign(String(s.clients_title_align));
         if (s.clients_bg) setBgColor(String(s.clients_bg));
         if (s.clients_radius_top != null && s.clients_radius_top !== '') setRadiusTop(Number(s.clients_radius_top));
         if (s.clients_radius_bottom != null && s.clients_radius_bottom !== '') setRadiusBottom(Number(s.clients_radius_bottom));
@@ -54,14 +112,12 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
               setLogos(objs.filter(o => o.url));
             }
           } catch (_) {
-            // fallback parsing newline list
             const arr = String(s.clients_logos || '').split(/\r?\n|,/).map(x => x.trim()).filter(Boolean);
             if (arr.length) setLogos(arr.map(u => ({ url: u })));
           }
         } else {
           try { const v = localStorage.getItem('clients_logos'); if (v) setLogos(JSON.parse(v)); } catch(_){}
         }
-        // load grid settings if present
         if (s.clients_grid) {
           try {
             const parsed = JSON.parse(String(s.clients_grid));
@@ -79,10 +135,11 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
           } catch (_) {}
         } else {
           try { const v = localStorage.getItem('clients_grid'); if (v) setGrid(JSON.parse(v)); } catch(_){ }
-        }      } catch (_) {}
+        }
+      } catch (_) {}
     }
     load();
-    function onUpdate(e?: any) { load(); }
+    function onUpdate() { load(); }
     window.addEventListener('site-settings-updated', onUpdate as EventListener);
     return () => { mounted = false; window.removeEventListener('site-settings-updated', onUpdate as EventListener); };
   }, []);
@@ -94,13 +151,11 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
     try {
       const fd = new FormData();
       fd.append('file', file);
-      // category 'clients' to store under clients/<timestamp>.webp
       fd.append('category', 'clients');
       const resp = await fetch('/api/admin/upload-logo', { method: 'POST', body: fd });
       if (!resp.ok) throw new Error('Erreur d\u2019upload');
       const j = await resp.json();
       if (j?.webp) {
-        // store url and storage path so we can delete later
         setLogos(prev => [...prev, { url: String(j.webp), path: String(j.path || '') }]);
       } else {
         throw new Error('Upload: pas d\u2019URL retourn\u00e9e');
@@ -117,14 +172,12 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
     const item = logos[idx];
     setError(null);
     if (!item) return;
-    // if we have a storage path, attempt to delete it and check the response
     if (item.path) {
       setDeletingIndex(idx);
       try {
         const resp = await fetch('/api/admin/delete-storage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: item.path }) });
         const j = await resp.json().catch(() => ({}));
         if (!resp.ok) {
-          // do not remove from UI if server failed to delete; surface the error
           setError(j?.error || `Erreur suppression fichier (${resp.status})`);
           setDeletingIndex(null);
           return;
@@ -136,8 +189,6 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
       }
       setDeletingIndex(null);
     }
-
-    // remove from local list regardless (if no storage path we assume remote URL)
     setLogos(prev => { const copy = prev.slice(); if (idx >= 0 && idx < copy.length) copy.splice(idx, 1); return copy; });
   }
 
@@ -154,11 +205,12 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
     try {
       const tasks = [
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_title', value: title }) }),
-        // persist logos as array of objects {url,path}
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_title_style', value: titleStyle }) }),
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_title_font_size', value: titleFontSize !== '' ? String(titleFontSize) : '' }) }),
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_title_color', value: titleColor }) }),
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_title_align', value: titleAlign }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_logos', value: JSON.stringify(logos) }) }),
-        // persist grid settings
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_grid', value: JSON.stringify(grid) }) }),
-        // persist background color and border radius
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_bg', value: bgColor }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_radius_top', value: radiusTop !== '' ? String(radiusTop) : '' }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_radius_bottom', value: radiusBottom !== '' ? String(radiusBottom) : '' }) }),
@@ -183,6 +235,8 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
     } catch (err: any) { setError(err?.message || 'Erreur'); } finally { setSaving(false); }
   }
 
+  const inputStyle: React.CSSProperties = { padding: '6px 10px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13 };
+
   const modalContent = (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
       <div style={{ background: '#fff', color: '#000', padding: 20, width: 820, maxWidth: '98%', maxHeight: '86vh', overflowY: 'auto', borderRadius: 10 }}>
@@ -192,13 +246,29 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
         </div>
 
         <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
-          <label style={{ fontSize: 13, color: 'var(--muted)' }}>Titre</label>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ minHeight: 44, border: '1px solid #e6e6e6', borderRadius: 6, padding: 10, background: '#fff' }} dangerouslySetInnerHTML={{ __html: (title || '<p style="color:#999">Aucun</p>') }} />
-            </div>
-            <div>
-              <button className="btn-ghost" onClick={() => setEditingTitle(true)}>Éditer</button>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, color: 'var(--muted)', marginBottom: 4 }}>Titre</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                style={{ ...inputStyle, flex: 1, minWidth: 160 }}
+                placeholder="CLIENTS ET PARTENAIRES PROFESSIONNELS"
+              />
+              <select value={titleStyle} onChange={(e) => setTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
+                {TITLE_STYLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <FontSizeInput value={titleFontSize} onChange={setTitleFontSize} />
+              <input
+                type="color"
+                value={titleColor || '#1a1a18'}
+                onChange={(e) => setTitleColor(e.target.value)}
+                style={{ width: 40, height: 32, padding: 0, border: '1px solid #e6e6e6', borderRadius: 6, cursor: 'pointer' }}
+                title="Couleur du titre"
+              />
+              {titleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setTitleColor('')}>↺</button> : null}
+              <AlignmentButtons value={titleAlign} onChange={setTitleAlign} />
             </div>
           </div>
 
@@ -344,13 +414,6 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
             <button className="btn-primary" onClick={saveAll} disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
           </div>
         </div>
-
-        {editingTitle ? (
-          <React.Suspense fallback={null}>
-            <RichTextModal title="Éditer le titre Clients" initial={title} onClose={() => setEditingTitle(false)} onSave={async (html) => { setTitle(html); setEditingTitle(false); }} />
-          </React.Suspense>
-        ) : null}
-
       </div>
     </div>
   );
