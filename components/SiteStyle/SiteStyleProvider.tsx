@@ -227,6 +227,7 @@ export default function SiteStyleProvider({ children }: { children: React.ReactN
               section::before, header::before {
                 content: ''; position: absolute; inset: 0;
                 pointer-events: none; z-index: -1;
+                border-radius: inherit;
                 opacity: var(--site-bg-opacity, 0.08);
                 ${textureCss}
               }`;

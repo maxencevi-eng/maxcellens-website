@@ -26,7 +26,7 @@
 .footer { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; flex-shrink: 0 }
 
 /* Button styles inside modals */
-.modal button { padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.06); background: #fff; color: #111; cursor: pointer; }
+.modal button:not(.lexical-toolbar-btn):not(.lexical-no-modal-btn) { padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.06); background: #fff; color: #111; cursor: pointer; }
 .modal button.menu-item { background: linear-gradient(180deg,#0b5cff 0%, #0047d1 100%); color: #fff; border: none; box-shadow: 0 6px 18px rgba(11,92,255,0.15); }
 .modal button.btn-ghost { background: transparent; color: #0b0b0b; border: 1px solid rgba(0,0,0,0.06); box-shadow: none; }
 .modal button:disabled, .modal button[disabled] { opacity: 0.6; cursor: not-allowed; filter: none; }

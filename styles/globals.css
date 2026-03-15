@@ -5,7 +5,7 @@
   --base-line-height: 1.25;
   --bg: #F2F0EB; /* Fond de page — blanc cassé chaud et neutre */
   /** Couleur de fond des blocs (zone contenu) — réglable dans Style du site */
-  --block-bg: var(--bg);
+  --block-bg: #FAFAF8;
 
   /* ── Design tokens — Redesign home page ── */
   /** Sections claires (cartes flottantes) */

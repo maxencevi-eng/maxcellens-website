@@ -76,7 +76,7 @@
   padding-left: var(--block-inner-padding-desktop, 2rem);
   padding-right: var(--block-inner-padding-desktop, 2rem);
   text-align: center;
-  background: var(--section-bg-light, #FAFAF8);
+  background: var(--block-bg, #FAFAF8);
   /* Ferme l'espace entre le PageHeader (padding-bottom: 2.75rem) et l'intro */
   margin-top: -3rem;
 }
@@ -112,7 +112,7 @@
 .services {
   padding-left: var(--block-inner-padding-desktop, 2rem);
   padding-right: var(--block-inner-padding-desktop, 2rem);
-  background: var(--section-bg-light, #FAFAF8);
+  background: var(--block-bg, #FAFAF8);
 }
 
 .servicesTitle {
@@ -1229,7 +1229,7 @@
 .cadreurBlock {
   padding-left: var(--block-inner-padding-desktop, 2rem);
   padding-right: var(--block-inner-padding-desktop, 2rem);
-  background: var(--section-bg-light, #FAFAF8);
+  background: var(--block-bg, #FAFAF8);
 }
 
 .cadreurGrid {
@@ -1511,7 +1511,7 @@
 .quote {
   padding-left: var(--block-inner-padding-desktop, 2rem);
   padding-right: var(--block-inner-padding-desktop, 2rem);
-  background: var(--section-bg-light, #FAFAF8);
+  background: var(--block-bg, #FAFAF8);
   box-shadow: none;
 }
 
