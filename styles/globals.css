@@ -145,16 +145,17 @@ img {
 /* Admin sidebar layout when connected */
 :root {
   --admin-sidebar-width: 0px;
+  --admin-sidebar-open-width: 340px;
 }
 
 body.has-admin-sidebar {
-  --admin-sidebar-width: 280px;
+  --admin-sidebar-width: 340px;
 }
 
 /* Desktop: body padding shifts all content naturally (header, main, footer) */
 @media (min-width: 769px) {
   body.has-admin-sidebar {
-    padding-left: 280px;
+    padding-left: 340px;
     box-sizing: border-box;
     transition: padding-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     /* height: auto lets body grow with content so html handles the single page scrollbar */
@@ -162,7 +163,7 @@ body.has-admin-sidebar {
   }
   /* Header uses width:100vw + negative margin — override so it stays in the visible area */
   body.has-admin-sidebar #site-header {
-    width: calc(100vw - 280px);
+    width: calc(100vw - 340px);
     margin-left: 0;
     transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -174,7 +175,7 @@ body.has-admin-sidebar {
   left: 0;
   top: 0;
   bottom: 0;
-  width: 280px;
+  width: 340px;
   background: rgb(8, 16, 24);
   color: #fff;
   box-shadow: none;
@@ -242,8 +243,8 @@ body.has-admin-sidebar {
 /* Scoped admin sidebar submenu overrides - use site background and
    align submenu buttons with main menu buttons for consistency */
 #admin-sidebar .submenu {
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgb(22, 38, 58);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #eff6ff; /* Light text */
   padding: 16px;
   border-radius: 12px;

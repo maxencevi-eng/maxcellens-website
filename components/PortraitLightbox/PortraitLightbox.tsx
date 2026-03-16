@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 type Props = {
   images: { src: string; title?: string }[];
@@ -76,7 +77,8 @@ export default function PortraitLightbox({ images, index, onClose, onPrev, onNex
     fontSize: 20,
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+  return createPortal(
     <div
       onClick={wrapperClick}
       onTouchStart={handleTouchStart}
@@ -171,6 +173,7 @@ export default function PortraitLightbox({ images, index, onClose, onPrev, onNex
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

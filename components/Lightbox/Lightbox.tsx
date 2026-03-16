@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 type Props = {
   images: { src: string; title?: string }[];
@@ -23,7 +24,8 @@ export default function Lightbox({ images, index, onClose, onPrev, onNext }: Pro
 
   const img = images[index];
 
-  return (
+  if (typeof document === 'undefined') return null;
+  return createPortal(
     <div
       style={{
         position: 'fixed',
@@ -151,6 +153,7 @@ export default function Lightbox({ images, index, onClose, onPrev, onNext }: Pro
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

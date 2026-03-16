@@ -367,7 +367,7 @@ export default function AdminSidebar() {
       aria-label="Masquer la sidebar"
       style={{
         position: 'fixed',
-        left: 280,
+        left: 340,
         top: '50%',
         transform: 'translateY(-50%)',
         zIndex: 9999,

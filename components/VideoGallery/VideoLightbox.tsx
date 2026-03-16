@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export type VideoLightboxItem = { url: string; isShort?: boolean };
 
@@ -120,7 +121,8 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
     fontSize: 20,
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -177,6 +179,7 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
           </div>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
