@@ -157,6 +157,8 @@ body.has-admin-sidebar {
     padding-left: 280px;
     box-sizing: border-box;
     transition: padding-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    /* height: auto lets body grow with content so html handles the single page scrollbar */
+    height: auto;
   }
   /* Header uses width:100vw + negative margin — override so it stays in the visible area */
   body.has-admin-sidebar #site-header {
@@ -182,6 +184,7 @@ body.has-admin-sidebar {
   z-index: 9999;
   box-sizing: border-box;
   overflow-x: hidden;
+  overflow-y: hidden; /* nav handles its own internal scroll */
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
