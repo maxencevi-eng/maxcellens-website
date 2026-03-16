@@ -158,6 +158,12 @@ body.has-admin-sidebar {
     box-sizing: border-box;
     transition: padding-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
+  /* Header uses width:100vw + negative margin — override so it stays in the visible area */
+  body.has-admin-sidebar #site-header {
+    width: calc(100vw - 280px);
+    margin-left: 0;
+    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 }
 
 /* sidebar base styles */
@@ -169,7 +175,7 @@ body.has-admin-sidebar {
   width: 280px;
   background: rgb(8, 16, 24);
   color: #fff;
-  box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+  box-shadow: none;
   padding: 24px 24px 24px 24px;
   display: flex;
   flex-direction: column;
@@ -434,7 +440,7 @@ body.has-admin-sidebar {
   background: rgb(8, 16, 24);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-left: none;
-  box-shadow: 4px 0 12px rgba(0,0,0,0.3);
+  box-shadow: none;
   color: #fff;
   font-size: 18px;
   display: flex;

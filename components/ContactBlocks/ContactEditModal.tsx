@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { supabase } from '../../lib/supabase';
 import ModalTabs from '../ui/ModalTabs';
@@ -144,7 +145,8 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
 
   const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 12px', marginTop: 4, borderRadius: 6, border: '1px solid #e6e6e6', boxSizing: 'border-box' };
 
-  return (
+  if (typeof document === 'undefined') return null;
+  return createPortal(
     <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 50000, padding: '70px 16px 16px', overflowY: 'auto' }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ background: '#fff', color: '#000', padding: 20, width: 820, maxWidth: '98%', borderRadius: 10, alignSelf: 'flex-start' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -265,6 +267,7 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
         ) : null}
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

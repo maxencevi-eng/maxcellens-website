@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { compressImageClient } from "@/lib/compressImageClient";
 import ModalTabs from "../ui/ModalTabs";
@@ -247,7 +248,8 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
     animation_cta: "Bloc CTA — Livrables & bouton",
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+  return createPortal(
     <div
       className="modal-overlay-mobile"
       style={{
@@ -635,6 +637,7 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
           />
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

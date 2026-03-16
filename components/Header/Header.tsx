@@ -296,7 +296,7 @@ export default function Header() {
   };
 
   return (
-    <header ref={headerRef} className={styles.header}>
+    <header id="site-header" ref={headerRef} className={styles.header}>
       <div className={styles.contentWrap}>
         <div className={styles.inner}>
           <div className={styles.left}>

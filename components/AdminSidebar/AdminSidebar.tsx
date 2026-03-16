@@ -379,7 +379,7 @@ export default function AdminSidebar() {
         borderLeft: 'none',
         borderTop: 'none',
         borderBottom: 'none',
-        boxShadow: '4px 0 12px rgba(0,0,0,0.3)',
+        boxShadow: 'none',
         color: '#fff',
         fontSize: 18,
         display: 'flex',
