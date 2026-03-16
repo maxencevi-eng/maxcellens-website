@@ -24,6 +24,7 @@ type MenuVisible = {
 };
 
 import dynamic from 'next/dynamic';
+import ModalTabs from '../ui/ModalTabs';
 
 const parseNumber = (v: any, def: number = 0) => {
   const n = Number(v);
@@ -72,6 +73,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
   const [bannerRatio, setBannerRatio] = useState<AnimationImageRatio>('21:9');
   const [bannerSizeMode, setBannerSizeMode] = useState<BannerSizeMode>('fixed');
   const [footerBgColor, setFooterBgColor] = useState<string>('#1C1C1A');
+  const [tab, setTab] = useState<'contenu' | 'banniere' | 'navigation' | 'style'>('contenu');
   // banner height limits (px)
   const MAX_BANNER_HEIGHT = 1600;
   const MIN_BANNER_HEIGHT = 60;
@@ -307,19 +309,46 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
     <div className={`${styles.overlay} modal-overlay-mobile`}>
       <div className={styles.modal}>
         <h3 style={{ marginTop: 0 }}>Modifier le footer</h3>
+        <ModalTabs
+          tabs={[
+            { id: 'contenu', label: 'Contenu' },
+            { id: 'banniere', label: 'Bannière' },
+            { id: 'navigation', label: 'Navigation' },
+            { id: 'style', label: 'Style' },
+          ]}
+          active={tab}
+          onChange={(t) => setTab(t as any)}
+        />
         <div className={styles.modalBody}>
-        <div className={styles.grid}>
-          <div className={styles.colLeft}>
-            <label style={{ fontSize: 13, color: 'var(--muted)' }}>Colonne 1 (texte libre)</label>
-            <div style={{ marginTop: 8, border: '1px solid #e6e6e6', borderRadius: 6, minHeight: 110, padding: 8 }}>
-              <div style={{ minHeight: 80 }}>
+        <div style={{ display: 'grid', gap: 12 }}>
+
+          {tab === 'contenu' && (<>
+            <div>
+              <label style={{ fontSize: 13, color: 'var(--muted)' }}>Colonne 1 (texte libre)</label>
+              <div style={{ marginTop: 8, border: '1px solid #e6e6e6', borderRadius: 6, minHeight: 110, padding: 8 }}>
+                <div style={{ minHeight: 80 }}>
                   <div className="footer-edit-preview" dangerouslySetInnerHTML={{ __html: safeCol1 || '<p style="color: #999">Aucun contenu</p>' }} />
                 </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-                <button className="btn-ghost" onClick={() => setOpenEditor('col1')}>Éditer</button>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                  <button className="btn-ghost" onClick={() => setOpenEditor('col1')}>Éditer</button>
+                </div>
               </div>
+            </div>
+            <div>
+              <label style={{ fontSize: 13, color: 'var(--muted)' }}>Texte bas de page (copyright)</label>
+              <div style={{ marginTop: 8, border: '1px solid #e6e6e6', borderRadius: 6, minHeight: 80, padding: 8 }}>
+                <div style={{ minHeight: 40 }}>
+                  <div className="footer-edit-preview" dangerouslySetInnerHTML={{ __html: safeBottom || '<p style="color: #999">Aucun contenu</p>' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                  <button className="btn-ghost" onClick={() => setOpenEditor('bottom')}>Éditer</button>
+                </div>
+              </div>
+            </div>
+          </>)}
 
-              <div style={{ height: 12 }} />
+          {tab === 'banniere' && (<>
+            <div>
               <label style={{ fontSize: 13, color: 'var(--muted)' }}>Bannière (au dessus du footer)</label>
               <div style={{ marginTop: 8, border: '1px solid #e6e6e6', borderRadius: 6, minHeight: 80, padding: 8 }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexDirection: 'column' }}>
@@ -430,18 +459,9 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
               </div>
               </div>
             </div>
-          </div>
-            <div className={styles.colRight}>
-            <label style={{ fontSize: 13, color: 'var(--muted)' }}>Texte bas de page (copyright)</label>
-            <div style={{ marginTop: 8, border: '1px solid #e6e6e6', borderRadius: 6, minHeight: 80, padding: 8 }}>
-              <div style={{ minHeight: 40 }}>
-                <div className="footer-edit-preview" dangerouslySetInnerHTML={{ __html: safeBottom || '<p style="color: #999">Aucun contenu</p>' }} />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-                <button className="btn-ghost" onClick={() => setOpenEditor('bottom')}>Éditer</button>
-              </div>
-            </div>
+          </>)}
 
+          {tab === 'navigation' && (<>
             <div className={styles.visiblePanel}>
               <div className={styles.visiblePanelTitle}>Éléments visibles</div>
               <div className={styles.visiblePanelGrid}>
@@ -453,7 +473,9 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
                 ))}
               </div>
             </div>
+          </>)}
 
+          {tab === 'style' && (<>
             <div style={{ marginTop: 16, padding: '12px 14px', border: '1px solid #e0e0e3', borderRadius: 8, background: '#fafafa' }}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--foreground)', marginBottom: 10 }}>Couleur de fond</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -476,8 +498,8 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
               </div>
               <div style={{ marginTop: 10, height: 28, borderRadius: 6, background: footerBgColor, border: '1px solid rgba(0,0,0,0.1)' }} />
             </div>
+          </>)}
 
-          </div>
         </div>
         </div>
 

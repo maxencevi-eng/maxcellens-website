@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
+import ModalTabs from '../ui/ModalTabs';
 
 const parseNumber = (v: any, def: number) => {
   const n = Number(v);
@@ -51,6 +52,7 @@ export default function MobileMenuEditModal({ onClose, onSaved }: { onClose: () 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [tab, setTab] = useState<'navigation' | 'police' | 'couleurs'>('navigation');
 
   const [fontFamily, setFontFamily] = useState<string>(() => getStorage('navMobileFontFamily') || '');
   const [fontSize, setFontSize] = useState<number>(() => parseNumber(getStorage('navMobileFontSize'), 16));
@@ -157,11 +159,21 @@ export default function MobileMenuEditModal({ onClose, onSaved }: { onClose: () 
   ];
 
   return (
-    <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50000 }}>
-      <div style={{ background: '#fff', color: '#000', padding: 20, width: 760, maxWidth: '98%', maxHeight: 'calc(100vh - 24px)', overflowY: 'auto', borderRadius: 8, position: 'relative' }}>
+    <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 50000, padding: '70px 16px 16px', overflowY: 'auto' }}>
+      <div style={{ background: '#fff', color: '#000', padding: 20, width: 760, maxWidth: '98%', borderRadius: 8, position: 'relative', alignSelf: 'flex-start' }}>
         <h3 style={{ marginTop: 0 }}>Modifier le menu mobile</h3>
 
-        <div>
+        <ModalTabs
+          tabs={[
+            { id: 'navigation', label: 'Navigation' },
+            { id: 'police', label: 'Police' },
+            { id: 'couleurs', label: 'Couleurs' },
+          ]}
+          active={tab}
+          onChange={(t) => setTab(t as any)}
+        />
+
+        {tab === 'navigation' && (<>
           <div>
             <label style={{ fontSize: 13, color: 'var(--muted)' }}>Aperçu</label>
             <div style={{ marginTop: 8, border: '1px solid #e6e6e6', borderRadius: 6, minHeight: 100, padding: 8 }}>
@@ -174,71 +186,75 @@ export default function MobileMenuEditModal({ onClose, onSaved }: { onClose: () 
           </div>
 
           <div style={{ marginTop: 12 }}>
-            <label style={{ fontSize: 13, color: 'var(--muted)' }}>Paramètres des boutons</label>
-            <div style={{ marginTop: 8, border: '1px solid #e6e6e6', borderRadius: 6, padding: 12 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, alignItems: 'start' }}>
-                <div>
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Police</div>
-                  <select value={fontFamily} onChange={(e) => setFontFamily(e.target.value)} style={{ width: '100%', marginTop: 6 }}>
-                    <option value="">Inter (site par défaut)</option>
-                    <option value="Playfair Display, serif">Playfair Display</option>
-                    <option value="Roboto, sans-serif">Roboto</option>
-                    <option value="Arial, sans-serif">Arial</option>
-                  </select>
-                </div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>Éléments visibles</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+              {(['realisation','evenement','corporate','portrait','animation','galleries','contact','bac','admin'] as (keyof MenuVisible)[]).map((k) => (
+                <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" checked={!!menuVisible?.[k]} onChange={() => toggleKey(k)} />
+                  <span style={{ textTransform: 'capitalize' }}>{k}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </>)}
 
-                <div>
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Taille police</div>
-                  <input type="range" min={12} max={24} value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} style={{ width: '100%', marginTop: 6 }} />
-                  <div style={{ fontSize: 13, marginTop: 6 }}>{fontSize}px</div>
-                </div>
+        {tab === 'police' && (<>
+          <div style={{ marginTop: 12, border: '1px solid #e6e6e6', borderRadius: 6, padding: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, alignItems: 'start' }}>
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Police</div>
+                <select value={fontFamily} onChange={(e) => setFontFamily(e.target.value)} style={{ width: '100%', marginTop: 6 }}>
+                  <option value="">Inter (site par défaut)</option>
+                  <option value="Playfair Display, serif">Playfair Display</option>
+                  <option value="Roboto, sans-serif">Roboto</option>
+                  <option value="Arial, sans-serif">Arial</option>
+                </select>
+              </div>
 
-                <div>
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Épaisseur</div>
-                  <select value={fontWeight} onChange={(e) => setFontWeight(Number(e.target.value))} style={{ width: '100%', marginTop: 6 }}>
-                    <option value={400}>400</option>
-                    <option value={500}>500</option>
-                    <option value={600}>600</option>
-                    <option value={700}>700</option>
-                  </select>
-                </div>
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Taille police</div>
+                <input type="range" min={12} max={24} value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} style={{ width: '100%', marginTop: 6 }} />
+                <div style={{ fontSize: 13, marginTop: 6 }}>{fontSize}px</div>
+              </div>
 
-                <div>
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Couleur texte</div>
-                  <input type="color" value={textColor || '#000000'} onChange={(e) => setTextColor(e.target.value)} style={{ width: '100%', marginTop: 6 }} />
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Couleur texte au survol</div>
-                  <input type="color" value={hoverColor || '#000000'} onChange={(e) => setHoverColor(e.target.value)} style={{ width: '100%', marginTop: 6 }} />
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Couleur texte actif</div>
-                  <input type="color" value={activeColor || '#000000'} onChange={(e) => setActiveColor(e.target.value)} style={{ width: '100%', marginTop: 6 }} />
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Couleur fond de la barre</div>
-                  <input type="color" value={bgColor || '#ffffff'} onChange={(e) => setBgColor(e.target.value)} style={{ width: '100%', marginTop: 6 }} />
-                </div>
-
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Épaisseur</div>
+                <select value={fontWeight} onChange={(e) => setFontWeight(Number(e.target.value))} style={{ width: '100%', marginTop: 6 }}>
+                  <option value={400}>400</option>
+                  <option value={500}>500</option>
+                  <option value={600}>600</option>
+                  <option value={700}>700</option>
+                </select>
               </div>
             </div>
           </div>
-        </div>
+        </>)}
 
-        <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 13, color: 'var(--muted)' }}>Éléments visibles</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
-            {(['realisation','evenement','corporate','portrait','animation','galleries','contact','bac','admin'] as (keyof MenuVisible)[]).map((k) => (
-              <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input type="checkbox" checked={!!menuVisible?.[k]} onChange={() => toggleKey(k)} />
-                <span style={{ textTransform: 'capitalize' }}>{k}</span>
-              </label>
-            ))}
+        {tab === 'couleurs' && (<>
+          <div style={{ marginTop: 12, border: '1px solid #e6e6e6', borderRadius: 6, padding: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, alignItems: 'start' }}>
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Couleur texte</div>
+                <input type="color" value={textColor || '#000000'} onChange={(e) => setTextColor(e.target.value)} style={{ width: '100%', marginTop: 6 }} />
+              </div>
+
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Couleur texte au survol</div>
+                <input type="color" value={hoverColor || '#000000'} onChange={(e) => setHoverColor(e.target.value)} style={{ width: '100%', marginTop: 6 }} />
+              </div>
+
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Couleur texte actif</div>
+                <input type="color" value={activeColor || '#000000'} onChange={(e) => setActiveColor(e.target.value)} style={{ width: '100%', marginTop: 6 }} />
+              </div>
+
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Couleur fond de la barre</div>
+                <input type="color" value={bgColor || '#ffffff'} onChange={(e) => setBgColor(e.target.value)} style={{ width: '100%', marginTop: 6 }} />
+              </div>
+            </div>
           </div>
-        </div>
+        </>)}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
           <button className="btn-secondary" onClick={onClose} disabled={saving}>Annuler</button>

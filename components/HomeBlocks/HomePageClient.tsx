@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import React, { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useScrollReveal, revealInitialStyle, revealVisibleStyle } from "../../hooks/useScrollReveal";
 
 /** Enveloppe chaque section dans une animation de révélation au scroll */
@@ -188,6 +188,9 @@ export default function HomePageClient() {
   const [portraitSlideDirection, setPortraitSlideDirection] = useState<"next" | "prev">("next");
   const portraitTouchStartX = useRef<number | null>(null);
   const portraitIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Tracks the outgoing active card to keep it at higher z-index during transition (prevents visual "cut")
+  const [outgoingPortraitIdx, setOutgoingPortraitIdx] = useState<number | null>(null);
+  const prevPortraitIdxRef = useRef(0);
   const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0); // kept for possible dots; marquee uses continuous scroll
 
   /* ---- Cadreur video lightbox state ---- */
@@ -328,6 +331,18 @@ export default function HomePageClient() {
     };
   }, [resetPortraitInterval]);
 
+  // Keep outgoing portrait card at higher z-index during slide transition (prevents visual "cut")
+  const portraitIndex = Math.max(0, Math.min(currentPortraitSlide, portraitSlides.length - 1));
+  useLayoutEffect(() => {
+    const prev = prevPortraitIdxRef.current;
+    if (prev !== portraitIndex) {
+      prevPortraitIdxRef.current = portraitIndex;
+      setOutgoingPortraitIdx(prev);
+      const t = setTimeout(() => setOutgoingPortraitIdx(null), 560);
+      return () => clearTimeout(t);
+    }
+  }, [portraitIndex]);
+
   if (!loaded) {
     return (
       <div className="container" style={{ padding: "2rem 0", textAlign: "center", color: "var(--muted)" }}>
@@ -339,7 +354,6 @@ export default function HomePageClient() {
   const serviceItems = services.items && services.items.length ? services.items : DEFAULT_SERVICES.items;
   const statItems = stats.items && stats.items.length ? stats.items : DEFAULT_STATS.items;
 
-  const portraitIndex = Math.max(0, Math.min(currentPortraitSlide, portraitSlides.length - 1));
   const activePortraitSlide = portraitSlides[portraitIndex] || portraitSlides[0];
   // Use slide-specific href or fallback to default URL with tab parameter
   const portraitSlideHref = (activePortraitSlide as any)?.href || `/portrait?tab=${["lifestyle", "studio", "entreprise", "couple"][Math.min(portraitIndex, 3)] || "lifestyle"}`;
@@ -578,10 +592,14 @@ export default function HomePageClient() {
                     const focusStyle = (slide.image as any)?.focus?.x != null
                       ? { objectPosition: `${(slide.image as any).focus.x}% ${(slide.image as any).focus.y}%` }
                       : {};
+                    const cardStyle = getFanCardStyle(offset);
+                    const effectiveStyle = slideIdx === outgoingPortraitIdx
+                      ? { ...cardStyle, zIndex: 5 }
+                      : cardStyle;
                     return (
                       <div
                         key={slideIdx}
-                        style={getFanCardStyle(offset)}
+                        style={effectiveStyle}
                         onClick={offset !== 0 ? () => {
                           setPortraitSlideDirection(offset > 0 ? "next" : "prev");
                           setCurrentPortraitSlide(slideIdx);

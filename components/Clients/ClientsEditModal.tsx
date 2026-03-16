@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import type { TitleStyleKey } from '../HomeBlocks/homeDefaults';
+import ModalTabs from '../ui/ModalTabs';
 import { TITLE_FONT_SIZE_MIN, TITLE_FONT_SIZE_MAX } from '../HomeBlocks/homeDefaults';
 
 const TITLE_STYLE_OPTIONS: { value: TitleStyleKey; label: string }[] = [
@@ -76,6 +77,8 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
   const [radiusBottom, setRadiusBottom] = useState<number | ''>('');
   const [paddingTop, setPaddingTop] = useState<number | ''>('');
   const [paddingBottom, setPaddingBottom] = useState<number | ''>('');
+  const [tab, setTab] = useState<'logos' | 'titre' | 'disposition' | 'style'>('logos');
+
   const [grid, setGrid] = useState<{ columns: number; itemWidth: number; rowGap: number; colGap: number; heightRatio: number; cloudMode?: boolean; rows?: number; loopMode?: boolean; loopSpeed?: number }>(() => ({
     columns: 5,
     itemWidth: 120,
@@ -245,40 +248,26 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
   const inputStyle: React.CSSProperties = { padding: '6px 10px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13 };
 
   const modalContent = (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-      <div style={{ background: '#fff', color: '#000', padding: 20, width: 820, maxWidth: '98%', maxHeight: '86vh', overflowY: 'auto', borderRadius: 10 }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 9999, padding: '70px 16px 16px', overflowY: 'auto' }}>
+      <div style={{ background: '#fff', color: '#000', padding: 20, width: 820, maxWidth: '98%', borderRadius: 10, alignSelf: 'flex-start' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0 }}>Modifier le bloc Clients</h3>
           <button onClick={() => onClose()} aria-label="Fermer" style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer' }}>✕</button>
         </div>
 
-        <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
-          <div>
-            <label style={{ display: 'block', fontSize: 13, color: 'var(--muted)', marginBottom: 4 }}>Titre</label>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                style={{ ...inputStyle, flex: 1, minWidth: 160 }}
-                placeholder="CLIENTS ET PARTENAIRES PROFESSIONNELS"
-              />
-              <select value={titleStyle} onChange={(e) => setTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
-                {TITLE_STYLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <FontSizeInput value={titleFontSize} onChange={setTitleFontSize} />
-              <input
-                type="color"
-                value={titleColor || '#1a1a18'}
-                onChange={(e) => setTitleColor(e.target.value)}
-                style={{ width: 40, height: 32, padding: 0, border: '1px solid #e6e6e6', borderRadius: 6, cursor: 'pointer' }}
-                title="Couleur du titre"
-              />
-              {titleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setTitleColor('')}>↺</button> : null}
-              <AlignmentButtons value={titleAlign} onChange={setTitleAlign} />
-            </div>
-          </div>
+        <ModalTabs
+          tabs={[
+            { id: 'logos', label: 'Logos' },
+            { id: 'titre', label: 'Titre' },
+            { id: 'disposition', label: 'Disposition' },
+            { id: 'style', label: 'Style' },
+          ]}
+          active={tab}
+          onChange={(t) => setTab(t as any)}
+        />
 
+        <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
+          {tab === 'logos' && (<>
           <div>
             <label style={{ fontSize: 13, color: 'var(--muted)' }}>Logos</label>
             <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -308,7 +297,37 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
               ))}
             </div>
           </div>
+          </>)}
 
+          {tab === 'titre' && (<>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, color: 'var(--muted)', marginBottom: 4 }}>Titre</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                style={{ ...inputStyle, flex: 1, minWidth: 160 }}
+                placeholder="CLIENTS ET PARTENAIRES PROFESSIONNELS"
+              />
+              <select value={titleStyle} onChange={(e) => setTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
+                {TITLE_STYLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <FontSizeInput value={titleFontSize} onChange={setTitleFontSize} />
+              <input
+                type="color"
+                value={titleColor || '#1a1a18'}
+                onChange={(e) => setTitleColor(e.target.value)}
+                style={{ width: 40, height: 32, padding: 0, border: '1px solid #e6e6e6', borderRadius: 6, cursor: 'pointer' }}
+                title="Couleur du titre"
+              />
+              {titleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setTitleColor('')}>↺</button> : null}
+              <AlignmentButtons value={titleAlign} onChange={setTitleAlign} />
+            </div>
+          </div>
+          </>)}
+
+          {tab === 'disposition' && (<>
           <div>
             <label style={{ fontSize: 13, color: 'var(--muted)' }}>Disposition (desktop)</label>
             <div style={{ marginTop: 8, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 8 }}>
@@ -401,7 +420,9 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
               </div>
             </div>
           </div>
+          </>)}
 
+          {tab === 'style' && (<>
           <div>
             <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Couleur de fond (optionnel)</label>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -457,6 +478,7 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
               {(paddingTop !== '' || paddingBottom !== '') ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => { setPaddingTop(''); setPaddingBottom(''); }}>↺ Réinitialiser</button> : null}
             </div>
           </div>
+          </>)}
 
           {error ? <div style={{ color: 'crimson' }}>{error}</div> : null}
           {success ? <div style={{ color: 'green' }}>{success}</div> : null}

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { compressImageClient } from "@/lib/compressImageClient";
+import ModalTabs from "../ui/ModalTabs";
 const RichTextModal = dynamic(() => import("../RichTextModal/RichTextModal"), { ssr: false });
 
 export type TitleStyleKey = 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5';
@@ -105,6 +106,9 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [tab, setTab] = useState<'contenu' | 'photo' | 'cartes' | 'style'>('contenu');
+  const [ctaTab, setCtaTab] = useState<'livrables' | 'budget' | 'bouton' | 'style'>('livrables');
 
   useEffect(() => {
     setLabel(sectionData.label ?? "");
@@ -251,9 +255,11 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
         inset: 0,
         background: "rgba(0,0,0,0.45)",
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         justifyContent: "center",
         zIndex: 9999,
+        padding: "70px 16px 16px",
+        overflowY: "auto",
       }}
     >
       <div
@@ -263,9 +269,8 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
           padding: 20,
           width: 720,
           maxWidth: "98%",
-          maxHeight: "90vh",
-          overflowY: "auto",
           borderRadius: 10,
+          alignSelf: "flex-start",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -279,9 +284,34 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
           </button>
         </div>
 
+        {!isCta && (
+          <ModalTabs
+            tabs={[
+              { id: 'contenu', label: 'Contenu' },
+              { id: 'photo', label: 'Photo' },
+              ...(blockKey === 'animation_s3' ? [{ id: 'cartes', label: 'Cartes' }] : []),
+              { id: 'style', label: 'Style' },
+            ]}
+            active={tab}
+            onChange={(t) => setTab(t as any)}
+          />
+        )}
+        {isCta && (
+          <ModalTabs
+            tabs={[
+              { id: 'livrables', label: 'Livrables' },
+              { id: 'budget', label: 'Budget' },
+              { id: 'bouton', label: 'Bouton' },
+              { id: 'style', label: 'Style' },
+            ]}
+            active={ctaTab}
+            onChange={(t) => setCtaTab(t as any)}
+          />
+        )}
+
         <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
-          {!isCta && (
-            <>
+          {!isCta && (<>
+            {tab === 'contenu' && (<>
               <div>
                 <label style={{ fontSize: 13, color: "var(--muted)" }}>Label (petit titre)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
@@ -332,6 +362,8 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
                   </button>
                 </div>
               </div>
+            </>)}
+            {tab === 'photo' && (<>
               <div>
                 <label style={{ fontSize: 13, color: "var(--muted)" }}>Image</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6, flexWrap: "wrap" }}>
@@ -368,58 +400,78 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
                   ) : null}
                 </div>
               </div>
-              {blockKey === "animation_s3" && (
-                <div>
-                  <label style={{ fontSize: 13, color: "var(--muted)" }}>Cartes (titre / description)</label>
-                  {cards.map((card, i) => (
-                    <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, marginTop: 6, alignItems: "center" }}>
-                      <input
-                        type="text"
-                        value={card.title}
-                        onChange={(e) => {
-                          const next = [...cards];
-                          next[i] = { ...next[i], title: e.target.value };
-                          setCards(next);
-                        }}
-                        placeholder="Titre"
-                        style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #e6e6e6" }}
-                      />
-                      <input
-                        type="text"
-                        value={card.desc}
-                        onChange={(e) => {
-                          const next = [...cards];
-                          next[i] = { ...next[i], desc: e.target.value };
-                          setCards(next);
-                        }}
-                        placeholder="Description"
-                        style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #e6e6e6" }}
-                      />
-                      <button
-                        type="button"
-                        className="btn-ghost"
-                        style={{ fontSize: 12 }}
-                        onClick={() => setCards((c) => c.filter((_, j) => j !== i))}
-                      >
-                        Retirer
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    className="btn-ghost"
-                    style={{ marginTop: 8, fontSize: 13 }}
-                    onClick={() => setCards((c) => [...c, { title: "", desc: "" }])}
-                  >
-                    + Ajouter une carte
-                  </button>
+            </>)}
+            {tab === 'cartes' && blockKey === "animation_s3" && (<>
+              <div>
+                <label style={{ fontSize: 13, color: "var(--muted)" }}>Cartes (titre / description)</label>
+                {cards.map((card, i) => (
+                  <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, marginTop: 6, alignItems: "center" }}>
+                    <input
+                      type="text"
+                      value={card.title}
+                      onChange={(e) => {
+                        const next = [...cards];
+                        next[i] = { ...next[i], title: e.target.value };
+                        setCards(next);
+                      }}
+                      placeholder="Titre"
+                      style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #e6e6e6" }}
+                    />
+                    <input
+                      type="text"
+                      value={card.desc}
+                      onChange={(e) => {
+                        const next = [...cards];
+                        next[i] = { ...next[i], desc: e.target.value };
+                        setCards(next);
+                      }}
+                      placeholder="Description"
+                      style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #e6e6e6" }}
+                    />
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      style={{ fontSize: 12 }}
+                      onClick={() => setCards((c) => c.filter((_, j) => j !== i))}
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  style={{ marginTop: 8, fontSize: 13 }}
+                  onClick={() => setCards((c) => [...c, { title: "", desc: "" }])}
+                >
+                  + Ajouter une carte
+                </button>
+              </div>
+            </>)}
+            {tab === 'style' && (<>
+              <div>
+                <label style={{ fontSize: 13, color: "var(--muted)" }}>Couleur de fond du bloc (optionnel)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+                  <input
+                    type="color"
+                    value={bgColor || "#ffffff"}
+                    onChange={(e) => setBgColor(e.target.value)}
+                    style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }}
+                  />
+                  <input
+                    type="text"
+                    value={bgColor}
+                    onChange={(e) => setBgColor(e.target.value)}
+                    placeholder="#fff ou rgba(...)"
+                    style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }}
+                  />
                 </div>
-              )}
-            </>
-          )}
+              </div>
+            </>)}
+          </>)}
 
-          {isCta && (
-            <>
+          {isCta && (<>
+            {ctaTab === 'livrables' && (<>
               <div>
                 <label style={{ fontSize: 13, color: "var(--muted)" }}>Titre Livrables</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
@@ -437,6 +489,20 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
                 </div>
               </div>
               <div>
+                <label style={{ fontSize: 13, color: "var(--muted)" }}>Texte Livrables</label>
+                <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <div
+                    style={{ flex: 1, minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10 }}
+                    dangerouslySetInnerHTML={{ __html: livrablesHtml || "<p style='color:#999'>Aucun</p>" }}
+                  />
+                  <button className="btn-ghost" onClick={() => setEditingLivrables(true)}>
+                    Éditer
+                  </button>
+                </div>
+              </div>
+            </>)}
+            {ctaTab === 'budget' && (<>
+              <div>
                 <label style={{ fontSize: 13, color: "var(--muted)" }}>Titre Durée & budget</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
                   <input
@@ -453,18 +519,6 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 13, color: "var(--muted)" }}>Texte Livrables</label>
-                <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "flex-start" }}>
-                  <div
-                    style={{ flex: 1, minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10 }}
-                    dangerouslySetInnerHTML={{ __html: livrablesHtml || "<p style='color:#999'>Aucun</p>" }}
-                  />
-                  <button className="btn-ghost" onClick={() => setEditingLivrables(true)}>
-                    Éditer
-                  </button>
-                </div>
-              </div>
-              <div>
                 <label style={{ fontSize: 13, color: "var(--muted)" }}>Texte Durée & budget</label>
                 <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "flex-start" }}>
                   <div
@@ -476,6 +530,8 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
                   </button>
                 </div>
               </div>
+            </>)}
+            {ctaTab === 'bouton' && (<>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 13, color: "var(--muted)" }}>Libellé du bouton</label>
@@ -509,27 +565,28 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
                   <option value="2">Style 2</option>
                 </select>
               </div>
-            </>
-          )}
-
-          <div>
-            <label style={{ fontSize: 13, color: "var(--muted)" }}>Couleur de fond du bloc (optionnel)</label>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
-              <input
-                type="color"
-                value={bgColor || "#ffffff"}
-                onChange={(e) => setBgColor(e.target.value)}
-                style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }}
-              />
-              <input
-                type="text"
-                value={bgColor}
-                onChange={(e) => setBgColor(e.target.value)}
-                placeholder="#fff ou rgba(...)"
-                style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }}
-              />
-            </div>
-          </div>
+            </>)}
+            {ctaTab === 'style' && (<>
+              <div>
+                <label style={{ fontSize: 13, color: "var(--muted)" }}>Couleur de fond du bloc (optionnel)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+                  <input
+                    type="color"
+                    value={bgColor || "#ffffff"}
+                    onChange={(e) => setBgColor(e.target.value)}
+                    style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }}
+                  />
+                  <input
+                    type="text"
+                    value={bgColor}
+                    onChange={(e) => setBgColor(e.target.value)}
+                    placeholder="#fff ou rgba(...)"
+                    style={{ flex: 1, padding: "6px 10px", borderRadius: 6, border: "1px solid #e6e6e6" }}
+                  />
+                </div>
+              </div>
+            </>)}
+          </>)}
 
           {error ? <div style={{ color: "crimson" }}>{error}</div> : null}
 

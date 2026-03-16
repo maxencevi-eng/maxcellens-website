@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { compressImageClient } from "@/lib/compressImageClient";
+import ModalTabs from "../ui/ModalTabs";
 import type {
   HomeIntroData,
   HomeServicesData,
@@ -140,6 +141,17 @@ const inputStyle: React.CSSProperties = {
 export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  function defaultTab(key: string) {
+    switch (key) {
+      case 'home_banner':   return 'texte';
+      case 'home_stats':    return 'chiffres';
+      case 'home_portrait': return 'bloc';
+      case 'home_quote':    return 'citations';
+      default:              return 'contenu';
+    }
+  }
+  const [tab, setTab] = useState(() => defaultTab(blockKey));
+  React.useEffect(() => { setTab(defaultTab(blockKey)); }, [blockKey]);
   const [editingHtml, setEditingHtml] = useState(false);
   const [editingCadreurHtml, setEditingCadreurHtml] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
@@ -885,10 +897,11 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     inset: 0,
     background: "rgba(0,0,0,0.45)",
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "center",
     zIndex: 9999,
-    padding: 16,
+    padding: "70px 16px 16px",
+    overflowY: "auto",
   };
 
   const boxStyle: React.CSSProperties = {
@@ -897,9 +910,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     padding: 24,
     width: 560,
     maxWidth: "100%",
-    maxHeight: "90vh",
-    overflowY: "auto",
     borderRadius: 10,
+    alignSelf: "flex-start",
   };
 
   return (
@@ -914,7 +926,36 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
           </div>
 
           {blockKey === "home_intro" && (
+            <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
+          )}
+          {blockKey === "home_services" && (
+            <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'services', label: 'Services' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
+          )}
+          {blockKey === "home_banner" && (
+            <ModalTabs tabs={[{ id: 'texte', label: 'Texte' }, { id: 'image', label: 'Image' }, { id: 'bouton', label: 'Bouton' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
+          )}
+          {blockKey === "home_stats" && (
+            <ModalTabs tabs={[{ id: 'chiffres', label: 'Chiffres' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
+          )}
+          {blockKey === "home_portrait" && (
+            <ModalTabs tabs={[{ id: 'bloc', label: 'Bloc' }, { id: 'diaporama', label: 'Diaporama' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
+          )}
+          {blockKey === "home_cadreur" && (
+            <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'videos', label: 'Vidéos' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
+          )}
+          {blockKey === "home_animation" && (
+            <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'image', label: 'Image' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
+          )}
+          {blockKey === "home_quote" && (
+            <ModalTabs tabs={[{ id: 'citations', label: 'Citations' }, { id: 'parametres', label: 'Paramètres' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
+          )}
+          {blockKey === "home_cta" && (
+            <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
+          )}
+
+          {blockKey === "home_intro" && (
             <>
+              {tab === 'contenu' && (<>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -946,6 +987,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: introHtmlContent }} />
                 <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingHtml(true)}>Éditer le texte</button>
               </div>
+              </>)}
+              {tab === 'style' && (<>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -956,11 +999,13 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </div>
               <RadiusInputs top={introRadiusTop} setTop={setIntroRadiusTop} bottom={introRadiusBottom} setBottom={setIntroRadiusBottom} />
               <PaddingInputs top={introPaddingTop} setTop={setIntroPaddingTop} bottom={introPaddingBottom} setBottom={setIntroPaddingBottom} />
+              </>)}
             </>
           )}
 
           {blockKey === "home_services" && (
             <>
+              {tab === 'contenu' && (<>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre du bloc</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -987,6 +1032,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <AlignmentButtons value={servicesBlockSubtitleAlign} onChange={(v) => setServicesBlockSubtitleAlign(v as any)} />
                 </div>
               </div>
+              </>)}
+              {tab === 'services' && (<>
               {serviceItems.map((item, i) => {
                 const itemTitleStyle = item.titleStyle ?? "h3";
                 const itemTitleFontSize = item.titleFontSize ?? "";
@@ -1041,6 +1088,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 </div>
                 );
               })}
+              <button type="button" className="btn-ghost" onClick={() => setServiceItems((prev) => [...prev, { title: "", description: "", href: "", image: null, titleStyle: "h3", descriptionStyle: "p", titleFontSize: undefined, descriptionFontSize: undefined }])}>+ Ajouter un service</button>
+              </>)}
+              {tab === 'style' && (<>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1051,12 +1101,13 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </div>
               <RadiusInputs top={servicesRadiusTop} setTop={setServicesRadiusTop} bottom={servicesRadiusBottom} setBottom={setServicesRadiusBottom} />
               <PaddingInputs top={servicesPaddingTop} setTop={setServicesPaddingTop} bottom={servicesPaddingBottom} setBottom={setServicesPaddingBottom} />
-              <button type="button" className="btn-ghost" onClick={() => setServiceItems((prev) => [...prev, { title: "", description: "", href: "", image: null, titleStyle: "h3", descriptionStyle: "p", titleFontSize: undefined, descriptionFontSize: undefined }])}>+ Ajouter un service</button>
+              </>)}
             </>
           )}
 
           {blockKey === "home_banner" && (
             <>
+              {tab === 'image' && (<>
               {/* Mode d'affichage */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>Mode d'affichage</label>
@@ -1120,93 +1171,98 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 </div>
               )}
 
-              {/* Options mode Texte + Image */}
+              {/* Position de l'image (mode texte+image) */}
               {bannerTextMode === 'text' && (
-                <>
-                  {/* Position de l'image */}
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Position de l'image</label>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      {(['left', 'right'] as const).map((pos) => (
-                        <button key={pos} type="button"
-                          onClick={() => setBannerTextImagePosition(pos)}
-                          style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13, cursor: 'pointer', background: bannerTextImagePosition === pos ? 'var(--fg, #1a1a18)' : '#fff', color: bannerTextImagePosition === pos ? '#fff' : 'inherit' }}>
-                          {pos === 'left' ? 'Image à gauche' : 'Image à droite'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Eyebrow */}
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte d'accroche (eyebrow)</label>
-                    <input type="text" value={bannerEyebrow} onChange={(e) => setBannerEyebrow(e.target.value)} placeholder="ex. Nos services · Depuis 2015" style={inputStyle} />
-                  </div>
-
-                  {/* Titre */}
-                  <div style={{ marginBottom: 4 }}>
-                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
-                    <input type="text" value={bannerBlockTitle} onChange={(e) => setBannerBlockTitle(e.target.value)} placeholder="Titre principal" style={inputStyle} />
-                  </div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-                    <select value={bannerBlockTitleStyle} onChange={(e) => setBannerBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 130 }}>
-                      {[{ value: "h1", label: "Titre 1" }, { value: "h2", label: "Titre 2" }, { value: "h3", label: "Titre 3" }, { value: "h4", label: "Titre 4" }, { value: "h5", label: "Titre 5" }, { value: "p", label: "Paragraphe" }].map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                    <FontSizeInput value={bannerBlockTitleFontSize} onChange={setBannerBlockTitleFontSize} />
-                    <input type="color" value={bannerBlockTitleColor || "#1a1a18"} onChange={(e) => setBannerBlockTitleColor(e.target.value)} title="Couleur du titre" style={{ width: 40, height: 36, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} />
-                    {bannerBlockTitleColor && <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setBannerBlockTitleColor("")}>Effacer couleur</button>}
-                    {(['left', 'center', 'right'] as const).map(a => (
-                      <button key={a} type="button" onClick={() => setBannerBlockTitleAlign(bannerBlockTitleAlign === a ? '' : a)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 12, cursor: 'pointer', background: bannerBlockTitleAlign === a ? '#111' : '#fff', color: bannerBlockTitleAlign === a ? '#fff' : 'inherit' }}>{a === 'left' ? '←' : a === 'center' ? '↔' : '→'}</button>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Position de l'image</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {(['left', 'right'] as const).map((pos) => (
+                      <button key={pos} type="button"
+                        onClick={() => setBannerTextImagePosition(pos)}
+                        style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13, cursor: 'pointer', background: bannerTextImagePosition === pos ? 'var(--fg, #1a1a18)' : '#fff', color: bannerTextImagePosition === pos ? '#fff' : 'inherit' }}>
+                        {pos === 'left' ? 'Image à gauche' : 'Image à droite'}
+                      </button>
                     ))}
                   </div>
-
-                  {/* Sous-titre */}
-                  <div style={{ marginBottom: 4 }}>
-                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Sous-titre</label>
-                    <input type="text" value={bannerBlockSubtitle} onChange={(e) => setBannerBlockSubtitle(e.target.value)} placeholder="Sous-titre descriptif" style={inputStyle} />
-                  </div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-                    <select value={bannerBlockSubtitleStyle} onChange={(e) => setBannerBlockSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 130 }}>
-                      {[{ value: "p", label: "Paragraphe" }, { value: "h3", label: "Titre 3" }, { value: "h4", label: "Titre 4" }, { value: "h5", label: "Titre 5" }].map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                    <FontSizeInput value={bannerBlockSubtitleFontSize} onChange={setBannerBlockSubtitleFontSize} />
-                    <input type="color" value={bannerBlockSubtitleColor || "#6b7280"} onChange={(e) => setBannerBlockSubtitleColor(e.target.value)} title="Couleur du sous-titre" style={{ width: 40, height: 36, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} />
-                    {bannerBlockSubtitleColor && <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setBannerBlockSubtitleColor("")}>Effacer couleur</button>}
-                    {(['left', 'center', 'right'] as const).map(a => (
-                      <button key={a} type="button" onClick={() => setBannerBlockSubtitleAlign(bannerBlockSubtitleAlign === a ? '' : a)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 12, cursor: 'pointer', background: bannerBlockSubtitleAlign === a ? '#111' : '#fff', color: bannerBlockSubtitleAlign === a ? '#fff' : 'inherit' }}>{a === 'left' ? '←' : a === 'center' ? '↔' : '→'}</button>
-                    ))}
-                  </div>
-
-                  {/* Texte riche */}
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte riche (optionnel)</label>
-                    <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: bannerHtml || "<p style='color:#999'>Aucun</p>" }} />
-                    <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingBannerHtml(true)}>Éditer le texte</button>
-                  </div>
-
-                  {/* CTA */}
-                  <div style={{ marginBottom: 4 }}>
-                    <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Bouton CTA (optionnel)</label>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <input type="text" value={bannerCtaLabel} onChange={(e) => setBannerCtaLabel(e.target.value)} placeholder="Texte du bouton" style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
-                      <input type="text" value={bannerCtaHref} onChange={(e) => setBannerCtaHref(e.target.value)} placeholder="/lien ou https://…" style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                    {(['1', '2'] as const).map(s => (
-                      <button key={s} type="button" onClick={() => setBannerCtaButtonStyle(s)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13, cursor: 'pointer', background: bannerCtaButtonStyle === s ? '#111' : '#fff', color: bannerCtaButtonStyle === s ? '#fff' : 'inherit' }}>{s === '1' ? 'Style 1 (plein)' : 'Style 2 (contour)'}</button>
-                    ))}
-                  </div>
-                </>
+                </div>
               )}
+              </>)}
 
+              {tab === 'texte' && (<>
+              {/* Eyebrow */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte d'accroche (eyebrow)</label>
+                <input type="text" value={bannerEyebrow} onChange={(e) => setBannerEyebrow(e.target.value)} placeholder="ex. Nos services · Depuis 2015" style={inputStyle} />
+              </div>
+
+              {/* Titre */}
+              <div style={{ marginBottom: 4 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
+                <input type="text" value={bannerBlockTitle} onChange={(e) => setBannerBlockTitle(e.target.value)} placeholder="Titre principal" style={inputStyle} />
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                <select value={bannerBlockTitleStyle} onChange={(e) => setBannerBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 130 }}>
+                  {[{ value: "h1", label: "Titre 1" }, { value: "h2", label: "Titre 2" }, { value: "h3", label: "Titre 3" }, { value: "h4", label: "Titre 4" }, { value: "h5", label: "Titre 5" }, { value: "p", label: "Paragraphe" }].map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <FontSizeInput value={bannerBlockTitleFontSize} onChange={setBannerBlockTitleFontSize} />
+                <input type="color" value={bannerBlockTitleColor || "#1a1a18"} onChange={(e) => setBannerBlockTitleColor(e.target.value)} title="Couleur du titre" style={{ width: 40, height: 36, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} />
+                {bannerBlockTitleColor && <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setBannerBlockTitleColor("")}>Effacer couleur</button>}
+                {(['left', 'center', 'right'] as const).map(a => (
+                  <button key={a} type="button" onClick={() => setBannerBlockTitleAlign(bannerBlockTitleAlign === a ? '' : a)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 12, cursor: 'pointer', background: bannerBlockTitleAlign === a ? '#111' : '#fff', color: bannerBlockTitleAlign === a ? '#fff' : 'inherit' }}>{a === 'left' ? '←' : a === 'center' ? '↔' : '→'}</button>
+                ))}
+              </div>
+
+              {/* Sous-titre */}
+              <div style={{ marginBottom: 4 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Sous-titre</label>
+                <input type="text" value={bannerBlockSubtitle} onChange={(e) => setBannerBlockSubtitle(e.target.value)} placeholder="Sous-titre descriptif" style={inputStyle} />
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                <select value={bannerBlockSubtitleStyle} onChange={(e) => setBannerBlockSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 130 }}>
+                  {[{ value: "p", label: "Paragraphe" }, { value: "h3", label: "Titre 3" }, { value: "h4", label: "Titre 4" }, { value: "h5", label: "Titre 5" }].map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <FontSizeInput value={bannerBlockSubtitleFontSize} onChange={setBannerBlockSubtitleFontSize} />
+                <input type="color" value={bannerBlockSubtitleColor || "#6b7280"} onChange={(e) => setBannerBlockSubtitleColor(e.target.value)} title="Couleur du sous-titre" style={{ width: 40, height: 36, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} />
+                {bannerBlockSubtitleColor && <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setBannerBlockSubtitleColor("")}>Effacer couleur</button>}
+                {(['left', 'center', 'right'] as const).map(a => (
+                  <button key={a} type="button" onClick={() => setBannerBlockSubtitleAlign(bannerBlockSubtitleAlign === a ? '' : a)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 12, cursor: 'pointer', background: bannerBlockSubtitleAlign === a ? '#111' : '#fff', color: bannerBlockSubtitleAlign === a ? '#fff' : 'inherit' }}>{a === 'left' ? '←' : a === 'center' ? '↔' : '→'}</button>
+                ))}
+              </div>
+
+              {/* Texte riche */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte riche (optionnel)</label>
+                <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: bannerHtml || "<p style='color:#999'>Aucun</p>" }} />
+                <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingBannerHtml(true)}>Éditer le texte</button>
+              </div>
+              </>)}
+
+              {tab === 'bouton' && (<>
+              {/* CTA */}
+              <div style={{ marginBottom: 4 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Bouton CTA (optionnel)</label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <input type="text" value={bannerCtaLabel} onChange={(e) => setBannerCtaLabel(e.target.value)} placeholder="Texte du bouton" style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
+                  <input type="text" value={bannerCtaHref} onChange={(e) => setBannerCtaHref(e.target.value)} placeholder="/lien ou https://…" style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                {(['1', '2'] as const).map(s => (
+                  <button key={s} type="button" onClick={() => setBannerCtaButtonStyle(s)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13, cursor: 'pointer', background: bannerCtaButtonStyle === s ? '#111' : '#fff', color: bannerCtaButtonStyle === s ? '#fff' : 'inherit' }}>{s === '1' ? 'Style 1 (plein)' : 'Style 2 (contour)'}</button>
+                ))}
+              </div>
+              </>)}
+
+              {tab === 'style' && (<>
               <RadiusInputs top={bannerRadiusTop} setTop={setBannerRadiusTop} bottom={bannerRadiusBottom} setBottom={setBannerRadiusBottom} />
               <PaddingInputs top={bannerPaddingTop} setTop={setBannerPaddingTop} bottom={bannerPaddingBottom} setBottom={setBannerPaddingBottom} />
+              </>)}
             </>
           )}
 
           {blockKey === "home_stats" && (
             <>
+              {tab === 'chiffres' && (<>
               {statItems.map((item, i) => {
                 const statValue = item.value;
                 const statLabel = item.label;
@@ -1217,6 +1273,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 </div>
                 );
               })}
+              <button type="button" className="btn-ghost" onClick={() => setStatItems((prev) => [...prev, { value: "", label: "" }])}>+ Ajouter un chiffre</button>
+              </>)}
+
+              {tab === 'style' && (<>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1227,12 +1287,13 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </div>
               <RadiusInputs top={statsRadiusTop} setTop={setStatsRadiusTop} bottom={statsRadiusBottom} setBottom={setStatsRadiusBottom} />
               <PaddingInputs top={statsPaddingTop} setTop={setStatsPaddingTop} bottom={statsPaddingBottom} setBottom={setStatsPaddingBottom} />
-              <button type="button" className="btn-ghost" onClick={() => setStatItems((prev) => [...prev, { value: "", label: "" }])}>+ Ajouter un chiffre</button>
+              </>)}
             </>
           )}
 
           {blockKey === "home_portrait" && (
             <>
+              {tab === 'bloc' && (<>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Vitesse de défilement</label>
                 <input
@@ -1274,17 +1335,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <option value="2">Style 2</option>
                 </select>
               </div>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="color" value={portraitBgValue} onChange={(e) => setPortraitBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
-                  <input type="text" value={portraitBackgroundColor} onChange={(e) => setPortraitBackgroundColor(e.target.value)} placeholder="ou hex" style={{ ...inputStyle, width: 120 }} />
-                  {portraitBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setPortraitBackgroundColor("")}>Effacer</button> : null}
-                </div>
-              </div>
-              <RadiusInputs top={portraitRadiusTop} setTop={setPortraitRadiusTop} bottom={portraitRadiusBottom} setBottom={setPortraitRadiusBottom} />
-              <PaddingInputs top={portraitPaddingTop} setTop={setPortraitPaddingTop} bottom={portraitPaddingBottom} setBottom={setPortraitPaddingBottom} />
-              <div style={{ marginTop: 20, marginBottom: 8, fontWeight: 600, fontSize: 14 }}>4 slides (Lifestyle, Studio, Entreprise, Couple)</div>
+              </>)}
+
+              {tab === 'diaporama' && (<>
+              <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 14 }}>4 slides (Lifestyle, Studio, Entreprise, Couple)</div>
               {portraitSlides.map((slide, i) => {
                 const slideTitleStyle = slide.titleStyle ?? "h3";
                 const slideTitleFontSize = slide.titleFontSize ?? "";
@@ -1368,7 +1422,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                     </div>
                     {slide.image?.url ? (
                       <div style={{ marginTop: 6 }}>
-                        <span style={{ fontSize: 11, color: "var(--muted)" }}>Point de focus : cliquer sur l’aperçu</span>
+                        <span style={{ fontSize: 11, color: "var(--muted)" }}>Point de focus : cliquer sur l'aperçu</span>
                         <div style={{ position: "relative", display: "inline-block", marginTop: 4 }}>
                           <img
                             src={slide.image.url}
@@ -1403,7 +1457,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                     </div>
                     {slide.image2?.url ? (
                       <div style={{ marginTop: 6 }}>
-                        <span style={{ fontSize: 11, color: "var(--muted)" }}>Point de focus : cliquer sur l’aperçu</span>
+                        <span style={{ fontSize: 11, color: "var(--muted)" }}>Point de focus : cliquer sur l'aperçu</span>
                         <div style={{ position: "relative", display: "inline-block", marginTop: 4 }}>
                           <img
                             src={slide.image2.url}
@@ -1427,11 +1481,26 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 </div>
                 );
               })}
+              </>)}
+
+              {tab === 'style' && (<>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input type="color" value={portraitBgValue} onChange={(e) => setPortraitBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="text" value={portraitBackgroundColor} onChange={(e) => setPortraitBackgroundColor(e.target.value)} placeholder="ou hex" style={{ ...inputStyle, width: 120 }} />
+                  {portraitBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setPortraitBackgroundColor("")}>Effacer</button> : null}
+                </div>
+              </div>
+              <RadiusInputs top={portraitRadiusTop} setTop={setPortraitRadiusTop} bottom={portraitRadiusBottom} setBottom={setPortraitRadiusBottom} />
+              <PaddingInputs top={portraitPaddingTop} setTop={setPortraitPaddingTop} bottom={portraitPaddingBottom} setBottom={setPortraitPaddingBottom} />
+              </>)}
             </>
           )}
 
           {blockKey === "home_cadreur" && (
             <>
+              {tab === 'contenu' && (<>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1458,7 +1527,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 </div>
                 {cadreurImage?.url ? (
                   <div style={{ marginTop: 8 }}>
-                    <span style={{ fontSize: 11, color: "var(--muted)" }}>Point de focus : cliquer sur l’aperçu</span>
+                    <span style={{ fontSize: 11, color: "var(--muted)" }}>Point de focus : cliquer sur l'aperçu</span>
                     <div style={{ position: "relative", display: "inline-block", marginTop: 4 }}>
                       <img
                         src={cadreurImage.url}
@@ -1479,7 +1548,6 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   </div>
                 ) : null}
               </div>
-
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Ratio de l'image</label>
                 <select value={cadreurImageRatio} onChange={(e) => setCadreurImageRatio(e.target.value as AnimationImageRatio)} style={{ ...inputStyle, width: 160 }}>
@@ -1492,9 +1560,11 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <option value="1:1">1:1 (carré)</option>
                 </select>
               </div>
+              </>)}
 
+              {tab === 'videos' && (<>
               {/* ----- Projets vidéos mis en avant ----- */}
-              <div style={{ marginTop: 20, marginBottom: 12, fontWeight: 600, fontSize: 14, borderTop: "1px solid #eee", paddingTop: 16 }}>Vidéos projets mis en avant (jusqu'à 3)</div>
+              <div style={{ marginBottom: 12, fontWeight: 600, fontSize: 14 }}>Vidéos projets mis en avant (jusqu'à 3)</div>
 
               {/* Titre de la section vidéos */}
               <div style={{ marginBottom: 12 }}>
@@ -1601,7 +1671,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   </label>
                 </div>
               </div>
+              </>)}
 
+              {tab === 'style' && (<>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1612,20 +1684,13 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </div>
               <RadiusInputs top={cadreurRadiusTop} setTop={setCadreurRadiusTop} bottom={cadreurRadiusBottom} setBottom={setCadreurRadiusBottom} />
               <PaddingInputs top={cadreurPaddingTop} setTop={setCadreurPaddingTop} bottom={cadreurPaddingBottom} setBottom={setCadreurPaddingBottom} />
+              </>)}
             </>
           )}
 
           {blockKey === "home_animation" && (
             <>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Bannière / image d'accroche (optionnel)</label>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
-                  {animationImage?.url ? <img src={animationImage.url} alt="" style={{ width: 200, height: 120, objectFit: "cover", borderRadius: 8 }} /> : null}
-                  <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAnimationBanner(f); }} disabled={uploadingAnimationImage} />
-                  {uploadingAnimationImage ? <span style={{ fontSize: 12, color: "var(--muted)" }}>Upload…</span> : null}
-                  {animationImage?.url ? <button type="button" className="btn-ghost" style={{ fontSize: 12, color: "#c00" }} onClick={() => setAnimationImage(null)}>Supprimer l'image</button> : null}
-                </div>
-              </div>
+              {tab === 'contenu' && (<>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre du bloc</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1658,6 +1723,26 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingAnimationHtml(true)}>Éditer le texte</button>
               </div>
               <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Style des boutons de navigation</label>
+                <select value={animationCtaButtonStyle} onChange={(e) => setAnimationCtaButtonStyle(e.target.value as "" | "1" | "2")} style={inputStyle}>
+                  <option value="">Style 1 (défaut)</option>
+                  <option value="1">Style 1</option>
+                  <option value="2">Style 2</option>
+                </select>
+              </div>
+              </>)}
+
+              {tab === 'image' && (<>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Bannière / image d'accroche (optionnel)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
+                  {animationImage?.url ? <img src={animationImage.url} alt="" style={{ width: 200, height: 120, objectFit: "cover", borderRadius: 8 }} /> : null}
+                  <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadAnimationBanner(f); }} disabled={uploadingAnimationImage} />
+                  {uploadingAnimationImage ? <span style={{ fontSize: 12, color: "var(--muted)" }}>Upload…</span> : null}
+                  {animationImage?.url ? <button type="button" className="btn-ghost" style={{ fontSize: 12, color: "#c00" }} onClick={() => setAnimationImage(null)}>Supprimer l'image</button> : null}
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Ratio de l'image</label>
                 <select value={animationImageRatio} onChange={(e) => setAnimationImageRatio(e.target.value as AnimationImageRatio)} style={{ ...inputStyle, width: 160 }}>
                   <option value="4:1">4:1 (panoramique)</option>
@@ -1669,6 +1754,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <option value="1:1">1:1 (carré)</option>
                 </select>
               </div>
+              </>)}
+
+              {tab === 'style' && (<>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond de la section (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1692,58 +1780,13 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </div>
               <RadiusInputs top={animationRadiusTop} setTop={setAnimationRadiusTop} bottom={animationRadiusBottom} setBottom={setAnimationRadiusBottom} />
               <PaddingInputs top={animationPaddingTop} setTop={setAnimationPaddingTop} bottom={animationPaddingBottom} setBottom={setAnimationPaddingBottom} />
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Style des boutons de navigation</label>
-                <select value={animationCtaButtonStyle} onChange={(e) => setAnimationCtaButtonStyle(e.target.value as "" | "1" | "2")} style={inputStyle}>
-                  <option value="">Style 1 (défaut)</option>
-                  <option value="1">Style 1</option>
-                  <option value="2">Style 2</option>
-                </select>
-              </div>
+              </>)}
             </>
           )}
 
           {blockKey === "home_quote" && (
             <>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre du bloc</label>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <input type="text" value={quoteBlockTitle} onChange={(e) => setQuoteBlockTitle(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} placeholder="Témoignages" />
-                  <select value={quoteBlockTitleStyle} onChange={(e) => setQuoteBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
-                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <FontSizeInput value={quoteBlockTitleFontSize} onChange={setQuoteBlockTitleFontSize} />
-                  <input type="color" value={quoteBlockTitleColor || "#1a1a18"} onChange={(e) => setQuoteBlockTitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du titre" />
-                  {quoteBlockTitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteBlockTitleColor("")}>↺</button> : null}
-                  <AlignmentButtons value={quoteTitleAlign} onChange={(v) => setQuoteTitleAlign(v as any)} />
-                </div>
-              </div>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Sous-titre (optionnel)</label>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <input type="text" value={quoteBlockSubtitle} onChange={(e) => setQuoteBlockSubtitle(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} placeholder="Sous-titre (optionnel)" />
-                  <select value={quoteBlockSubtitleStyle} onChange={(e) => setQuoteBlockSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
-                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <FontSizeInput value={quoteBlockSubtitleFontSize} onChange={setQuoteBlockSubtitleFontSize} />
-                  <input type="color" value={quoteBlockSubtitleColor || "#6b7280"} onChange={(e) => setQuoteBlockSubtitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du sous-titre" />
-                  {quoteBlockSubtitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteBlockSubtitleColor("")}>↺</button> : null}
-                  <AlignmentButtons value={quoteSubtitleAlign} onChange={(v) => setQuoteSubtitleAlign(v as any)} />
-                </div>
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Vitesse de défilement</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={60}
-                  step={1}
-                  value={Math.round(quoteCarouselSpeed / 1000)}
-                  onChange={(e) => setQuoteCarouselSpeed(Math.max(1, Math.min(60, Number(e.target.value) || 5)) * 1000)}
-                  style={{ ...inputStyle, width: 80 }}
-                />
-                <span style={{ fontSize: 12, color: "var(--muted)", marginLeft: 8 }}>s (plus petit = défilement plus rapide, durée d’un cycle)</span>
-              </div>
+              {tab === 'citations' && (<>
               <div style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <label style={{ fontSize: 13, color: "var(--muted)" }}>Citations (min. 3)</label>
                 <button type="button" className="btn-ghost" onClick={() => setQuoteItems((prev) => [...prev, { text: "", author: "", role: "", authorStyle: "p", roleStyle: "p" }])}>+ Ajouter une citation</button>
@@ -1789,16 +1832,49 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   );
                 })}
               </div>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="color" value={quoteBgValue} onChange={(e) => setQuoteBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
-                  <input type="text" value={quoteBackgroundColor} onChange={(e) => setQuoteBackgroundColor(e.target.value)} placeholder="ou hex" style={{ ...inputStyle, width: 120 }} />
-                  {quoteBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteBackgroundColor("")}>Effacer</button> : null}
+              </>)}
+
+              {tab === 'parametres' && (<>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre du bloc</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input type="text" value={quoteBlockTitle} onChange={(e) => setQuoteBlockTitle(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} placeholder="Témoignages" />
+                  <select value={quoteBlockTitleStyle} onChange={(e) => setQuoteBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <FontSizeInput value={quoteBlockTitleFontSize} onChange={setQuoteBlockTitleFontSize} />
+                  <input type="color" value={quoteBlockTitleColor || "#1a1a18"} onChange={(e) => setQuoteBlockTitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du titre" />
+                  {quoteBlockTitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteBlockTitleColor("")}>↺</button> : null}
+                  <AlignmentButtons value={quoteTitleAlign} onChange={(v) => setQuoteTitleAlign(v as any)} />
                 </div>
               </div>
-              {/* Couleurs des cartes */}
-              <div style={{ marginBottom: 4, borderTop: '1px solid #eee', paddingTop: 12 }}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Sous-titre (optionnel)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input type="text" value={quoteBlockSubtitle} onChange={(e) => setQuoteBlockSubtitle(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} placeholder="Sous-titre (optionnel)" />
+                  <select value={quoteBlockSubtitleStyle} onChange={(e) => setQuoteBlockSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <FontSizeInput value={quoteBlockSubtitleFontSize} onChange={setQuoteBlockSubtitleFontSize} />
+                  <input type="color" value={quoteBlockSubtitleColor || "#6b7280"} onChange={(e) => setQuoteBlockSubtitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du sous-titre" />
+                  {quoteBlockSubtitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteBlockSubtitleColor("")}>↺</button> : null}
+                  <AlignmentButtons value={quoteSubtitleAlign} onChange={(v) => setQuoteSubtitleAlign(v as any)} />
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Vitesse de défilement</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={60}
+                  step={1}
+                  value={Math.round(quoteCarouselSpeed / 1000)}
+                  onChange={(e) => setQuoteCarouselSpeed(Math.max(1, Math.min(60, Number(e.target.value) || 5)) * 1000)}
+                  style={{ ...inputStyle, width: 80 }}
+                />
+                <span style={{ fontSize: 12, color: "var(--muted)", marginLeft: 8 }}>s (plus petit = défilement plus rapide, durée d'un cycle)</span>
+              </div>
+              <div style={{ marginBottom: 4 }}>
                 <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Style des cartes témoignages</label>
               </div>
               <div style={{ marginBottom: 10 }}>
@@ -1825,13 +1901,26 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   {quoteCardTextColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteCardTextColor("")}>Effacer</button> : null}
                 </div>
               </div>
+              </>)}
+
+              {tab === 'style' && (<>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input type="color" value={quoteBgValue} onChange={(e) => setQuoteBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="text" value={quoteBackgroundColor} onChange={(e) => setQuoteBackgroundColor(e.target.value)} placeholder="ou hex" style={{ ...inputStyle, width: 120 }} />
+                  {quoteBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteBackgroundColor("")}>Effacer</button> : null}
+                </div>
+              </div>
               <RadiusInputs top={quoteRadiusTop} setTop={setQuoteRadiusTop} bottom={quoteRadiusBottom} setBottom={setQuoteRadiusBottom} />
               <PaddingInputs top={quotePaddingTop} setTop={setQuotePaddingTop} bottom={quotePaddingBottom} setBottom={setQuotePaddingBottom} />
+              </>)}
             </>
           )}
 
           {blockKey === "home_cta" && (
             <>
+              {tab === 'contenu' && (<>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1860,6 +1949,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <option value="2">Style 2</option>
                 </select>
               </div>
+              </>)}
+
+              {tab === 'style' && (<>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1870,6 +1962,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </div>
               <RadiusInputs top={ctaRadiusTop} setTop={setCtaRadiusTop} bottom={ctaRadiusBottom} setBottom={setCtaRadiusBottom} />
               <PaddingInputs top={ctaPaddingTop} setTop={setCtaPaddingTop} bottom={ctaPaddingBottom} setBottom={setCtaPaddingBottom} />
+              </>)}
             </>
           )}
 

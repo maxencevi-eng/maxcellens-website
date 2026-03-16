@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { supabase } from '../../lib/supabase';
+import ModalTabs from '../ui/ModalTabs';
 const RichTextModal = dynamic(() => import('../RichTextModal/RichTextModal'), { ssr: false });
 
 export default function ContactEditModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
@@ -16,6 +17,7 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
   const [editingText, setEditingText] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<'contenu' | 'photo' | 'style'>('contenu');
 
   useEffect(() => {
     let mounted = true;
@@ -126,45 +128,62 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
   }
 
   return (
-    <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-      <div style={{ background: '#fff', color: '#000', padding: 20, width: 820, maxWidth: '98%', maxHeight: '86vh', overflowY: 'auto', borderRadius: 10 }}>
+    <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 9999, padding: '70px 16px 16px', overflowY: 'auto' }}>
+      <div style={{ background: '#fff', color: '#000', padding: 20, width: 820, maxWidth: '98%', borderRadius: 10, alignSelf: 'flex-start' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0 }}>Modifier le bloc Contact</h3>
           <button onClick={() => onClose()} aria-label="Fermer" style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer' }}>✕</button>
         </div>
 
-        <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
-          <div>
-            <label style={{ fontSize: 13, color: 'var(--muted)' }}>Texte en-tête (ex. @maxcellens)</label>
-            <input type="text" value={contactHandle} onChange={(e) => setContactHandle(e.target.value)} placeholder="@maxcellens" style={{ width: '100%', padding: '8px 12px', marginTop: 4, borderRadius: 6, border: '1px solid #e6e6e6', boxSizing: 'border-box' }} />
-          </div>
-          <label style={{ fontSize: 13, color: 'var(--muted)' }}>Photo</label>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input type="file" accept="image/*" onChange={async (e) => { const f = (e.target.files && e.target.files[0]) || null; if (f) await handleFileSelect(f); }} />
-            {uploading ? <span style={{ fontSize: 13, color: 'var(--muted)' }}>Téléchargement…</span> : null}
-            {photo?.url ? <div style={{ marginLeft: 12 }}><img src={String(photo.url)} alt="preview" style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 6 }} /></div> : null}
-            {photo?.url ? <div style={{ marginLeft: 8 }}><button className="btn-secondary" onClick={removePhoto}>Supprimer</button></div> : null}
-          </div>
+        <ModalTabs
+          tabs={[
+            { id: 'contenu', label: 'Contenu' },
+            { id: 'photo', label: 'Photo' },
+            { id: 'style', label: 'Style' },
+          ]}
+          active={tab}
+          onChange={(t) => setTab(t as any)}
+        />
 
-          <div>
-            <label style={{ fontSize: 13, color: 'var(--muted)' }}>Texte</label>
-            <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ minHeight: 44, border: '1px solid #e6e6e6', borderRadius: 6, padding: 10, background: '#fff' }} dangerouslySetInnerHTML={{ __html: (html || '<p style="color:#999">Aucun</p>') }} />
-              </div>
-              <div>
-                <button className="btn-ghost" onClick={() => setEditingText(true)}>Éditer</button>
+        <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
+          {tab === 'contenu' && (<>
+            <div>
+              <label style={{ fontSize: 13, color: 'var(--muted)' }}>Texte en-tête (ex. @maxcellens)</label>
+              <input type="text" value={contactHandle} onChange={(e) => setContactHandle(e.target.value)} placeholder="@maxcellens" style={{ width: '100%', padding: '8px 12px', marginTop: 4, borderRadius: 6, border: '1px solid #e6e6e6', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 13, color: 'var(--muted)' }}>Texte</label>
+              <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ minHeight: 44, border: '1px solid #e6e6e6', borderRadius: 6, padding: 10, background: '#fff' }} dangerouslySetInnerHTML={{ __html: (html || '<p style="color:#999">Aucun</p>') }} />
+                </div>
+                <div>
+                  <button className="btn-ghost" onClick={() => setEditingText(true)}>Éditer</button>
+                </div>
               </div>
             </div>
-          </div>
-          <div>
-            <label style={{ fontSize: 13, color: 'var(--muted)' }}>Couleur de fond (optionnel)</label>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
-              <input type="color" value={introBackgroundColor || '#fafaf9'} onChange={(e) => setIntroBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: '1px solid #e6e6e6', borderRadius: 6 }} />
-              <input type="text" value={introBackgroundColor} onChange={(e) => setIntroBackgroundColor(e.target.value)} placeholder="ou hex" style={{ width: 120, padding: '8px 12px', borderRadius: 6, border: '1px solid #e6e6e6', boxSizing: 'border-box' }} />
-              {introBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setIntroBackgroundColor('')}>Effacer</button> : null}
+          </>)}
+
+          {tab === 'photo' && (<>
+            <label style={{ fontSize: 13, color: 'var(--muted)' }}>Photo</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input type="file" accept="image/*" onChange={async (e) => { const f = (e.target.files && e.target.files[0]) || null; if (f) await handleFileSelect(f); }} />
+              {uploading ? <span style={{ fontSize: 13, color: 'var(--muted)' }}>Téléchargement…</span> : null}
+              {photo?.url ? <div style={{ marginLeft: 12 }}><img src={String(photo.url)} alt="preview" style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 6 }} /></div> : null}
+              {photo?.url ? <div style={{ marginLeft: 8 }}><button className="btn-secondary" onClick={removePhoto}>Supprimer</button></div> : null}
             </div>
-          </div>
+          </>)}
+
+          {tab === 'style' && (<>
+            <div>
+              <label style={{ fontSize: 13, color: 'var(--muted)' }}>Couleur de fond (optionnel)</label>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+                <input type="color" value={introBackgroundColor || '#fafaf9'} onChange={(e) => setIntroBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: '1px solid #e6e6e6', borderRadius: 6 }} />
+                <input type="text" value={introBackgroundColor} onChange={(e) => setIntroBackgroundColor(e.target.value)} placeholder="ou hex" style={{ width: 120, padding: '8px 12px', borderRadius: 6, border: '1px solid #e6e6e6', boxSizing: 'border-box' }} />
+                {introBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setIntroBackgroundColor('')}>Effacer</button> : null}
+              </div>
+            </div>
+          </>)}
 
           {error ? <div style={{ color: 'crimson' }}>{error}</div> : null}
 
