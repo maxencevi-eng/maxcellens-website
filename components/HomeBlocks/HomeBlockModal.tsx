@@ -1255,6 +1255,14 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </>)}
 
               {tab === 'style' && (<>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input type="color" value={bannerBgValue} onChange={(e) => setBannerBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="text" value={bannerBackgroundColor} onChange={(e) => setBannerBackgroundColor(e.target.value)} placeholder="ou hex" style={{ ...inputStyle, width: 120 }} />
+                  {bannerBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setBannerBackgroundColor("")}>Effacer</button> : null}
+                </div>
+              </div>
               <RadiusInputs top={bannerRadiusTop} setTop={setBannerRadiusTop} bottom={bannerRadiusBottom} setBottom={setBannerRadiusBottom} />
               <PaddingInputs top={bannerPaddingTop} setTop={setBannerPaddingTop} bottom={bannerPaddingBottom} setBottom={setBannerPaddingBottom} />
               </>)}
