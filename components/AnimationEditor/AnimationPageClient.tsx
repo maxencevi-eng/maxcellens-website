@@ -124,27 +124,36 @@ export default function AnimationPageClient() {
   }, []);
 
   // Scroll vers la section cible au chargement (depuis accueil avec #animation_s1, etc.)
+  // Attends la fin du splash screen avant de scroller pour que l'animation soit visible.
   useEffect(() => {
     if (!loaded || typeof window === "undefined") return;
     const hash = window.location.hash?.replace(/^#/, "") || "";
     if (!hash || !["animation_s1", "animation_s2", "animation_s3", "animation_cta"].includes(hash)) return;
-    const scrollToEl = () => {
+
+    // Scroll to top immediately (while splash may still be visible) so user sees the
+    // top of the page when the splash fades out, then the smooth scroll begins.
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+
+    let done = false;
+    const doScroll = () => {
+      if (done) return;
+      done = true;
+      window.removeEventListener("splash-dismissed", onSplash);
       const el = document.getElementById(hash);
-      if (el) {
-        // Use instant behavior to avoid race conditions with browser's native scroll,
-        // especially on mobile where images may cause layout shifts during smooth scroll
-        el.scrollIntoView({ behavior: "instant" as ScrollBehavior, block: "start" });
-        return true;
-      }
-      return false;
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     };
-    // Wait longer on mobile for images/fonts to settle before scrolling
-    const delay = window.innerWidth < 768 ? 600 : 250;
-    const retryDelay = window.innerWidth < 768 ? 900 : 400;
-    const t1 = setTimeout(() => {
-      if (!scrollToEl()) setTimeout(scrollToEl, retryDelay);
-    }, delay);
-    return () => clearTimeout(t1);
+    const onSplash = () => setTimeout(doScroll, 80);
+
+    window.addEventListener("splash-dismissed", onSplash, { once: true });
+
+    // Fallback: if splash was already dismissed before this effect ran, or won't fire
+    const fallback = setTimeout(doScroll, 3600);
+
+    return () => {
+      done = true;
+      clearTimeout(fallback);
+      window.removeEventListener("splash-dismissed", onSplash);
+    };
   }, [loaded]);
 
   const { hiddenBlocks, blockWidthModes, blockOrderAnimation, isAdmin: isAdminCtx } = useBlockVisibility();

@@ -116,6 +116,16 @@
   100% { transform: translateX(-50%); }
 }
 
+/* Mode logos blancs : filtre blanc en état normal, couleur originale au survol */
+.logoFilterWhite .item img,
+.logoFilterWhite .loopItem img {
+  filter: brightness(0) invert(1);
+}
+.logoFilterWhite .item:hover img,
+.logoFilterWhite .loopItem:hover img {
+  filter: grayscale(0%) opacity(1);
+}
+
 /* Mobile : mode nuage (disposition libre) quel que soit le mode desktop */
 @media (max-width: 900px) {
   .section .grid,

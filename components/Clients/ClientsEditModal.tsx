@@ -71,6 +71,7 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
   const [success, setSuccess] = useState<string | null>(null);
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
   const [bgColor, setBgColor] = useState('');
+  const [logoFilter, setLogoFilter] = useState<string>('');
   const [radiusTop, setRadiusTop] = useState<number | ''>('');
   const [radiusBottom, setRadiusBottom] = useState<number | ''>('');
   const [paddingTop, setPaddingTop] = useState<number | ''>('');
@@ -91,7 +92,7 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom');
+        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_logo_filter,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
@@ -102,6 +103,7 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
         if (s.clients_title_color) setTitleColor(String(s.clients_title_color));
         if (s.clients_title_align && ['left','center','right'].includes(s.clients_title_align)) setTitleAlign(String(s.clients_title_align));
         if (s.clients_bg) setBgColor(String(s.clients_bg));
+        if (s.clients_logo_filter != null) setLogoFilter(String(s.clients_logo_filter));
         if (s.clients_radius_top != null && s.clients_radius_top !== '') setRadiusTop(Number(s.clients_radius_top));
         if (s.clients_radius_bottom != null && s.clients_radius_bottom !== '') setRadiusBottom(Number(s.clients_radius_bottom));
         if (s.clients_padding_top != null && s.clients_padding_top !== '') setPaddingTop(Number(s.clients_padding_top));
@@ -216,6 +218,7 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_logos', value: JSON.stringify(logos) }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_grid', value: JSON.stringify(grid) }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_bg', value: bgColor }) }),
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_logo_filter', value: logoFilter }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_radius_top', value: radiusTop !== '' ? String(radiusTop) : '' }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_radius_bottom', value: radiusBottom !== '' ? String(radiusBottom) : '' }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_padding_top', value: paddingTop !== '' ? String(paddingTop) : '' }) }),
@@ -405,6 +408,23 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
               <input type="color" value={bgColor || '#fafaf9'} onChange={(e) => setBgColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: '1px solid #e6e6e6', borderRadius: 6 }} />
               <input type="text" value={bgColor} onChange={(e) => setBgColor(e.target.value)} placeholder="ou hex (ex. #fafaf9)" style={{ padding: '6px 10px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13, width: 140 }} />
               {bgColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setBgColor('')}>Effacer</button> : null}
+            </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Style des logos</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setLogoFilter(logoFilter === 'white' ? '' : 'white')}
+                style={{ padding: '6px 14px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13, cursor: 'pointer', background: logoFilter === 'white' ? '#111' : '#fff', color: logoFilter === 'white' ? '#fff' : '#111', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: logoFilter === 'white' ? '#fff' : '#ccc', border: '1px solid #999' }} />
+                Logos blancs (fond sombre)
+              </button>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>
+                {logoFilter === 'white' ? 'Filtre actif : logos convertis en blanc' : 'Couleur originale des logos'}
+              </span>
             </div>
           </div>
 

@@ -27,10 +27,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-primary, #2d6b5f) 0%, #1e4d44 100%);
+  background: linear-gradient(135deg, #1e3430 0%, #172622 50%, #0d1a17 100%);
   color: #fff;
   border-radius: 14px;
-  box-shadow: 0 6px 16px rgba(45, 107, 95, 0.25);
+  box-shadow: 0 6px 16px rgba(23, 38, 34, 0.30);
 }
 
 .title {
@@ -78,8 +78,8 @@
 
 .input:focus {
   outline: none;
-  border-color: var(--color-primary, #2d6b5f);
-  box-shadow: 0 0 0 3px rgba(45, 107, 95, 0.12);
+  border-color: #172622;
+  box-shadow: 0 0 0 3px rgba(23, 38, 34, 0.14);
 }
 
 .btnSubmit {
@@ -87,18 +87,18 @@
   padding: 0.875rem 1.25rem;
   border-radius: 10px;
   border: none;
-  background: linear-gradient(135deg, var(--color-primary, #2d6b5f) 0%, #1e4d44 100%);
+  background: linear-gradient(135deg, #1e3430 0%, #172622 50%, #0d1a17 100%);
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(45, 107, 95, 0.3);
+  box-shadow: 0 4px 14px rgba(23, 38, 34, 0.35);
   transition: transform 0.15s, box-shadow 0.15s;
 }
 
 .btnSubmit:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(45, 107, 95, 0.35);
+  box-shadow: 0 6px 20px rgba(23, 38, 34, 0.42);
 }
 
 .btnSubmit:active:not(:disabled) {
@@ -122,7 +122,7 @@
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--color-primary, #2d6b5f) 0%, #1e4d44 100%);
+  background: linear-gradient(135deg, #1e3430 0%, #172622 50%, #0d1a17 100%);
   color: #fff;
   display: flex;
   align-items: center;

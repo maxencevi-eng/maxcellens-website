@@ -646,14 +646,13 @@
   font-weight: 600;
   font-size: 0.95rem;
   text-decoration: none;
-  border-radius: 8px;
-  transition: opacity 0.2s, transform 0.15s;
+  border-radius: 12px;
+  transition: box-shadow 240ms ease, transform 180ms ease;
   align-self: flex-start;
 }
 
 .portraitCta:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  transform: translateY(-3px);
 }
 
 /* Navigation : points + flèches */
@@ -945,31 +944,79 @@
   margin-top: 0.5rem;
   padding: 0.75rem 1.75rem;
   background: var(--fg, #1C1C1A);
+  position: relative;
+  overflow: hidden;
   color: #fff;
   font-weight: 600;
   font-size: 0.95rem;
   text-decoration: none;
   border-radius: 8px;
-  transition: opacity 0.2s, transform 0.15s;
+  background:
+    linear-gradient(180deg,
+      rgba(255,255,255,0.16) 0%,
+      rgba(255,255,255,0)    52%,
+      rgba(0,0,0,0.12)       100%
+    ),
+    var(--fg, #1C1C1A);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 0 -2px 0 rgba(0,0,0,0.22),
+    0 1px 2px  rgba(0,0,0,0.10),
+    0 4px 14px rgba(0,0,0,0.22),
+    0 8px 24px rgba(0,0,0,0.10);
+  transition: background 240ms ease, box-shadow 240ms ease, transform 180ms ease;
   align-self: flex-start;
   width: fit-content;
 }
 
+/* Lumière sweepante au survol */
+.bannerTextCta::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -90%;
+  width: 60%;
+  height: 120%;
+  background: linear-gradient(
+    105deg,
+    transparent   15%,
+    rgba(255,255,255,0.38) 50%,
+    transparent   85%
+  );
+  transform: skewX(-15deg);
+  transition: left 520ms ease;
+  pointer-events: none;
+}
+
 .bannerTextCta:hover {
-  opacity: 0.85;
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.28),
+    inset 0 -2px 0 rgba(0,0,0,0.26),
+    0 2px 4px  rgba(0,0,0,0.12),
+    0 10px 28px rgba(0,0,0,0.28),
+    0 20px 48px rgba(0,0,0,0.12);
+}
+
+.bannerTextCta:hover::after {
+  left: 130%;
 }
 
 .bannerTextCtaStyle2 {
   background: transparent;
   color: var(--fg, #1C1C1A);
   border: 2px solid currentColor;
+  box-shadow: none;
 }
 
 .bannerTextCtaStyle2:hover {
   background: var(--fg, #1C1C1A);
   color: #fff;
-  opacity: 1;
+  box-shadow:
+    0 2px 4px  rgba(0,0,0,0.12),
+    0 10px 28px rgba(0,0,0,0.28);
 }
 
 /* Image column: contains the tilted card with padding around it */
@@ -1690,13 +1737,12 @@
   font-weight: 600;
   font-size: 1rem;
   text-decoration: none;
-  border-radius: 999px;
-  transition: opacity 0.2s, transform 0.15s;
+  border-radius: 12px;
+  transition: box-shadow 240ms ease, transform 180ms ease;
 }
 
 .ctaButton:hover {
-  opacity: 0.85;
-  transform: translateY(-2px);
+  transform: translateY(-3px);
 }
 
 .ctaButton:focus-visible {

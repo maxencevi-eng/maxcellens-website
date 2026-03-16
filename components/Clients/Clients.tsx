@@ -53,6 +53,7 @@ export default function Clients({ logos, title }: Props) {
   const [radiusTop, setRadiusTop] = useState<number | null>(null);
   const [radiusBottom, setRadiusBottom] = useState<number | null>(null);
   const [loadedSet, setLoadedSet] = useState<Set<string>>(new Set());
+  const [logoFilter, setLogoFilter] = useState<string>('');
 
   const markLoaded = useCallback((key: string) => {
     setLoadedSet((prev) => {
@@ -80,7 +81,7 @@ export default function Clients({ logos, title }: Props) {
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom');
+        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom,clients_logo_filter');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
@@ -95,6 +96,7 @@ export default function Clients({ logos, title }: Props) {
         if (s.clients_radius_bottom != null && s.clients_radius_bottom !== '') setRadiusBottom(Number(s.clients_radius_bottom));
         if (s.clients_padding_top != null && s.clients_padding_top !== '') setPaddingTop(Number(s.clients_padding_top));
         if (s.clients_padding_bottom != null && s.clients_padding_bottom !== '') setPaddingBottom(Number(s.clients_padding_bottom));
+        if (s.clients_logo_filter != null) setLogoFilter(String(s.clients_logo_filter));
         if (s.clients_logos) {
           try {
             const parsed = JSON.parse(String(s.clients_logos));
@@ -176,7 +178,7 @@ export default function Clients({ logos, title }: Props) {
 
   return (
     <section
-      className={styles.section}
+      className={`${styles.section}${logoFilter === 'white' ? ` ${styles.logoFilterWhite}` : ''}`}
       style={{
         width: '100vw',
         marginLeft: 'calc(50% - 50vw)',

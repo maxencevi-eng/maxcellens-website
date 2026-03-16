@@ -218,11 +218,16 @@ export default function SiteStyleProvider({ children }: { children: React.ReactN
                 opacity: var(--site-bg-opacity, 0.08);
                 ${textureCss}
               }
-              /* Each section/header creates its own stacking context; ::before at z-index:-1
-                 paints after the element's background-color but before all its content */
-              section, header {
+              /* Sections use isolation:isolate so ::before z-index:-1 paints above background */
+              section {
                 position: relative;
                 isolation: isolate;
+              }
+              /* Header uses z-index (not isolation:isolate) so the fixed mobile menu
+                 can escape the header stacking context and appear above main content */
+              header {
+                position: relative;
+                z-index: 200;
               }
               section::before, header::before {
                 content: ''; position: absolute; inset: 0;

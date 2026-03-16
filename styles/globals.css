@@ -519,16 +519,86 @@ body.has-admin-sidebar {
   --button-2-color: var(--fg, #213431);
 }
 
-/* Classes pour appliquer le style de bouton choisi dans les modaux (CTA, etc.) */
+/* ── Boutons site (CTA, portrait, animation…) ───────────────────────────────
+   Le dégradé de gloss est superposé EN COUCHE sur la couleur variable
+   → la couleur utilisateur est préservée, le fond n'est plus plat.         */
 .btn-site-1 {
-  background: var(--button-1-bg) !important;
+  /* Gloss top→bottom par-dessus la couleur de fond */
+  background:
+    linear-gradient(180deg,
+      rgba(255,255,255,0.16) 0%,
+      rgba(255,255,255,0)    52%,
+      rgba(0,0,0,0.12)       100%
+    ),
+    var(--button-1-bg) !important;
   color: var(--button-1-color) !important;
-  border: none;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px !important;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    inset 0 -2px 0 rgba(0,0,0,0.22),
+    0 1px 2px  rgba(0,0,0,0.10),
+    0 4px 14px rgba(0,0,0,0.22),
+    0 8px 24px rgba(0,0,0,0.10);
+  transition: background 240ms ease, box-shadow 240ms ease, transform 180ms ease !important;
 }
 .btn-site-2 {
-  background: var(--button-2-bg) !important;
+  background:
+    linear-gradient(180deg,
+      rgba(255,255,255,0.85) 0%,
+      rgba(255,255,255,0.30) 52%,
+      rgba(0,0,0,0.04)       100%
+    ),
+    var(--button-2-bg) !important;
   color: var(--button-2-color) !important;
-  border: 1px solid rgba(0,0,0,0.1);
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 12px !important;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.95),
+    inset 0 -2px 0 rgba(0,0,0,0.06),
+    0 1px 2px  rgba(0,0,0,0.06),
+    0 4px 14px rgba(0,0,0,0.10),
+    0 8px 24px rgba(0,0,0,0.05);
+  transition: background 240ms ease, box-shadow 240ms ease, transform 180ms ease !important;
+}
+
+/* Lumière sweepante au survol */
+.btn-site-1::after,
+.btn-site-2::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: -90%;
+  width: 60%;
+  height: 120%;
+  background: linear-gradient(
+    105deg,
+    transparent   15%,
+    rgba(255,255,255,0.38) 50%,
+    transparent   85%
+  );
+  transform: skewX(-15deg);
+  transition: left 520ms ease;
+  pointer-events: none;
+}
+
+.btn-site-1:hover,
+.btn-site-2:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.28),
+    inset 0 -2px 0 rgba(0,0,0,0.26),
+    0 2px 4px  rgba(0,0,0,0.12),
+    0 10px 28px rgba(0,0,0,0.28),
+    0 20px 48px rgba(0,0,0,0.12) !important;
+}
+.btn-site-1:hover::after,
+.btn-site-2:hover::after {
+  left: 130%;
 }
 
 /* Styles de titre éditables (choix dans modaux : Paragraphe, Titre 1… — définis dans Style du site) */

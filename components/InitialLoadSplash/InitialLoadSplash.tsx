@@ -48,7 +48,10 @@ export default function InitialLoadSplash() {
     if (removed.current) return;
     removed.current = true;
     setFadeOut(true);
-    setTimeout(() => setVisible(false), 600);
+    setTimeout(() => {
+      setVisible(false);
+      window.dispatchEvent(new CustomEvent('splash-dismissed'));
+    }, 600);
   }, []);
 
   // SPA navigation: re-show splash on route change
@@ -167,7 +170,7 @@ export default function InitialLoadSplash() {
           position: 'fixed',
           inset: 0,
           zIndex: 99999,
-          background: '#213431',
+          background: '#172622',
           opacity: fadeOut ? 0 : 1,
           transition: 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
           pointerEvents: fadeOut ? 'none' : 'auto',
