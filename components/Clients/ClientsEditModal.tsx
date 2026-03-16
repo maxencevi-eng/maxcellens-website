@@ -77,7 +77,7 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
   const [radiusBottom, setRadiusBottom] = useState<number | ''>('');
   const [paddingTop, setPaddingTop] = useState<number | ''>('');
   const [paddingBottom, setPaddingBottom] = useState<number | ''>('');
-  const [tab, setTab] = useState<'logos' | 'titre' | 'disposition' | 'style'>('logos');
+  const [tab, setTab] = useState<'logos' | 'titre' | 'disposition' | 'style'>('titre');
 
   const [grid, setGrid] = useState<{ columns: number; itemWidth: number; rowGap: number; colGap: number; heightRatio: number; cloudMode?: boolean; rows?: number; loopMode?: boolean; loopSpeed?: number }>(() => ({
     columns: 5,
@@ -248,7 +248,7 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
   const inputStyle: React.CSSProperties = { padding: '6px 10px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13 };
 
   const modalContent = (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 9999, padding: '70px 16px 16px', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 9999, padding: '70px 16px 16px', overflowY: 'auto' }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ background: '#fff', color: '#000', padding: 20, width: 820, maxWidth: '98%', borderRadius: 10, alignSelf: 'flex-start' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0 }}>Modifier le bloc Clients</h3>
@@ -257,8 +257,8 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
 
         <ModalTabs
           tabs={[
-            { id: 'logos', label: 'Logos' },
             { id: 'titre', label: 'Titre' },
+            { id: 'logos', label: 'Logos' },
             { id: 'disposition', label: 'Disposition' },
             { id: 'style', label: 'Style' },
           ]}

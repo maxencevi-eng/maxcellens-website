@@ -11,33 +11,35 @@ export default function ModalTabs({ tabs, active, onChange }: {
   return (
     <div style={{
       display: 'flex',
-      gap: 0,
-      borderBottom: '1px solid #e5e7eb',
-      marginBottom: 18,
+      gap: 8,
+      marginBottom: 12,
       marginTop: 6,
       overflowX: 'auto',
+      flexWrap: 'wrap',
     }}>
-      {tabs.map(t => (
-        <button
-          key={t.id}
-          type="button"
-          onClick={() => onChange(t.id)}
-          style={{
-            padding: '7px 16px',
-            border: 'none',
-            borderBottom: active === t.id ? '2px solid #111' : '2px solid transparent',
-            background: 'none',
-            fontSize: 13,
-            fontWeight: active === t.id ? 600 : 400,
-            color: active === t.id ? '#111' : '#6b7280',
-            cursor: 'pointer',
-            borderRadius: 0,
-            marginBottom: -1,
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-          }}
-        >{t.label}</button>
-      ))}
+      {tabs.map(t => {
+        const isActive = active === t.id;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => onChange(t.id)}
+            style={{
+              background: isActive ? 'var(--button-2-bg, #f5f5f5)' : 'transparent',
+              color: isActive ? 'var(--button-2-color, #111)' : 'var(--button-1-color, #213431)',
+              border: isActive ? '1px solid var(--button-2-bg, #ddd)' : '1px solid var(--button-1-bg, #eee)',
+              padding: '8px 12px',
+              borderRadius: 6,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: isActive ? 700 : 400,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              boxShadow: 'none',
+            }}
+          >{t.label}</button>
+        );
+      })}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import ModalTabs from "../ui/ModalTabs";
 
 const RichTextModal = dynamic(() => import("../RichTextModal/RichTextModal"), { ssr: false });
 
@@ -54,6 +55,14 @@ function toHtml(val: string | undefined): string {
   return `<p>${val.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</p>`;
 }
 
+const inputStyle: React.CSSProperties = {
+  padding: "8px 10px",
+  border: "1px solid #e6e6e6",
+  borderRadius: 6,
+  boxSizing: "border-box",
+  fontSize: 14,
+};
+
 export default function ContactZonesEditModal({
   onClose,
   onSaved,
@@ -66,6 +75,7 @@ export default function ContactZonesEditModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingZone, setEditingZone] = useState<"qg" | "paris" | "france" | null>(null);
+  const [tab, setTab] = useState<'qg' | 'paris' | 'france' | 'carte'>('qg');
 
   useEffect(() => {
     let mounted = true;
@@ -128,7 +138,7 @@ export default function ContactZonesEditModal({
 
   if (loading) {
     return (
-      <div className="modal-overlay-mobile" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
+      <div className="modal-overlay-mobile" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 9999, padding: "70px 16px 16px", overflowY: "auto" }}>
         <div style={{ background: "#fff", padding: 24, borderRadius: 8 }}>Chargement…</div>
       </div>
     );
@@ -138,7 +148,7 @@ export default function ContactZonesEditModal({
   const qgTitleFontSize = zones.qg?.titleFontSize ?? "";
   const qgTitle = zones.qg?.title ?? "";
   const qgPhone = zones.qg?.phone ?? "";
-  
+
   const parisTitleStyle = zones.paris?.titleStyle ?? "h3";
   const parisTitleFontSize = zones.paris?.titleFontSize ?? "";
   const parisTitle = zones.paris?.title ?? "";
@@ -151,170 +161,134 @@ export default function ContactZonesEditModal({
   const backgroundColor = zones.backgroundColor ?? "";
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
-      <div style={{ background: "#fff", color: "#000", padding: 20, width: 560, maxWidth: "98%", maxHeight: "90vh", overflowY: "auto", borderRadius: 10 }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 9999, padding: "70px 16px 16px", overflowY: "auto" }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background: "#fff", color: "#000", padding: 20, width: 560, maxWidth: "98%", borderRadius: 10, alignSelf: "flex-start" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ margin: 0 }}>Modifier les zones (QG, Paris, France & carte)</h3>
+          <h3 style={{ margin: 0 }}>Modifier les zones</h3>
           <button type="button" onClick={onClose} aria-label="Fermer" style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}>✕</button>
         </div>
 
-        <section style={{ marginBottom: 20 }}>
-          <h4 style={{ margin: "0 0 10px", fontSize: 14, color: "var(--muted)" }}>Zone 1 — QG</h4>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
-              <input
-              type="text"
-              value={qgTitle}
-              onChange={(e) => setZones((z) => ({ ...z, qg: { ...z.qg, title: e.target.value } }))}
-              style={{ flex: 1, minWidth: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
-            />
-              <select value={qgTitleStyle} onChange={(e) => setZones((z) => ({ ...z, qg: { ...z.qg, titleStyle: e.target.value as TitleStyleKey } }))} style={{ width: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }}>
-                {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={qgTitleFontSize} onChange={(e) => { const v = e.target.value === "" ? undefined : Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(e.target.value))); setZones((z) => ({ ...z, qg: { ...z.qg, titleFontSize: v } })); }} placeholder="px" style={{ width: 64, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }} title="Taille titre (8–72 px)" />
-            </div>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte</label>
-            <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "flex-start" }}>
-              <div style={{ flex: 1, minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: zones.qg?.text || "<p style='color:#999'>Aucun</p>" }} />
-              <button type="button" className="btn-ghost" onClick={() => setEditingZone("qg")}>Éditer</button>
-            </div>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Téléphone</label>
-            <input
-              type="text"
-              value={qgPhone}
-              onChange={(e) => setZones((z) => ({ ...z, qg: { ...z.qg, phone: e.target.value } }))}
-              style={{ width: "100%", padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
-              placeholder="06 74 96 64 58"
-            />
-          </div>
-        </section>
+        <ModalTabs
+          tabs={[
+            { id: 'qg', label: 'Zone QG' },
+            { id: 'paris', label: 'Paris' },
+            { id: 'france', label: 'France & Monde' },
+            { id: 'carte', label: 'Carte & Style' },
+          ]}
+          active={tab}
+          onChange={(t) => setTab(t as any)}
+        />
 
-        <section style={{ marginBottom: 20 }}>
-          <h4 style={{ margin: "0 0 10px", fontSize: 14, color: "var(--muted)" }}>Zone 2 — Paris & Alentours</h4>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
-              <input
-              type="text"
-              value={parisTitle}
-              onChange={(e) => setZones((z) => ({ ...z, paris: { ...z.paris, title: e.target.value } }))}
-              style={{ flex: 1, minWidth: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
-            />
-              <select value={parisTitleStyle} onChange={(e) => setZones((z) => ({ ...z, paris: { ...z.paris, titleStyle: e.target.value as TitleStyleKey } }))} style={{ width: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }}>
-                {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={parisTitleFontSize} onChange={(e) => { const v = e.target.value === "" ? undefined : Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(e.target.value))); setZones((z) => ({ ...z, paris: { ...z.paris, titleFontSize: v } })); }} placeholder="px" style={{ width: 64, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }} title="Taille titre (8–72 px)" />
-            </div>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte</label>
-            <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "flex-start" }}>
-              <div style={{ flex: 1, minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: zones.paris?.text || "<p style='color:#999'>Aucun</p>" }} />
-              <button type="button" className="btn-ghost" onClick={() => setEditingZone("paris")}>Éditer</button>
-            </div>
-          </div>
-        </section>
+        <div style={{ marginTop: 16 }}>
 
-        <section style={{ marginBottom: 20 }}>
-          <h4 style={{ margin: "0 0 10px", fontSize: 14, color: "var(--muted)" }}>Zone 3 — France & Monde</h4>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
-              <input
-              type="text"
-              value={franceTitle}
-              onChange={(e) => setZones((z) => ({ ...z, france: { ...z.france, title: e.target.value } }))}
-              style={{ flex: 1, minWidth: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
-            />
-              <select value={franceTitleStyle} onChange={(e) => setZones((z) => ({ ...z, france: { ...z.france, titleStyle: e.target.value as TitleStyleKey } }))} style={{ width: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }}>
-                {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={franceTitleFontSize} onChange={(e) => { const v = e.target.value === "" ? undefined : Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(e.target.value))); setZones((z) => ({ ...z, france: { ...z.france, titleFontSize: v } })); }} placeholder="px" style={{ width: 64, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6 }} title="Taille titre (8–72 px)" />
-            </div>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte</label>
-            <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "flex-start" }}>
-              <div style={{ flex: 1, minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: zones.france?.text || "<p style='color:#999'>Aucun</p>" }} />
-              <button type="button" className="btn-ghost" onClick={() => setEditingZone("france")}>Éditer</button>
-            </div>
-          </div>
-        </section>
+          {tab === 'qg' && (
+            <>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input type="text" value={qgTitle} onChange={(e) => setZones((z) => ({ ...z, qg: { ...z.qg, title: e.target.value } }))} style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
+                  <select value={qgTitleStyle} onChange={(e) => setZones((z) => ({ ...z, qg: { ...z.qg, titleStyle: e.target.value as TitleStyleKey } }))} style={{ ...inputStyle, width: 120 }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={qgTitleFontSize} onChange={(e) => { const v = e.target.value === "" ? undefined : Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(e.target.value))); setZones((z) => ({ ...z, qg: { ...z.qg, titleFontSize: v } })); }} placeholder="px" style={{ ...inputStyle, width: 64 }} />
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <div style={{ flex: 1, minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: zones.qg?.text || "<p style='color:#999'>Aucun</p>" }} />
+                  <button type="button" className="btn-ghost" onClick={() => setEditingZone("qg")}>Éditer</button>
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Téléphone</label>
+                <input type="text" value={qgPhone} onChange={(e) => setZones((z) => ({ ...z, qg: { ...z.qg, phone: e.target.value } }))} style={{ ...inputStyle, width: "100%" }} placeholder="06 74 96 64 58" />
+              </div>
+            </>
+          )}
 
-        <section style={{ marginBottom: 20 }}>
-          <h4 style={{ margin: "0 0 10px", fontSize: 14, color: "var(--muted)" }}>Carte Google Maps</h4>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Adresse ou recherche (ex. 92140 Clamart)</label>
-            <input
-              type="text"
-              value={mapQuery}
-              onChange={(e) => setZones((z) => ({ ...z, mapQuery: e.target.value }))}
-              style={{ width: "100%", padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
-              placeholder="92140 Clamart"
-            />
-          </div>
-        </section>
+          {tab === 'paris' && (
+            <>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input type="text" value={parisTitle} onChange={(e) => setZones((z) => ({ ...z, paris: { ...z.paris, title: e.target.value } }))} style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
+                  <select value={parisTitleStyle} onChange={(e) => setZones((z) => ({ ...z, paris: { ...z.paris, titleStyle: e.target.value as TitleStyleKey } }))} style={{ ...inputStyle, width: 120 }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={parisTitleFontSize} onChange={(e) => { const v = e.target.value === "" ? undefined : Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(e.target.value))); setZones((z) => ({ ...z, paris: { ...z.paris, titleFontSize: v } })); }} placeholder="px" style={{ ...inputStyle, width: 64 }} />
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <div style={{ flex: 1, minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: zones.paris?.text || "<p style='color:#999'>Aucun</p>" }} />
+                  <button type="button" className="btn-ghost" onClick={() => setEditingZone("paris")}>Éditer</button>
+                </div>
+              </div>
+            </>
+          )}
 
-        <section style={{ marginBottom: 20 }}>
-          <h4 style={{ margin: "0 0 10px", fontSize: 14, color: "var(--muted)" }}>Apparence</h4>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
-              <input
-                type="color"
-                value={backgroundColor || "#fafaf9"}
-                onChange={(e) => setZones((z) => ({ ...z, backgroundColor: e.target.value }))}
-                style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }}
-              />
-              <input
-                type="text"
-                value={backgroundColor}
-                onChange={(e) => setZones((z) => ({ ...z, backgroundColor: e.target.value }))}
-                placeholder="ou hex"
-                style={{ width: 120, padding: "8px 10px", border: "1px solid #e6e6e6", borderRadius: 6, boxSizing: "border-box" }}
-              />
-              {backgroundColor && (
-                <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setZones((z) => ({ ...z, backgroundColor: undefined }))}>Effacer</button>
-              )}
-            </div>
-          </div>
-        </section>
+          {tab === 'france' && (
+            <>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <input type="text" value={franceTitle} onChange={(e) => setZones((z) => ({ ...z, france: { ...z.france, title: e.target.value } }))} style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
+                  <select value={franceTitleStyle} onChange={(e) => setZones((z) => ({ ...z, france: { ...z.france, titleStyle: e.target.value as TitleStyleKey } }))} style={{ ...inputStyle, width: 120 }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <input type="number" min={TITLE_FONT_SIZE_MIN} max={TITLE_FONT_SIZE_MAX} value={franceTitleFontSize} onChange={(e) => { const v = e.target.value === "" ? undefined : Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(e.target.value))); setZones((z) => ({ ...z, france: { ...z.france, titleFontSize: v } })); }} placeholder="px" style={{ ...inputStyle, width: 64 }} />
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <div style={{ flex: 1, minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: zones.france?.text || "<p style='color:#999'>Aucun</p>" }} />
+                  <button type="button" className="btn-ghost" onClick={() => setEditingZone("france")}>Éditer</button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === 'carte' && (
+            <>
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Carte Google Maps</label>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Adresse ou recherche (ex. 92140 Clamart)</label>
+                <input type="text" value={mapQuery} onChange={(e) => setZones((z) => ({ ...z, mapQuery: e.target.value }))} style={{ ...inputStyle, width: "100%" }} placeholder="92140 Clamart" />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Apparence</label>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input type="color" value={backgroundColor || "#fafaf9"} onChange={(e) => setZones((z) => ({ ...z, backgroundColor: e.target.value }))} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="text" value={backgroundColor} onChange={(e) => setZones((z) => ({ ...z, backgroundColor: e.target.value }))} placeholder="ou hex" style={{ ...inputStyle, width: 120 }} />
+                  {backgroundColor && (
+                    <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setZones((z) => ({ ...z, backgroundColor: undefined }))}>Effacer</button>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+        </div>
 
         {error && <div style={{ color: "crimson", marginBottom: 8 }}>{error}</div>}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
           <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>Annuler</button>
           <button type="button" className="btn-primary" onClick={save} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button>
         </div>
       </div>
 
       {editingZone === "qg" && (
-        <RichTextModal
-          title="Éditer zone QG"
-          initial={zones.qg?.text ?? ""}
-          onClose={() => setEditingZone(null)}
-          onSave={(h) => { setZones((z) => ({ ...z, qg: { ...z.qg, text: h } })); setEditingZone(null); }}
-        />
+        <RichTextModal title="Éditer zone QG" initial={zones.qg?.text ?? ""} onClose={() => setEditingZone(null)} onSave={(h) => { setZones((z) => ({ ...z, qg: { ...z.qg, text: h } })); setEditingZone(null); }} />
       )}
       {editingZone === "paris" && (
-        <RichTextModal
-          title="Éditer zone Paris & Alentours"
-          initial={zones.paris?.text ?? ""}
-          onClose={() => setEditingZone(null)}
-          onSave={(h) => { setZones((z) => ({ ...z, paris: { ...z.paris, text: h } })); setEditingZone(null); }}
-        />
+        <RichTextModal title="Éditer zone Paris & Alentours" initial={zones.paris?.text ?? ""} onClose={() => setEditingZone(null)} onSave={(h) => { setZones((z) => ({ ...z, paris: { ...z.paris, text: h } })); setEditingZone(null); }} />
       )}
       {editingZone === "france" && (
-        <RichTextModal
-          title="Éditer zone France & Monde"
-          initial={zones.france?.text ?? ""}
-          onClose={() => setEditingZone(null)}
-          onSave={(h) => { setZones((z) => ({ ...z, france: { ...z.france, text: h } })); setEditingZone(null); }}
-        />
+        <RichTextModal title="Éditer zone France & Monde" initial={zones.france?.text ?? ""} onClose={() => setEditingZone(null)} onSave={(h) => { setZones((z) => ({ ...z, france: { ...z.france, text: h } })); setEditingZone(null); }} />
       )}
     </div>
   );

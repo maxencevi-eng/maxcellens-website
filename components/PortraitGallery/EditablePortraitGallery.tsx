@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from '../../lib/supabase';
 import { compressImageClient } from '@/lib/compressImageClient';
 import PortraitGallery from "./PortraitGallery";
@@ -153,14 +154,14 @@ export default function EditablePortraitGallery({ items: initialItems, settingsK
         )}
       </div>
 
-      {open && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '95%', maxWidth: 900, maxHeight: '90vh', overflow: 'auto', background: '#fff', borderRadius: 8, padding: 16 }}>
+      {open && createPortal(
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '70px 16px 32px', overflowY: 'auto' }} onMouseDown={(e) => { if (e.target === e.currentTarget) closeEditor(); }}>
+          <div style={{ width: '95%', maxWidth: 900, background: '#fff', borderRadius: 8, padding: 16, alignSelf: 'flex-start', flexShrink: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <h3 style={{ margin: 0 }}>Modifier la galerie{galleryLabel ? ` ${galleryLabel}` : ''}</h3>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={closeEditor} style={{ padding: '6px 10px' }}>Annuler</button>
-                <button onClick={save} style={{ background: '#111', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: 6 }}>Enregistrer</button>
+                <button onClick={closeEditor} className="btn-ghost">Annuler</button>
+                <button onClick={save} className="btn-primary">Enregistrer</button>
               </div>
             </div>
 
@@ -228,7 +229,7 @@ export default function EditablePortraitGallery({ items: initialItems, settingsK
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <button onClick={() => removeItem(String(it.id))} style={{ background: 'transparent', border: '1px solid #e6e6e6', padding: '4px 6px', fontSize: 12 }}>Suppr.</button>
+                            <button onClick={() => removeItem(String(it.id))} className="btn-ghost" style={{ fontSize: 12, color: '#c00' }}>Suppr.</button>
                             <SmallReplace oldPath={it.image_path} onReplace={(url) => replaceItem(String(it.id), url)} uploadPage={uploadPage} uploadFolder={uploadFolder} />
                           </div>
                         </div>
@@ -236,8 +237,8 @@ export default function EditablePortraitGallery({ items: initialItems, settingsK
                     </div>
 
                     <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <button onClick={() => { if (idx > 0) moveItem(idx, idx - 1); }} title="Monter" style={{ padding: '4px 6px', fontSize: 11 }}>▲</button>
-                      <button onClick={() => { if (idx < items.length - 1) moveItem(idx, idx + 1); }} title="Descendre" style={{ padding: '4px 6px', fontSize: 11 }}>▼</button>
+                      <button onClick={() => { if (idx > 0) moveItem(idx, idx - 1); }} title="Monter" className="btn-ghost" style={{ fontSize: 11, padding: '3px 6px' }}>▲</button>
+                      <button onClick={() => { if (idx < items.length - 1) moveItem(idx, idx + 1); }} title="Descendre" className="btn-ghost" style={{ fontSize: 11, padding: '3px 6px' }}>▼</button>
                     </div>
                   </div>
                 ))}
@@ -246,7 +247,7 @@ export default function EditablePortraitGallery({ items: initialItems, settingsK
 
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }
@@ -280,7 +281,7 @@ function AddUrl({ onAdd, uploadPage = 'portrait', uploadFolder = 'Portrait/Galer
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
       <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => { const files = e.target.files; if (files && files.length) { Array.from(files).forEach((f) => uploadFile(f)); } if (fileRef.current) fileRef.current.value = ''; }} />
-      <button onClick={() => fileRef.current?.click()} style={{ padding: '8px 10px', borderRadius: 6, background: '#0b84ff', color: '#fff', border: 'none' }}>Importer</button>
+      <button onClick={() => fileRef.current?.click()} className="btn-primary">Importer</button>
     </div>
   );
 }
@@ -315,7 +316,7 @@ function SmallReplace({ onReplace, oldPath, uploadPage = 'portrait', uploadFolde
   return (
     <>
       <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f); if (fileRef.current) fileRef.current.value = ''; }} />
-      <button onClick={() => fileRef.current?.click()} style={{ padding: '4px 6px', border: '1px solid #e6e6e6', fontSize: 12 }}>Rempl</button>
+      <button onClick={() => fileRef.current?.click()} className="btn-ghost" style={{ fontSize: 12 }}>Rempl</button>
     </>
   );
 }

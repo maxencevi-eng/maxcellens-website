@@ -306,7 +306,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
   const clampHeight = (v: number) => Math.max(MIN_BANNER_HEIGHT, Math.min(MAX_BANNER_HEIGHT, v));
 
   return (
-    <div className={`${styles.overlay} modal-overlay-mobile`}>
+    <div className={`${styles.overlay} modal-overlay-mobile`} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={styles.modal}>
         <h3 style={{ marginTop: 0 }}>Modifier le footer</h3>
         <ModalTabs

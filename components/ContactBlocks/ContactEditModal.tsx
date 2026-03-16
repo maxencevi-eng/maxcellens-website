@@ -6,24 +6,31 @@ import { supabase } from '../../lib/supabase';
 import ModalTabs from '../ui/ModalTabs';
 const RichTextModal = dynamic(() => import('../RichTextModal/RichTextModal'), { ssr: false });
 
+const parseNumber = (v: any, def: number) => { const n = Number(v); return isNaN(n) ? def : n; };
+
 export default function ContactEditModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
   const [contactHandle, setContactHandle] = useState('@maxcellens');
   const [html, setHtml] = useState('');
   const [introBackgroundColor, setIntroBackgroundColor] = useState('');
   const [photo, setPhoto] = useState<{ url?: string; path?: string } | null>(null);
-  // Keep the original stored path so we can delete it if replaced on save
   const [originalPhotoPath, setOriginalPhotoPath] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [editingText, setEditingText] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<'contenu' | 'photo' | 'style'>('contenu');
+  const [tab, setTab] = useState<'titre' | 'texte' | 'photo' | 'style'>('titre');
+
+  // Handle style
+  const [handleColor, setHandleColor] = useState('#2d6b5f');
+  const [handleFontSize, setHandleFontSize] = useState(18);
+  const [handleFontWeight, setHandleFontWeight] = useState(700);
+  const [handleFontFamily, setHandleFontFamily] = useState('');
 
   useEffect(() => {
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=contact_handle,contact_intro,contact_photo');
+        const resp = await fetch('/api/admin/site-settings?keys=contact_handle,contact_intro,contact_photo,contact_handle_color,contact_handle_font_size,contact_handle_font_weight,contact_handle_font_family');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
@@ -49,6 +56,10 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
             else if (typeof parsed === 'string') { setPhoto({ url: parsed }); setOriginalPhotoPath(null); }
           } catch (e) { setPhoto({ url: String(s.contact_photo) }); setOriginalPhotoPath(null); }
         }
+        if (s.contact_handle_color) setHandleColor(String(s.contact_handle_color));
+        if (s.contact_handle_font_size) setHandleFontSize(parseNumber(s.contact_handle_font_size, 18));
+        if (s.contact_handle_font_weight) setHandleFontWeight(parseNumber(s.contact_handle_font_weight, 700));
+        if (s.contact_handle_font_family != null) setHandleFontFamily(String(s.contact_handle_font_family));
       } catch (e) {
         // ignore
       }
@@ -108,6 +119,10 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
       tasks.push(fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'contact_handle', value: String(contactHandle || '@maxcellens') }) }));
       tasks.push(fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'contact_intro', value: JSON.stringify({ html: html || '', backgroundColor: introBackgroundColor?.trim() || undefined }) }) }));
       tasks.push(fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'contact_photo', value: JSON.stringify(photo || '') }) }));
+      tasks.push(fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'contact_handle_color', value: handleColor }) }));
+      tasks.push(fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'contact_handle_font_size', value: String(handleFontSize) }) }));
+      tasks.push(fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'contact_handle_font_weight', value: String(handleFontWeight) }) }));
+      tasks.push(fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'contact_handle_font_family', value: handleFontFamily }) }));
       const res = await Promise.all(tasks);
       for (const r of res) {
         if (!r.ok) {
@@ -127,8 +142,10 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
     } catch (err: any) { setError(err?.message || 'Erreur'); } finally { setSaving(false); }
   }
 
+  const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 12px', marginTop: 4, borderRadius: 6, border: '1px solid #e6e6e6', boxSizing: 'border-box' };
+
   return (
-    <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 9999, padding: '70px 16px 16px', overflowY: 'auto' }}>
+    <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 9999, padding: '70px 16px 16px', overflowY: 'auto' }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ background: '#fff', color: '#000', padding: 20, width: 820, maxWidth: '98%', borderRadius: 10, alignSelf: 'flex-start' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0 }}>Modifier le bloc Contact</h3>
@@ -137,7 +154,8 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
 
         <ModalTabs
           tabs={[
-            { id: 'contenu', label: 'Contenu' },
+            { id: 'titre', label: 'Titre' },
+            { id: 'texte', label: 'Texte' },
             { id: 'photo', label: 'Photo' },
             { id: 'style', label: 'Style' },
           ]}
@@ -146,11 +164,58 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
         />
 
         <div style={{ marginTop: 12, display: 'grid', gap: 12 }}>
-          {tab === 'contenu' && (<>
+          {tab === 'titre' && (<>
             <div>
-              <label style={{ fontSize: 13, color: 'var(--muted)' }}>Texte en-tête (ex. @maxcellens)</label>
-              <input type="text" value={contactHandle} onChange={(e) => setContactHandle(e.target.value)} placeholder="@maxcellens" style={{ width: '100%', padding: '8px 12px', marginTop: 4, borderRadius: 6, border: '1px solid #e6e6e6', boxSizing: 'border-box' }} />
+              <label style={{ fontSize: 13, color: 'var(--muted)' }}>Texte en-tête</label>
+              <input type="text" value={contactHandle} onChange={(e) => setContactHandle(e.target.value)} placeholder="@maxcellens" style={inputStyle} />
             </div>
+
+            <div style={{ border: '1px solid #e6e6e6', borderRadius: 8, padding: 12 }}>
+              <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>Aperçu</div>
+              <div style={{ fontFamily: handleFontFamily || 'inherit', fontSize: handleFontSize, fontWeight: handleFontWeight, color: handleColor }}>
+                {contactHandle || '@maxcellens'}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Couleur</div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+                  <input type="color" value={handleColor || '#2d6b5f'} onChange={(e) => setHandleColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: '1px solid #e6e6e6', borderRadius: 6 }} />
+                  <input type="text" value={handleColor} onChange={(e) => setHandleColor(e.target.value)} placeholder="#2d6b5f" style={{ flex: 1, padding: '6px 10px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13 }} />
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Police</div>
+                <select value={handleFontFamily} onChange={(e) => setHandleFontFamily(e.target.value)} style={{ width: '100%', marginTop: 4, padding: '6px 10px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13 }}>
+                  <option value="">Inter (défaut)</option>
+                  <option value="Playfair Display, serif">Playfair Display</option>
+                  <option value="Roboto, sans-serif">Roboto</option>
+                  <option value="Arial, sans-serif">Arial</option>
+                  <option value="Georgia, serif">Georgia</option>
+                </select>
+              </div>
+
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Taille — {handleFontSize}px</div>
+                <input type="range" min={12} max={72} value={handleFontSize} onChange={(e) => setHandleFontSize(Number(e.target.value))} style={{ width: '100%', marginTop: 4 }} />
+              </div>
+
+              <div>
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Épaisseur</div>
+                <select value={handleFontWeight} onChange={(e) => setHandleFontWeight(Number(e.target.value))} style={{ width: '100%', marginTop: 4, padding: '6px 10px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13 }}>
+                  <option value={400}>400 — Normal</option>
+                  <option value={500}>500 — Medium</option>
+                  <option value={600}>600 — Semi-bold</option>
+                  <option value={700}>700 — Bold</option>
+                  <option value={800}>800 — Extra-bold</option>
+                </select>
+              </div>
+            </div>
+          </>)}
+
+          {tab === 'texte' && (<>
             <div>
               <label style={{ fontSize: 13, color: 'var(--muted)' }}>Texte</label>
               <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>

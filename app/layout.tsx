@@ -263,6 +263,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               <DisableImageSave />
               <AnalyticsCollector />
               <AdminSidebarClient />
+            <div id="site-content">
             <Header />
             <main>
               <Container>
@@ -272,6 +273,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               </Container>
             </main>
             <Footer />
+            </div>
             </BlockVisibilityProvider>
           </PageLayoutProvider>
         </SiteStyleProvider>

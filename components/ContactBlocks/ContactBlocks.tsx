@@ -22,6 +22,10 @@ export default function ContactBlocks() {
   const [html, setHtml] = useState<string>('');
   const [contactIntroBg, setContactIntroBg] = useState<string>('');
   const [photo, setPhoto] = useState<{ url?: string; path?: string } | null>(null);
+  const [handleColor, setHandleColor] = useState('');
+  const [handleFontSize, setHandleFontSize] = useState(0);
+  const [handleFontWeight, setHandleFontWeight] = useState(0);
+  const [handleFontFamily, setHandleFontFamily] = useState('');
   const [zones, setZones] = useState<ContactZonesData | null>(null);
   const [kitData, setKitData] = useState<ContactKitData | null>(null);
   const [openKit, setOpenKit] = useState(false);
@@ -36,7 +40,7 @@ export default function ContactBlocks() {
 
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=contact_handle,contact_intro,contact_photo,contact_zones,contact_kit');
+        const resp = await fetch('/api/admin/site-settings?keys=contact_handle,contact_intro,contact_photo,contact_zones,contact_kit,contact_handle_color,contact_handle_font_size,contact_handle_font_weight,contact_handle_font_family');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
@@ -74,6 +78,10 @@ export default function ContactBlocks() {
             if (parsed && typeof parsed === 'object') setKitData(parsed);
           } catch (_) {}
         }
+        if (s.contact_handle_color) setHandleColor(String(s.contact_handle_color));
+        if (s.contact_handle_font_size) setHandleFontSize(Number(s.contact_handle_font_size) || 0);
+        if (s.contact_handle_font_weight) setHandleFontWeight(Number(s.contact_handle_font_weight) || 0);
+        if (s.contact_handle_font_family != null) setHandleFontFamily(String(s.contact_handle_font_family));
       } catch (e) { /* ignore */ }
     }
     load();
@@ -116,7 +124,7 @@ export default function ContactBlocks() {
           )}
         </div>
         <div className={styles.card}>
-          <div className={styles.cardHeader}>{contactHandle || '@maxcellens'}</div>
+          <div className={styles.cardHeader} style={{ ...(handleColor ? { color: handleColor } : {}), ...(handleFontSize > 0 ? { fontSize: handleFontSize } : {}), ...(handleFontWeight > 0 ? { fontWeight: handleFontWeight } : {}), ...(handleFontFamily ? { fontFamily: handleFontFamily } : {}) }}>{contactHandle || '@maxcellens'}</div>
           <div className={styles.cardBody}>
             <div className={`${styles.cardBodyInner} richtext-content`} dangerouslySetInnerHTML={{ __html: (html || fallbackHtml) }} />
         </div>

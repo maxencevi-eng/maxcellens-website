@@ -60,7 +60,10 @@ export default function AdminSidebar() {
   const [logoSize, setLogoSize] = useState<number>(36);
   const [navHeight, setNavHeight] = useState<number>(64);
   const [navGap, setNavGap] = useState<number>(6); // pixels-ish, convert to rem later
-  const [sidebarVisible, setSidebarVisible] = useState<boolean>(true);
+  const [sidebarVisible, setSidebarVisible] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth > 768;
+  });
   const [showFooterModal, setShowFooterModal] = useState<boolean>(false);
   const [showMenuModal, setShowMenuModal] = useState<boolean>(false);
   const [showMobileMenuModal, setShowMobileMenuModal] = useState<boolean>(false);
@@ -80,13 +83,13 @@ export default function AdminSidebar() {
     supabase.auth.getUser().then(({ data }) => {
       if (!mounted) return;
       setUser((data as any).user ?? null);
-      if ((data as any).user) document.body.classList.add('has-admin-sidebar');
+      if ((data as any).user && window.innerWidth > 768) document.body.classList.add('has-admin-sidebar');
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       const u = session?.user ?? null;
       setUser(u);
-      if (u) document.body.classList.add('has-admin-sidebar');
+      if (u && window.innerWidth > 768) document.body.classList.add('has-admin-sidebar');
       else document.body.classList.remove('has-admin-sidebar');
     });
 

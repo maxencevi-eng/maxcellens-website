@@ -261,6 +261,7 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
         padding: "70px 16px 16px",
         overflowY: "auto",
       }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
         style={{

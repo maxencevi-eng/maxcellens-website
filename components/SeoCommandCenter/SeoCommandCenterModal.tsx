@@ -300,7 +300,7 @@ export default function SeoCommandCenterModal({
   }
 
   return (
-    <div className={`${styles.seoModalOverlay} modal-overlay-mobile`}>
+    <div className={`${styles.seoModalOverlay} modal-overlay-mobile`} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={styles.seoModal}>
         <div className={styles.seoModalHeader}>
           <h2>SEO Command Center</h2>

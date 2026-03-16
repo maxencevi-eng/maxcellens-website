@@ -146,7 +146,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       case 'home_banner':   return 'texte';
       case 'home_stats':    return 'chiffres';
       case 'home_portrait': return 'bloc';
-      case 'home_quote':    return 'citations';
+      case 'home_quote':    return 'titre';
       default:              return 'contenu';
     }
   }
@@ -941,13 +941,13 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
             <ModalTabs tabs={[{ id: 'bloc', label: 'Bloc' }, { id: 'diaporama', label: 'Diaporama' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
           )}
           {blockKey === "home_cadreur" && (
-            <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'videos', label: 'Vidéos' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
+            <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'image', label: 'Image' }, { id: 'videos', label: 'Vidéos' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
           )}
           {blockKey === "home_animation" && (
             <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'image', label: 'Image' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
           )}
           {blockKey === "home_quote" && (
-            <ModalTabs tabs={[{ id: 'citations', label: 'Citations' }, { id: 'parametres', label: 'Paramètres' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
+            <ModalTabs tabs={[{ id: 'titre', label: 'Titre' }, { id: 'citations', label: 'Citations' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
           )}
           {blockKey === "home_cta" && (
             <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
@@ -989,6 +989,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </div>
               </>)}
               {tab === 'style' && (<>
+              
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1295,19 +1296,6 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
             <>
               {tab === 'bloc' && (<>
               <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Vitesse de défilement</label>
-                <input
-                  type="number"
-                  min={2}
-                  max={30}
-                  step={1}
-                  value={Math.round(portraitCarouselSpeed / 1000)}
-                  onChange={(e) => setPortraitCarouselSpeed(Math.max(2, Math.min(30, Number(e.target.value) || 5)) * 1000)}
-                  style={{ ...inputStyle, width: 80 }}
-                />
-                <span style={{ fontSize: 12, color: "var(--muted)", marginLeft: 8 }}>secondes entre chaque slide</span>
-              </div>
-              <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre du bloc</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <input type="text" value={portraitBlockTitle} onChange={(e) => setPortraitBlockTitle(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} placeholder="Portrait" />
@@ -1338,6 +1326,19 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </>)}
 
               {tab === 'diaporama' && (<>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Vitesse de défilement</label>
+                <input
+                  type="number"
+                  min={2}
+                  max={30}
+                  step={1}
+                  value={Math.round(portraitCarouselSpeed / 1000)}
+                  onChange={(e) => setPortraitCarouselSpeed(Math.max(2, Math.min(30, Number(e.target.value) || 5)) * 1000)}
+                  style={{ ...inputStyle, width: 80 }}
+                />
+                <span style={{ fontSize: 12, color: "var(--muted)", marginLeft: 8 }}>secondes entre chaque slide</span>
+              </div>
               <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 14 }}>4 slides (Lifestyle, Studio, Entreprise, Couple)</div>
               {portraitSlides.map((slide, i) => {
                 const slideTitleStyle = slide.titleStyle ?? "h3";
@@ -1519,6 +1520,10 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: cadreurHtmlContent }} />
                 <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingCadreurHtml(true)}>Éditer le texte</button>
               </div>
+              
+              </>)}
+
+              {tab === 'image' && (<>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Image (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
@@ -1757,6 +1762,34 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </>)}
 
               {tab === 'style' && (<>
+              
+              <div style={{ marginBottom: 4 }}>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Style des cartes témoignages</label>
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Fond des cartes</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input type="color" value={quoteCardBackground || "#f5f5f2"} onChange={(e) => setQuoteCardBackground(e.target.value)} style={{ width: 40, height: 32, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="text" value={quoteCardBackground} onChange={(e) => setQuoteCardBackground(e.target.value)} placeholder="hex / transparent" style={{ ...inputStyle, width: 140 }} />
+                  {quoteCardBackground ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteCardBackground("")}>Effacer</button> : null}
+                </div>
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Bordure haute des cartes</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input type="color" value={quoteCardBorderColor || "#cccccc"} onChange={(e) => setQuoteCardBorderColor(e.target.value)} style={{ width: 40, height: 32, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="text" value={quoteCardBorderColor} onChange={(e) => setQuoteCardBorderColor(e.target.value)} placeholder="hex" style={{ ...inputStyle, width: 140 }} />
+                  {quoteCardBorderColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteCardBorderColor("")}>Effacer</button> : null}
+                </div>
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur du texte des cartes</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input type="color" value={quoteCardTextColor || "#213431"} onChange={(e) => setQuoteCardTextColor(e.target.value)} style={{ width: 40, height: 32, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6 }} />
+                  <input type="text" value={quoteCardTextColor} onChange={(e) => setQuoteCardTextColor(e.target.value)} placeholder="hex" style={{ ...inputStyle, width: 140 }} />
+                  {quoteCardTextColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteCardTextColor("")}>Effacer</button> : null}
+                </div>
+              </div>
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond de la section (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1787,6 +1820,19 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
           {blockKey === "home_quote" && (
             <>
               {tab === 'citations' && (<>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Vitesse de défilement</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={60}
+                  step={1}
+                  value={Math.round(quoteCarouselSpeed / 1000)}
+                  onChange={(e) => setQuoteCarouselSpeed(Math.max(1, Math.min(60, Number(e.target.value) || 5)) * 1000)}
+                  style={{ ...inputStyle, width: 80 }}
+                />
+                <span style={{ fontSize: 12, color: "var(--muted)", marginLeft: 8 }}>s (plus petit = défilement plus rapide, durée d'un cycle)</span>
+              </div>
               <div style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <label style={{ fontSize: 13, color: "var(--muted)" }}>Citations (min. 3)</label>
                 <button type="button" className="btn-ghost" onClick={() => setQuoteItems((prev) => [...prev, { text: "", author: "", role: "", authorStyle: "p", roleStyle: "p" }])}>+ Ajouter une citation</button>
@@ -1834,7 +1880,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </div>
               </>)}
 
-              {tab === 'parametres' && (<>
+              {tab === 'titre' && (<>
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre du bloc</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1861,46 +1907,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   <AlignmentButtons value={quoteSubtitleAlign} onChange={(v) => setQuoteSubtitleAlign(v as any)} />
                 </div>
               </div>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Vitesse de défilement</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={60}
-                  step={1}
-                  value={Math.round(quoteCarouselSpeed / 1000)}
-                  onChange={(e) => setQuoteCarouselSpeed(Math.max(1, Math.min(60, Number(e.target.value) || 5)) * 1000)}
-                  style={{ ...inputStyle, width: 80 }}
-                />
-                <span style={{ fontSize: 12, color: "var(--muted)", marginLeft: 8 }}>s (plus petit = défilement plus rapide, durée d'un cycle)</span>
-              </div>
-              <div style={{ marginBottom: 4 }}>
-                <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Style des cartes témoignages</label>
-              </div>
-              <div style={{ marginBottom: 10 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Fond des cartes</label>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="color" value={quoteCardBackground || "#f5f5f2"} onChange={(e) => setQuoteCardBackground(e.target.value)} style={{ width: 40, height: 32, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6 }} />
-                  <input type="text" value={quoteCardBackground} onChange={(e) => setQuoteCardBackground(e.target.value)} placeholder="hex / transparent" style={{ ...inputStyle, width: 140 }} />
-                  {quoteCardBackground ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteCardBackground("")}>Effacer</button> : null}
-                </div>
-              </div>
-              <div style={{ marginBottom: 10 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Bordure haute des cartes</label>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="color" value={quoteCardBorderColor || "#cccccc"} onChange={(e) => setQuoteCardBorderColor(e.target.value)} style={{ width: 40, height: 32, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6 }} />
-                  <input type="text" value={quoteCardBorderColor} onChange={(e) => setQuoteCardBorderColor(e.target.value)} placeholder="hex" style={{ ...inputStyle, width: 140 }} />
-                  {quoteCardBorderColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteCardBorderColor("")}>Effacer</button> : null}
-                </div>
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur du texte des cartes</label>
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input type="color" value={quoteCardTextColor || "#213431"} onChange={(e) => setQuoteCardTextColor(e.target.value)} style={{ width: 40, height: 32, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6 }} />
-                  <input type="text" value={quoteCardTextColor} onChange={(e) => setQuoteCardTextColor(e.target.value)} placeholder="hex" style={{ ...inputStyle, width: 140 }} />
-                  {quoteCardTextColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteCardTextColor("")}>Effacer</button> : null}
-                </div>
-              </div>
+              
               </>)}
 
               {tab === 'style' && (<>
