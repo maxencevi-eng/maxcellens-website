@@ -362,6 +362,32 @@ export default function AdminSidebar() {
 
   return (
     <>
+    <button
+      onClick={hideSidebar}
+      aria-label="Masquer la sidebar"
+      style={{
+        position: 'fixed',
+        left: 280,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        zIndex: 9999,
+        width: 32,
+        height: 168,
+        borderRadius: '0 8px 8px 0',
+        background: 'rgb(8, 16, 24)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderLeft: 'none',
+        borderTop: 'none',
+        borderBottom: 'none',
+        boxShadow: '4px 0 12px rgba(0,0,0,0.3)',
+        color: '#fff',
+        fontSize: 18,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+      }}
+    >≡</button>
     <aside id="admin-sidebar" aria-label="Admin sidebar">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/admin" className="admin-title">ADMINISTRATION</Link>
