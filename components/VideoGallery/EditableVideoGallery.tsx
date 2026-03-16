@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { compressImageClient } from '@/lib/compressImageClient';
 import VideoGallery from './VideoGallery';
@@ -222,7 +223,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
 
       <VideoGallery videos={hasFetched ? videos : []} className={undefined} gallerySettings={gallerySettings} />
 
-      {editing ? (
+      {editing && typeof document !== 'undefined' ? createPortal(
         <div className={`modal-overlay-mobile ${styles.modalOverlay}`} style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', zIndex: 50000, padding: '70px 16px 16px', overflowY: 'auto' }} onMouseDown={(e) => { if (e.target === e.currentTarget) setEditing(false); }}>
           <div className={styles.modalBox} style={{ background: '#fff', padding: 20, width: 820, maxWidth: '98%', borderRadius: 12, boxShadow: '0 20px 50px rgba(0,0,0,0.35)', border: '1px solid rgba(0,0,0,0.06)', alignSelf: 'flex-start' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -650,7 +651,8 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
               <button className="btn-primary" onClick={save} disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       ) : null}
     </div>
   );
