@@ -64,7 +64,7 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
   const overlayStyle = {
     position: 'fixed' as const,
     inset: 0,
-    zIndex: 9999,
+    zIndex: 50000,
     background: 'rgba(0,0,0,0.92)',
     display: 'flex',
     alignItems: 'center',

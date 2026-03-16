@@ -138,7 +138,7 @@ export default function ContactZonesEditModal({
 
   if (loading) {
     return (
-      <div className="modal-overlay-mobile" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 9999, padding: "70px 16px 16px", overflowY: "auto" }}>
+      <div className="modal-overlay-mobile" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 50000, padding: "70px 16px 16px", overflowY: "auto" }}>
         <div style={{ background: "#fff", padding: 24, borderRadius: 8 }}>Chargement…</div>
       </div>
     );
@@ -161,7 +161,7 @@ export default function ContactZonesEditModal({
   const backgroundColor = zones.backgroundColor ?? "";
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 9999, padding: "70px 16px 16px", overflowY: "auto" }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 50000, padding: "70px 16px 16px", overflowY: "auto" }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ background: "#fff", color: "#000", padding: 20, width: 560, maxWidth: "98%", borderRadius: 10, alignSelf: "flex-start" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h3 style={{ margin: 0 }}>Modifier les zones</h3>

@@ -28,7 +28,7 @@ export default function Lightbox({ images, index, onClose, onPrev, onNext }: Pro
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 9999,
+        zIndex: 50000,
         background: 'rgba(0,0,0,0.92)',
         display: 'flex',
         alignItems: 'center',

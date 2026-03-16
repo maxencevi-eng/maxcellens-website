@@ -85,7 +85,7 @@ export default function ContactKitEditModal({
 
   if (loading) {
     return (
-      <div className="modal-overlay-mobile" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}>
+      <div className="modal-overlay-mobile" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50000 }}>
         <div style={{ background: "#fff", color: "#000", padding: 24, borderRadius: 12 }}>Chargement…</div>
       </div>
     );
@@ -94,7 +94,7 @@ export default function ContactKitEditModal({
   return (
     <div
       className="modal-overlay-mobile"
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50000 }}
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div style={{ background: "#fff", color: "#000", padding: 24, width: 520, maxWidth: "calc(100% - 24px)", borderRadius: 12, boxShadow: "0 20px 50px rgba(0,0,0,0.2)" }} onMouseDown={(e) => e.stopPropagation()}>

@@ -203,8 +203,8 @@ export default function HeroEditor({ page, onClose }: Props) {
 
   if (typeof document === 'undefined') return null;
   return ReactDOM.createPortal(
-    <div className="modal-overlay-mobile" style={{ position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.5)', zIndex:50001 }}>
-      <div style={{ background:'#fff', width:760, maxWidth:'98%', maxHeight:'90vh', overflowY:'auto', padding:20, borderRadius:8 }}>
+    <div className="modal-overlay-mobile" style={{ position:'fixed', inset:0, display:'flex', alignItems:'flex-start', justifyContent:'center', background:'rgba(0,0,0,0.5)', zIndex:50001, padding:'70px 16px 16px', overflowY:'auto' }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background:'#fff', width:760, maxWidth:'98%', padding:20, borderRadius:8, alignSelf:'flex-start' }}>
         <h3 style={{ marginTop:0 }}>Modifier Hero — {page}</h3>
         <div style={{ display:'flex', gap:12 }}>
           <label style={{ display:'flex', gap:8, alignItems:'center' }}><input type="radio" checked={mode==='image'} onChange={() => setMode('image')} /> Image</label>

@@ -85,7 +85,7 @@ export default function PortraitLightbox({ images, index, onClose, onPrev, onNex
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 9999,
+        zIndex: 50000,
         background: 'rgba(0,0,0,0.9)',
         display: 'flex',
         alignItems: 'center',

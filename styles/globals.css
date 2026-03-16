@@ -151,11 +151,12 @@ body.has-admin-sidebar {
   --admin-sidebar-width: 280px;
 }
 
-/* Desktop: sidebar pushes site content to the right */
+/* Desktop: body padding shifts all content naturally (header, main, footer) */
 @media (min-width: 769px) {
-  body.has-admin-sidebar #site-content {
-    margin-left: 280px;
-    transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  body.has-admin-sidebar {
+    padding-left: 280px;
+    box-sizing: border-box;
+    transition: padding-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
 
@@ -414,10 +415,10 @@ body.has-admin-sidebar {
 /* smooth transitions */
 #admin-sidebar, #admin-sidebar button.menu-item, #admin-sidebar button.signout-btn { transition: all 180ms ease; }
 
-/* Mobile: sidebar overlays content (no margin shift) */
+/* Mobile: sidebar overlays, no push */
 @media (max-width: 768px) {
-  body.has-admin-sidebar #site-content {
-    margin-left: 0 !important;
+  body.has-admin-sidebar {
+    padding-left: 0;
   }
 }
 

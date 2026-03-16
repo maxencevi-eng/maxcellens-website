@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import Modal from '../Modal/Modal';
 import styles from './SiteStyle.module.css';
+import ModalTabs from '../ui/ModalTabs';
 import { useSiteStyle } from './SiteStyleProvider';
 import type { SiteStyle, BackgroundStyle } from './SiteStyleProvider';
 
@@ -144,11 +145,15 @@ export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
         <button className="menu-item" onClick={onSave}>Enregistrer</button>
       </div>
     )}>
-      <div className={styles.tabs} role="tablist">
-        <button className={tab === 'colors' ? styles.active : ''} onClick={() => setTab('colors')} role="tab">Couleurs</button>
-        <button className={tab === 'typography' ? styles.active : ''} onClick={() => setTab('typography')} role="tab">Typographie</button>
-        <button className={tab === 'background' ? styles.active : ''} onClick={() => setTab('background')} role="tab">Fond</button>
-      </div>
+      <ModalTabs
+        tabs={[
+          { id: 'colors', label: 'Couleurs' },
+          { id: 'typography', label: 'Typographie' },
+          { id: 'background', label: 'Fond' },
+        ]}
+        active={tab}
+        onChange={(t) => setTab(t as any)}
+      />
 
       {tab === 'colors' && (
         <div className={`${styles.panel} ${styles.colorsGrid}`}>

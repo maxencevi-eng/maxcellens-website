@@ -899,7 +899,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     display: "flex",
     alignItems: "flex-start",
     justifyContent: "center",
-    zIndex: 9999,
+    zIndex: 50000,
     padding: "70px 16px 16px",
     overflowY: "auto",
   };

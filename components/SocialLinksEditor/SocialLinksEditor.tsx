@@ -399,8 +399,8 @@ export default function SocialLinksEditor({ onClose, onSaved }: { onClose: () =>
   const anySaveErrors = Object.values(savedError).some(Boolean);
 
   return (
-    <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50000 }}>
-      <div style={{ background: '#fff', color: '#000', padding: 20, width: 720, maxWidth: '98%', maxHeight: '80vh', overflowY: 'auto', boxSizing: 'border-box', borderRadius: 8, position: 'relative' }}>
+    <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 50000, padding: '70px 16px 16px', overflowY: 'auto' }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background: '#fff', color: '#000', padding: 20, width: 720, maxWidth: '98%', boxSizing: 'border-box', borderRadius: 8, position: 'relative', alignSelf: 'flex-start' }}>
         <h3 style={{ marginTop: 0 }}>Modifier les réseaux</h3>
         {anySaveErrors ? (
           <div style={{ background: '#fff4f4', border: '1px solid #f2c2c2', padding: 8, marginBottom: 8, borderRadius: 6 }}>
