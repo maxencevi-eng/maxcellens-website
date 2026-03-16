@@ -430,7 +430,7 @@ body.has-admin-sidebar {
   transform: translateY(-50%);
   z-index: 9999;
   width: 32px;
-  height: 56px;
+  height: 168px;
   border-radius: 0 8px 8px 0;
   background: rgb(8, 16, 24);
   border: 1px solid rgba(255, 255, 255, 0.08);
