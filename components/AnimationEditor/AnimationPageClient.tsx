@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
 import type { AnimationSectionData, AnimationCtaData } from "./AnimationBlockModal";
@@ -77,6 +77,68 @@ export default function AnimationPageClient() {
   const [editBlock, setEditBlock] = useState<BlockKey | null>(null);
   const [loaded, setLoaded] = useState(false);
 
+  // ── Scroll-to-section après disparition du splash ──────────────────────────
+  // On utilise un objet ref unique pour partager l'état entre les deux effets
+  // sans provoquer de re-renders ni de race conditions.
+  const _scroll = useRef({
+    hash: "",
+    fired: false,
+    dataReady: false,
+    splashReady: false,
+    attempt: () => {},
+  });
+
+  // Effet 1 (mount) : capture le hash immédiatement, force scroll en haut,
+  // puis attend que le splash soit terminé.
+  useEffect(() => {
+    const s = _scroll.current;
+    const hash = (window.location.hash || "").replace(/^#/, "");
+    const VALID = ["animation_s1", "animation_s2", "animation_s3", "animation_cta"];
+    if (!VALID.includes(hash)) return;
+
+    s.hash = hash;
+    // Force la page en haut dès maintenant, peu importe le splash
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+
+    s.attempt = () => {
+      if (s.fired || !s.dataReady || !s.splashReady) return;
+      const el = document.getElementById(s.hash);
+      if (!el) return;
+      s.fired = true;
+      // requestAnimationFrame pour s'assurer que le layout est calculé
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    };
+
+    const splashPresent = !!document.querySelector("[data-splash-overlay]");
+    if (splashPresent) {
+      const onDismiss = () => {
+        s.splashReady = true;
+        setTimeout(s.attempt, 80);
+      };
+      window.addEventListener("splash-dismissed", onDismiss, { once: true });
+      const safety = setTimeout(() => { s.splashReady = true; s.attempt(); }, 3500);
+      return () => {
+        clearTimeout(safety);
+        window.removeEventListener("splash-dismissed", onDismiss);
+      };
+    } else {
+      // Splash déjà terminé (connexion rapide / cache)
+      s.splashReady = true;
+      setTimeout(s.attempt, 150);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Effet 2 : quand les données sont chargées, tenter le scroll
+  useEffect(() => {
+    if (!loaded) return;
+    const s = _scroll.current;
+    s.dataReady = true;
+    s.attempt();
+  }, [loaded]);
+  // ───────────────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     let mounted = true;
     supabase.auth.getUser().then(({ data }) => {
@@ -122,49 +184,6 @@ export default function AnimationPageClient() {
       window.removeEventListener("site-settings-updated", onUpdate as EventListener);
     };
   }, []);
-
-  // Scroll vers la section cible au chargement (depuis accueil avec #animation_s1, etc.)
-  // Attends la fin du splash screen avant de scroller pour que l'animation soit visible.
-  useEffect(() => {
-    if (!loaded || typeof window === "undefined") return;
-    const hash = window.location.hash?.replace(/^#/, "") || "";
-    if (!hash || !["animation_s1", "animation_s2", "animation_s3", "animation_cta"].includes(hash)) return;
-
-    let done = false;
-    const doScroll = () => {
-      if (done) return;
-      done = true;
-      window.removeEventListener("splash-dismissed", onSplash);
-      const el = document.getElementById(hash);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-    const onSplash = () => setTimeout(doScroll, 80);
-
-    // Si le splash est encore visible, on attend son event avant de scroller
-    // (sinon sur mobile rapide il serait déjà parti avant que loaded soit true)
-    const splashActive = document.querySelector("[data-splash-overlay]") !== null;
-
-    if (splashActive) {
-      // Scroll to top so user sees top of page when splash fades out
-      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-      window.addEventListener("splash-dismissed", onSplash, { once: true });
-      // Safety fallback in case splash event never fires
-      const fallback = setTimeout(doScroll, 3600);
-      return () => {
-        done = true;
-        clearTimeout(fallback);
-        window.removeEventListener("splash-dismissed", onSplash);
-      };
-    } else {
-      // Splash already dismissed (data loaded after splash on slow mobile connection)
-      // Scroll to target quickly without jumping to top first
-      const fallback = setTimeout(doScroll, 200);
-      return () => {
-        done = true;
-        clearTimeout(fallback);
-      };
-    }
-  }, [loaded]);
 
   const { hiddenBlocks, blockWidthModes, blockOrderAnimation, isAdmin: isAdminCtx } = useBlockVisibility();
   const hide = (id: string) => !isAdminCtx && hiddenBlocks.includes(id);
