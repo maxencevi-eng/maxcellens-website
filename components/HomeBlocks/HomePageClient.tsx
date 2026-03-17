@@ -266,7 +266,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
     };
   }, []);
 
-  // Citations : dérivation + useEffect toujours exécutés (avant early return) pour respecter l’ordre des Hooks
+  // Citations : dérivation + useEffect toujours exécutés (avant early return) pour respecter l'ordre des Hooks
   const quoteData = (() => {
     const q = quote as any;
     if (Array.isArray(q?.quotes) && q.quotes.length >= 3) return { quotes: q.quotes, carouselSpeed: typeof q.carouselSpeed === "number" ? q.carouselSpeed : 5000 };
@@ -285,7 +285,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   const quoteList = quoteData.quotes;
   const quoteSpeed = Math.max(2000, quoteData.carouselSpeed ?? 5000);
 
-  // Défilement continu : plus d’intervalle, le marquee CSS gère l’animation
+  // Défilement continu : plus d'intervalle, le marquee CSS gère l'animation
 
   type BlockData = HomeIntroData | HomeServicesData | HomeBannerData | HomeStatsData | HomePortraitBlockData | HomeCadreurBlockData | HomeAnimationBlockData | HomeQuoteData | HomeCtaData;
 
@@ -304,7 +304,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
     }
   };
 
-  // Portrait carousel : dérivation + useEffect avant early return pour respecter l’ordre des Hooks
+  // Portrait carousel : dérivation + useEffect avant early return pour respecter l'ordre des Hooks
   const portraitSlides = (() => {
     const p = portraitBlock as any;
     if (Array.isArray(p?.slides) && p.slides.length) return p.slides;
@@ -360,7 +360,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
 
   const safeQuoteIndex = Math.max(0, Math.min(currentQuoteIndex, quoteList.length - 1));
   const visibleQuoteIndices = [0, 1, 2].map((i) => (safeQuoteIndex + i) % quoteList.length);
-  const quoteScrollDuration = Math.max(5, Math.min(120, Math.round((quoteData.carouselSpeed ?? 5000) / 1000))); // valeur en secondes = durée d’un cycle (ex. 5 = rapide, 30 = lent)
+  const quoteScrollDuration = Math.max(5, Math.min(120, Math.round((quoteData.carouselSpeed ?? 5000) / 1000))); // valeur en secondes = durée d'un cycle (ex. 5 = rapide, 30 = lent)
 
   const btnWrapStyle: React.CSSProperties = { display: 'flex', gap: 8, alignItems: 'center', position: 'absolute', right: 12, top: 12, zIndex: 5 };
 
