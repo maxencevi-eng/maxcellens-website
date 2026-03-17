@@ -15,8 +15,6 @@ export default function EvenementPageClient() {
       introBlockId="evenement_intro"
       videosBlockId="evenement_videos"
       photosBlockId="evenement_photos"
-      introTitle=""
-      introPlaceholder=""
     />
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Fragment, useState, useEffect } from "react";
-import VideoIntroEditor from "../VideoIntroEditor/VideoIntroEditor";
+import PageIntroBlock from "../PageIntroBlock/PageIntroBlock";
 import EditableVideoGallery from "../VideoGallery/EditableVideoGallery";
 import EditablePortraitGallery from "../PortraitGallery/EditablePortraitGallery";
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
@@ -23,8 +23,6 @@ interface SubmenuPageClientProps {
   videosBlockId: string;
   photosBlockId: string;
   initialTab?: SubmenuTab;
-  introTitle?: string;
-  introPlaceholder?: string;
 }
 
 export default function SubmenuPageClient({
@@ -38,8 +36,6 @@ export default function SubmenuPageClient({
   videosBlockId,
   photosBlockId,
   initialTab = "film",
-  introTitle = "",
-  introPlaceholder = "",
 }: SubmenuPageClientProps) {
   const { 
     hiddenBlocks, 
@@ -61,6 +57,7 @@ export default function SubmenuPageClient({
       : blockOrderCorporate;
 
   const [activeTab, setActiveTab] = useState<SubmenuTab>(initialTab);
+  const [introEditOpen, setIntroEditOpen] = useState(false);
 
   // Synchroniser avec l'URL (?tab=film ou ?tab=photo)
   useEffect(() => {
@@ -94,11 +91,20 @@ export default function SubmenuPageClient({
         <div style={btnWrapStyle}>
           <BlockVisibilityToggle blockId={introBlockId} />
           <BlockWidthToggle blockId={introBlockId} />
+          <button className={styles.editBtn} onClick={() => setIntroEditOpen(true)}>
+            Modifier
+          </button>
           <BlockOrderButtons page={page} blockId={introBlockId} />
         </div>
       )}
       <AnimateInView variant="fadeUp">
-        <VideoIntroEditor keyName={introKey} title={introTitle} placeholder={introPlaceholder} />
+        <PageIntroBlock
+          pageKey={page}
+          settingsKey={introKey}
+          blockId={introBlockId}
+          externalEditOpen={introEditOpen}
+          onExternalEditClose={() => setIntroEditOpen(false)}
+        />
       </AnimateInView>
     </div>
   );

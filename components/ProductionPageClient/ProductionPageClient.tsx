@@ -15,8 +15,6 @@ export default function ProductionPageClient() {
       introBlockId="production_intro"
       videosBlockId="production_videos"
       photosBlockId="realisation_photos"
-      introTitle=""
-      introPlaceholder=""
     />
   );
 }

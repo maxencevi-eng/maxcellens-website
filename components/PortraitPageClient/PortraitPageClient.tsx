@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Fragment, useState, useEffect } from "react";
-import PortraitIntroEditor from "../PortraitIntroEditor/PortraitIntroEditor";
+import PageIntroBlock from "../PageIntroBlock/PageIntroBlock";
 import EditablePortraitGallery from "../PortraitGallery/EditablePortraitGallery";
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
 import AnimateInView from "../AnimateInView/AnimateInView";
@@ -73,7 +73,7 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
         </div>
       )}
       <AnimateInView variant="fadeUp">
-        <PortraitIntroEditor />
+        <PageIntroBlock pageKey="portrait" settingsKey="portrait_intro" blockId="portrait_intro" />
       </AnimateInView>
     </div>
   );

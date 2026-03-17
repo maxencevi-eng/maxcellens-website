@@ -15,8 +15,6 @@ export default function CorporatePageClient() {
       introBlockId="corporate_intro"
       videosBlockId="corporate_videos"
       photosBlockId="corporate_photos"
-      introTitle=""
-      introPlaceholder=""
     />
   );
 }
