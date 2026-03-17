@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import ModalTabs from '../ui/ModalTabs';
+import { useSiteStyle } from '../SiteStyle/SiteStyleProvider';
 
 export interface FaqItem {
   question: string;
@@ -16,6 +17,13 @@ export interface ContactFaqData {
   description?: string;
   items: FaqItem[];
   backgroundColor?: string;
+  titleFontSize?: number;
+  titleColor?: string;
+  titleFontFamily?: string;
+  titleFontWeight?: number;
+  highlightColor?: string;
+  descriptionFontSize?: number;
+  descriptionColor?: string;
 }
 
 const DEFAULT_DATA: ContactFaqData = {
@@ -52,9 +60,26 @@ const inputStyle: React.CSSProperties = {
   width: '100%', padding: '8px 12px', borderRadius: 6,
   border: '1px solid #e6e6e6', fontSize: 14, boxSizing: 'border-box',
 };
-const labelStyle: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#555', marginBottom: 4, display: 'block' };
+const lbl: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#555', marginBottom: 4, display: 'block' };
+
+
+function ColorInput({ value, onChange, placeholder = 'transparent' }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+      <input type="color" value={value || '#000000'} onChange={e => onChange(e.target.value)}
+        style={{ width: 36, height: 32, border: '1px solid #e6e6e6', borderRadius: 6, cursor: 'pointer', padding: 2, flexShrink: 0 }} />
+      <input style={{ ...inputStyle, flex: 1 }} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />
+      {value && <button onClick={() => onChange('')} style={{ fontSize: 11, color: '#999', background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>✕</button>}
+    </div>
+  );
+}
 
 export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
+  const { style: siteStyle } = useSiteStyle();
+  const fontOptions = [
+    { value: '', label: 'Par défaut (site)' },
+    ...((siteStyle.fonts || []).map((f: { name: string }) => ({ value: f.name, label: f.name }))),
+  ];
   const [tab, setTab] = useState('contenu');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +90,15 @@ export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () 
   const [description, setDescription] = useState(DEFAULT_DATA.description ?? '');
   const [items, setItems] = useState<FaqItem[]>(DEFAULT_DATA.items);
   const [backgroundColor, setBackgroundColor] = useState('');
+
+  // Typography
+  const [titleFontSize, setTitleFontSize] = useState(0);
+  const [titleColor, setTitleColor] = useState('');
+  const [titleFontFamily, setTitleFontFamily] = useState('');
+  const [titleFontWeight, setTitleFontWeight] = useState(700);
+  const [highlightColor, setHighlightColor] = useState('');
+  const [descriptionFontSize, setDescriptionFontSize] = useState(0);
+  const [descriptionColor, setDescriptionColor] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -82,6 +116,13 @@ export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () 
         if (d.description != null) setDescription(d.description);
         if (Array.isArray(d.items) && d.items.length > 0) setItems(d.items);
         if (d.backgroundColor != null) setBackgroundColor(d.backgroundColor);
+        if (d.titleFontSize) setTitleFontSize(d.titleFontSize);
+        if (d.titleColor) setTitleColor(d.titleColor);
+        if (d.titleFontFamily) setTitleFontFamily(d.titleFontFamily);
+        if (d.titleFontWeight) setTitleFontWeight(d.titleFontWeight);
+        if (d.highlightColor) setHighlightColor(d.highlightColor);
+        if (d.descriptionFontSize) setDescriptionFontSize(d.descriptionFontSize);
+        if (d.descriptionColor) setDescriptionColor(d.descriptionColor);
       } catch (_) {}
     }
     load();
@@ -111,7 +152,16 @@ export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () 
     setSaving(true);
     setError(null);
     try {
-      const data: ContactFaqData = { eyebrow, title, titleHighlight, description, items, backgroundColor };
+      const data: ContactFaqData = {
+        eyebrow, title, titleHighlight, description, items, backgroundColor,
+        titleFontSize: titleFontSize || undefined,
+        titleColor: titleColor || undefined,
+        titleFontFamily: titleFontFamily || undefined,
+        titleFontWeight: titleFontWeight !== 700 ? titleFontWeight : undefined,
+        highlightColor: highlightColor || undefined,
+        descriptionFontSize: descriptionFontSize || undefined,
+        descriptionColor: descriptionColor || undefined,
+      };
       const resp = await fetch('/api/admin/site-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -128,12 +178,32 @@ export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () 
     }
   }
 
+  // Live preview styles
+  const previewTitleStyle: React.CSSProperties = {
+    fontSize: titleFontSize ? titleFontSize : 22,
+    fontWeight: titleFontWeight || 700,
+    color: titleColor || undefined,
+    fontFamily: titleFontFamily || undefined,
+    lineHeight: 1.15,
+    marginBottom: 8,
+  };
+  const previewHighlightStyle: React.CSSProperties = {
+    color: highlightColor || 'var(--color-primary, #2d6b5f)',
+  };
+  const previewDescStyle: React.CSSProperties = {
+    fontSize: descriptionFontSize ? descriptionFontSize : 13,
+    color: descriptionColor || 'rgba(0,0,0,0.5)',
+    maxWidth: 380,
+    margin: '0 auto',
+    lineHeight: 1.65,
+  };
+
   if (typeof document === 'undefined') return null;
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 50000, padding: '70px 16px 16px', overflowY: 'auto' }}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', color: '#000', padding: 24, width: 680, maxWidth: '100%', borderRadius: 10, alignSelf: 'flex-start', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}
+      <div style={{ background: '#fff', color: '#000', padding: 24, width: 700, maxWidth: '100%', borderRadius: 10, alignSelf: 'flex-start', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}
         onClick={(e) => e.stopPropagation()}>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -151,39 +221,91 @@ export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () 
 
           {tab === 'contenu' && (
             <>
-              {/* Aperçu live */}
+              {/* Live preview */}
               <div style={{ background: '#f8f8f8', borderRadius: 10, padding: '24px 20px 20px', textAlign: 'center', border: '1px solid #eee' }}>
                 {eyebrow && (
                   <div style={{ display: 'inline-block', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 999, padding: '4px 14px', marginBottom: 12 }}>{eyebrow}</div>
                 )}
-                <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.15, marginBottom: 8 }}>
+                <div style={previewTitleStyle}>
                   {title || 'Vos questions,'}{' '}
-                  <span style={{ color: 'var(--color-primary, #2d6b5f)' }}>{titleHighlight || 'nos réponses.'}</span>
+                  <span style={previewHighlightStyle}>{titleHighlight || 'nos réponses.'}</span>
                 </div>
-                {description && (
-                  <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', maxWidth: 380, margin: '0 auto', lineHeight: 1.65 }}>{description}</div>
-                )}
+                {description && <div style={previewDescStyle}>{description}</div>}
               </div>
 
+              {/* Textes */}
               <div>
-                <label style={labelStyle}>Étiquette (eyebrow)</label>
+                <label style={lbl}>Étiquette (eyebrow)</label>
                 <input style={inputStyle} value={eyebrow} onChange={e => setEyebrow(e.target.value)} placeholder="FAQ" />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={labelStyle}>Titre principal</label>
+                  <label style={lbl}>Titre principal</label>
                   <input style={inputStyle} value={title} onChange={e => setTitle(e.target.value)} placeholder="Vos questions," />
                 </div>
                 <div>
-                  <label style={labelStyle}>Titre mis en valeur (couleur accent)</label>
+                  <label style={lbl}>Titre mis en valeur</label>
                   <input style={inputStyle} value={titleHighlight} onChange={e => setTitleHighlight(e.target.value)} placeholder="nos réponses." />
                 </div>
               </div>
               <div>
-                <label style={labelStyle}>Sous-titre / description</label>
+                <label style={lbl}>Sous-titre / description</label>
                 <textarea style={{ ...inputStyle, minHeight: 72, resize: 'vertical', fontFamily: 'inherit' }}
                   value={description} onChange={e => setDescription(e.target.value)}
-                  placeholder="Tout ce que vous devez savoir sur mes prestations. Une question non listée ? Écrivez-moi directement." />
+                  placeholder="Tout ce que vous devez savoir sur mes prestations..." />
+              </div>
+
+              {/* Typographie */}
+              <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#333', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Typographie du titre</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div>
+                    <label style={lbl}>Taille (px)</label>
+                    <input type="number" min={14} max={100} style={inputStyle} value={titleFontSize || ''} onChange={e => setTitleFontSize(Number(e.target.value) || 0)} placeholder="auto" />
+                  </div>
+                  <div>
+                    <label style={lbl}>Graisse</label>
+                    <select style={inputStyle} value={titleFontWeight} onChange={e => setTitleFontWeight(Number(e.target.value))}>
+                      <option value={300}>Light 300</option>
+                      <option value={400}>Normal 400</option>
+                      <option value={500}>Medium 500</option>
+                      <option value={600}>Semi-bold 600</option>
+                      <option value={700}>Bold 700</option>
+                      <option value={800}>Extra-bold 800</option>
+                      <option value={900}>Black 900</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lbl}>Police</label>
+                    <select style={inputStyle} value={titleFontFamily} onChange={e => setTitleFontFamily(e.target.value)}>
+                      {fontOptions.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div>
+                    <label style={lbl}>Couleur du titre</label>
+                    <ColorInput value={titleColor} onChange={setTitleColor} placeholder="hérité" />
+                  </div>
+                  <div>
+                    <label style={lbl}>Couleur de la mise en valeur</label>
+                    <ColorInput value={highlightColor} onChange={setHighlightColor} placeholder="couleur accent" />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#333', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Typographie du sous-titre</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div>
+                    <label style={lbl}>Taille (px)</label>
+                    <input type="number" min={10} max={32} style={inputStyle} value={descriptionFontSize || ''} onChange={e => setDescriptionFontSize(Number(e.target.value) || 0)} placeholder="auto" />
+                  </div>
+                  <div>
+                    <label style={lbl}>Couleur</label>
+                    <ColorInput value={descriptionColor} onChange={setDescriptionColor} placeholder="hérité" />
+                  </div>
+                </div>
               </div>
             </>
           )}
@@ -201,11 +323,11 @@ export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () 
                     </div>
                   </div>
                   <div>
-                    <label style={labelStyle}>Question</label>
+                    <label style={lbl}>Question</label>
                     <input style={inputStyle} value={item.question} onChange={e => updateItem(i, { question: e.target.value })} placeholder="Votre question..." />
                   </div>
                   <div>
-                    <label style={labelStyle}>Réponse</label>
+                    <label style={lbl}>Réponse</label>
                     <textarea style={{ ...inputStyle, minHeight: 80, resize: 'vertical', fontFamily: 'inherit' }}
                       value={item.answer} onChange={e => updateItem(i, { answer: e.target.value })} placeholder="La réponse..." />
                   </div>
@@ -219,7 +341,7 @@ export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () 
 
           {tab === 'style' && (
             <div>
-              <label style={labelStyle}>Couleur de fond</label>
+              <label style={lbl}>Couleur de fond</label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <input type="color" value={backgroundColor || '#ffffff'} onChange={e => setBackgroundColor(e.target.value)}
                   style={{ width: 42, height: 38, border: '1px solid #e6e6e6', borderRadius: 6, cursor: 'pointer', padding: 2 }} />

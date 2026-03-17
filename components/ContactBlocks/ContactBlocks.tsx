@@ -293,11 +293,21 @@ export default function ContactBlocks() {
               <span className={styles.faqEyebrow}>{faqData?.eyebrow ?? 'FAQ'}</span>
             </div>
           )}
-          <h2 className={styles.faqTitle}>
+          <h2 className={styles.faqTitle} style={{
+            ...(faqData?.titleFontSize ? { fontSize: faqData.titleFontSize } : {}),
+            ...(faqData?.titleColor ? { color: faqData.titleColor } : {}),
+            ...(faqData?.titleFontFamily ? { fontFamily: faqData.titleFontFamily } : {}),
+            ...(faqData?.titleFontWeight ? { fontWeight: faqData.titleFontWeight } : {}),
+          }}>
             {faqData?.title ?? 'Vos questions,'}{' '}
-            <span className={styles.faqTitleHighlight}>{faqData?.titleHighlight ?? 'nos réponses.'}</span>
+            <span className={styles.faqTitleHighlight} style={faqData?.highlightColor ? { color: faqData.highlightColor } : undefined}>
+              {faqData?.titleHighlight ?? 'nos réponses.'}
+            </span>
           </h2>
-          <p className={styles.faqDescription}>{faqData?.description ?? 'Tout ce que vous devez savoir sur mes prestations. Une question non listée\u00a0? Écrivez-moi directement.'}</p>
+          <p className={styles.faqDescription} style={{
+            ...(faqData?.descriptionFontSize ? { fontSize: faqData.descriptionFontSize } : {}),
+            ...(faqData?.descriptionColor ? { color: faqData.descriptionColor } : {}),
+          }}>{faqData?.description ?? 'Tout ce que vous devez savoir sur mes prestations. Une question non listée\u00a0? Écrivez-moi directement.'}</p>
           <div className={styles.faqList}>
             {(faqItems.length > 0 ? faqItems : [
               { question: 'Quels types de projets réalisez-vous ?', answer: "Je couvre principalement les événements d'entreprise, les vidéos corporate et commerciales, ainsi que les portraits professionnels." },
