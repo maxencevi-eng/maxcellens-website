@@ -99,6 +99,10 @@ export default function AnimationPageClient() {
     s.hash = hash;
     // Force la page en haut dès maintenant, peu importe le splash
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    // Supprime le hash de l'URL immédiatement :
+    //   • empêche le navigateur / Next.js de scroller vers l'élément
+    //   • évite que le scroll se re-déclenche si l'utilisateur actualise la page
+    history.replaceState(null, "", window.location.pathname + window.location.search);
 
     s.attempt = () => {
       if (s.fired || !s.dataReady || !s.splashReady) return;
@@ -115,7 +119,8 @@ export default function AnimationPageClient() {
     if (splashPresent) {
       const onDismiss = () => {
         s.splashReady = true;
-        setTimeout(s.attempt, 80);
+        // 200 ms pour laisser l'écran de chargement disparaître visuellement
+        setTimeout(s.attempt, 200);
       };
       window.addEventListener("splash-dismissed", onDismiss, { once: true });
       const safety = setTimeout(() => { s.splashReady = true; s.attempt(); }, 3500);
@@ -126,7 +131,7 @@ export default function AnimationPageClient() {
     } else {
       // Splash déjà terminé (connexion rapide / cache)
       s.splashReady = true;
-      setTimeout(s.attempt, 150);
+      setTimeout(s.attempt, 200);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

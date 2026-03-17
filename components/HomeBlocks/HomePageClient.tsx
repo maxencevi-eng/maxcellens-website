@@ -849,7 +849,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
                       key={hash}
                       className={`${styles.ctaButton} btn-site-${(animationBlock as any).ctaButtonStyle || "1"}`}
                       data-analytics-id={`Accueil|Animation - ${label}`}
-                      onClick={() => router.push(`/animation#${hash}`)}
+                      onClick={() => router.push(`/animation#${hash}`, { scroll: false })}
                     >
                       {label}
                     </button>
