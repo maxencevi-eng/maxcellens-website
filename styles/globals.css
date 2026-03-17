@@ -52,8 +52,8 @@ html, body, #__next {
    Sur mobile, on force un line-height ≥ 1.15 pour que les titres
    multi-lignes soient lisibles sans les contraintes desktop (1.0–1.05). */
 h1, h2, h3, h4, h5, h6 {
-  overflow-wrap: break-word;
-  word-break: break-word;
+  overflow-wrap: break-word; /* dernier recours seulement si un mot seul dépasse */
+  word-break: normal;        /* ne jamais couper un mot mid-caractère */
   max-width: 100%;
 }
 

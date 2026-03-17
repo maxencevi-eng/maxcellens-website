@@ -123,12 +123,13 @@ const IMAGE_RATIO_MAP: Record<string, string> = {
 
 /** Converts an admin-set font size to a responsive CSS font-size value.
  *  For sizes above 48px uses clamp() so the text scales down on mobile
- *  rather than wrapping or overflowing. */
+ *  without breaking words mid-character. The vw coefficient is large enough
+ *  to govern even at 360px viewport width. */
 function responsiveFontSize(fs: number): string {
   if (fs <= 48) return `${fs}px`;
-  // At 1400px viewport the text is at full size; scales down proportionally
-  const vw = (fs / 14).toFixed(2);
-  const min = Math.max(24, Math.round(fs * 0.58));
+  // vw governs from narrow viewports; min is a safety floor only
+  const vw = (fs / 8).toFixed(2);
+  const min = Math.max(20, Math.round(fs * 0.32));
   return `clamp(${min}px, ${vw}vw, ${fs}px)`;
 }
 
