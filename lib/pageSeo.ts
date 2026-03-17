@@ -4,8 +4,6 @@
  */
 
 import type { Metadata } from 'next';
-import { unstable_noStore as noStore } from 'next/cache';
-import { supabaseAdmin } from './supabaseAdmin';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 
@@ -38,21 +36,27 @@ function toPublicSeoImageUrl(path: string | null | undefined): string | undefine
 }
 
 /**
- * Récupère les paramètres SEO d'une page (côté serveur uniquement).
- * Utilisé par generateMetadata — ne pas appeler depuis le client.
+ * Récupère les paramètres SEO d'une page via fetch direct PostgREST (côté serveur uniquement).
+ * Utilise cache: 'no-store' pour toujours lire les données fraîches depuis Supabase.
  */
 export async function getPageSeo(slug: string): Promise<PageSeoRow | null> {
-  noStore(); // désactive le cache Next.js — force un fetch frais à chaque requête
-  if (!supabaseAdmin || !slug) return null;
+  if (!slug || !SUPABASE_URL) return null;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const apiKey = serviceKey || anonKey;
+  if (!apiKey) return null;
   try {
-    const { data, error } = await supabaseAdmin
-      .from('page_seo_settings')
-      .select('*')
-      .eq('page_slug', slug)
-      .limit(1)
-      .maybeSingle();
-    if (error || !data) return null;
-    return data as PageSeoRow;
+    const url = `${SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/page_seo_settings?select=*&page_slug=eq.${encodeURIComponent(slug)}&limit=1`;
+    const resp = await fetch(url, {
+      headers: {
+        apikey: apiKey,
+        Authorization: `Bearer ${apiKey}`,
+      },
+      cache: 'no-store',
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return Array.isArray(data) && data.length > 0 ? (data[0] as PageSeoRow) : null;
   } catch {
     return null;
   }
