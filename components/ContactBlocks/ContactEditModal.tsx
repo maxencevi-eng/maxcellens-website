@@ -366,9 +366,4 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
     </>,
     document.body
   );
-
-  function getRichTextInitial(row: AboutRow): string {
-    if (row.contentHtml) return row.contentHtml;
-    return row.content.split('\n').filter(Boolean).map(l => `<p>${l}</p>`).join('') || '<p></p>';
-  }
 }

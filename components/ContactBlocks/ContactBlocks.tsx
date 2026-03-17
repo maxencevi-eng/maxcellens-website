@@ -297,9 +297,7 @@ export default function ContactBlocks() {
             {faqData?.title ?? 'Vos questions,'}{' '}
             <span className={styles.faqTitleHighlight}>{faqData?.titleHighlight ?? 'nos réponses.'}</span>
           </h2>
-          {(faqData?.description) && (
-            <p className={styles.faqDescription}>{faqData.description}</p>
-          )}
+          <p className={styles.faqDescription}>{faqData?.description ?? 'Tout ce que vous devez savoir sur mes prestations. Une question non listée\u00a0? Écrivez-moi directement.'}</p>
           <div className={styles.faqList}>
             {(faqItems.length > 0 ? faqItems : [
               { question: 'Quels types de projets réalisez-vous ?', answer: "Je couvre principalement les événements d'entreprise, les vidéos corporate et commerciales, ainsi que les portraits professionnels." },

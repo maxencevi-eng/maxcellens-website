@@ -151,6 +151,20 @@ export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () 
 
           {tab === 'contenu' && (
             <>
+              {/* Aperçu live */}
+              <div style={{ background: '#f8f8f8', borderRadius: 10, padding: '24px 20px 20px', textAlign: 'center', border: '1px solid #eee' }}>
+                {eyebrow && (
+                  <div style={{ display: 'inline-block', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 999, padding: '4px 14px', marginBottom: 12 }}>{eyebrow}</div>
+                )}
+                <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.15, marginBottom: 8 }}>
+                  {title || 'Vos questions,'}{' '}
+                  <span style={{ color: 'var(--color-primary, #2d6b5f)' }}>{titleHighlight || 'nos réponses.'}</span>
+                </div>
+                {description && (
+                  <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', maxWidth: 380, margin: '0 auto', lineHeight: 1.65 }}>{description}</div>
+                )}
+              </div>
+
               <div>
                 <label style={labelStyle}>Étiquette (eyebrow)</label>
                 <input style={inputStyle} value={eyebrow} onChange={e => setEyebrow(e.target.value)} placeholder="FAQ" />
@@ -166,9 +180,10 @@ export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () 
                 </div>
               </div>
               <div>
-                <label style={labelStyle}>Description</label>
+                <label style={labelStyle}>Sous-titre / description</label>
                 <textarea style={{ ...inputStyle, minHeight: 72, resize: 'vertical', fontFamily: 'inherit' }}
-                  value={description} onChange={e => setDescription(e.target.value)} />
+                  value={description} onChange={e => setDescription(e.target.value)}
+                  placeholder="Tout ce que vous devez savoir sur mes prestations. Une question non listée ? Écrivez-moi directement." />
               </div>
             </>
           )}
