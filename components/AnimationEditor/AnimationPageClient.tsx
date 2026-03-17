@@ -137,8 +137,7 @@ export default function AnimationPageClient() {
     // pas encore dans le DOM et le check serait toujours faux.
     const onDismiss = () => {
       s.splashReady = true;
-      // 50 ms après la disparition du splash avant de démarrer le scroll
-      setTimeout(s.attempt, 50);
+      s.attempt();
     };
     window.addEventListener("splash-dismissed", onDismiss, { once: true });
 
