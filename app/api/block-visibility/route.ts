@@ -3,8 +3,8 @@ import { supabaseAdmin, supabaseUrl, serviceKey } from '../../../lib/supabaseAdm
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_ORDER_HOME = ['home_intro', 'home_services', 'home_animation', 'home_portrait', 'home_cadreur', 'home_stats', 'clients', 'home_quote', 'home_cta'];
-const DEFAULT_ORDER_CONTACT = ['contact_intro', 'contact_zones', 'contact_kit'];
+const DEFAULT_ORDER_HOME = ['home_intro', 'home_banner', 'home_services', 'home_animation', 'home_portrait', 'home_cadreur', 'home_stats', 'clients', 'home_quote', 'home_cta'];
+const DEFAULT_ORDER_CONTACT = ['contact_intro', 'contact_zones', 'contact_kit', 'contact_faq'];
 const DEFAULT_ORDER_ANIMATION = ['animation_s1', 'animation_s2', 'animation_s3', 'animation_cta'];
 const DEFAULT_ORDER_REALISATION = ['production_intro', 'production_videos'];
 const DEFAULT_ORDER_EVENEMENT = ['evenement_intro', 'evenement_videos'];

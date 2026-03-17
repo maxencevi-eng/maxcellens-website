@@ -59,7 +59,7 @@ function mergeKnownBlocks(saved: string[], defaults: string[]): string[] {
   }
   return result;
 }
-const DEFAULT_ORDER_CONTACT = ['contact_intro', 'contact_zones', 'contact_kit'];
+const DEFAULT_ORDER_CONTACT = ['contact_intro', 'contact_zones', 'contact_kit', 'contact_faq'];
 const DEFAULT_ORDER_ANIMATION = ['animation_s1', 'animation_s2', 'animation_s3', 'animation_cta'];
 const DEFAULT_ORDER_REALISATION = ['production_intro', 'production_videos'];
 const DEFAULT_ORDER_EVENEMENT = ['evenement_intro', 'evenement_videos'];
