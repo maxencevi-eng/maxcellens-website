@@ -292,7 +292,7 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
                       <div>
                         <label style={labelStyle}>Label</label>
                         <input value={row.label} onChange={e => setRows(prev => prev.map((r, j) => j === i ? { ...r, label: e.target.value } : r))}
-                          style={{ ...inputStyle, fontSize: 12, marginTop: 0, fontFamily: labelFontFamily || 'inherit', fontSize: 11 as any, letterSpacing: '0.1em', textTransform: 'uppercase' }}
+                          style={{ ...inputStyle, fontSize: 11, marginTop: 0, fontFamily: labelFontFamily || 'inherit', letterSpacing: '0.1em', textTransform: 'uppercase' }}
                           placeholder="SERVICES" />
                       </div>
                       <div>
