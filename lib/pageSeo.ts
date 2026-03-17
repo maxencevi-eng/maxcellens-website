@@ -3,8 +3,9 @@
  * Utilisé par generateMetadata dans l’App Router. Aucun fetch client.
  */
 
-import type { Metadata } from 'next';
-import { supabaseAdmin } from './supabaseAdmin';
+import type { Metadata } from ‘next’;
+import { unstable_noStore as noStore } from ‘next/cache’;
+import { supabaseAdmin } from ‘./supabaseAdmin’;
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 
@@ -41,6 +42,7 @@ function toPublicSeoImageUrl(path: string | null | undefined): string | undefine
  * Utilisé par generateMetadata — ne pas appeler depuis le client.
  */
 export async function getPageSeo(slug: string): Promise<PageSeoRow | null> {
+  noStore(); // désactive le cache Next.js — force un fetch frais à chaque requête
   if (!supabaseAdmin || !slug) return null;
   try {
     const { data, error } = await supabaseAdmin

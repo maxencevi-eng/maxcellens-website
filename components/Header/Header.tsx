@@ -420,7 +420,7 @@ export default function Header() {
                   </Link>{' '}
                 </>
               ) : null}
-              {isNavItemVisible('bac') ? (
+              {(currentNav as any)?.bac === true ? (
                 <>
                   <Link href="/bac" className={linkClass('/bac')} onClick={() => setOpen(false)}>
                     Bureau à la Carte

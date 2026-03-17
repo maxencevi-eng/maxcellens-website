@@ -3,4 +3,5 @@ User-agent: *
 Allow: /
 Disallow: /production
 Disallow: /admin
+Disallow: /bac
 Sitemap: https://www.maxcellens.com/sitemap.xml
