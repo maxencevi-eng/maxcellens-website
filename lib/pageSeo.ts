@@ -1,11 +1,11 @@
 /**
  * SEO par page — lecture serveur uniquement (SSR).
- * Utilisé par generateMetadata dans l’App Router. Aucun fetch client.
+ * Utilisé par generateMetadata dans l'App Router. Aucun fetch client.
  */
 
-import type { Metadata } from ‘next’;
-import { unstable_noStore as noStore } from ‘next/cache’;
-import { supabaseAdmin } from ‘./supabaseAdmin’;
+import type { Metadata } from 'next';
+import { unstable_noStore as noStore } from 'next/cache';
+import { supabaseAdmin } from './supabaseAdmin';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 
@@ -38,7 +38,7 @@ function toPublicSeoImageUrl(path: string | null | undefined): string | undefine
 }
 
 /**
- * Récupère les paramètres SEO d’une page (côté serveur uniquement).
+ * Récupère les paramètres SEO d'une page (côté serveur uniquement).
  * Utilisé par generateMetadata — ne pas appeler depuis le client.
  */
 export async function getPageSeo(slug: string): Promise<PageSeoRow | null> {
@@ -59,7 +59,7 @@ export async function getPageSeo(slug: string): Promise<PageSeoRow | null> {
 }
 
 /**
- * Construit l’objet Metadata Next.js à partir d’une ligne page_seo_settings.
+ * Construit l'objet Metadata Next.js à partir d'une ligne page_seo_settings.
  * Retourne null si pas de données (la page utilisera ses métadonnées par défaut).
  */
 export function buildMetadataFromSeo(
