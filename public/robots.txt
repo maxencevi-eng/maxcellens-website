@@ -1,4 +1,6 @@
 # public/robots.txt
 User-agent: *
 Allow: /
+Disallow: /production
+Disallow: /admin
 Sitemap: https://www.maxcellens.com/sitemap.xml

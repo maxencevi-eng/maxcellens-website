@@ -1,7 +1,12 @@
+import type { Metadata } from 'next';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import ProductionPageClient from '../../components/ProductionPageClient/ProductionPageClient';
 
-export const metadata = { title: 'Réalisation' };
+export const metadata: Metadata = {
+  title: 'Réalisation',
+  robots: { index: false, follow: false },
+  alternates: { canonical: 'https://www.maxcellens.com/realisation' },
+};
 
 export default function Production() {
   return (
