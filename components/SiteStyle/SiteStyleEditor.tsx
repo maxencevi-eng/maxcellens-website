@@ -53,10 +53,13 @@ export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
     try {
       const fd = new FormData();
       fd.append('file', f);
-      const resp = await fetch('/api/admin/upload-font', { method: 'POST', body: fd });
+      fd.append('page', 'site');
+      fd.append('kind', 'image');
+      fd.append('folder', 'site/backgrounds');
+      const resp = await fetch('/api/admin/upload-hero-media', { method: 'POST', body: fd });
       const json = await resp.json();
       if (!resp.ok) throw new Error(json?.error || 'Upload failed');
-      const url = json?.publicUrl || json?.url;
+      const url = json?.url;
       if (!url) throw new Error('No url returned');
       updateBackground({ imageUrl: url, style: 'custom' });
       setMessage('Image importée');
