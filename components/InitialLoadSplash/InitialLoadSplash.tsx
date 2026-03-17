@@ -166,6 +166,7 @@ export default function InitialLoadSplash() {
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
       <div
         aria-hidden="true"
+        data-splash-overlay
         style={{
           position: 'fixed',
           inset: 0,

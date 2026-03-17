@@ -130,10 +130,6 @@ export default function AnimationPageClient() {
     const hash = window.location.hash?.replace(/^#/, "") || "";
     if (!hash || !["animation_s1", "animation_s2", "animation_s3", "animation_cta"].includes(hash)) return;
 
-    // Scroll to top immediately (while splash may still be visible) so user sees the
-    // top of the page when the splash fades out, then the smooth scroll begins.
-    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-
     let done = false;
     const doScroll = () => {
       if (done) return;
@@ -144,16 +140,30 @@ export default function AnimationPageClient() {
     };
     const onSplash = () => setTimeout(doScroll, 80);
 
-    window.addEventListener("splash-dismissed", onSplash, { once: true });
+    // Si le splash est encore visible, on attend son event avant de scroller
+    // (sinon sur mobile rapide il serait déjà parti avant que loaded soit true)
+    const splashActive = document.querySelector("[data-splash-overlay]") !== null;
 
-    // Fallback: if splash was already dismissed before this effect ran, or won't fire
-    const fallback = setTimeout(doScroll, 3600);
-
-    return () => {
-      done = true;
-      clearTimeout(fallback);
-      window.removeEventListener("splash-dismissed", onSplash);
-    };
+    if (splashActive) {
+      // Scroll to top so user sees top of page when splash fades out
+      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+      window.addEventListener("splash-dismissed", onSplash, { once: true });
+      // Safety fallback in case splash event never fires
+      const fallback = setTimeout(doScroll, 3600);
+      return () => {
+        done = true;
+        clearTimeout(fallback);
+        window.removeEventListener("splash-dismissed", onSplash);
+      };
+    } else {
+      // Splash already dismissed (data loaded after splash on slow mobile connection)
+      // Scroll to target quickly without jumping to top first
+      const fallback = setTimeout(doScroll, 200);
+      return () => {
+        done = true;
+        clearTimeout(fallback);
+      };
+    }
   }, [loaded]);
 
   const { hiddenBlocks, blockWidthModes, blockOrderAnimation, isAdmin: isAdminCtx } = useBlockVisibility();
