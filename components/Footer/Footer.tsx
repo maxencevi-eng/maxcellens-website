@@ -112,11 +112,24 @@ export default function Footer() {
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=footerColumn1,footerBottomText,footerMenuVisible,footerBanner,footerBannerFocal,footerBannerHeight,footerBannerRatio,footerBannerSizeMode,footerBgColor,socialIcon_instagram,socialIcon_facebook,socialIcon_youtube,socialIcon_tiktok,socialIcon_linkedin');
+        const resp = await fetch('/api/admin/site-settings?keys=footerColumn1,footerBottomText,footerMenuVisible,footerBanner,footerBannerFocal,footerBannerHeight,footerBannerRatio,footerBannerSizeMode,footerBgColor,socialIcon_instagram,socialIcon_facebook,socialIcon_youtube,socialIcon_tiktok,socialIcon_linkedin,socialInstagram,socialFacebook,socialYouTube,socialTikTok,socialLinkedIn,socialIconStyle');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
         if (!mounted) return;
+        // social links — priorité serveur, fallback localStorage
+        if (s.socialInstagram) { setSocialInstagram(String(s.socialInstagram)); try { localStorage.setItem('socialInstagram', String(s.socialInstagram)); } catch(_){} }
+        else { try { const v = localStorage.getItem('socialInstagram'); if (v) setSocialInstagram(v); } catch(_){} }
+        if (s.socialFacebook) { setSocialFacebook(String(s.socialFacebook)); try { localStorage.setItem('socialFacebook', String(s.socialFacebook)); } catch(_){} }
+        else { try { const v = localStorage.getItem('socialFacebook'); if (v) setSocialFacebook(v); } catch(_){} }
+        if (s.socialYouTube) { setSocialYouTube(String(s.socialYouTube)); try { localStorage.setItem('socialYouTube', String(s.socialYouTube)); } catch(_){} }
+        else { try { const v = localStorage.getItem('socialYouTube'); if (v) setSocialYouTube(v); } catch(_){} }
+        if (s.socialTikTok) { setSocialTikTok(String(s.socialTikTok)); try { localStorage.setItem('socialTikTok', String(s.socialTikTok)); } catch(_){} }
+        else { try { const v = localStorage.getItem('socialTikTok'); if (v) setSocialTikTok(v); } catch(_){} }
+        if (s.socialLinkedIn) { setSocialLinkedIn(String(s.socialLinkedIn)); try { localStorage.setItem('socialLinkedIn', String(s.socialLinkedIn)); } catch(_){} }
+        else { try { const v = localStorage.getItem('socialLinkedIn'); if (v) setSocialLinkedIn(v); } catch(_){} }
+        if (s.socialIconStyle) { setIconStyle(String(s.socialIconStyle)); try { localStorage.setItem('socialIconStyle', String(s.socialIconStyle)); } catch(_){} }
+        else { try { const v = localStorage.getItem('socialIconStyle'); if (v) setIconStyle(v); } catch(_){} }
         if (s.footerColumn1) setFooterColumn1(String(s.footerColumn1)); else { try { const v = localStorage.getItem('footerColumn1'); if (v) setFooterColumn1(v); } catch(_){} }
         if (s.footerBottomText) setFooterBottomText(String(s.footerBottomText)); else { try { const v = localStorage.getItem('footerBottomText'); if (v) setFooterBottomText(v); } catch(_){} }
         if (s.footerMenuVisible) {
@@ -369,7 +382,7 @@ export default function Footer() {
           <>
             <p>Maxence Viozelange</p>
             <p>📞 06.74.96.64.58</p>
-            <p>✉️ contact@maxcellens.com</p>
+            <p>✉️ maxcellens@gmail.com</p>
           </>
         ))}
       </div>
@@ -460,7 +473,7 @@ export default function Footer() {
             {sanitizedBottom ? (
               <div className={styles.copy} dangerouslySetInnerHTML={{ __html: sanitizedBottom }} />
             ) : (
-              <div className={styles.copy}><p style={{ margin: 0 }}>{footerBottomText || `© ${year} Maxcellens | Tous droits réservés | SIRET 889 577 250 00018 | contact@maxcellens.com`}</p></div>
+              <div className={styles.copy}><p style={{ margin: 0 }}>{footerBottomText || `© ${year} Maxcellens | Tous droits réservés | SIRET 889 577 250 00018 | maxcellens@gmail.com`}</p></div>
             )}
             <div data-site-social="icons" className={`${styles.socials} ${styles[iconStyle] || ''}`} style={isMobileFooter ? { justifyContent: 'center', margin: '0 auto', width: 'auto', display: 'flex' } : undefined}>
                 <a href={socialInstagram || 'https://instagram.com'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={styles.social} style={isMobileFooter ? { width: 48, height: 48, minWidth: 48, minHeight: 48, borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } : undefined}>
