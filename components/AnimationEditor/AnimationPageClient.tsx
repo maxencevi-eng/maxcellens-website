@@ -78,61 +78,77 @@ export default function AnimationPageClient() {
   const [loaded, setLoaded] = useState(false);
 
   // ── Scroll-to-section après disparition du splash ──────────────────────────
-  // On utilise un objet ref unique pour partager l'état entre les deux effets
-  // sans provoquer de re-renders ni de race conditions.
+  //
+  // La cible de scroll est transmise via sessionStorage (pas via le hash URL)
+  // pour éviter tous les conflits avec le scroll natif du navigateur et de
+  // Next.js. Le hash URL entraînait :
+  //   • la page qui apparaissait à la mauvaise position (Next.js / browser scroll)
+  //   • un re-scroll intempestif à chaque actualisation
+  //
+  // null = pas encore lu | "" = pas de cible | "animation_s1" etc. = cible
   const _scroll = useRef({
-    hash: "",
+    hash: null as string | null,
     fired: false,
     dataReady: false,
     splashReady: false,
     attempt: () => {},
   });
 
-  // Effet 1 (mount) : capture le hash immédiatement, force scroll en haut,
-  // puis attend que le splash soit terminé.
+  // Effet 1 (mount) : lit sessionStorage, force le haut de page, attend splash.
   useEffect(() => {
     const s = _scroll.current;
-    const hash = (window.location.hash || "").replace(/^#/, "");
-    const VALID = ["animation_s1", "animation_s2", "animation_s3", "animation_cta"];
-    if (!VALID.includes(hash)) return;
 
-    s.hash = hash;
-    // Force la page en haut dès maintenant, peu importe le splash
+    // En React Strict Mode l'effet s'exécute deux fois. La 2e fois,
+    // sessionStorage est déjà vidé. On utilise donc s.hash en priorité
+    // (null = 1ère exécution, valeur définie = 2e exécution Strict Mode).
+    const target = s.hash ?? (() => {
+      try {
+        const t = sessionStorage.getItem("animScrollTarget") || "";
+        if (t) sessionStorage.removeItem("animScrollTarget");
+        return t;
+      } catch (_) { return ""; }
+    })();
+
+    const VALID = ["animation_s1", "animation_s2", "animation_s3", "animation_cta"];
+    if (!VALID.includes(target)) return;
+
+    s.hash = target;
+
+    // Force le haut de page immédiatement (triple approche pour iOS Safari)
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-    // Supprime le hash de l'URL immédiatement :
-    //   • empêche le navigateur / Next.js de scroller vers l'élément
-    //   • évite que le scroll se re-déclenche si l'utilisateur actualise la page
-    history.replaceState(null, "", window.location.pathname + window.location.search);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
 
     s.attempt = () => {
       if (s.fired || !s.dataReady || !s.splashReady) return;
-      const el = document.getElementById(s.hash);
+      const el = document.getElementById(s.hash!);
       if (!el) return;
       s.fired = true;
-      // requestAnimationFrame pour s'assurer que le layout est calculé
+      // requestAnimationFrame : garantit que le layout est calculé avant scroll
       requestAnimationFrame(() => {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     };
 
-    const splashPresent = !!document.querySelector("[data-splash-overlay]");
-    if (splashPresent) {
-      const onDismiss = () => {
-        s.splashReady = true;
-        // 200 ms pour laisser l'écran de chargement disparaître visuellement
-        setTimeout(s.attempt, 200);
-      };
-      window.addEventListener("splash-dismissed", onDismiss, { once: true });
-      const safety = setTimeout(() => { s.splashReady = true; s.attempt(); }, 3500);
-      return () => {
-        clearTimeout(safety);
-        window.removeEventListener("splash-dismissed", onDismiss);
-      };
-    } else {
-      // Splash déjà terminé (connexion rapide / cache)
+    // On écoute splash-dismissed SYSTÉMATIQUEMENT — pas de vérification DOM.
+    // Raison : lors d'une navigation SPA, InitialLoadSplash planifie
+    // setVisible(true) dans son useEffect, mais React ne l'a pas encore
+    // traité quand cet effet s'exécute ici. [data-splash-overlay] n'est donc
+    // pas encore dans le DOM et le check serait toujours faux.
+    const onDismiss = () => {
       s.splashReady = true;
+      // 200 ms après la disparition du splash avant de démarrer le scroll
       setTimeout(s.attempt, 200);
-    }
+    };
+    window.addEventListener("splash-dismissed", onDismiss, { once: true });
+
+    // Safety : splash-dismissed ne se déclenche jamais (cas extrême / bug)
+    const safety = setTimeout(() => { s.splashReady = true; s.attempt(); }, 4000);
+
+    return () => {
+      clearTimeout(safety);
+      window.removeEventListener("splash-dismissed", onDismiss);
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Effet 2 : quand les données sont chargées, tenter le scroll
