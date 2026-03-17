@@ -1,3 +1,18 @@
+.editBtn {
+  background: #111;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.editBtn:hover {
+  background: #333;
+}
+
 /* Sous-menu galeries portrait : style segmented control, centré */
 .portraitGalleryNav {
   margin-bottom: 1.75rem;

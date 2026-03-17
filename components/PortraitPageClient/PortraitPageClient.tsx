@@ -23,6 +23,7 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
 
   // État initial = prop du serveur (?tab=) → bonne galerie dès le premier rendu
   const [activeGallery, setActiveGallery] = useState<PortraitGalleryId>(initialTab);
+  const [introEditOpen, setIntroEditOpen] = useState(false);
   const activeConfig = PORTRAIT_GALLERIES.find((g) => g.id === activeGallery) ?? PORTRAIT_GALLERIES[0];
 
   // Synchroniser avec le hash de l’URL (ex. /portrait#lifestyle), y compris sur changement de hash
@@ -69,11 +70,20 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
         <div style={btnWrapStyle}>
           <BlockVisibilityToggle blockId="portrait_intro" />
           <BlockWidthToggle blockId="portrait_intro" />
+          <button className={styles.editBtn} onClick={() => setIntroEditOpen(true)}>
+            Modifier
+          </button>
           <BlockOrderButtons page="portrait" blockId="portrait_intro" />
         </div>
       )}
       <AnimateInView variant="fadeUp">
-        <PageIntroBlock pageKey="portrait" settingsKey="portrait_intro" blockId="portrait_intro" />
+        <PageIntroBlock
+          pageKey="portrait"
+          settingsKey="portrait_intro"
+          blockId="portrait_intro"
+          externalEditOpen={introEditOpen}
+          onExternalEditClose={() => setIntroEditOpen(false)}
+        />
       </AnimateInView>
     </div>
   );
