@@ -4,9 +4,28 @@ import HomePageClient from '../components/HomeBlocks/HomePageClient';
 import { getPageSeo, buildMetadataFromSeo } from '../lib/pageSeo';
 import JsonLdScript from '../components/SeoCommandCenter/JsonLdScript';
 import DefaultJsonLd from '../components/SeoCommandCenter/DefaultJsonLd';
+import { supabaseAdmin } from '../lib/supabaseAdmin';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.maxcellens.com';
 const baseUrl = siteUrl.replace(/\/$/, '');
+
+const HOME_SETTINGS_KEYS = ['home_intro', 'home_services', 'home_banner', 'home_stats', 'home_portrait', 'home_cadreur', 'home_animation', 'home_quote', 'home_cta'];
+
+async function getHomeInitialSettings(): Promise<Record<string, string> | undefined> {
+  try {
+    if (!supabaseAdmin) return undefined;
+    const { data, error } = await supabaseAdmin
+      .from('site_settings')
+      .select('key, value')
+      .in('key', HOME_SETTINGS_KEYS);
+    if (error || !data) return undefined;
+    const map: Record<string, string> = {};
+    (data as { key: string; value: string }[]).forEach(r => { map[r.key] = r.value; });
+    return map;
+  } catch {
+    return undefined;
+  }
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo('home');
@@ -33,6 +52,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
+  const initialSettings = await getHomeInitialSettings();
   return (
     <main>
       <DefaultJsonLd />
@@ -43,7 +63,7 @@ export default async function HomePage() {
         subtitle="Portfolio photo & vidéo"
         bgImage="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1600&q=80"
       />
-      <HomePageClient />
+      <HomePageClient initialSettings={initialSettings} />
     </main>
   );
 }

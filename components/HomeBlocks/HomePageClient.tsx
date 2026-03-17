@@ -166,24 +166,24 @@ function getFanCardStyle(offset: number): React.CSSProperties {
   };
 }
 
-export default function HomePageClient() {
+export default function HomePageClient({ initialSettings }: { initialSettings?: Record<string, string> }) {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(() => initialSettings !== undefined);
   const [editBlock, setEditBlock] = useState<HomeBlockKey | null>(null);
   const { hiddenBlocks, blockWidthModes, blockOrderHome, isAdmin: isAdminFromContext } = useBlockVisibility();
   const hide = (id: string) => !isAdminFromContext && hiddenBlocks.includes(id);
   const blockWidthClass = (id: string) => (blockWidthModes[id] === "max1600" ? "block-width-1600" : "");
 
-  const [intro, setIntro] = useState<HomeIntroData>(DEFAULT_INTRO);
-  const [services, setServices] = useState<HomeServicesData>(DEFAULT_SERVICES);
-  const [banner, setBanner] = useState<HomeBannerData>(DEFAULT_BANNER);
-  const [stats, setStats] = useState<HomeStatsData>(DEFAULT_STATS);
-  const [portraitBlock, setPortraitBlock] = useState<HomePortraitBlockData>(DEFAULT_PORTRAIT);
-  const [cadreurBlock, setCadreurBlock] = useState<HomeCadreurBlockData>(DEFAULT_CADREUR);
-  const [animationBlock, setAnimationBlock] = useState<HomeAnimationBlockData>(DEFAULT_ANIMATION);
-  const [quote, setQuote] = useState<HomeQuoteData>(DEFAULT_QUOTE);
-  const [cta, setCta] = useState<HomeCtaData>(DEFAULT_CTA);
+  const [intro, setIntro] = useState<HomeIntroData>(() => parse(initialSettings?.home_intro, DEFAULT_INTRO));
+  const [services, setServices] = useState<HomeServicesData>(() => parse(initialSettings?.home_services, DEFAULT_SERVICES));
+  const [banner, setBanner] = useState<HomeBannerData>(() => parse(initialSettings?.home_banner, DEFAULT_BANNER));
+  const [stats, setStats] = useState<HomeStatsData>(() => parse(initialSettings?.home_stats, DEFAULT_STATS));
+  const [portraitBlock, setPortraitBlock] = useState<HomePortraitBlockData>(() => parse(initialSettings?.home_portrait, DEFAULT_PORTRAIT));
+  const [cadreurBlock, setCadreurBlock] = useState<HomeCadreurBlockData>(() => parse(initialSettings?.home_cadreur, DEFAULT_CADREUR));
+  const [animationBlock, setAnimationBlock] = useState<HomeAnimationBlockData>(() => parse(initialSettings?.home_animation, DEFAULT_ANIMATION));
+  const [quote, setQuote] = useState<HomeQuoteData>(() => parse(initialSettings?.home_quote, DEFAULT_QUOTE));
+  const [cta, setCta] = useState<HomeCtaData>(() => parse(initialSettings?.home_cta, DEFAULT_CTA));
   const [currentPortraitSlide, setCurrentPortraitSlide] = useState(0);
   const [portraitSlideDirection, setPortraitSlideDirection] = useState<"next" | "prev">("next");
   const portraitTouchStartX = useRef<number | null>(null);

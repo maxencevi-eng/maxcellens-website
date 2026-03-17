@@ -427,7 +427,7 @@ export default function Header() {
                   </Link>{' '}
                 </>
               ) : null}
-              {isNavItemVisible('admin') ? (
+              {(currentNav as any)?.admin === true ? (
                 <>
                   <Link href="/admin" className={linkClass('/admin')} onClick={() => setOpen(false)}>
                     Admin

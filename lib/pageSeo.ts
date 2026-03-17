@@ -81,7 +81,7 @@ export function buildMetadataFromSeo(
   const twitterDescription = rawTwDesc.length > 300 ? rawTwDesc.slice(0, 297).trim() + '…' : rawTwDesc || description;
 
   const metadata: Metadata = {
-    title: seo.meta_title ?? undefined,
+    title: seo.meta_title ? { absolute: seo.meta_title } : undefined,
     description,
     alternates: canonical ? { canonical } : undefined,
     robots: {

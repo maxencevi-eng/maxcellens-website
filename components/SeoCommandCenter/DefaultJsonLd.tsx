@@ -1,36 +1,92 @@
 /**
- * Données structurées JSON-LD par défaut (Organization + WebSite) pour la page d'accueil.
- * Affiché quand page_seo n'a pas de json_ld en base, pour satisfaire les audits SEO (Alyze, Google).
+ * Données structurées JSON-LD par défaut (LocalBusiness + Photographer + WebSite).
+ * Server Component async — récupère les réseaux sociaux pour peupler sameAs.
  */
+import { supabaseAdmin } from '../../lib/supabaseAdmin';
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.maxcellens.com';
 const baseUrl = siteUrl.replace(/\/$/, '');
 
-const organizationLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'Maxcellens',
-  url: baseUrl,
-  description: 'Portfolio photo & video — photographie portrait, corporate, événement et production.',
-  sameAs: [], // à compléter via admin (réseaux sociaux)
-};
+const SOCIAL_KEYS = ['socialInstagram', 'socialFacebook', 'socialYouTube', 'socialTikTok', 'socialLinkedIn'];
 
-const websiteLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'Maxcellens',
-  url: baseUrl,
-  description: 'Portfolio photo & video — Maxcellens, photographie portrait, corporate, événement et production.',
-  publisher: { '@id': `${baseUrl}/#organization` },
-  inLanguage: 'fr-FR',
-};
+async function getSocialUrls(): Promise<string[]> {
+  try {
+    if (!supabaseAdmin) return [];
+    const { data, error } = await supabaseAdmin
+      .from('site_settings')
+      .select('key, value')
+      .in('key', SOCIAL_KEYS);
+    if (error || !data) return [];
+    return (data as { key: string; value: string }[])
+      .map(r => r.value)
+      .filter(v => v && v.startsWith('http'));
+  } catch {
+    return [];
+  }
+}
 
-export default function DefaultJsonLd() {
-  const orgWithId = { ...organizationLd, '@id': `${baseUrl}/#organization` };
+export default async function DefaultJsonLd() {
+  const sameAs = await getSocialUrls();
+
+  const localBusinessLd = {
+    '@context': 'https://schema.org',
+    '@type': ['LocalBusiness', 'ProfessionalService'],
+    '@id': `${baseUrl}/#organization`,
+    name: 'Maxcellens',
+    url: baseUrl,
+    description: 'Vidéaste et photographe indépendant — portrait, corporate, événementiel et réalisation vidéo. Basé à Paris, disponible partout en France.',
+    telephone: '+33674966458',
+    email: 'contact@maxcellens.com',
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Paris',
+      addressRegion: 'Île-de-France',
+      addressCountry: 'FR',
+    },
+    areaServed: {
+      '@type': 'Country',
+      name: 'France',
+    },
+    knowsAbout: ['Photographie', 'Vidéographie', 'Corporate', 'Portrait', 'Événementiel', 'Réalisation vidéo'],
+    sameAs,
+  };
+
+  const photographerLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    '@id': `${baseUrl}/#photographer`,
+    name: 'Maxence Viozelange',
+    jobTitle: 'Vidéaste & Photographe Indépendant',
+    url: baseUrl,
+    worksFor: { '@id': `${baseUrl}/#organization` },
+    knowsAbout: ['Photographie', 'Vidéographie', 'Prise de vue', 'Post-production', 'Montage vidéo'],
+    sameAs,
+  };
+
+  const websiteLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Maxcellens',
+    url: baseUrl,
+    description: 'Portfolio photo & vidéo — Maxcellens, photographie portrait, corporate, événement et production.',
+    publisher: { '@id': `${baseUrl}/#organization` },
+    inLanguage: 'fr-FR',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${baseUrl}/?s={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(orgWithId) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(photographerLd) }}
       />
       <script
         type="application/ld+json"

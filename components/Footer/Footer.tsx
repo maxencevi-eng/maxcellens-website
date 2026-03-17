@@ -79,11 +79,11 @@ export default function Footer() {
   const [sanitizedBottom, setSanitizedBottom] = useState<string | null>(null);
   const [imgError, setImgError] = useState(false);
   const [isMobileFooter, setIsMobileFooter] = useState(false);
-  const [socialInstagram, setSocialInstagram] = useState<string>('#');
-  const [socialFacebook, setSocialFacebook] = useState<string>('#');
-  const [socialYouTube, setSocialYouTube] = useState<string>('#');
-  const [socialTikTok, setSocialTikTok] = useState<string>('#');
-  const [socialLinkedIn, setSocialLinkedIn] = useState<string>('#');
+  const [socialInstagram, setSocialInstagram] = useState<string>('');
+  const [socialFacebook, setSocialFacebook] = useState<string>('');
+  const [socialYouTube, setSocialYouTube] = useState<string>('');
+  const [socialTikTok, setSocialTikTok] = useState<string>('');
+  const [socialLinkedIn, setSocialLinkedIn] = useState<string>('');
   const [iconStyle, setIconStyle] = useState<string>('style-outline');
   const [customIcons, setCustomIcons] = useState<{ [k: string]: string }>({});
   const [footerBanner, setFooterBanner] = useState<{ url?: string; path?: string } | null>(null);
@@ -273,11 +273,11 @@ export default function Footer() {
   // load social links from localStorage on client only to avoid hydration mismatch
   useEffect(() => {
     function loadLinks() {
-      try { setSocialInstagram(localStorage.getItem('socialInstagram') || '#'); } catch(_) { setSocialInstagram('#'); }
-      try { setSocialFacebook(localStorage.getItem('socialFacebook') || '#'); } catch(_) { setSocialFacebook('#'); }
-      try { setSocialYouTube(localStorage.getItem('socialYouTube') || '#'); } catch(_) { setSocialYouTube('#'); }
-      try { setSocialTikTok(localStorage.getItem('socialTikTok') || '#'); } catch(_) { setSocialTikTok('#'); }
-      try { setSocialLinkedIn(localStorage.getItem('socialLinkedIn') || '#'); } catch(_) { setSocialLinkedIn('#'); }
+      try { setSocialInstagram(localStorage.getItem('socialInstagram') || ''); } catch(_) { setSocialInstagram(''); }
+      try { setSocialFacebook(localStorage.getItem('socialFacebook') || ''); } catch(_) { setSocialFacebook(''); }
+      try { setSocialYouTube(localStorage.getItem('socialYouTube') || ''); } catch(_) { setSocialYouTube(''); }
+      try { setSocialTikTok(localStorage.getItem('socialTikTok') || ''); } catch(_) { setSocialTikTok(''); }
+      try { setSocialLinkedIn(localStorage.getItem('socialLinkedIn') || ''); } catch(_) { setSocialLinkedIn(''); }
       try { const v = localStorage.getItem('socialIconStyle') || ''; if (v) setIconStyle(v); } catch(_) {}
     }
 
@@ -369,7 +369,7 @@ export default function Footer() {
           <>
             <p>Maxence Viozelange</p>
             <p>📞 06.74.96.64.58</p>
-            <p>✉️ maxcellens@gmail.com</p>
+            <p>✉️ contact@maxcellens.com</p>
           </>
         ))}
       </div>
@@ -397,7 +397,7 @@ export default function Footer() {
       <h4>Information</h4>
       <ul className={styles.list}>
         {(!footerMenuVisible || footerMenuVisible.contact) && <li><Link href="/contact" data-analytics-id="Footer|Contact">Contact</Link></li>}
-        {(!footerMenuVisible || footerMenuVisible.admin) && <li><Link href="/admin" data-analytics-id="Footer|Admin">Admin</Link></li>}
+        {footerMenuVisible?.admin === true && <li><Link href="/admin" data-analytics-id="Footer|Admin">Admin</Link></li>}
       </ul>
     </div>
   );
@@ -460,7 +460,7 @@ export default function Footer() {
             {sanitizedBottom ? (
               <div className={styles.copy} dangerouslySetInnerHTML={{ __html: sanitizedBottom }} />
             ) : (
-              <div className={styles.copy}><p style={{ margin: 0 }}>{footerBottomText || `© ${year} Maxcellens | Tous droits réservés | SIRET 889 577 250 00018 | Maxcellens@gmail.com`}</p></div>
+              <div className={styles.copy}><p style={{ margin: 0 }}>{footerBottomText || `© ${year} Maxcellens | Tous droits réservés | SIRET 889 577 250 00018 | contact@maxcellens.com`}</p></div>
             )}
             <div data-site-social="icons" className={`${styles.socials} ${styles[iconStyle] || ''}`} style={isMobileFooter ? { justifyContent: 'center', margin: '0 auto', width: 'auto', display: 'flex' } : undefined}>
                 <a href={socialInstagram || 'https://instagram.com'} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={styles.social} style={isMobileFooter ? { width: 48, height: 48, minWidth: 48, minHeight: 48, borderRadius: '999px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } : undefined}>
