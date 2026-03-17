@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -362,87 +363,82 @@ export default function Header() {
           </button>
 
           <div className={styles.center}>
+            {/* Desktop nav — always in header, hidden on mobile via CSS */}
             <nav
               data-site-nav="menu"
               data-measure="nav"
               data-nav-ready={navReady ? '' : undefined}
-              data-mobile-drawer={open && isMobile ? 'true' : undefined}
-              className={`${styles.nav} ${open ? styles.open : ''} ${headerVisible ? '' : styles.hiddenUntilReady}`}
+              className={`${styles.nav} ${headerVisible ? '' : styles.hiddenUntilReady}`}
               aria-label="Main navigation"
               aria-hidden={!headerVisible}
             >
               {isNavItemVisible('realisation') ? (
-                <>
-                  <Link href="/realisation" className={linkClass('/realisation')} onClick={() => setOpen(false)}>
-                    Réalisation
-                  </Link>{' '}
-                </>
+                <Link href="/realisation" className={linkClass('/realisation')}>Réalisation</Link>
               ) : null}
               {isNavItemVisible('evenement') ? (
-                <>
-                  <Link href="/evenement" className={linkClass('/evenement')} onClick={() => setOpen(false)}>
-                    Évènement
-                  </Link>{' '}
-                </>
+                <Link href="/evenement" className={linkClass('/evenement')}>Évènement</Link>
               ) : null}
               {isNavItemVisible('corporate') ? (
-                <>
-                  <Link href="/corporate" className={linkClass('/corporate')} onClick={() => setOpen(false)}>
-                    Corporate
-                  </Link>{' '}
-                </>
+                <Link href="/corporate" className={linkClass('/corporate')}>Corporate</Link>
               ) : null}
               {isNavItemVisible('portrait') ? (
-                <>
-                  <Link href="/portrait" className={linkClass('/portrait')} onClick={() => setOpen(false)}>
-                    Portrait
-                  </Link>{' '}
-                </>
+                <Link href="/portrait" className={linkClass('/portrait')}>Portrait</Link>
               ) : null}
               {isNavItemVisible('animation') ? (
-                <>
-                  <Link href="/animation" className={linkClass('/animation')} onClick={() => setOpen(false)}>
-                    Animation
-                  </Link>{' '}
-                </>
+                <Link href="/animation" className={linkClass('/animation')}>Animation</Link>
               ) : null}
               {isNavItemVisible('galleries') ? (
-                <>
-                  <Link href="/galeries" className={linkClass('/galeries')} onClick={() => setOpen(false)}>
-                    Galeries
-                  </Link>{' '}
-                </>
+                <Link href="/galeries" className={linkClass('/galeries')}>Galeries</Link>
               ) : null}
               {isNavItemVisible('contact') ? (
-                <>
-                  <Link href="/contact" className={linkClass('/contact')} onClick={() => setOpen(false)}>
-                    Contact
-                  </Link>{' '}
-                </>
+                <Link href="/contact" className={linkClass('/contact')}>Contact</Link>
               ) : null}
               {(currentNav as any)?.bac === true ? (
-                <>
-                  <Link href="/bac" className={linkClass('/bac')} onClick={() => setOpen(false)}>
-                    Bureau à la Carte
-                  </Link>{' '}
-                </>
+                <Link href="/bac" className={linkClass('/bac')}>Bureau à la Carte</Link>
               ) : null}
               {(currentNav as any)?.admin === true ? (
-                <>
-                  <Link href="/admin" className={linkClass('/admin')} onClick={() => setOpen(false)}>
-                    Admin
-                  </Link>
-                </>
+                <Link href="/admin" className={linkClass('/admin')}>Admin</Link>
               ) : null}
             </nav>
           </div>
         </div>
       </div>
 
-      {/* DevMeasure removed */}
-
-      {open ? (
-        <div className={styles.mobileOverlay} onClick={() => setOpen(false)} />
+      {/* Mobile drawer — portal to document.body to escape any stacking context */}
+      {open && isMobile && typeof document !== 'undefined' ? createPortal(
+        <>
+          <nav className={styles.mobileDrawer} aria-label="Mobile navigation">
+            {isNavItemVisible('realisation') ? (
+              <Link href="/realisation" className={linkClass('/realisation')} onClick={() => setOpen(false)}>Réalisation</Link>
+            ) : null}
+            {isNavItemVisible('evenement') ? (
+              <Link href="/evenement" className={linkClass('/evenement')} onClick={() => setOpen(false)}>Évènement</Link>
+            ) : null}
+            {isNavItemVisible('corporate') ? (
+              <Link href="/corporate" className={linkClass('/corporate')} onClick={() => setOpen(false)}>Corporate</Link>
+            ) : null}
+            {isNavItemVisible('portrait') ? (
+              <Link href="/portrait" className={linkClass('/portrait')} onClick={() => setOpen(false)}>Portrait</Link>
+            ) : null}
+            {isNavItemVisible('animation') ? (
+              <Link href="/animation" className={linkClass('/animation')} onClick={() => setOpen(false)}>Animation</Link>
+            ) : null}
+            {isNavItemVisible('galleries') ? (
+              <Link href="/galeries" className={linkClass('/galeries')} onClick={() => setOpen(false)}>Galeries</Link>
+            ) : null}
+            {isNavItemVisible('contact') ? (
+              <Link href="/contact" className={linkClass('/contact')} onClick={() => setOpen(false)}>Contact</Link>
+            ) : null}
+            {(currentNav as any)?.bac === true ? (
+              <Link href="/bac" className={linkClass('/bac')} onClick={() => setOpen(false)}>Bureau à la Carte</Link>
+            ) : null}
+            {(currentNav as any)?.admin === true ? (
+              <Link href="/admin" className={linkClass('/admin')} onClick={() => setOpen(false)}>Admin</Link>
+            ) : null}
+          </nav>
+          <div className={styles.mobileOverlay} onClick={() => setOpen(false)} />
+        </>,
+        document.body
       ) : null}
     </header>
   );
