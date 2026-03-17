@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import type { PageIntroBlockData, PageIntroFeature } from './pageIntroDefaults';
 import { PAGE_INTRO_DEFAULTS } from './pageIntroDefaults';
+import { responsiveFontSize } from '@/lib/responsiveFontSize';
 
 const PageIntroBlockModal = dynamic(() => import('./PageIntroBlockModal'), { ssr: false });
 
@@ -43,13 +44,6 @@ function LucideIcon({ name, size = 22, color, strokeWidth = 1.5 }: { name?: stri
   const Comp = ICON_MAP[name];
   if (!Comp) return null;
   return <Comp size={size} color={color || 'currentColor'} strokeWidth={strokeWidth} />;
-}
-
-function responsiveFontSize(fs: number): string {
-  if (fs <= 48) return `${fs}px`;
-  const vw = (fs / 14).toFixed(2);
-  const min = Math.max(24, Math.round(fs * 0.58));
-  return `clamp(${min}px, ${vw}vw, ${fs}px)`;
 }
 
 function titleTag(style: string | undefined, children: React.ReactNode, props: React.HTMLAttributes<HTMLElement>): React.ReactNode {
