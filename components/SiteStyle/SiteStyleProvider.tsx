@@ -208,23 +208,14 @@ export default function SiteStyleProvider({ children }: { children: React.ReactN
           }
 
           if (textureCss) {
-            // body::after covers the full viewport background with the texture.
-            // section::before adds texture on section backgrounds without isolation:isolate,
-            // which preserves z-index stacking for the scroll-over-nav effect.
+            // Single full-viewport overlay at z-index:1 — above all backgrounds (z-index:auto)
+            // but below hero (z:5), nav (z:10), and content blocks (z:20).
+            // No per-section ::before, no isolation:isolate — keeps z-index stacking intact
+            // for the scroll-over-header effect.
             bgTagContent = `
-              body { isolation: isolate; }
               body::after {
                 content: ''; position: fixed; inset: 0;
-                pointer-events: none; z-index: -1;
-                opacity: var(--site-bg-opacity, 0.08);
-                ${textureCss}
-              }
-              /* NO isolation:isolate on section — required for z-index scroll-over-nav effect */
-              section { position: relative; }
-              section::before {
-                content: ''; position: absolute; inset: 0;
-                pointer-events: none;
-                border-radius: inherit;
+                pointer-events: none; z-index: 1;
                 opacity: var(--site-bg-opacity, 0.08);
                 ${textureCss}
               }`;

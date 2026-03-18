@@ -166,6 +166,13 @@ img {
     height: var(--header-height, 64px);
     pointer-events: none;
   }
+
+  /* Hero/banner sticky : reste collé sous la nav fixe, le contenu (z:20) le recouvre */
+  [data-page-header-entrance] {
+    position: sticky;
+    top: var(--header-height, 64px);
+    z-index: 5;
+  }
 }
 
 /* Masonry item styling for column layout */
