@@ -11,12 +11,13 @@ import { useTransitionSettings } from './TransitionProvider';
  *        → exit   (overlay monte vers le haut, révèle la nouvelle page)
  *        → idle
  *
- * Mode "standard" : router.push lancé à la FIN de l'enter (comportement précédent).
- * Mode "seamless" : router.push lancé au DÉBUT de l'enter. Si la page est prête
- *   avant la fin de l'enter → exit s'enchaîne directement sans phase waiting.
+ * Mode "standard" : router.push lancé à la FIN de l'enter.
+ * Mode "seamless" : router.push lancé au DÉBUT de l'enter (page charge en
+ *   background pendant que l'overlay monte). Si la page est prête avant la
+ *   fin de l'enter → exit s'enchaîne directement sans phase waiting.
  *
  * À la fin de l'exit : dispatch 'splash-dismissed' pour déclencher les
- * animations de blocs qui y sont abonnés (HomePageClient, AnimationPageClient…)
+ * animations de blocs (HomePageClient, AnimationPageClient…)
  */
 type Phase = 'idle' | 'enter' | 'waiting' | 'exit';
 
@@ -27,6 +28,8 @@ export default function PageTransitionOverlay() {
   const [phase, setPhase] = useState<Phase>('idle');
   const targetHref = useRef<string | null>(null);
   const prevPathname = useRef(pathname);
+  // seamless : true si le pathname a changé pendant la phase enter
+  const pageReadyDuringEnter = useRef(false);
 
   const enterDuration = settings.duration * 0.55;
   const exitDuration  = settings.duration * 0.65;
@@ -51,14 +54,17 @@ export default function PageTransitionOverlay() {
 
       e.preventDefault();
       e.stopPropagation();
-      targetHref.current = href;
+
+      pageReadyDuringEnter.current = false;
 
       if (settings.mode === 'seamless') {
-        // Seamless : prefetch pendant que l'overlay monte,
-        // router.push sera lancé à la fin de l'enter (comme standard).
-        // La page étant déjà chargée en mémoire, la phase waiting sera
-        // quasi nulle et l'exit s'enchaîne immédiatement.
-        router.prefetch(href);
+        // Seamless : navigation immédiate, la page charge en background
+        // pendant que l'overlay monte depuis le bas.
+        router.push(href);
+        // targetHref reste null : pas besoin de push dans handleAnimationComplete
+      } else {
+        // Standard : on retient la cible, push à la fin de l'enter
+        targetHref.current = href;
       }
 
       setPhase('enter');
@@ -68,12 +74,16 @@ export default function PageTransitionOverlay() {
     return () => document.removeEventListener('click', handleClick, true);
   }, [settings.enabled, settings.mode, pathname, router]);
 
-  // Quand pathname change (Next.js a rendu la nouvelle route côté client),
-  // on attend 2 frames pour que React peigne la page, puis on lance l'exit.
+  // Quand pathname change (Next.js a rendu la nouvelle route)
   useEffect(() => {
     if (prevPathname.current !== pathname) {
       prevPathname.current = pathname;
-      if (phase === 'waiting') {
+
+      if (phase === 'enter' && settings.mode === 'seamless') {
+        // Page prête pendant l'enter → on le note, l'exit s'enchaînera dès la fin
+        pageReadyDuringEnter.current = true;
+      } else if (phase === 'waiting') {
+        // Double rAF : garantit que le DOM est peint avant de révéler
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             setPhase('exit');
@@ -81,9 +91,9 @@ export default function PageTransitionOverlay() {
         });
       }
     }
-  }, [pathname, phase]);
+  }, [pathname, phase, settings.mode]);
 
-  // Safety : si pathname ne change pas dans les 4s (ex: navigation échouée)
+  // Safety : si pathname ne change pas dans les 4s (navigation échouée)
   useEffect(() => {
     if (phase === 'waiting') {
       const timeout = setTimeout(() => setPhase('exit'), 4000);
@@ -93,20 +103,28 @@ export default function PageTransitionOverlay() {
 
   const handleAnimationComplete = useCallback(() => {
     if (phase === 'enter') {
-      // Dans les deux modes, router.push se fait ici (overlay couvre tout l'écran).
-      // En mode seamless, la page a été prefetchée pendant l'enter → waiting minimal.
-      if (targetHref.current) {
-        router.push(targetHref.current);
-        targetHref.current = null;
+      if (settings.mode === 'seamless') {
+        if (pageReadyDuringEnter.current) {
+          // Page déjà rendue pendant l'enter → exit immédiat, sans waiting
+          pageReadyDuringEnter.current = false;
+          setPhase('exit');
+        } else {
+          // Page pas encore prête → on attend le changement de pathname
+          setPhase('waiting');
+        }
+      } else {
+        // Standard : router.push ici, overlay couvre tout l'écran
+        if (targetHref.current) {
+          router.push(targetHref.current);
+          targetHref.current = null;
+        }
+        setPhase('waiting');
       }
-      setPhase('waiting');
     } else if (phase === 'exit') {
       setPhase('idle');
-      // Notifie les blocs (HomePageClient, AnimationPageClient…) que la
-      // transition est terminée → déclenche leurs animations d'entrée
       window.dispatchEvent(new CustomEvent('splash-dismissed'));
     }
-  }, [phase, router]);
+  }, [phase, router, settings.mode]);
 
   if (!settings.enabled || phase === 'idle') return null;
 
