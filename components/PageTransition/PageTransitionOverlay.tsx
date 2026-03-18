@@ -128,21 +128,37 @@ export default function PageTransitionOverlay() {
   const animateY = phase === 'exit' ? '-100%' : '0%';
 
   return (
-    <motion.div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 999999,
-        background: settings.overlayColor,
-        pointerEvents: phase === 'enter' || phase === 'waiting' ? 'all' : 'none',
-      }}
-      initial={{ y: '100%' }}
-      animate={{ y: animateY }}
-      transition={{
-        duration: phase === 'exit' ? exitDuration : enterDuration,
-        ease: [0.25, 0.46, 0.45, 0.94],
-      }}
-      onAnimationComplete={handleAnimationComplete}
-    />
+    <>
+      {/* En mode seamless : fond instantané qui couvre tout l'écran dès le clic,
+          empêche de voir la nouvelle page se rendre pendant que le wipe monte.
+          Masqué pendant l'exit (le wipe couvre déjà tout l'écran). */}
+      {settings.mode === 'seamless' && (phase === 'enter' || phase === 'waiting') && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 999998,
+            background: settings.overlayColor,
+            pointerEvents: 'all',
+          }}
+        />
+      )}
+      <motion.div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 999999,
+          background: settings.overlayColor,
+          pointerEvents: phase === 'enter' || phase === 'waiting' ? 'all' : 'none',
+        }}
+        initial={{ y: '100%' }}
+        animate={{ y: animateY }}
+        transition={{
+          duration: phase === 'exit' ? exitDuration : enterDuration,
+          ease: [0.25, 0.46, 0.45, 0.94],
+        }}
+        onAnimationComplete={handleAnimationComplete}
+      />
+    </>
   );
 }
