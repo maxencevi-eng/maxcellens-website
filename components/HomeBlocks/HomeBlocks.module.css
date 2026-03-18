@@ -117,11 +117,11 @@
     "bottom bottom";
   column-gap: clamp(1.5rem, 4vw, 3rem);
   row-gap: 0;
-  align-items: start;
+  align-items: start; /* défaut colonnes */
 }
 
 .introTitleCol { grid-area: title; }
-.introImgCard  { grid-area: image; }
+.introImgCard  { grid-area: image; align-self: center; }
 .introBottom   { grid-area: bottom; }
 
 .introTitle {
@@ -174,8 +174,8 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: clamp(1.5rem, 4vw, 3rem);
-  padding-top: clamp(1.5rem, 3vw, 2rem);
-  margin-top: clamp(0.875rem, 2vw, 1.25rem);
+  padding-top: clamp(0.75rem, 1.5vw, 1rem);
+  margin-top: clamp(0.5rem, 1.2vw, 0.75rem);
   border-top: 1px solid rgba(245, 240, 232, 0.1);
   align-self: end;
 }
