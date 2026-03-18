@@ -120,9 +120,9 @@
   align-items: start; /* défaut colonnes */
 }
 
-.introTitleCol { grid-area: title; }
-.introImgCard  { grid-area: image; align-self: center; }
-.introBottom   { grid-area: bottom; }
+.introTitleCol  { grid-area: title; }
+.introImgWrapper { grid-area: image; align-self: center; }
+.introBottom    { grid-area: bottom; }
 
 .introTitle {
   font-size: clamp(2rem, 9vw, 5.5rem);
@@ -140,6 +140,7 @@
   aspect-ratio: 16 / 9;
   background: rgba(245, 240, 232, 0.06);
   position: relative;
+  width: 100%;
 }
 
 /* Variante penchée de l'image intro */
@@ -1899,9 +1900,12 @@
     padding-top: 5px;
   }
 
+  .introImgWrapper {
+    margin-top: 1.5rem;
+  }
+
   .introImgCard {
     aspect-ratio: 16 / 9;
-    margin-top: 1.5rem;
   }
 
   .introServices {

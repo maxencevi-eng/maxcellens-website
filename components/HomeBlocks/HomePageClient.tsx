@@ -387,34 +387,35 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
             <BlockOrderButtons page="home" blockId="home_intro" />
           </div>
         )}
-        <AnimateInView variant="fadeUp" viewport={{ once: true, amount: 0 }} initial="visible">
           <div className={styles.introInner}>
             {/* Eyebrow */}
             {iv.eyebrow && (
-              <div
-                className={styles.introEyebrowBar}
-                style={{
-                  ...(iv.eyebrowAlign && iv.eyebrowAlign !== 'center'
-                    ? { justifyContent: iv.eyebrowAlign === 'left' ? 'flex-start' : 'flex-end' }
-                    : {}),
-                }}
-              >
-                {(!iv.eyebrowAlign || iv.eyebrowAlign === 'center') && <span className={styles.introEyebrowLine} />}
-                <span
-                  className={styles.introEyebrowText}
+              <AnimateInView variant="fadeUp" delay={0} viewport={{ once: true, amount: 0 }}>
+                <div
+                  className={styles.introEyebrowBar}
                   style={{
-                    ...(iv.eyebrowFontSize ? { fontSize: `${iv.eyebrowFontSize}px` } : {}),
-                    ...(iv.eyebrowColor ? { color: iv.eyebrowColor } : {}),
+                    ...(iv.eyebrowAlign && iv.eyebrowAlign !== 'center'
+                      ? { justifyContent: iv.eyebrowAlign === 'left' ? 'flex-start' : 'flex-end' }
+                      : {}),
                   }}
-                >{iv.eyebrow}</span>
-                {(!iv.eyebrowAlign || iv.eyebrowAlign === 'center') && <span className={styles.introEyebrowLine} />}
-              </div>
+                >
+                  {(!iv.eyebrowAlign || iv.eyebrowAlign === 'center') && <span className={styles.introEyebrowLine} />}
+                  <span
+                    className={styles.introEyebrowText}
+                    style={{
+                      ...(iv.eyebrowFontSize ? { fontSize: `${iv.eyebrowFontSize}px` } : {}),
+                      ...(iv.eyebrowColor ? { color: iv.eyebrowColor } : {}),
+                    }}
+                  >{iv.eyebrow}</span>
+                  {(!iv.eyebrowAlign || iv.eyebrowAlign === 'center') && <span className={styles.introEyebrowLine} />}
+                </div>
+              </AnimateInView>
             )}
 
             {/* Grille avec zones : title | image / bottom (pleine largeur) */}
             <div className={styles.introLayout}>
               {/* Zone titre */}
-              <div className={styles.introTitleCol}>
+              <AnimateInView variant="fadeUp" delay={0.1} viewport={{ once: true, amount: 0 }} className={styles.introTitleCol}>
                 {(iv.titleHtml || intro.title)
                   ? (() => {
                       const titleProps = {
@@ -430,39 +431,40 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
                         : React.createElement(titleTag, titleProps, intro.title);
                     })()
                   : null}
-              </div>
+              </AnimateInView>
 
               {/* Zone image — à droite sur desktop, sous tous les textes sur mobile */}
-              <div className={`${styles.introImgCard}${iv.imageTilted ? ` ${styles.introImgCardTilted}` : ''}`}>
-                {iv.image?.url ? (
-                  <Image
-                    src={iv.image.url}
-                    alt=""
-                    fill
-                    sizes="(max-width:767px) 100vw, 40vw"
-                    style={{ objectFit: 'cover', objectPosition: imgFocus ? `${imgFocus.x}% ${imgFocus.y}%` : 'center' }}
-                  />
-                ) : isAdmin ? (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ color: 'rgba(245,240,232,0.35)', fontSize: '0.85rem' }}>Image — cliquez « Modifier »</span>
-                  </div>
-                ) : null}
-              </div>
+              <AnimateInView variant="slideFromRight" delay={0.2} viewport={{ once: true, amount: 0 }} className={styles.introImgWrapper}>
+                <div className={`${styles.introImgCard}${iv.imageTilted ? ` ${styles.introImgCardTilted}` : ''}`}>
+                  {iv.image?.url ? (
+                    <Image
+                      src={iv.image.url}
+                      alt=""
+                      fill
+                      sizes="(max-width:767px) 100vw, 40vw"
+                      style={{ objectFit: 'cover', objectPosition: imgFocus ? `${imgFocus.x}% ${imgFocus.y}%` : 'center' }}
+                    />
+                  ) : isAdmin ? (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ color: 'rgba(245,240,232,0.35)', fontSize: '0.85rem' }}>Image — cliquez « Modifier »</span>
+                    </div>
+                  ) : null}
+                </div>
+              </AnimateInView>
 
               {/* Zone bottom — pleine largeur sur desktop, après title sur mobile */}
               {(intro.html || iv.servicesHtml) && (
-                <div className={styles.introBottom}>
+                <AnimateInView variant="fadeUp" delay={0.3} viewport={{ once: true, amount: 0 }} className={styles.introBottom}>
                   {intro.html
                     ? <div className={styles.introText} dangerouslySetInnerHTML={{ __html: intro.html }} />
                     : <div />}
                   {iv.servicesHtml
                     ? <div className={styles.introServices} dangerouslySetInnerHTML={{ __html: iv.servicesHtml }} />
                     : <div />}
-                </div>
+                </AnimateInView>
               )}
             </div>
           </div>
-        </AnimateInView>
       </section>
     );
   })();
