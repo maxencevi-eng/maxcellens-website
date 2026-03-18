@@ -385,17 +385,17 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
     const imgFocus = iv.image?.focus;
     return (
       <section className={styles.intro} style={Object.keys(sectionStyle).length ? sectionStyle : undefined}>
-        {isAdmin && (
-          <div style={{ ...btnWrapStyle, position: 'absolute' }}>
-            <BlockVisibilityToggle blockId="home_intro" />
-            <BlockWidthToggle blockId="home_intro" />
-            <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_intro")}>
-              Modifier
-            </button>
-            <BlockOrderButtons page="home" blockId="home_intro" />
-          </div>
-        )}
           <div className={styles.introInner}>
+            {isAdmin && (
+              <div style={btnWrapStyle}>
+                <BlockVisibilityToggle blockId="home_intro" />
+                <BlockWidthToggle blockId="home_intro" />
+                <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_intro")}>
+                  Modifier
+                </button>
+                <BlockOrderButtons page="home" blockId="home_intro" />
+              </div>
+            )}
             {/* Eyebrow */}
             {iv.eyebrow && (
               <motion.div
@@ -509,14 +509,12 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
     if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; }
     if (b.paddingTop != null) s.paddingTop = `${b.paddingTop}px`;
     if (b.paddingBottom != null) s.paddingBottom = `${b.paddingBottom}px`;
-    // z-index: 2 pour passer au-dessus de .intro (z-index: 2, DOM antérieur)
-    // z-index: 3 en admin pour que les boutons soient toujours visibles
-    s.zIndex = isAdmin ? 3 : 2;
+    // z-index géré par la classe CSS .bannerBlock (z-index: 5)
     const ratio = b.imageRatio && IMAGE_RATIO_MAP[b.imageRatio] ? IMAGE_RATIO_MAP[b.imageRatio] : IMAGE_RATIO_MAP['21:9'];
     const isTextMode = b.textMode === 'text';
     const imgRight = b.textImagePosition !== 'left';
     const adminBar = isAdmin && (
-      <div className={styles.bannerBlockAdminBar}>
+      <div style={btnWrapStyle}>
         <BlockVisibilityToggle blockId="home_banner" />
         <BlockWidthToggle blockId="home_banner" />
         <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_banner")}>
@@ -548,7 +546,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
       const bwClass = blockWidthClass("home_banner");
       return (
         <section className={styles.bannerBlock} style={Object.keys(s).length ? s : undefined}>
-          <div className={`container ${bwClass}`.trim()}>
+          <div className={`container ${bwClass}`.trim()} style={{ position: 'relative' }}>
             {adminBar}
             <AnimateInView variant="fadeUp" delay={0.1} viewport={{ once: true, amount: 0.2 }}>
               <div className={`${styles.bannerTextLayout} ${imgRight ? styles.bannerTextImgRight : styles.bannerTextImgLeft}`}>
@@ -1108,7 +1106,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   const noRevealBlocks = new Set(['home_stats', 'clients', 'home_banner']);
 
   return (
-    <>
+    <div style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))' }}>
       {blockOrderHome.map((blockId) =>
         sections[blockId] ? (
           noRevealBlocks.has(blockId)
@@ -1124,6 +1122,6 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
           onSaved={() => setEditBlock(null)}
         />
       )}
-    </>
+    </div>
   );
 }

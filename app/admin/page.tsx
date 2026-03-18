@@ -41,10 +41,12 @@ export default async function AdminPage() {
     <section>
       <JsonLdScript slug="admin" />
       <PageHeader page="admin" title="Admin" subtitle="Panneau d'administration" bgImage="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1600&q=80" />
-      <div className="container" style={{ padding: '1.5rem 0' }}>
-        <AdminTitleBlock initialTitle={adminTitle} initialTitleStyle={adminTitleStyle} initialTitleFontSize={adminTitleFontSize} />
-        <AdminLogin />
-        <AdminNav />
+      <div style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' as const }}>
+        <div className="container" style={{ padding: '1.5rem 0' }}>
+          <AdminTitleBlock initialTitle={adminTitle} initialTitleStyle={adminTitleStyle} initialTitleFontSize={adminTitleFontSize} />
+          <AdminLogin />
+          <AdminNav />
+        </div>
       </div>
     </section>
   );

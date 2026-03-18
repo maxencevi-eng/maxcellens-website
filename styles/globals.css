@@ -153,14 +153,16 @@ img {
   }
 
   /* PAS de z-index sur main → les héros (PageHeader) restent SOUS la nav.
-     Seuls les blocs avec z-index explicite la recouvrent en scrollant. */
-  main {
+     Seuls les blocs avec z-index explicite la recouvrent en scrollant.
+     Sélecteur #site-content > main pour ne cibler que le main du layout
+     (pas le <main> imbriqué de la page d'accueil). */
+  #site-content > main {
     position: relative;
   }
 
   /* Espaceur transparent (hauteur du header) : pousse le contenu sous le header fixe
      pointer-events: none → les clics traversent jusqu'aux liens de la nav */
-  main::before {
+  #site-content > main::before {
     content: '';
     display: block;
     height: var(--header-height, 64px);

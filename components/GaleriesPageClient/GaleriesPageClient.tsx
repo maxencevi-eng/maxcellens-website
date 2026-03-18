@@ -28,7 +28,7 @@ export default function GaleriesPageClient() {
   );
 
   return (
-    <section>
+    <section style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' as const }}>
       {blockOrderGaleries.map((blockId) => (
         blockId === "galeries_menu" ? <React.Fragment key={blockId}>{menuSection}</React.Fragment> : null
       ))}
