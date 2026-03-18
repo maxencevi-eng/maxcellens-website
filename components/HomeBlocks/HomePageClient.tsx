@@ -45,7 +45,8 @@ import {
 } from "./homeDefaults";
 import type { HomeBlockKey } from "./HomeBlockModal";
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
-import AnimateInView, { AnimateStaggerItem } from "../AnimateInView/AnimateInView";
+import { motion } from "framer-motion";
+import AnimateInView, { AnimateStaggerItem, variants as animVariants } from "../AnimateInView/AnimateInView";
 import type { VideoLightboxItem } from "../VideoGallery/VideoLightbox";
 import styles from "./HomeBlocks.module.css";
 
@@ -194,6 +195,13 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   const [cadreurLightboxOpen, setCadreurLightboxOpen] = useState(false);
   const [cadreurLightboxIndex, setCadreurLightboxIndex] = useState(0);
   const [cadreurLightboxInitial, setCadreurLightboxInitial] = useState(0);
+  const [splashReady, setSplashReady] = useState(false);
+
+  useEffect(() => {
+    const onSplash = () => setSplashReady(true);
+    window.addEventListener('splash-dismissed', onSplash);
+    return () => window.removeEventListener('splash-dismissed', onSplash);
+  }, []);
 
   const cadreurVisibleVideos = useMemo(() => {
     const vids = (cadreurBlock as any).videos as CadreurVideoItem[] | undefined;
@@ -390,7 +398,12 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
           <div className={styles.introInner}>
             {/* Eyebrow */}
             {iv.eyebrow && (
-              <AnimateInView variant="fadeUp" delay={0} viewport={{ once: true, amount: 0 }}>
+              <motion.div
+                initial="hidden"
+                animate={splashReady ? "visible" : "hidden"}
+                variants={animVariants.fadeUp}
+                transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94], delay: 0 }}
+              >
                 <div
                   className={styles.introEyebrowBar}
                   style={{
@@ -409,13 +422,19 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
                   >{iv.eyebrow}</span>
                   {(!iv.eyebrowAlign || iv.eyebrowAlign === 'center') && <span className={styles.introEyebrowLine} />}
                 </div>
-              </AnimateInView>
+              </motion.div>
             )}
 
             {/* Grille avec zones : title | image / bottom (pleine largeur) */}
             <div className={styles.introLayout}>
               {/* Zone titre */}
-              <AnimateInView variant="fadeUp" delay={0.1} viewport={{ once: true, amount: 0 }} className={styles.introTitleCol}>
+              <motion.div
+                className={styles.introTitleCol}
+                initial="hidden"
+                animate={splashReady ? "visible" : "hidden"}
+                variants={animVariants.fadeUp}
+                transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.12 }}
+              >
                 {(iv.titleHtml || intro.title)
                   ? (() => {
                       const titleProps = {
@@ -431,10 +450,16 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
                         : React.createElement(titleTag, titleProps, intro.title);
                     })()
                   : null}
-              </AnimateInView>
+              </motion.div>
 
               {/* Zone image — à droite sur desktop, sous tous les textes sur mobile */}
-              <AnimateInView variant="slideFromRight" delay={0.2} viewport={{ once: true, amount: 0 }} className={styles.introImgWrapper}>
+              <motion.div
+                className={styles.introImgWrapper}
+                initial="hidden"
+                animate={splashReady ? "visible" : "hidden"}
+                variants={animVariants.slideFromRight}
+                transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.22 }}
+              >
                 <div className={`${styles.introImgCard}${iv.imageTilted ? ` ${styles.introImgCardTilted}` : ''}`}>
                   {iv.image?.url ? (
                     <Image
@@ -450,18 +475,24 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
                     </div>
                   ) : null}
                 </div>
-              </AnimateInView>
+              </motion.div>
 
               {/* Zone bottom — pleine largeur sur desktop, après title sur mobile */}
               {(intro.html || iv.servicesHtml) && (
-                <AnimateInView variant="fadeUp" delay={0.3} viewport={{ once: true, amount: 0 }} className={styles.introBottom}>
+                <motion.div
+                  className={styles.introBottom}
+                  initial="hidden"
+                  animate={splashReady ? "visible" : "hidden"}
+                  variants={animVariants.fadeUp}
+                  transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.35 }}
+                >
                   {intro.html
                     ? <div className={styles.introText} dangerouslySetInnerHTML={{ __html: intro.html }} />
                     : <div />}
                   {iv.servicesHtml
                     ? <div className={styles.introServices} dangerouslySetInnerHTML={{ __html: iv.servicesHtml }} />
                     : <div />}
-                </AnimateInView>
+                </motion.div>
               )}
             </div>
           </div>
