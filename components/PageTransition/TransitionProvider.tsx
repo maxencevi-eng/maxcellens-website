@@ -5,12 +5,14 @@ export type TransitionSettings = {
   enabled: boolean;
   overlayColor: string;
   duration: number; // seconds (0.3 – 1.2)
+  mode: 'standard' | 'seamless';
 };
 
 const defaultSettings: TransitionSettings = {
   enabled: true,
   overlayColor: '#172622',
   duration: 0.6,
+  mode: 'standard',
 };
 
 const TransitionContext = createContext<{

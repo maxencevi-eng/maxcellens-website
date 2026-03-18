@@ -15,7 +15,6 @@ function RevealSection({ children }: { children: React.ReactNode }) {
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import Clients from "../Clients/Clients";
 import HomeBlockModal from "./HomeBlockModal";
@@ -165,7 +164,6 @@ function getFanCardStyle(offset: number): React.CSSProperties {
 }
 
 export default function HomePageClient({ initialSettings }: { initialSettings?: Record<string, string> }) {
-  const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loaded, setLoaded] = useState(() => initialSettings !== undefined);
   const [editBlock, setEditBlock] = useState<HomeBlockKey | null>(null);
@@ -954,18 +952,20 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
                 ) : null}
                 <div className={styles.animationBlockButtons}>
                   {ANIMATION_SECTIONS.map(({ label, hash }) => (
-                    <button
-                      type="button"
+                    <Link
                       key={hash}
+                      href="/animation"
                       className={`${styles.ctaButton} btn-site-${(animationBlock as any).ctaButtonStyle || "1"}`}
                       data-analytics-id={`Accueil|Animation - ${label}`}
-                      onClick={() => {
+                      onMouseDown={() => {
                         try { sessionStorage.setItem("animScrollTarget", hash); } catch (_) {}
-                        router.push("/animation");
+                      }}
+                      onTouchStart={() => {
+                        try { sessionStorage.setItem("animScrollTarget", hash); } catch (_) {}
                       }}
                     >
                       {label}
-                    </button>
+                    </Link>
                   ))}
                 </div>
               </div>

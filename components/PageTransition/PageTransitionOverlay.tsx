@@ -7,9 +7,13 @@ import { useTransitionSettings } from './TransitionProvider';
 /**
  * Phase machine:
  *   idle → enter  (overlay monte du bas, couvre l'écran)
- *        → waiting (overlay couvre, router.push lancé, attend la page destination)
+ *        → waiting (overlay couvre, attend la page destination)
  *        → exit   (overlay monte vers le haut, révèle la nouvelle page)
  *        → idle
+ *
+ * Mode "standard" : router.push lancé à la FIN de l'enter (comportement précédent).
+ * Mode "seamless" : router.push lancé au DÉBUT de l'enter. Si la page est prête
+ *   avant la fin de l'enter → exit s'enchaîne directement sans phase waiting.
  *
  * À la fin de l'exit : dispatch 'splash-dismissed' pour déclencher les
  * animations de blocs qui y sont abonnés (HomePageClient, AnimationPageClient…)
@@ -23,6 +27,8 @@ export default function PageTransitionOverlay() {
   const [phase, setPhase] = useState<Phase>('idle');
   const targetHref = useRef<string | null>(null);
   const prevPathname = useRef(pathname);
+  // seamless: page prête (pathname changé) pendant la phase enter
+  const pageReadyDuringEnter = useRef(false);
 
   const enterDuration = settings.duration * 0.55;
   const exitDuration  = settings.duration * 0.65;
@@ -48,19 +54,30 @@ export default function PageTransitionOverlay() {
       e.preventDefault();
       e.stopPropagation();
       targetHref.current = href;
+      pageReadyDuringEnter.current = false;
+
+      if (settings.mode === 'seamless') {
+        // Seamless : on navigue immédiatement pendant que l'overlay monte
+        router.push(href);
+        targetHref.current = null;
+      }
+
       setPhase('enter');
     }
 
     document.addEventListener('click', handleClick, true);
     return () => document.removeEventListener('click', handleClick, true);
-  }, [settings.enabled, pathname]);
+  }, [settings.enabled, settings.mode, pathname, router]);
 
-  // Quand pathname change (Next.js a rendu la nouvelle route côté client),
-  // on attend 2 frames pour que React peigne la page, puis on lance l'exit.
+  // Quand pathname change : comportement selon la phase en cours
   useEffect(() => {
     if (prevPathname.current !== pathname) {
       prevPathname.current = pathname;
-      if (phase === 'waiting') {
+
+      if (phase === 'enter' && settings.mode === 'seamless') {
+        // Page prête pendant l'enter → on notera pour enchaîner l'exit dès la fin
+        pageReadyDuringEnter.current = true;
+      } else if (phase === 'waiting') {
         // Double rAF = s'assure que le DOM est peint avant de révéler
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
@@ -69,7 +86,7 @@ export default function PageTransitionOverlay() {
         });
       }
     }
-  }, [pathname, phase]);
+  }, [pathname, phase, settings.mode]);
 
   // Safety : si pathname ne change pas dans les 4s (ex: navigation échouée)
   useEffect(() => {
@@ -81,19 +98,30 @@ export default function PageTransitionOverlay() {
 
   const handleAnimationComplete = useCallback(() => {
     if (phase === 'enter') {
-      // L'overlay couvre totalement → on navigue
-      if (targetHref.current) {
-        router.push(targetHref.current);
-        targetHref.current = null;
+      if (settings.mode === 'seamless') {
+        if (pageReadyDuringEnter.current) {
+          // Page déjà chargée pendant l'enter → exit immédiat, sans waiting
+          pageReadyDuringEnter.current = false;
+          setPhase('exit');
+        } else {
+          // Page pas encore prête → on attend
+          setPhase('waiting');
+        }
+      } else {
+        // Standard : router.push ici, à la fin de l'enter
+        if (targetHref.current) {
+          router.push(targetHref.current);
+          targetHref.current = null;
+        }
+        setPhase('waiting');
       }
-      setPhase('waiting');
     } else if (phase === 'exit') {
       setPhase('idle');
       // Notifie les blocs (HomePageClient, AnimationPageClient…) que la
       // transition est terminée → déclenche leurs animations d'entrée
       window.dispatchEvent(new CustomEvent('splash-dismissed'));
     }
-  }, [phase, router]);
+  }, [phase, router, settings.mode]);
 
   if (!settings.enabled || phase === 'idle') return null;
 

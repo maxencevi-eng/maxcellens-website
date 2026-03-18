@@ -105,11 +105,40 @@ export default function TransitionsEditor({ onClose }: { onClose: () => void }) 
           </div>
         </div>
 
+        {/* Mode */}
+        <div style={rowStyle}>
+          <div style={{ flex: 1 }}>
+            <label style={labelStyle}>Mode de transition</label>
+            <div style={helpStyle}>
+              <strong>Standard</strong> : l'overlay couvre d'abord, puis la page charge.<br />
+              <strong>Seamless</strong> : la page charge pendant que l'overlay monte — enchaînement fluide sans pause.
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {(['standard', 'seamless'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => update({ mode: m })}
+                style={{
+                  padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                  fontSize: 12, fontWeight: 600,
+                  background: local.mode === m ? '#172622' : '#e5e5e5',
+                  color: local.mode === m ? '#fff' : '#888',
+                  transition: 'all 200ms',
+                  textTransform: 'capitalize',
+                }}
+              >
+                {m === 'standard' ? 'Standard' : 'Seamless'}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Info */}
         <div style={{ padding: '16px 0 8px', fontSize: 12, color: '#999', lineHeight: 1.6 }}>
           <strong style={{ color: '#666' }}>Comportement :</strong><br />
           La transition &laquo; Wipe &raquo; s'applique lors de la navigation entre pages internes.<br />
-          Le chargement initial et le retour \u00e0 l'accueil conservent l'animation existante (splash).
+          Le chargement initial conserve l'animation existante (splash).
         </div>
 
         {/* Preview button */}
