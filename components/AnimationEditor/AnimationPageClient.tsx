@@ -412,7 +412,7 @@ export default function AnimationPageClient() {
   };
 
   return (
-    <>
+    <div style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' }}>
       {blockOrderAnimation.map((blockId) => (
         <Fragment key={blockId}>{sections[blockId] ?? null}</Fragment>
       ))}
@@ -446,6 +446,6 @@ export default function AnimationPageClient() {
           }}
         />
       )}
-    </>
+    </div>
   );
 }

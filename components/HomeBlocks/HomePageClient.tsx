@@ -514,7 +514,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
     const isTextMode = b.textMode === 'text';
     const imgRight = b.textImagePosition !== 'left';
     const adminBar = isAdmin && (
-      <div style={btnWrapStyle}>
+      <div style={{ ...btnWrapStyle, top: 42 }}>
         <BlockVisibilityToggle blockId="home_banner" />
         <BlockWidthToggle blockId="home_banner" />
         <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_banner")}>
