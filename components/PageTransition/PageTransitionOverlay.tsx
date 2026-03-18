@@ -6,10 +6,13 @@ import { useTransitionSettings } from './TransitionProvider';
 
 /**
  * Phase machine:
- *   idle → enter (overlay slides up from bottom)
- *        → waiting (overlay covers viewport, router.push fires)
- *        → exit (overlay slides up out of viewport)
+ *   idle → enter  (overlay monte du bas, couvre l'écran)
+ *        → waiting (overlay couvre, router.push lancé, attend la page destination)
+ *        → exit   (overlay monte vers le haut, révèle la nouvelle page)
  *        → idle
+ *
+ * À la fin de l'exit : dispatch 'splash-dismissed' pour déclencher les
+ * animations de blocs qui y sont abonnés (HomePageClient, AnimationPageClient…)
  */
 type Phase = 'idle' | 'enter' | 'waiting' | 'exit';
 
@@ -21,7 +24,8 @@ export default function PageTransitionOverlay() {
   const targetHref = useRef<string | null>(null);
   const prevPathname = useRef(pathname);
 
-  const halfDuration = settings.duration / 2;
+  const enterDuration = settings.duration * 0.55;
+  const exitDuration  = settings.duration * 0.65;
 
   // Intercept internal link clicks
   useEffect(() => {
@@ -51,27 +55,33 @@ export default function PageTransitionOverlay() {
     return () => document.removeEventListener('click', handleClick, true);
   }, [settings.enabled, pathname]);
 
-  // When pathname changes (new page loaded), start exit animation
+  // Quand pathname change (Next.js a rendu la nouvelle route côté client),
+  // on attend 2 frames pour que React peigne la page, puis on lance l'exit.
   useEffect(() => {
     if (prevPathname.current !== pathname) {
       prevPathname.current = pathname;
       if (phase === 'waiting') {
-        setPhase('exit');
+        // Double rAF = s'assure que le DOM est peint avant de révéler
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setPhase('exit');
+          });
+        });
       }
     }
   }, [pathname, phase]);
 
-  // Safety timeout: if pathname doesn't change within 3s, force exit
+  // Safety : si pathname ne change pas dans les 4s (ex: navigation échouée)
   useEffect(() => {
     if (phase === 'waiting') {
-      const timeout = setTimeout(() => setPhase('exit'), 3000);
+      const timeout = setTimeout(() => setPhase('exit'), 4000);
       return () => clearTimeout(timeout);
     }
   }, [phase]);
 
   const handleAnimationComplete = useCallback(() => {
     if (phase === 'enter') {
-      // Overlay now fully covers viewport → navigate
+      // L'overlay couvre totalement → on navigue
       if (targetHref.current) {
         router.push(targetHref.current);
         targetHref.current = null;
@@ -79,6 +89,9 @@ export default function PageTransitionOverlay() {
       setPhase('waiting');
     } else if (phase === 'exit') {
       setPhase('idle');
+      // Notifie les blocs (HomePageClient, AnimationPageClient…) que la
+      // transition est terminée → déclenche leurs animations d'entrée
+      window.dispatchEvent(new CustomEvent('splash-dismissed'));
     }
   }, [phase, router]);
 
@@ -97,7 +110,10 @@ export default function PageTransitionOverlay() {
       }}
       initial={{ y: '100%' }}
       animate={{ y: animateY }}
-      transition={{ duration: halfDuration, ease: [0.25, 0.46, 0.45, 0.94] }}
+      transition={{
+        duration: phase === 'exit' ? exitDuration : enterDuration,
+        ease: [0.25, 0.46, 0.45, 0.94],
+      }}
       onAnimationComplete={handleAnimationComplete}
     />
   );
