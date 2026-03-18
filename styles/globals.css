@@ -54,6 +54,7 @@ html, body, #__next {
 h1, h2, h3, h4, h5, h6 {
   overflow-wrap: break-word; /* dernier recours seulement si un mot seul dépasse */
   word-break: normal;        /* ne jamais couper un mot mid-caractère */
+  hyphens: none;             /* pas de césure automatique (lang="fr" + Safari) */
   max-width: 100%;
 }
 
