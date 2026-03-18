@@ -71,7 +71,19 @@ export default function LegalPageClient({ pageKey, title, intro, defaultSections
   }, [pageKey]);
 
   return (
-    <div className={styles.wrapper} style={bgColor ? { background: bgColor } : undefined}>
+    <div className={styles.wrapper} style={{ background: bgColor || 'var(--bg, #F2F0EB)' }}>
+      {/* Bouton admin — coin supérieur droit du bloc */}
+      {isAdmin && (
+        <div style={{ position: 'absolute', top: '1rem', right: 'max(calc(50% - 390px), 1.25rem)' }}>
+          <button
+            onClick={() => setEditOpen(true)}
+            style={{ background: '#111', color: '#fff', border: 'none', padding: '7px 14px', borderRadius: 6, cursor: 'pointer', fontSize: '0.82rem', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
+          >
+            Modifier
+          </button>
+        </div>
+      )}
+
       <div className={styles.container}>
         <header className={styles.header}>
           <p className={styles.eyebrow}>Informations légales</p>
@@ -90,17 +102,6 @@ export default function LegalPageClient({ pageKey, title, intro, defaultSections
             </section>
           ))}
         </div>
-
-        {isAdmin && (
-          <div style={{ marginTop: '2rem', textAlign: 'right' }}>
-            <button
-              onClick={() => setEditOpen(true)}
-              style={{ background: '#111', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontSize: '0.85rem' }}
-            >
-              Modifier la page
-            </button>
-          </div>
-        )}
       </div>
 
       {editOpen && (

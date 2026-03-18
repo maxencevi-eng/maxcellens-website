@@ -1,7 +1,12 @@
 .wrapper {
-  background: var(--bg, #F2F0EB);
+  /* Full-bleed : s'étend sur toute la largeur de la page
+     Le fond par défaut est transparent → hérite du --bg de la page.
+     Un fond personnalisé peut être appliqué via style inline depuis LegalPageClient. */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
   min-height: 60vh;
   padding: clamp(3rem, 6vw, 5rem) 0 clamp(4rem, 8vw, 7rem);
+  position: relative;
 }
 
 .container {
