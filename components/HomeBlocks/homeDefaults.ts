@@ -24,6 +24,8 @@ export type HomeIntroData = {
   titleAlign?: 'left' | 'center' | 'right';
   /** Image affichée à droite du titre. */
   image?: { url: string; path?: string; focus?: FocusPoint } | null;
+  /** Incline légèrement l'image (effet carte penchée). */
+  imageTilted?: boolean;
   /** HTML de description (colonne basse gauche). */
   html?: string;
   /** HTML de la liste de services (colonne basse droite, alignée à droite). */

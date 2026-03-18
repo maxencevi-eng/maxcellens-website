@@ -171,6 +171,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [introTitleAlign, setIntroTitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
   const [introImage, setIntroImage] = useState<{ url: string; path?: string } | null>(null);
   const [introImageFocus, setIntroImageFocus] = useState<{ x: number; y: number } | null>(null);
+  const [introImageTilted, setIntroImageTilted] = useState(false);
   const [uploadingIntroImage, setUploadingIntroImage] = useState(false);
   const [introHtml, setIntroHtml] = useState("");
   const [introServicesHtml, setIntroServicesHtml] = useState("");
@@ -371,6 +372,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setIntroTitleAlign(d.titleAlign ?? '');
       setIntroImage(d.image ?? null);
       setIntroImageFocus(d.image?.focus ?? null);
+      setIntroImageTilted(d.imageTilted ?? false);
       setIntroHtml(d.html ?? "");
       setIntroServicesHtml(d.servicesHtml ?? "");
       setIntroBackgroundColor(d.backgroundColor ?? "");
@@ -811,6 +813,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
           titleColor: introTitleColor?.trim() || undefined,
           titleAlign: introTitleAlign || undefined,
           image: introImage ? { ...introImage, focus: introImageFocus ?? undefined } : null,
+          imageTilted: introImageTilted || undefined,
           html: introHtml,
           servicesHtml: introServicesHtml || undefined,
           backgroundColor: introBackgroundColor?.trim() || undefined,
@@ -1087,6 +1090,19 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                     {uploadingIntroImage ? <span style={{ fontSize: 12, color: "var(--muted)" }}>Upload…</span> : null}
                   </div>
                 )}
+              </div>
+              {/* Effet incliné */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>Effet image penchée</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {([false, true] as const).map((val) => (
+                    <button key={String(val)} type="button"
+                      onClick={() => setIntroImageTilted(val)}
+                      style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13, cursor: 'pointer', background: introImageTilted === val ? 'var(--fg, #1a1a18)' : '#fff', color: introImageTilted === val ? '#fff' : 'inherit', fontWeight: introImageTilted === val ? 600 : 400 }}>
+                      {val ? 'Penchée' : 'Droite'}
+                    </button>
+                  ))}
+                </div>
               </div>
               </>)}
 

@@ -433,7 +433,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
               </div>
 
               {/* Zone image — à droite sur desktop, sous tous les textes sur mobile */}
-              <div className={styles.introImgCard}>
+              <div className={`${styles.introImgCard}${iv.imageTilted ? ` ${styles.introImgCardTilted}` : ''}`}>
                 {iv.image?.url ? (
                   <Image
                     src={iv.image.url}

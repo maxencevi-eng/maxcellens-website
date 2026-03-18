@@ -137,10 +137,36 @@
 .introImgCard {
   border-radius: 14px;
   overflow: hidden;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
   background: rgba(245, 240, 232, 0.06);
-  border: 1px solid rgba(245, 240, 232, 0.1);
   position: relative;
+}
+
+/* Variante penchée de l'image intro */
+.introImgCardTilted {
+  transform: rotate(4deg);
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.18);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease;
+  margin: 1.5rem 0.5rem;
+}
+
+.introImgCardTilted:hover {
+  transform: rotate(2deg) scale(1.02);
+  box-shadow:
+    0 40px 100px rgba(0, 0, 0, 0.35),
+    0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 767px) {
+  .introImgCardTilted {
+    transform: rotate(2deg);
+    margin: 0.75rem 0.25rem;
+  }
+  .introImgCardTilted:hover {
+    transform: rotate(1deg) scale(1.01);
+  }
 }
 
 /* ── Bas : description gauche + services droite (pleine largeur) ── */
