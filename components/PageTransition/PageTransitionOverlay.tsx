@@ -40,8 +40,6 @@ export default function PageTransitionOverlay() {
       if (link.target === '_blank' || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       // Same page — no transition needed
       if (href === pathname) return;
-      // Navigate to home → let existing splash handle it
-      if (href === '/') return;
 
       e.preventDefault();
       e.stopPropagation();

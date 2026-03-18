@@ -54,18 +54,14 @@ export default function InitialLoadSplash() {
     }, 600);
   }, []);
 
-  // SPA navigation: re-show splash on route change
+  // SPA navigation: track pathname but do NOT re-show splash
+  // (page transitions are now handled by PageTransitionOverlay)
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
-    if (pathname !== prevPathname.current) {
-      prevPathname.current = pathname;
-      removed.current = false;
-      setFadeOut(false);
-      setVisible(true);
-    }
+    prevPathname.current = pathname;
   }, [pathname]);
 
   useEffect(() => {
