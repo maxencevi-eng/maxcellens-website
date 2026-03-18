@@ -67,12 +67,14 @@ export default function AdminSidebar() {
   const [showSocialsModal, setShowSocialsModal] = useState<boolean>(false);
   const [showHeaderModal, setShowHeaderModal] = useState<boolean>(false);
   const [showSiteStyleModal, setShowSiteStyleModal] = useState<boolean>(false);
+  const [showTransitionsModal, setShowTransitionsModal] = useState<boolean>(false);
   const [showSeoModal, setShowSeoModal] = useState<boolean>(false);
   const [showPageLayoutModal, setShowPageLayoutModal] = useState<boolean>(false);
   const [showStatisticsModal, setShowStatisticsModal] = useState<boolean>(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState<boolean>(false);
 
   const SiteStyleEditor = dynamic(() => import('../SiteStyle/SiteStyleEditor'), { ssr: false });
+  const TransitionsEditor = dynamic(() => import('../PageTransition/TransitionsEditor'), { ssr: false });
 
   useEffect(() => {
     let mounted = true;
@@ -469,6 +471,7 @@ export default function AdminSidebar() {
             ) : null}
 
           <li><button className="menu-item" onClick={() => setShowSiteStyleModal(true)}>Style du site</button></li>
+          <li><button className="menu-item" onClick={() => setShowTransitionsModal(true)}>Transitions & Effets</button></li>
 
           <li><button className="menu-item" onClick={() => toggleMenu('menu')}>Menu</button></li>
           {openMenu === 'menu' ? (
@@ -628,6 +631,11 @@ export default function AdminSidebar() {
 
       {showSiteStyleModal ? createPortal(
         <SiteStyleEditor onClose={() => setShowSiteStyleModal(false)} />,
+        document.body
+      ) : null}
+
+      {showTransitionsModal ? createPortal(
+        <TransitionsEditor onClose={() => setShowTransitionsModal(false)} />,
         document.body
       ) : null}
 

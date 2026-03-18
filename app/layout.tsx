@@ -10,6 +10,8 @@ import PageLayoutProvider from '../components/PageLayoutModal/PageLayoutProvider
 import AnalyticsCollector from '../components/Analytics/AnalyticsCollector';
 import InitialLoadSplash from '../components/InitialLoadSplash/InitialLoadSplash';
 import { BlockVisibilityProvider } from '../components/BlockVisibility';
+import TransitionProvider from '../components/PageTransition/TransitionProvider';
+import PageTransitionOverlay from '../components/PageTransition/PageTransitionOverlay';
 import { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
@@ -257,6 +259,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <head suppressHydrationWarning dangerouslySetInnerHTML={{ __html: headContent }} />
       <body>
         <InitialLoadSplash />
+        <TransitionProvider>
+        <PageTransitionOverlay />
         <SiteStyleProvider>
           <PageLayoutProvider>
             <BlockVisibilityProvider>
@@ -277,6 +281,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             </BlockVisibilityProvider>
           </PageLayoutProvider>
         </SiteStyleProvider>
+        </TransitionProvider>
       </body>
     </html>
   );
