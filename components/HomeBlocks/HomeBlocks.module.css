@@ -73,40 +73,105 @@
 
 /* ========== Intro ========== */
 .intro {
-  padding-left: var(--block-inner-padding-desktop, 2rem);
-  padding-right: var(--block-inner-padding-desktop, 2rem);
-  text-align: center;
-  background: var(--block-bg, #FAFAF8);
   /* Ferme l'espace entre le PageHeader (padding-bottom: 2.75rem) et l'intro */
   margin-top: -3rem;
+  background: #13100D;
+  position: relative;
 }
+
+.introInner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 3rem) clamp(2rem, 5vw, 3rem);
+}
+
+/* ── Eyebrow ── */
+.introEyebrowBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-bottom: 10px;
+}
+.introEyebrowLine {
+  flex: 1;
+  max-width: 80px;
+  height: 1px;
+  background: rgba(245, 240, 232, 0.2);
+}
+.introEyebrowText {
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: rgba(245, 240, 232, 0.5);
+  white-space: nowrap;
+}
+
+/* ── Grille principale avec zones nommées ── */
+.introLayout {
+  display: grid;
+  grid-template-columns: 1fr 40%;
+  grid-template-areas:
+    "title image"
+    "bottom bottom";
+  column-gap: clamp(1.5rem, 4vw, 3rem);
+  row-gap: 0;
+  align-items: start;
+}
+
+.introTitleCol { grid-area: title; }
+.introImgCard  { grid-area: image; }
+.introBottom   { grid-area: bottom; }
 
 .introTitle {
-  font-size: clamp(1.6rem, 9vw, 5rem);
+  font-size: clamp(2rem, 9vw, 5.5rem);
   font-weight: 800;
-  margin: 0 0 0.5rem;
-  color: var(--fg, #1C1C1A);
+  margin: 0;
+  color: #F5F0E8;
   letter-spacing: -0.03em;
-  line-height: 1.05;
+  line-height: 1.08;
 }
 
-.introSubtitle {
-  font-size: 1rem;
-  color: #6B6B6B;
-  font-weight: 400;
-  margin: 0 0 1.25rem;
+/* ── Image card ── */
+.introImgCard {
+  border-radius: 14px;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: rgba(245, 240, 232, 0.06);
+  border: 1px solid rgba(245, 240, 232, 0.1);
+  position: relative;
+}
+
+/* ── Bas : description gauche + services droite (pleine largeur) ── */
+.introBottom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  padding-top: clamp(1.5rem, 3vw, 2rem);
+  margin-top: clamp(0.875rem, 2vw, 1.25rem);
+  border-top: 1px solid rgba(245, 240, 232, 0.1);
+  align-self: end;
 }
 
 .introText {
-  max-width: 640px;
-  margin: 0 auto;
-  line-height: var(--base-line-height, 1.25);
-  color: var(--fg, #213431);
-  opacity: 0.92;
+  font-size: clamp(0.9rem, 1.6vw, 1rem);
+  line-height: 1.65;
+  color: rgba(245, 240, 232, 0.6);
 }
 
-.introText p { margin: 0 0 0.75rem; }
+.introText p { margin: 0 0 0.5rem; }
 .introText p:last-child { margin-bottom: 0; }
+
+.introServices {
+  text-align: right;
+  font-size: clamp(0.9rem, 1.6vw, 1rem);
+  line-height: 1.65;
+  color: rgba(245, 240, 232, 0.6);
+}
+
+.introServices p { margin: 0; }
+.introServices br { display: block; content: ''; }
 
 /* ========== Services teaser ========== */
 .services {
@@ -1784,7 +1849,39 @@
        à 390px → 9vw=35px < 3.5rem=56px → 56px  (ratio ~78% du desktop 72px)
        à 622px → 9vw=56px → commence à scaler
        à 767px → 9vw=69px → 69px (transition douce vers le desktop)       */
-  .introTitle,
+  .introTitle {
+    font-size: clamp(1.8rem, 9vw, 4.5rem);
+    line-height: 1.12;
+  }
+
+  /* Sur mobile : colonne unique, image après tous les textes */
+  .introLayout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "title"
+      "bottom"
+      "image";
+  }
+
+  .introEyebrowBar {
+    margin-bottom: 5px;
+  }
+
+  .introBottom {
+    grid-template-columns: 1fr;
+    margin-top: 0;
+    padding-top: 5px;
+  }
+
+  .introImgCard {
+    aspect-ratio: 16 / 9;
+    margin-top: 1.5rem;
+  }
+
+  .introServices {
+    text-align: left;
+  }
+
   .servicesTitle,
   .portraitBlockTitle,
   .cadreurBlockTitle,
@@ -1804,7 +1901,6 @@
     word-break: normal;
   }
   /* Sous-titres : line-height aéré */
-  .introSubtitle,
   .servicesSubtitle,
   .cadreurSubtitle,
   .animationBlockSubtitle {
@@ -1813,7 +1909,14 @@
     word-break: normal;
   }
 
-  .intro,
+  /* Intro uses its own inner padding via .introInner */
+  .intro {
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
   .services,
   .portraitBlock,
   .cadreurBlock,

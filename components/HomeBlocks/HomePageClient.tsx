@@ -121,15 +121,11 @@ const IMAGE_RATIO_MAP: Record<string, string> = {
   '1:1': '1/1',
 };
 
-/** Converts an admin-set font size to a responsive CSS font-size value.
- *  For sizes above 48px uses clamp() so the text scales down on mobile
- *  without breaking words mid-character. The vw coefficient is large enough
- *  to govern even at 360px viewport width. */
+/** Converts an admin-set font size to a responsive CSS font-size value. */
 function responsiveFontSize(fs: number): string {
-  if (fs <= 48) return `${fs}px`;
-  // vw governs from narrow viewports; min is a safety floor only
-  const vw = (fs / 8).toFixed(2);
-  const min = Math.max(20, Math.round(fs * 0.32));
+  if (fs <= 24) return `${fs}px`;
+  const vw = Math.min(fs / 8, 9).toFixed(2);
+  const min = Math.max(14, Math.round(fs * 0.22));
   return `clamp(${min}px, ${vw}vw, ${fs}px)`;
 }
 
@@ -365,29 +361,111 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
 
   const btnWrapStyle: React.CSSProperties = { display: 'flex', gap: 8, alignItems: 'center', position: 'absolute', right: 12, top: 12, zIndex: 5 };
 
-  const introSection = hide("home_intro") ? null : (
-      <section className={styles.intro} style={(() => { const s: React.CSSProperties = {}; if ((intro as any).backgroundColor) s.backgroundColor = (intro as any).backgroundColor; const rt = (intro as any).borderRadiusTop; const rb = (intro as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (intro as any).paddingTop; const pb = (intro as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
-        <div className={`container ${blockWidthClass("home_intro")}`.trim()}>
-          <div className={styles.editWrap}>
-            {isAdmin && (
-              <div style={btnWrapStyle}>
-                <BlockVisibilityToggle blockId="home_intro" />
-                <BlockWidthToggle blockId="home_intro" />
-                <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_intro")}>
-                  Modifier
-                </button>
-                <BlockOrderButtons page="home" blockId="home_intro" />
+  const introSection = hide("home_intro") ? null : (() => {
+    const iv = intro as any;
+    const sectionStyle: React.CSSProperties = {};
+    if (iv.backgroundColor) sectionStyle.backgroundColor = iv.backgroundColor;
+    const rt = iv.borderRadiusTop; const rb = iv.borderRadiusBottom;
+    if (rt != null) { sectionStyle.borderTopLeftRadius = `${rt}px`; sectionStyle.borderTopRightRadius = `${rt}px`; }
+    if (rb != null) { sectionStyle.borderBottomLeftRadius = `${rb}px`; sectionStyle.borderBottomRightRadius = `${rb}px`; }
+    if (iv.paddingTop != null) sectionStyle.paddingTop = `${iv.paddingTop}px`;
+    if (iv.paddingBottom != null) sectionStyle.paddingBottom = `${iv.paddingBottom}px`;
+    const titleTag = iv.titleStyle || 'h1';
+    const titleFs = iv.titleFontSize;
+    const titleColor = iv.titleColor;
+    const titleAlign = iv.titleAlign;
+    const imgFocus = iv.image?.focus;
+    return (
+      <section className={styles.intro} style={Object.keys(sectionStyle).length ? sectionStyle : undefined}>
+        {isAdmin && (
+          <div style={{ ...btnWrapStyle, position: 'absolute' }}>
+            <BlockVisibilityToggle blockId="home_intro" />
+            <BlockWidthToggle blockId="home_intro" />
+            <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_intro")}>
+              Modifier
+            </button>
+            <BlockOrderButtons page="home" blockId="home_intro" />
+          </div>
+        )}
+        <AnimateInView variant="fadeUp" viewport={{ once: true, amount: 0 }} initial="visible">
+          <div className={styles.introInner}>
+            {/* Eyebrow */}
+            {iv.eyebrow && (
+              <div
+                className={styles.introEyebrowBar}
+                style={{
+                  ...(iv.eyebrowAlign && iv.eyebrowAlign !== 'center'
+                    ? { justifyContent: iv.eyebrowAlign === 'left' ? 'flex-start' : 'flex-end' }
+                    : {}),
+                }}
+              >
+                {(!iv.eyebrowAlign || iv.eyebrowAlign === 'center') && <span className={styles.introEyebrowLine} />}
+                <span
+                  className={styles.introEyebrowText}
+                  style={{
+                    ...(iv.eyebrowFontSize ? { fontSize: `${iv.eyebrowFontSize}px` } : {}),
+                    ...(iv.eyebrowColor ? { color: iv.eyebrowColor } : {}),
+                  }}
+                >{iv.eyebrow}</span>
+                {(!iv.eyebrowAlign || iv.eyebrowAlign === 'center') && <span className={styles.introEyebrowLine} />}
               </div>
             )}
-            <AnimateInView variant="fadeUp" viewport={{ once: true, amount: 0 }} initial="visible">
-              {intro.title ? (() => { const Tag = (intro as any).titleStyle || "h2"; const fs = (intro as any).titleFontSize; const color = (intro as any).titleColor; const align = (intro as any).titleAlign; return <Tag className={`${styles.introTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{intro.title}</Tag>; })() : null}
-              {intro.subtitle ? (() => { const Tag = (intro as any).subtitleStyle || "p"; const fs = (intro as any).subtitleFontSize; const color = (intro as any).subtitleColor; const align = (intro as any).subtitleAlign; return <Tag className={`${styles.introSubtitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{intro.subtitle}</Tag>; })() : null}
-              {intro.html ? <div className={styles.introText} dangerouslySetInnerHTML={{ __html: intro.html }} /> : null}
-            </AnimateInView>
+
+            {/* Grille avec zones : title | image / bottom (pleine largeur) */}
+            <div className={styles.introLayout}>
+              {/* Zone titre */}
+              <div className={styles.introTitleCol}>
+                {(iv.titleHtml || intro.title)
+                  ? (() => {
+                      const titleProps = {
+                        className: `${styles.introTitle} style-${titleTag}`,
+                        style: {
+                          ...(titleFs != null ? { fontSize: responsiveFontSize(titleFs) } : {}),
+                          ...(titleColor ? { color: titleColor } : {}),
+                          ...(titleAlign ? { textAlign: titleAlign } : {}),
+                        },
+                      };
+                      return iv.titleHtml
+                        ? React.createElement(titleTag, { ...titleProps, dangerouslySetInnerHTML: { __html: iv.titleHtml } })
+                        : React.createElement(titleTag, titleProps, intro.title);
+                    })()
+                  : null}
+              </div>
+
+              {/* Zone image — à droite sur desktop, sous tous les textes sur mobile */}
+              <div className={styles.introImgCard}>
+                {iv.image?.url ? (
+                  <Image
+                    src={iv.image.url}
+                    alt=""
+                    fill
+                    sizes="(max-width:767px) 100vw, 40vw"
+                    style={{ objectFit: 'cover', objectPosition: imgFocus ? `${imgFocus.x}% ${imgFocus.y}%` : 'center' }}
+                  />
+                ) : isAdmin ? (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ color: 'rgba(245,240,232,0.35)', fontSize: '0.85rem' }}>Image — cliquez « Modifier »</span>
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Zone bottom — pleine largeur sur desktop, après title sur mobile */}
+              {(intro.html || iv.servicesHtml) && (
+                <div className={styles.introBottom}>
+                  {intro.html
+                    ? <div className={styles.introText} dangerouslySetInnerHTML={{ __html: intro.html }} />
+                    : <div />}
+                  {iv.servicesHtml
+                    ? <div className={styles.introServices} dangerouslySetInnerHTML={{ __html: iv.servicesHtml }} />
+                    : <div />}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </AnimateInView>
       </section>
-  );
+    );
+  })();
 
   const bannerSection = hide("home_banner") ? null : (() => {
     const b = banner as any;

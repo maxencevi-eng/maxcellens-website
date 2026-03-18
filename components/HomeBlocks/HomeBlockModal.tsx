@@ -158,17 +158,23 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [deletingServiceIndex, setDeletingServiceIndex] = useState<number | null>(null);
 
   // Intro
+  const [introEyebrow, setIntroEyebrow] = useState("");
+  const [introEyebrowFontSize, setIntroEyebrowFontSize] = useState<number | "">("");
+  const [introEyebrowColor, setIntroEyebrowColor] = useState("");
+  const [introEyebrowAlign, setIntroEyebrowAlign] = useState<'left' | 'center' | 'right' | ''>('');
   const [introTitle, setIntroTitle] = useState("");
-  const [introSubtitle, setIntroSubtitle] = useState("");
+  const [introTitleHtml, setIntroTitleHtml] = useState("");
+  const [editingIntroTitleHtml, setEditingIntroTitleHtml] = useState(false);
   const [introTitleStyle, setIntroTitleStyle] = useState<TitleStyleKey>("h1");
-  const [introSubtitleStyle, setIntroSubtitleStyle] = useState<TitleStyleKey>("p");
-  const [introTitleFontSize, setIntroTitleFontSize] = useState<number | "">(16);
+  const [introTitleFontSize, setIntroTitleFontSize] = useState<number | "">("");
   const [introTitleColor, setIntroTitleColor] = useState("");
-  const [introSubtitleColor, setIntroSubtitleColor] = useState("");
-  const [introSubtitleFontSize, setIntroSubtitleFontSize] = useState<number | "">(16);
   const [introTitleAlign, setIntroTitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
-  const [introSubtitleAlign, setIntroSubtitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
+  const [introImage, setIntroImage] = useState<{ url: string; path?: string } | null>(null);
+  const [introImageFocus, setIntroImageFocus] = useState<{ x: number; y: number } | null>(null);
+  const [uploadingIntroImage, setUploadingIntroImage] = useState(false);
   const [introHtml, setIntroHtml] = useState("");
+  const [introServicesHtml, setIntroServicesHtml] = useState("");
+  const [editingIntroServicesHtml, setEditingIntroServicesHtml] = useState(false);
   const [introBackgroundColor, setIntroBackgroundColor] = useState("");
   const [introRadiusTop, setIntroRadiusTop] = useState<number | "">("");
   const [introRadiusBottom, setIntroRadiusBottom] = useState<number | "">("");
@@ -353,17 +359,20 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     const getFontSize = (fs: any) => isValidFontSize(fs) ? fs : "";
 
     if (blockKey === "home_intro") {
+      setIntroEyebrow(d.eyebrow ?? "");
+      setIntroEyebrowFontSize(getFontSize(d.eyebrowFontSize));
+      setIntroEyebrowColor(d.eyebrowColor ?? "");
+      setIntroEyebrowAlign(d.eyebrowAlign ?? '');
       setIntroTitle(d.title ?? "");
-      setIntroSubtitle(d.subtitle ?? "");
+      setIntroTitleHtml(d.titleHtml ?? "");
       setIntroTitleStyle(getValidTitleStyle(d.titleStyle, "h1"));
-      setIntroSubtitleStyle(getValidTitleStyle(d.subtitleStyle, "p"));
       setIntroTitleFontSize(getFontSize(d.titleFontSize));
       setIntroTitleColor(d.titleColor ?? "");
-      setIntroSubtitleColor(d.subtitleColor ?? "");
       setIntroTitleAlign(d.titleAlign ?? '');
-      setIntroSubtitleAlign(d.subtitleAlign ?? '');
-      setIntroSubtitleFontSize(getFontSize(d.subtitleFontSize));
+      setIntroImage(d.image ?? null);
+      setIntroImageFocus(d.image?.focus ?? null);
       setIntroHtml(d.html ?? "");
+      setIntroServicesHtml(d.servicesHtml ?? "");
       setIntroBackgroundColor(d.backgroundColor ?? "");
       setIntroRadiusTop(d.borderRadiusTop != null ? d.borderRadiusTop : "");
       setIntroRadiusBottom(d.borderRadiusBottom != null ? d.borderRadiusBottom : "");
@@ -666,6 +675,30 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     }
   }
 
+  async function uploadIntroImage(file: File) {
+    setUploadingIntroImage(true);
+    setError(null);
+    try {
+      const compressed = await compressImageClient(file);
+      const fd = new FormData();
+      fd.append("file", compressed);
+      fd.append("page", "home");
+      fd.append("kind", "image");
+      fd.append("folder", "home/intro");
+      if (introImage?.path) fd.append("old_path", introImage.path);
+      const resp = await fetch("/api/admin/upload-hero-media", { method: "POST", body: fd });
+      const j = await resp.json();
+      if (!resp.ok) throw new Error(j?.error ?? "Erreur d'upload");
+      if (j?.url) {
+        setIntroImage({ url: j.url, path: j.path ?? undefined });
+      } else throw new Error("Upload: pas d'URL retournée");
+    } catch (e: any) {
+      setError(e?.message ?? "Erreur upload");
+    } finally {
+      setUploadingIntroImage(false);
+    }
+  }
+
   async function uploadBannerImage(file: File) {
     setUploadingBannerImage(true);
     setError(null);
@@ -766,7 +799,26 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     let payload: BlockData;
     switch (blockKey) {
       case "home_intro":
-        payload = { title: introTitle, subtitle: introSubtitle, titleStyle: introTitleStyle, subtitleStyle: introSubtitleStyle, titleFontSize: introTitleFontSize !== "" ? clampTitleFontSize(introTitleFontSize as number) : undefined, subtitleFontSize: introSubtitleFontSize !== "" ? clampTitleFontSize(introSubtitleFontSize as number) : undefined, titleColor: introTitleColor?.trim() || undefined, subtitleColor: introSubtitleColor?.trim() || undefined, titleAlign: introTitleAlign || undefined, subtitleAlign: introSubtitleAlign || undefined, html: introHtml, backgroundColor: introBackgroundColor?.trim() || undefined, borderRadiusTop: introRadiusTop !== "" ? Number(introRadiusTop) : undefined, borderRadiusBottom: introRadiusBottom !== "" ? Number(introRadiusBottom) : undefined, paddingTop: introPaddingTop !== "" ? Number(introPaddingTop) : undefined, paddingBottom: introPaddingBottom !== "" ? Number(introPaddingBottom) : undefined };
+        payload = {
+          eyebrow: introEyebrow.trim() || undefined,
+          eyebrowFontSize: introEyebrowFontSize !== "" ? clampTitleFontSize(introEyebrowFontSize as number) : undefined,
+          eyebrowColor: introEyebrowColor?.trim() || undefined,
+          eyebrowAlign: introEyebrowAlign || undefined,
+          title: introTitle || undefined,
+          titleHtml: introTitleHtml || undefined,
+          titleStyle: introTitleStyle,
+          titleFontSize: introTitleFontSize !== "" ? clampTitleFontSize(introTitleFontSize as number) : undefined,
+          titleColor: introTitleColor?.trim() || undefined,
+          titleAlign: introTitleAlign || undefined,
+          image: introImage ? { ...introImage, focus: introImageFocus ?? undefined } : null,
+          html: introHtml,
+          servicesHtml: introServicesHtml || undefined,
+          backgroundColor: introBackgroundColor?.trim() || undefined,
+          borderRadiusTop: introRadiusTop !== "" ? Number(introRadiusTop) : undefined,
+          borderRadiusBottom: introRadiusBottom !== "" ? Number(introRadiusBottom) : undefined,
+          paddingTop: introPaddingTop !== "" ? Number(introPaddingTop) : undefined,
+          paddingBottom: introPaddingBottom !== "" ? Number(introPaddingBottom) : undefined,
+        };
         break;
       case "home_services":
         payload = { blockTitle: servicesBlockTitle, blockSubtitle: servicesBlockSubtitle, blockTitleStyle: servicesBlockTitleStyle, blockSubtitleStyle: servicesBlockSubtitleStyle, blockTitleFontSize: servicesBlockTitleFontSize !== "" ? clampTitleFontSize(servicesBlockTitleFontSize as number) : undefined, blockSubtitleFontSize: servicesBlockSubtitleFontSize !== "" ? clampTitleFontSize(servicesBlockSubtitleFontSize as number) : undefined, blockTitleColor: servicesBlockTitleColor?.trim() || undefined, blockSubtitleColor: servicesBlockSubtitleColor?.trim() || undefined, blockTitleAlign: servicesBlockTitleAlign || undefined, blockSubtitleAlign: servicesBlockSubtitleAlign || undefined, items: serviceItems.map((it) => ({ ...it, titleFontSize: it.titleFontSize != null && it.titleFontSize >= TITLE_FONT_SIZE_MIN && it.titleFontSize <= TITLE_FONT_SIZE_MAX ? it.titleFontSize : undefined, descriptionFontSize: it.descriptionFontSize != null && it.descriptionFontSize >= TITLE_FONT_SIZE_MIN && it.descriptionFontSize <= TITLE_FONT_SIZE_MAX ? it.descriptionFontSize : undefined })), backgroundColor: servicesBackgroundColor?.trim() || undefined, borderRadiusTop: servicesRadiusTop !== "" ? Number(servicesRadiusTop) : undefined, borderRadiusBottom: servicesRadiusBottom !== "" ? Number(servicesRadiusBottom) : undefined, paddingTop: servicesPaddingTop !== "" ? Number(servicesPaddingTop) : undefined, paddingBottom: servicesPaddingBottom !== "" ? Number(servicesPaddingBottom) : undefined };
@@ -926,7 +978,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
           </div>
 
           {blockKey === "home_intro" && (
-            <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
+            <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'image', label: 'Image' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
           )}
           {blockKey === "home_services" && (
             <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'services', label: 'Services' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
@@ -956,45 +1008,94 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
           {blockKey === "home_intro" && (
             <>
               {tab === 'contenu' && (<>
+              {/* Sur-titre */}
               <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Sur-titre (eyebrow)</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
+                  <input type="text" value={introEyebrow} onChange={(e) => setIntroEyebrow(e.target.value)} placeholder="ex. Maxcellens — Vidéaste & Photographe" style={{ ...inputStyle, flex: 1, minWidth: 160 }} />
+                </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <input type="text" value={introTitle} onChange={(e) => setIntroTitle(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
+                  <FontSizeInput value={introEyebrowFontSize} onChange={setIntroEyebrowFontSize} />
+                  <input type="color" value={introEyebrowColor || "#F5F0E8"} onChange={(e) => setIntroEyebrowColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du sur-titre" />
+                  {introEyebrowColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setIntroEyebrowColor("")}>↺</button> : null}
+                  <AlignmentButtons value={introEyebrowAlign} onChange={(v) => setIntroEyebrowAlign(v as any)} />
+                </div>
+              </div>
+              {/* Grand titre (richtext) */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Grand titre</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
                   <select value={introTitleStyle} onChange={(e) => setIntroTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
                     {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                   <FontSizeInput value={introTitleFontSize} onChange={setIntroTitleFontSize} />
-                  <input type="color" value={introTitleColor || "#1a1a18"} onChange={(e) => setIntroTitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du titre" />
+                  <input type="color" value={introTitleColor || "#F5F0E8"} onChange={(e) => setIntroTitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du titre" />
                   {introTitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setIntroTitleColor("")}>↺</button> : null}
                   <AlignmentButtons value={introTitleAlign} onChange={(v) => setIntroTitleAlign(v as any)} />
                 </div>
+                <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: introTitleHtml || introTitle || "<p style='color:#999'>Aucun</p>" }} />
+                <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingIntroTitleHtml(true)}>Éditer le titre</button>
               </div>
+              {/* Description (colonne basse gauche) */}
               <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Sous-titre</label>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <input type="text" value={introSubtitle} onChange={(e) => setIntroSubtitle(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} />
-                  <select value={introSubtitleStyle} onChange={(e) => setIntroSubtitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
-                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <FontSizeInput value={introSubtitleFontSize} onChange={setIntroSubtitleFontSize} />
-                  <input type="color" value={introSubtitleColor || "#1a1a18"} onChange={(e) => setIntroSubtitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du sous-titre" />
-                  {introSubtitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setIntroSubtitleColor("")}>↺</button> : null}
-                  <AlignmentButtons value={introSubtitleAlign} onChange={(v) => setIntroSubtitleAlign(v as any)} />
-                </div>
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Texte</label>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Description (colonne gauche)</label>
                 <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: introHtmlContent }} />
-                <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingHtml(true)}>Éditer le texte</button>
+                <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingHtml(true)}>Éditer</button>
+              </div>
+              {/* Services (colonne basse droite) */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Services (colonne droite)</label>
+                <div style={{ minHeight: 44, border: "1px solid #e6e6e6", borderRadius: 6, padding: 10, background: "#fff" }} dangerouslySetInnerHTML={{ __html: introServicesHtml || "<p style='color:#999'>Aucun</p>" }} />
+                <button type="button" className="btn-ghost" style={{ marginTop: 8 }} onClick={() => setEditingIntroServicesHtml(true)}>Éditer</button>
               </div>
               </>)}
-              {tab === 'style' && (<>
-              
+
+              {tab === 'image' && (<>
               <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond (optionnel)</label>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Image (colonne droite)</label>
+                {introImage?.url ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div
+                      onClick={(e) => {
+                        const el = e.currentTarget as HTMLDivElement;
+                        const rect = el.getBoundingClientRect();
+                        const x = Math.round(Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)));
+                        const y = Math.round(Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100)));
+                        setIntroImageFocus({ x, y });
+                      }}
+                      style={{ width: 320, maxWidth: '100%', height: 200, borderRadius: 6, backgroundImage: `url(${introImage.url})`, backgroundSize: 'cover', backgroundPosition: introImageFocus ? `${introImageFocus.x}% ${introImageFocus.y}%` : 'center', cursor: 'crosshair', position: 'relative' }}
+                    >
+                      {introImageFocus && (
+                        <div style={{ position: 'absolute', left: `calc(${introImageFocus.x}% - 8px)`, top: `calc(${introImageFocus.y}% - 8px)`, width: 16, height: 16, borderRadius: 999, background: '#fff', border: '2px solid rgba(0,0,0,0.6)', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', pointerEvents: 'none' }} />
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>Cliquez sur l'image pour définir le point focal{introImageFocus ? ` (${introImageFocus.x}%, ${introImageFocus.y}%)` : ''}</div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {introImageFocus && <button type="button" className="btn-ghost" onClick={() => setIntroImageFocus(null)} style={{ fontSize: 12 }}>↺ Réinitialiser le point focal</button>}
+                      <button type="button" className="btn-ghost" onClick={() => { setIntroImage(null); setIntroImageFocus(null); }} style={{ fontSize: 12, color: "#dc2626" }}>Supprimer l'image</button>
+                    </div>
+                    {/* Remplacer l'image */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <label style={{ fontSize: 12, color: 'var(--muted)' }}>Remplacer :</label>
+                      <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadIntroImage(f); }} disabled={uploadingIntroImage} />
+                      {uploadingIntroImage && <span style={{ fontSize: 12, color: "var(--muted)" }}>Upload…</span>}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadIntroImage(f); }} disabled={uploadingIntroImage} />
+                    {uploadingIntroImage ? <span style={{ fontSize: 12, color: "var(--muted)" }}>Upload…</span> : null}
+                  </div>
+                )}
+              </div>
+              </>)}
+
+              {tab === 'style' && (<>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Couleur de fond</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   <input type="color" value={introBgValue} onChange={(e) => setIntroBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
-                  <input type="text" value={introBackgroundColor} onChange={(e) => setIntroBackgroundColor(e.target.value)} placeholder="ou hex (ex. #fafaf9)" style={{ ...inputStyle, width: 120 }} />
+                  <input type="text" value={introBackgroundColor} onChange={(e) => setIntroBackgroundColor(e.target.value)} placeholder="ex. #13100D" style={{ ...inputStyle, width: 120 }} />
                   {introBackgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setIntroBackgroundColor("")}>Effacer</button> : null}
                 </div>
               </div>
@@ -1989,8 +2090,14 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         </div>
       </div>
 
+      {editingIntroTitleHtml && blockKey === "home_intro" && (
+        <RichTextModal title="Grand titre" initial={introTitleHtml || introTitle} onClose={() => setEditingIntroTitleHtml(false)} onSave={(h) => { setIntroTitleHtml(h); setIntroTitle(""); setEditingIntroTitleHtml(false); }} />
+      )}
       {editingHtml && blockKey === "home_intro" && (
-        <RichTextModal title="Texte intro" initial={introHtml} onClose={() => setEditingHtml(false)} onSave={(h) => { setIntroHtml(h); setEditingHtml(false); }} />
+        <RichTextModal title="Description (colonne gauche)" initial={introHtml} onClose={() => setEditingHtml(false)} onSave={(h) => { setIntroHtml(h); setEditingHtml(false); }} />
+      )}
+      {editingIntroServicesHtml && blockKey === "home_intro" && (
+        <RichTextModal title="Services (colonne droite)" initial={introServicesHtml} onClose={() => setEditingIntroServicesHtml(false)} onSave={(h) => { setIntroServicesHtml(h); setEditingIntroServicesHtml(false); }} />
       )}
       {editingBannerHtml && blockKey === "home_banner" && (
         <RichTextModal title="Texte bannière" initial={bannerHtml} onClose={() => setEditingBannerHtml(false)} onSave={(h) => { setBannerHtml(h); setEditingBannerHtml(false); }} editorBackground={bannerBackgroundColor || undefined} />

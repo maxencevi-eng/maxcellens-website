@@ -7,20 +7,27 @@ export const TITLE_FONT_SIZE_MIN = 8;
 export const TITLE_FONT_SIZE_MAX = 200;
 
 export type HomeIntroData = {
+  /** Sur-titre affiché en haut du bloc (ex. « MAXCELLENS — VIDÉASTE & PHOTOGRAPHE »). */
+  eyebrow?: string;
+  eyebrowFontSize?: number;
+  eyebrowColor?: string;
+  eyebrowAlign?: 'left' | 'center' | 'right';
+  /** Titre en texte brut (rétrocompat). Supplanté par titleHtml si défini. */
   title?: string;
-  subtitle?: string;
+  /** Titre en HTML riche (gras, italique, etc.). Prioritaire sur title. */
+  titleHtml?: string;
   titleStyle?: TitleStyleKey;
-  subtitleStyle?: TitleStyleKey;
   /** Taille du titre en px (8–200). */
   titleFontSize?: number;
-  subtitleFontSize?: number;
   /** Couleur personnalisée du titre (hex). */
   titleColor?: string;
-  /** Couleur personnalisée du sous-titre (hex). */
-  subtitleColor?: string;
   titleAlign?: 'left' | 'center' | 'right';
-  subtitleAlign?: 'left' | 'center' | 'right';
+  /** Image affichée à droite du titre. */
+  image?: { url: string; path?: string; focus?: FocusPoint } | null;
+  /** HTML de description (colonne basse gauche). */
   html?: string;
+  /** HTML de la liste de services (colonne basse droite, alignée à droite). */
+  servicesHtml?: string;
   /** Couleur de fond du bloc (remplace le style global des blocs) */
   backgroundColor?: string;
   /** Arrondi haut de la section (px). Remplace le CSS par défaut si défini. */
@@ -224,9 +231,12 @@ export type HomeAnimationBlockData = {
 };
 
 export const DEFAULT_INTRO: HomeIntroData = {
-  title: "Maxcellens",
-  subtitle: "Photographe professionnel — Portrait, Événement, Corporate",
-  html: "<p>Portrait, événementiel, corporate et réalisation. Basé en Île-de-France, j'interviens partout en France et à l'étranger pour donner vie à vos projets en image.</p>",
+  eyebrow: "Maxcellens — Vidéaste & Photographe",
+  title: "Donnez de la force à votre image.",
+  html: "<p>Photo et vidéo professionnelles pour entreprises, marques et événements. Basé à Clamart, j'interviens partout en France et à l'étranger.</p>",
+  servicesHtml: "<p>Vidéo commerciale<br>Couverture événementielle<br>Portrait corporate<br>Cadreur institutionnel</p>",
+  backgroundColor: "#13100D",
+  titleColor: "#F5F0E8",
 };
 
 export const DEFAULT_SERVICES: HomeServicesData = {
