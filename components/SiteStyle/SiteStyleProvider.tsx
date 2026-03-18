@@ -208,8 +208,9 @@ export default function SiteStyleProvider({ children }: { children: React.ReactN
           }
 
           if (textureCss) {
-            // body: isolation creates stacking context; body::after at z-index:-1 sits
-            // between body background and body's children (covers gaps between sections)
+            // body::after covers the full viewport background with the texture.
+            // section::before adds texture on section backgrounds without isolation:isolate,
+            // which preserves z-index stacking for the scroll-over-nav effect.
             bgTagContent = `
               body { isolation: isolate; }
               body::after {
@@ -218,20 +219,11 @@ export default function SiteStyleProvider({ children }: { children: React.ReactN
                 opacity: var(--site-bg-opacity, 0.08);
                 ${textureCss}
               }
-              /* Sections use isolation:isolate so ::before z-index:-1 paints above background */
-              section {
-                position: relative;
-                isolation: isolate;
-              }
-              /* Header uses z-index (not isolation:isolate) so the fixed mobile menu
-                 can escape the header stacking context and appear above main content */
-              header {
-                position: relative;
-                z-index: 200;
-              }
-              section::before, header::before {
+              /* NO isolation:isolate on section — required for z-index scroll-over-nav effect */
+              section { position: relative; }
+              section::before {
                 content: ''; position: absolute; inset: 0;
-                pointer-events: none; z-index: -1;
+                pointer-events: none;
                 border-radius: inherit;
                 opacity: var(--site-bg-opacity, 0.08);
                 ${textureCss}

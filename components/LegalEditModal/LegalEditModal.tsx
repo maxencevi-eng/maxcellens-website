@@ -85,7 +85,7 @@ export default function LegalEditModal({ pageKey, title, initialSections, initia
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 50000, padding: '64px 16px 32px', overflowY: 'auto' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 50000, paddingTop: 'calc(var(--header-height, 93px) + 8px)', paddingLeft: '16px', paddingRight: '16px', paddingBottom: '32px', overflowY: 'auto' }}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{ background: '#fff', color: '#111', padding: 24, width: 760, maxWidth: '98%', borderRadius: 10, position: 'relative', alignSelf: 'flex-start' }}>
