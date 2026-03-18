@@ -1,12 +1,19 @@
 .wrapper {
-  /* Full-bleed : s'étend sur toute la largeur de la page
-     Le fond par défaut est transparent → hérite du --bg de la page.
-     Un fond personnalisé peut être appliqué via style inline depuis LegalPageClient. */
+  /* Full-bleed, intégré dans le système de stacking du site (comme HomeBlocks).
+     z-index: 20 → passe par-dessus la nav (z-index: 10) en scrollant.
+     border-radius haut → effet de glissement sur le PageHeader en dessous.
+     Fond : transparent par défaut (hérite du --bg de la page).
+     Un fond custom peut être appliqué via style inline (admin modal). */
   width: 100vw;
   margin-left: calc(50% - 50vw);
+  margin-top: -28px;
   min-height: 60vh;
   padding: clamp(3rem, 6vw, 5rem) 0 clamp(4rem, 8vw, 7rem);
   position: relative;
+  z-index: 20;
+  border-radius: 28px 28px 0 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .container {

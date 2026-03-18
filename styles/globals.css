@@ -138,11 +138,9 @@ img {
 }
 
 /* ── Effet "contenu qui recouvre le header" (desktop uniquement) ──
-   Le header est fixe (position: fixed). Le contenu démarre sous le header
-   grâce à padding-top: --header-height (calculé dynamiquement par le composant
-   Header). En scrollant, le contenu (z-index: 20) passe au-dessus du header
-   (z-index: 10) et le recouvre. Mode mobile exclu.
-   left/right au lieu de width:100vw → évite que le header recouvre l'ascenseur Chrome. */
+   Header fixe (z-index: 10). main n'a PAS de z-index (pas de stacking context global)
+   pour que le hero/banner reste SOUS la nav, tandis que les blocs de contenu
+   (qui ont leur propre z-index: 20+) passent PAR-DESSUS la nav en scrollant. */
 @media (min-width: 900px) {
   #site-header {
     position: fixed;
@@ -154,9 +152,10 @@ img {
     z-index: 10;
   }
 
+  /* PAS de z-index sur main → les héros (PageHeader) restent SOUS la nav.
+     Seuls les blocs avec z-index explicite la recouvrent en scrollant. */
   main {
     position: relative;
-    z-index: 20;
   }
 
   /* Espaceur transparent (hauteur du header) : pousse le contenu sous le header fixe

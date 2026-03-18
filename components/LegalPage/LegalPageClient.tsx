@@ -71,7 +71,7 @@ export default function LegalPageClient({ pageKey, title, intro, defaultSections
   }, [pageKey]);
 
   return (
-    <div className={styles.wrapper} style={{ background: bgColor || 'var(--bg, #F2F0EB)' }}>
+    <div className={styles.wrapper} style={bgColor ? { background: bgColor } : undefined}>
       {/* Bouton admin — coin supérieur droit du bloc */}
       {isAdmin && (
         <div style={{ position: 'absolute', top: '1rem', right: 'max(calc(50% - 390px), 1.25rem)' }}>

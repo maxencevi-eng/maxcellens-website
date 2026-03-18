@@ -30,23 +30,27 @@
   box-sizing: border-box;
 }
 
-/* ── Sections standard — arrondi haut uniquement, passe "en dessous" ── */
+/* ── Bannière hero : reste SOUS la nav (z-index < 10) ── */
+.bannerBlock {
+  border-radius: 28px 28px 0 0;
+  z-index: 5;
+}
+
+/* ── Sections standard — arrondi haut uniquement, passe AU-DESSUS de la nav (z-index: 10) ── */
 .services,
-.bannerBlock,
 .cadreurBlock,
 .animationBlock,
 .quote {
   border-radius: 28px 28px 0 0;
-  z-index: 1;
+  z-index: 20;
 }
 
-/* ── Sections flottantes — arrondi 4 coins, passe "au-dessus" ──
-   Leurs coins bas arrondis restent visibles par-dessus la section suivante. */
+/* ── Sections flottantes — arrondi 4 coins, au-dessus des sections standard ── */
 .intro,
 .portraitBlock,
 .stats {
   border-radius: 28px;
-  z-index: 2;
+  z-index: 30;
 }
 
 /* ── Grand espace vertical partagé (effet fixaplan) ── */
