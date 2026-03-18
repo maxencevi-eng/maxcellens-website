@@ -21,6 +21,8 @@ type MenuVisible = {
   galleries?: boolean;
   contact?: boolean;
   admin?: boolean;
+  mentionsLegales?: boolean;
+  politiqueConfidentialite?: boolean;
 };
 
 import dynamic from 'next/dynamic';
@@ -59,7 +61,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
   const router = useRouter();
   const [col1, setCol1] = useState('');
   const [bottomText, setBottomText] = useState('');
-  const [menuVisible, setMenuVisible] = useState<MenuVisible>({ realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, admin: true });
+  const [menuVisible, setMenuVisible] = useState<MenuVisible>({ realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, admin: true, mentionsLegales: true, politiqueConfidentialite: true });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -111,7 +113,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
           setBottomText(String(s.footerBottomText || getStorage('footerBottomText') || ''));
           
           const menuVis = s.footerMenuVisible || getStorage('footerMenuVisible');
-          if (menuVis) setMenuVisible(safeJsonParse(String(menuVis), { realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, admin: true }));
+          if (menuVis) setMenuVisible(safeJsonParse(String(menuVis), { realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, admin: true, mentionsLegales: true, politiqueConfidentialite: true }));
 
           const bannerVal = s.footerBanner || getStorage('footerBanner');
           if (bannerVal) {
@@ -151,7 +153,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
       if (!mounted) return;
       const v = getStorage('footerColumn1'); if (v) setCol1(v);
       const b = getStorage('footerBottomText'); if (b) setBottomText(b);
-      const m = getStorage('footerMenuVisible'); if (m) setMenuVisible(safeJsonParse(m, { realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, admin: true }));
+      const m = getStorage('footerMenuVisible'); if (m) setMenuVisible(safeJsonParse(m, { realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, admin: true, mentionsLegales: true, politiqueConfidentialite: true }));
       
       const vb = getStorage('footerBanner');
       if (vb) {
@@ -465,7 +467,7 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
             <div className={styles.visiblePanel}>
               <div className={styles.visiblePanelTitle}>Éléments visibles</div>
               <div className={styles.visiblePanelGrid}>
-                {(['realisation','evenement','corporate','portrait','animation','galleries','contact','admin'] as (keyof MenuVisible)[]).map((k) => (
+                {(['realisation','evenement','corporate','portrait','animation','galleries','contact','admin','mentionsLegales','politiqueConfidentialite'] as (keyof MenuVisible)[]).map((k) => (
                   <label key={k} className={styles.visiblePanelLabel}>
                     <input type="checkbox" checked={!!menuVisible?.[k]} onChange={() => toggleKey(k)} />
                     <span>{k}</span>

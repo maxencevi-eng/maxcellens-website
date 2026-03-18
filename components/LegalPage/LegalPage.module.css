@@ -1,0 +1,112 @@
+.wrapper {
+  background: var(--bg, #F2F0EB);
+  min-height: 60vh;
+  padding: clamp(3rem, 6vw, 5rem) 0 clamp(4rem, 8vw, 7rem);
+}
+
+.container {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 5vw, 3rem);
+}
+
+/* ── Header ── */
+.header {
+  margin-bottom: clamp(2.5rem, 5vw, 4rem);
+  border-bottom: 1px solid rgba(33, 52, 49, 0.12);
+  padding-bottom: clamp(2rem, 4vw, 3rem);
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted, #6b7280);
+  margin: 0 0 1rem;
+}
+
+.title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  color: var(--fg, #213431);
+  line-height: 1.15;
+  margin: 0 0 1.25rem;
+}
+
+.intro {
+  font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+  color: var(--muted, #6b7280);
+  line-height: 1.7;
+  margin: 0;
+  max-width: 60ch;
+}
+
+/* ── Sections ── */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2rem, 4vw, 3rem);
+}
+
+.section {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 0 2.5rem;
+  align-items: start;
+}
+
+.sectionTitle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg, #213431);
+  margin: 0;
+  padding-top: 0.2rem;
+  line-height: 1.4;
+}
+
+.sectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.sectionBody p {
+  margin: 0;
+  font-size: clamp(0.88rem, 1.2vw, 0.96rem);
+  color: var(--fg, #213431);
+  line-height: 1.75;
+}
+
+.sectionBody a {
+  color: var(--fg, #213431);
+  text-decoration: underline;
+  text-decoration-color: rgba(33, 52, 49, 0.35);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 150ms;
+}
+
+.sectionBody a:hover {
+  text-decoration-color: var(--fg, #213431);
+}
+
+.sectionBody em {
+  color: var(--muted, #6b7280);
+}
+
+/* ── Mobile ── */
+@media (max-width: 700px) {
+  .section {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .sectionTitle {
+    position: static;
+    font-size: 0.82rem;
+    color: var(--muted, #6b7280);
+  }
+}

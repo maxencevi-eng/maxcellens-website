@@ -45,10 +45,12 @@ type MenuVisible = {
   contact?: boolean;
   bac?: boolean;
   admin?: boolean;
+  mentionsLegales?: boolean;
+  politiqueConfidentialite?: boolean;
 };
 
 export default function MenuEditModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
-  const [menuVisible, setMenuVisible] = useState<MenuVisible>({ realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, bac: false, admin: true });
+  const [menuVisible, setMenuVisible] = useState<MenuVisible>({ realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, bac: false, admin: true, mentionsLegales: false, politiqueConfidentialite: false });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export default function MenuEditModal({ onClose, onSaved }: { onClose: () => voi
         if (s.navHoverTextColor) { setHoverColor(String(s.navHoverTextColor)); setStorage('navHoverTextColor', String(s.navHoverTextColor)); }
         if (s.navActiveTextColor) { setActiveColor(String(s.navActiveTextColor)); setStorage('navActiveTextColor', String(s.navActiveTextColor)); }
         if (s.navBgColor) { setBgColor(String(s.navBgColor)); setStorage('navBgColor', String(s.navBgColor)); }
-        if (s.navMenuVisible) { setMenuVisible(safeJsonParse(String(s.navMenuVisible), { realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, bac: false, admin: true })); }
+        if (s.navMenuVisible) { setMenuVisible(safeJsonParse(String(s.navMenuVisible), { realisation: true, evenement: true, corporate: true, portrait: true, animation: true, galleries: true, contact: true, bac: false, admin: true, mentionsLegales: false, politiqueConfidentialite: false })); }
       } catch (_) {}
     }
     load();
@@ -155,7 +157,9 @@ export default function MenuEditModal({ onClose, onSaved }: { onClose: () => voi
     { key: 'galleries', label: 'Galeries' },
     { key: 'contact', label: 'Contact' },
     { key: 'bac', label: 'Bureau à la Carte' },
-    { key: 'admin', label: 'Admin' }
+    { key: 'admin', label: 'Admin' },
+    { key: 'mentionsLegales', label: 'Mentions légales' },
+    { key: 'politiqueConfidentialite', label: 'Politique de confidentialité' },
   ];
 
   return (
@@ -188,7 +192,7 @@ export default function MenuEditModal({ onClose, onSaved }: { onClose: () => voi
           <div style={{ marginTop: 12 }}>
             <div style={{ fontSize: 13, color: 'var(--muted)' }}>Éléments visibles</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
-              {(['realisation','evenement','corporate','portrait','animation','galleries','contact','bac','admin'] as (keyof MenuVisible)[]).map((k) => (
+              {(['realisation','evenement','corporate','portrait','animation','galleries','contact','bac','admin','mentionsLegales','politiqueConfidentialite'] as (keyof MenuVisible)[]).map((k) => (
                 <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input type="checkbox" checked={!!menuVisible?.[k]} onChange={() => toggleKey(k)} />
                   <span style={{ textTransform: 'capitalize' }}>{k}</span>

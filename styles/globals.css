@@ -40,7 +40,7 @@
 html, body, #__next {
   height: 100%;
   margin: 0;
-  overflow-x: hidden;
+  overflow-x: clip; /* clip au lieu de hidden : ne crée pas de scroll container, laisse position:sticky/fixed fonctionner */
   background: var(--bg);
   color: var(--fg);
   line-height: var(--base-line-height);
@@ -138,20 +138,34 @@ img {
 }
 
 /* ── Effet "contenu qui recouvre le header" (desktop uniquement) ──
-   Le header reste visible en haut (sticky). En scrollant, le contenu de
-   la page passe par-dessus et le recouvre grâce au z-index plus élevé.
-   Les blocs ont déjà border-radius + backgrounds : l'effet "carte qui glisse"
-   est natif. Mode mobile exclu (le header scrolle normalement). */
+   Le header est fixe (position: fixed). Le contenu démarre sous le header
+   grâce à padding-top: --header-height (calculé dynamiquement par le composant
+   Header). En scrollant, le contenu (z-index: 20) passe au-dessus du header
+   (z-index: 10) et le recouvre. Mode mobile exclu.
+   left/right au lieu de width:100vw → évite que le header recouvre l'ascenseur Chrome. */
 @media (min-width: 900px) {
   #site-header {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
+    width: auto;    /* override width:100vw de Header.module.css */
+    margin-left: 0; /* override margin-left négatif de Header.module.css */
     z-index: 10;
   }
 
   main {
     position: relative;
     z-index: 20;
+  }
+
+  /* Espaceur transparent (hauteur du header) : pousse le contenu sous le header fixe
+     pointer-events: none → les clics traversent jusqu'aux liens de la nav */
+  main::before {
+    content: '';
+    display: block;
+    height: var(--header-height, 64px);
+    pointer-events: none;
   }
 }
 
@@ -180,11 +194,13 @@ body.has-admin-sidebar {
     /* height: auto lets body grow with content so html handles the single page scrollbar */
     height: auto;
   }
-  /* Header uses width:100vw + negative margin — override so it stays in the visible area */
+  /* Header fixed : décaler left pour laisser place à la sidebar admin */
   body.has-admin-sidebar #site-header {
-    width: calc(100vw - 340px);
+    left: 340px;
+    right: 0;
+    width: auto;
     margin-left: 0;
-    transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
 

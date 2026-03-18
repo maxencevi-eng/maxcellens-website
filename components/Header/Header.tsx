@@ -399,6 +399,12 @@ export default function Header() {
               {(currentNav as any)?.admin === true ? (
                 <Link href="/admin" className={linkClass('/admin')}>Admin</Link>
               ) : null}
+              {(currentNav as any)?.mentionsLegales === true ? (
+                <Link href="/mentions-legales" className={linkClass('/mentions-legales')}>Mentions légales</Link>
+              ) : null}
+              {(currentNav as any)?.politiqueConfidentialite === true ? (
+                <Link href="/politique-de-confidentialite" className={linkClass('/politique-de-confidentialite')}>Confidentialité</Link>
+              ) : null}
             </nav>
           </div>
         </div>
@@ -434,6 +440,12 @@ export default function Header() {
             ) : null}
             {(currentNav as any)?.admin === true ? (
               <Link href="/admin" className={linkClass('/admin')} onClick={() => setOpen(false)}>Admin</Link>
+            ) : null}
+            {(currentNav as any)?.mentionsLegales === true ? (
+              <Link href="/mentions-legales" className={linkClass('/mentions-legales')} onClick={() => setOpen(false)}>Mentions légales</Link>
+            ) : null}
+            {(currentNav as any)?.politiqueConfidentialite === true ? (
+              <Link href="/politique-de-confidentialite" className={linkClass('/politique-de-confidentialite')} onClick={() => setOpen(false)}>Confidentialité</Link>
             ) : null}
           </nav>
           <div className={styles.mobileOverlay} onClick={() => setOpen(false)} />

@@ -3,6 +3,7 @@
   border-bottom: none;
   min-height: var(--nav-height, 64px);
 }
+
 .inner {
   display: flex;
   align-items: center;

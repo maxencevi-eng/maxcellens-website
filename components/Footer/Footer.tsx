@@ -410,6 +410,8 @@ export default function Footer() {
       <h4>Information</h4>
       <ul className={styles.list}>
         {(!footerMenuVisible || footerMenuVisible.contact) && <li><Link href="/contact" data-analytics-id="Footer|Contact">Contact</Link></li>}
+        {(!footerMenuVisible || (footerMenuVisible as any).mentionsLegales !== false) && <li><Link href="/mentions-legales" data-analytics-id="Footer|Mentions">Mentions légales</Link></li>}
+        {(!footerMenuVisible || (footerMenuVisible as any).politiqueConfidentialite !== false) && <li><Link href="/politique-de-confidentialite" data-analytics-id="Footer|Confidentialite">Confidentialité</Link></li>}
         {footerMenuVisible?.admin === true && <li><Link href="/admin" data-analytics-id="Footer|Admin">Admin</Link></li>}
       </ul>
     </div>
