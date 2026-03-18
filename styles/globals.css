@@ -137,6 +137,24 @@ img {
   }
 }
 
+/* ── Effet "contenu qui recouvre le header" (desktop uniquement) ──
+   Le header reste visible en haut (sticky). En scrollant, le contenu de
+   la page passe par-dessus et le recouvre grâce au z-index plus élevé.
+   Les blocs ont déjà border-radius + backgrounds : l'effet "carte qui glisse"
+   est natif. Mode mobile exclu (le header scrolle normalement). */
+@media (min-width: 900px) {
+  #site-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  main {
+    position: relative;
+    z-index: 20;
+  }
+}
+
 /* Masonry item styling for column layout */
 .masonry-item {
   break-inside: avoid;

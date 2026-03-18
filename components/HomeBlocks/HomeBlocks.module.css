@@ -79,6 +79,13 @@
   position: relative;
 }
 
+/* Desktop : l'intro démarre proprement sous le header sticky (pas d'overlap initial) */
+@media (min-width: 900px) {
+  .intro {
+    margin-top: 0;
+  }
+}
+
 .introInner {
   max-width: 1120px;
   margin: 0 auto;
