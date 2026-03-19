@@ -1,7 +1,7 @@
 "use no memo";
 "use client";
 
-import React, { Fragment, useEffect, useState } from 'react';
+import React, { Fragment, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { supabase } from '../../lib/supabase';
 import styles from './ContactBlocks.module.css';
@@ -25,6 +25,9 @@ export default function ContactBlocks() {
   const [rows, setRows] = useState<AboutRow[]>([]);
   const [contactIntroBg, setContactIntroBg] = useState<string>('');
   const [photo, setPhoto] = useState<{ url?: string; path?: string } | null>(null);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [splashReady, setSplashReady] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
   const [handleColor, setHandleColor] = useState('');
   const [handleFontSize, setHandleFontSize] = useState(0);
   const [handleFontWeight, setHandleFontWeight] = useState(0);
@@ -102,6 +105,22 @@ export default function ContactBlocks() {
     return () => { mounted = false; try { (listener as any)?.subscription?.unsubscribe?.(); } catch (_) {} window.removeEventListener('site-settings-updated', onUpdate as EventListener); };
   }, []);
 
+  // Attend splash-dismissed (fin du SPA overlay)
+  useEffect(() => {
+    const handler = () => setSplashReady(true);
+    window.addEventListener('splash-dismissed', handler, { once: true });
+    return () => window.removeEventListener('splash-dismissed', handler);
+  }, []);
+
+  // Gère les images déjà en cache (complete avant onLoad)
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+      setImgLoaded(true);
+    }
+  }, [photo?.url]);
+
+  const photoAnimated = splashReady && imgLoaded;
+
   const DEFAULT_ROWS: AboutRow[] = [
     { label: 'SERVICES', content: "J'accompagne les entreprises et commerces dans leur communication visuelle. Mon expertise se concentre en priorité sur la réalisation de vidéos commerciales impactantes et la couverture d'événements (vidéo & photo)." },
     { label: 'PROJETS', content: "Je réalise également vos films institutionnels, vos portraits professionnels ainsi que des ateliers Team Building Série TV. Partenaire des sociétés de production, j'interviens aussi régulièrement en tant que cadreur pour renforcer vos équipes techniques sur le terrain." },
@@ -130,7 +149,15 @@ export default function ContactBlocks() {
       <div className={styles.introGrid}>
         <div>
           {photo?.url ? (
-            <img className={styles.photo} alt="Portrait" src={String(photo.url)} />
+            <div className={`${styles.photoWrap}${photoAnimated ? ` ${styles.photoVisible}` : ''}`}>
+              <img
+                ref={imgRef}
+                className={styles.photo}
+                alt="Portrait"
+                src={String(photo.url)}
+                onLoad={() => setImgLoaded(true)}
+              />
+            </div>
           ) : (
             <div className={styles.photoPlaceholder} aria-hidden="true" />
           )}
