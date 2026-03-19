@@ -4,42 +4,23 @@
 }
 
 .headerEntranceWrap[data-entrance="animate"] {
-  animation: headerReveal 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: headerReveal 0.8s ease-out forwards;
 }
 
 @keyframes headerReveal {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Image : fade-in + Ken Burns cinematique enchaîné à l’entrée */
-.headerEntranceWrap[data-entrance="animate"] .imageWrap img {
-  animation:
-    headerImgFade 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards,
-    kenBurns 2000ms ease-out forwards;
-}
-
-@keyframes headerImgFade {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 
-/* ── Animations au chargement ── */
+/* Ken Burns : déclenché uniquement à l’entrée pour éviter le glitch */
+.headerEntranceWrap[data-entrance="animate"] .imageWrap img {
+  animation: kenBurns 2200ms ease-out forwards;
+}
 
-/* Image de fond : effet Ken Burns doux (scale 1.05 → 1) */
+/* ── Ken Burns ── */
 @keyframes kenBurns {
   from { transform: scale(1.05); }
   to   { transform: scale(1); }
-}
-
-.imageWrap img {
-  animation: kenBurns 1200ms ease-out forwards;
 }
 
 /* Titre principal : fade-in + montée (delay 200ms) */
