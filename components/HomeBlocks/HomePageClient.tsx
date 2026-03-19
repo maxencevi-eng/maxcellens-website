@@ -739,8 +739,8 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
                   href={portraitSlideHref}
                   className={`${styles.portraitCta} btn-site-${(portraitBlock as any).ctaButtonStyle || "1"}`}
                   data-analytics-id="Accueil|CTA Portrait"
-                  onMouseDown={() => { try { sessionStorage.setItem("portraitScrollTarget", "portrait-gallery-nav"); } catch (_) {} }}
-                  onTouchStart={() => { try { sessionStorage.setItem("portraitScrollTarget", "portrait-gallery-nav"); } catch (_) {} }}
+                  onMouseDown={() => { try { const h = portraitSlideHref.indexOf('#'); const id = h !== -1 ? portraitSlideHref.slice(h + 1) : !(activePortraitSlide as any)?.href ? 'portrait-gallery-nav' : null; if (id) sessionStorage.setItem('spaScrollTarget', id); } catch (_) {} }}
+                  onTouchStart={() => { try { const h = portraitSlideHref.indexOf('#'); const id = h !== -1 ? portraitSlideHref.slice(h + 1) : !(activePortraitSlide as any)?.href ? 'portrait-gallery-nav' : null; if (id) sessionStorage.setItem('spaScrollTarget', id); } catch (_) {} }}
                 >
                   {(portraitBlock as any).ctaLabel || "Découvrir le portrait"}
                 </Link>

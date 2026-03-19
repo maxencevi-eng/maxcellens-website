@@ -12,6 +12,7 @@ import InitialLoadSplash from '../components/InitialLoadSplash/InitialLoadSplash
 import { BlockVisibilityProvider } from '../components/BlockVisibility';
 import TransitionProvider from '../components/PageTransition/TransitionProvider';
 import PageTransitionOverlay from '../components/PageTransition/PageTransitionOverlay';
+import SpaScrollTarget from '../components/PageTransition/SpaScrollTarget';
 import { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
@@ -261,6 +262,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <InitialLoadSplash />
         <TransitionProvider>
         <PageTransitionOverlay />
+        <SpaScrollTarget />
         <SiteStyleProvider>
           <PageLayoutProvider>
             <BlockVisibilityProvider>

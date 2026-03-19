@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Fragment, useState, useEffect, useRef } from "react";
+import React, { Fragment, useState, useEffect } from "react";
 import PageIntroBlock from "../PageIntroBlock/PageIntroBlock";
 import EditablePortraitGallery from "../PortraitGallery/EditablePortraitGallery";
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
@@ -25,40 +25,6 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
   const [activeGallery, setActiveGallery] = useState<PortraitGalleryId>(initialTab);
   const [introEditOpen, setIntroEditOpen] = useState(false);
   const activeConfig = PORTRAIT_GALLERIES.find((g) => g.id === activeGallery) ?? PORTRAIT_GALLERIES[0];
-
-  // Scroll vers la nav galerie après SPA navigation (même pattern qu’AnimationPageClient)
-  const _scroll = useRef<{ splashReady: boolean; fired: boolean; attempt: () => void }>({
-    splashReady: false,
-    fired: false,
-    attempt: () => {},
-  });
-  useEffect(() => {
-    const s = _scroll.current;
-    let shouldScroll = false;
-    try {
-      shouldScroll = sessionStorage.getItem("portraitScrollTarget") === "portrait-gallery-nav";
-      if (shouldScroll) sessionStorage.removeItem("portraitScrollTarget");
-    } catch (_) {}
-    if (!shouldScroll) return;
-
-    s.attempt = () => {
-      if (s.fired || !s.splashReady) return;
-      const el = document.getElementById("portrait-gallery-nav");
-      if (!el) return;
-      s.fired = true;
-      requestAnimationFrame(() => {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-      });
-    };
-
-    const onDismiss = () => { s.splashReady = true; s.attempt(); };
-    window.addEventListener("splash-dismissed", onDismiss, { once: true });
-    const safety = setTimeout(() => { s.splashReady = true; s.attempt(); }, 4000);
-    return () => {
-      clearTimeout(safety);
-      window.removeEventListener("splash-dismissed", onDismiss);
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Synchroniser avec le hash de l’URL (ex. /portrait#lifestyle), y compris sur changement de hash
   // Après hydratation : sync avec le hash (ex. /portrait#entreprise)
