@@ -86,6 +86,7 @@ export default function PageTransitionOverlay() {
         // Double rAF : garantit que le DOM est peint avant de révéler
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
+            window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
             setPhase('exit');
           });
         });
@@ -107,6 +108,7 @@ export default function PageTransitionOverlay() {
         if (pageReadyDuringEnter.current) {
           // Page déjà rendue pendant l'enter → exit immédiat, sans waiting
           pageReadyDuringEnter.current = false;
+          window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
           setPhase('exit');
         } else {
           // Page pas encore prête → on attend le changement de pathname
