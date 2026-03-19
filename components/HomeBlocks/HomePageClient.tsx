@@ -358,8 +358,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   const statItems = stats.items && stats.items.length ? stats.items : DEFAULT_STATS.items;
 
   const activePortraitSlide = portraitSlides[portraitIndex] || portraitSlides[0];
-  // Use slide-specific href or fallback to default URL with tab parameter
-  const portraitSlideHref = (activePortraitSlide as any)?.href || `/portrait?tab=${["lifestyle", "studio", "entreprise", "couple"][Math.min(portraitIndex, 3)] || "lifestyle"}`;
+  const portraitSlideHref = (activePortraitSlide as any)?.href || '/portrait';
 
   const safeQuoteIndex = Math.max(0, Math.min(currentQuoteIndex, quoteList.length - 1));
   const visibleQuoteIndices = [0, 1, 2].map((i) => (safeQuoteIndex + i) % quoteList.length);
