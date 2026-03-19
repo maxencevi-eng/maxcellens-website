@@ -1802,7 +1802,7 @@
 /* ========== CTA — style "Gentle planning" ========== */
 /* Hors du système de slides : transparent sur fond de page, texte géant dégradé */
 .cta {
-  background: transparent;
+  background: var(--bg);
   text-align: center;
   padding: 5rem 1rem 3.5rem;
   position: relative;

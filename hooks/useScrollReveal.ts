@@ -51,14 +51,10 @@ export function useScrollReveal<T extends HTMLElement = HTMLDivElement>(
 
 /** Styles CSS inline pour l'état initial (avant révélation) */
 export const revealInitialStyle: React.CSSProperties = {
-  opacity: 0,
-  transition: 'opacity 600ms ease-out',
   position: 'relative',
 };
 
 /** Styles CSS inline pour l'état final (révélé) */
 export const revealVisibleStyle: React.CSSProperties = {
-  opacity: 1,
-  transition: 'opacity 600ms ease-out',
   position: 'relative',
 };
