@@ -735,7 +735,13 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
               <div key={portraitIndex} className={`${styles.portraitCarouselContent} ${styles.portraitContentFade}`}>
                 {activePortraitSlide?.title ? (() => { const Tag = (activePortraitSlide as any).titleStyle || "h3"; const fs = (activePortraitSlide as any).titleFontSize; return <Tag className={`${styles.portraitSlideTitle} style-${Tag}`} style={fs != null ? { fontSize: responsiveFontSize(fs) } : undefined}>{activePortraitSlide.title}</Tag>; })() : null}
                 {activePortraitSlide?.text ? <div className={styles.portraitSlideText} dangerouslySetInnerHTML={{ __html: activePortraitSlide.text }} /> : null}
-                <Link href={portraitSlideHref} className={`${styles.portraitCta} btn-site-${(portraitBlock as any).ctaButtonStyle || "1"}`} data-analytics-id="Accueil|CTA Portrait">
+                <Link
+                  href={portraitSlideHref}
+                  className={`${styles.portraitCta} btn-site-${(portraitBlock as any).ctaButtonStyle || "1"}`}
+                  data-analytics-id="Accueil|CTA Portrait"
+                  onMouseDown={() => { try { sessionStorage.setItem("portraitScrollTarget", "portrait-gallery-nav"); } catch (_) {} }}
+                  onTouchStart={() => { try { sessionStorage.setItem("portraitScrollTarget", "portrait-gallery-nav"); } catch (_) {} }}
+                >
                   {(portraitBlock as any).ctaLabel || "Découvrir le portrait"}
                 </Link>
                 <div className={styles.portraitNav}>
