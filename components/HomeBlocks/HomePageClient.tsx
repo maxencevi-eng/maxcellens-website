@@ -358,7 +358,14 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   const statItems = stats.items && stats.items.length ? stats.items : DEFAULT_STATS.items;
 
   const activePortraitSlide = portraitSlides[portraitIndex] || portraitSlides[0];
-  const portraitSlideHref = (activePortraitSlide as any)?.href || '/portrait';
+  // Normalize href: strip ?tab= params from portrait URLs so the URL stays clean
+  const portraitSlideHref = (() => {
+    const raw = (activePortraitSlide as any)?.href || '';
+    if (!raw) return '/portrait';
+    const cleanPath = raw.split('?')[0].split('#')[0];
+    if (cleanPath === '/portrait') return '/portrait' + (raw.includes('#') ? '#' + raw.split('#')[1] : '');
+    return raw;
+  })();
 
   const safeQuoteIndex = Math.max(0, Math.min(currentQuoteIndex, quoteList.length - 1));
   const visibleQuoteIndices = [0, 1, 2].map((i) => (safeQuoteIndex + i) % quoteList.length);
@@ -738,8 +745,8 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
                   href={portraitSlideHref}
                   className={`${styles.portraitCta} btn-site-${(portraitBlock as any).ctaButtonStyle || "1"}`}
                   data-analytics-id="Accueil|CTA Portrait"
-                  onMouseDown={() => { try { const h = portraitSlideHref.indexOf('#'); const id = h !== -1 ? portraitSlideHref.slice(h + 1) : !(activePortraitSlide as any)?.href ? 'portrait-gallery-nav' : null; if (id) sessionStorage.setItem('spaScrollTarget', id); } catch (_) {} }}
-                  onTouchStart={() => { try { const h = portraitSlideHref.indexOf('#'); const id = h !== -1 ? portraitSlideHref.slice(h + 1) : !(activePortraitSlide as any)?.href ? 'portrait-gallery-nav' : null; if (id) sessionStorage.setItem('spaScrollTarget', id); } catch (_) {} }}
+                  onMouseDown={() => { try { const hashIdx = portraitSlideHref.indexOf('#'); const path = portraitSlideHref.split('#')[0]; const id = hashIdx !== -1 ? portraitSlideHref.slice(hashIdx + 1) : path === '/portrait' ? 'portrait-gallery-nav' : null; if (id) sessionStorage.setItem('spaScrollTarget', id); } catch (_) {} }}
+                  onTouchStart={() => { try { const hashIdx = portraitSlideHref.indexOf('#'); const path = portraitSlideHref.split('#')[0]; const id = hashIdx !== -1 ? portraitSlideHref.slice(hashIdx + 1) : path === '/portrait' ? 'portrait-gallery-nav' : null; if (id) sessionStorage.setItem('spaScrollTarget', id); } catch (_) {} }}
                 >
                   {(portraitBlock as any).ctaLabel || "Découvrir le portrait"}
                 </Link>
