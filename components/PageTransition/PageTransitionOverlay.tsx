@@ -57,14 +57,27 @@ export default function PageTransitionOverlay() {
 
       pageReadyDuringEnter.current = false;
 
+      // Strip ?tab= from URL, store in sessionStorage for SubmenuPageClient/PortraitPageClient
+      let cleanHref = href;
+      try {
+        const url = new URL(href, window.location.origin);
+        const tab = url.searchParams.get('tab');
+        if (tab) {
+          sessionStorage.setItem('spaTabTarget', tab);
+          url.searchParams.delete('tab');
+          // Auto scroll-to-nav for pages using SubmenuPageClient (film/photo tabs)
+          const submenuPages = ['/corporate', '/realisation', '/evenement'];
+          if (submenuPages.includes(url.pathname) && !sessionStorage.getItem('spaScrollTarget')) {
+            sessionStorage.setItem('spaScrollTarget', 'submenu-gallery-nav');
+          }
+          cleanHref = url.pathname + (url.search !== '?' ? url.search : '') + url.hash;
+        }
+      } catch (_) {}
+
       if (settings.mode === 'seamless') {
-        // Seamless : navigation immédiate, la page charge en background
-        // pendant que l'overlay monte depuis le bas.
-        router.push(href);
-        // targetHref reste null : pas besoin de push dans handleAnimationComplete
+        router.push(cleanHref);
       } else {
-        // Standard : on retient la cible, push à la fin de l'enter
-        targetHref.current = href;
+        targetHref.current = cleanHref;
       }
 
       setPhase('enter');

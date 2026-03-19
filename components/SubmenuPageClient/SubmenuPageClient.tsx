@@ -59,9 +59,19 @@ export default function SubmenuPageClient({
   const [activeTab, setActiveTab] = useState<SubmenuTab>(initialTab);
   const [introEditOpen, setIntroEditOpen] = useState(false);
 
-  // Synchroniser avec l'URL (?tab=film ou ?tab=photo)
+  // Synchroniser avec l'URL (?tab=film ou ?tab=photo) ou sessionStorage (navigation SPA propre)
   useEffect(() => {
     const validTabs: SubmenuTab[] = ["film", "photo"];
+
+    // SPA navigation: tab stored in sessionStorage (URL is kept clean)
+    try {
+      const spaTab = sessionStorage.getItem('spaTabTarget') as SubmenuTab;
+      if (spaTab && validTabs.includes(spaTab)) {
+        sessionStorage.removeItem('spaTabTarget');
+        setActiveTab(spaTab);
+        return;
+      }
+    } catch (_) {}
 
     function syncFromUrl() {
       const params = new URLSearchParams(window.location.search);
@@ -110,7 +120,7 @@ export default function SubmenuPageClient({
   );
 
   const submenuNav = (
-    <nav aria-label={`Menu ${page}`} className={styles.submenuNav}>
+    <nav id="submenu-gallery-nav" aria-label={`Menu ${page}`} className={styles.submenuNav}>
       <ul className={styles.submenuNavList}>
         <li>
           <button
