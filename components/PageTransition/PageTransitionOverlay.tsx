@@ -107,13 +107,17 @@ export default function PageTransitionOverlay() {
     }
   }, [pathname, phase, settings.mode]);
 
-  // Safety : si pathname ne change pas dans les 4s (navigation échouée)
+  // Délai max configurable — ouvre la page même si elle n'est pas encore prête
   useEffect(() => {
     if (phase === 'waiting') {
-      const timeout = setTimeout(() => setPhase('exit'), 4000);
+      const ms = Math.round((settings.maxWait ?? 2) * 1000);
+      const timeout = setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+        setPhase('exit');
+      }, ms);
       return () => clearTimeout(timeout);
     }
-  }, [phase]);
+  }, [phase, settings.maxWait]);
 
   const handleAnimationComplete = useCallback(() => {
     if (phase === 'enter') {

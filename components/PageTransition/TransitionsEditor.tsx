@@ -105,6 +105,32 @@ export default function TransitionsEditor({ onClose }: { onClose: () => void }) 
           </div>
         </div>
 
+        {/* Max wait */}
+        <div style={{ ...rowStyle, flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <label style={labelStyle}>Attente max avant ouverture</label>
+              <div style={helpStyle}>Si la page destination tarde à charger, l'overlay s'ouvre au bout de ce délai</div>
+            </div>
+            <span style={{ fontSize: 13, fontFamily: 'monospace', color: '#666', fontWeight: 600 }}>
+              {(local.maxWait ?? 2).toFixed(1)}s
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0.5}
+            max={5}
+            step={0.5}
+            value={local.maxWait ?? 2}
+            onChange={(e) => update({ maxWait: parseFloat(e.target.value) })}
+            style={{ width: '100%', cursor: 'pointer', accentColor: '#172622' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#aaa' }}>
+            <span>Réactif (0.5s)</span>
+            <span>Patient (5s)</span>
+          </div>
+        </div>
+
         {/* Mode */}
         <div style={rowStyle}>
           <div style={{ flex: 1 }}>

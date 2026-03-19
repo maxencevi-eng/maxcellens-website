@@ -6,6 +6,7 @@ export type TransitionSettings = {
   overlayColor: string;
   duration: number; // seconds (0.3 – 1.2)
   mode: 'standard' | 'seamless';
+  maxWait: number;  // seconds — délai max avant ouverture forcée (0.5 – 5)
 };
 
 const defaultSettings: TransitionSettings = {
@@ -13,6 +14,7 @@ const defaultSettings: TransitionSettings = {
   overlayColor: '#172622',
   duration: 0.6,
   mode: 'standard',
+  maxWait: 2,
 };
 
 const TransitionContext = createContext<{
