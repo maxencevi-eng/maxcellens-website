@@ -1,22 +1,33 @@
-/* Wrapper pour l’effet d’entrée (uniquement au chargement / refresh, pas en navigation) */
-.headerEntrancePending {
+/* Wrapper d’entrée — caché jusqu’au splash-dismissed */
+.headerEntranceWrap {
   opacity: 0;
 }
-.headerEntranceIdle {
-  opacity: 1;
+
+.headerEntranceWrap[data-entrance="animate"] {
+  animation: headerReveal 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-.headerEntrance {
-  animation: headerEntranceFade 0.5s ease forwards;
-}
-@keyframes headerEntranceFade {
+
+@keyframes headerReveal {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(24px) scale(0.995);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
+}
+
+/* Image : fade-in + Ken Burns cinematique enchaîné à l’entrée */
+.headerEntranceWrap[data-entrance="animate"] .imageWrap img {
+  animation:
+    headerImgFade 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    kenBurns 2000ms ease-out forwards;
+}
+
+@keyframes headerImgFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* ── Animations au chargement ── */

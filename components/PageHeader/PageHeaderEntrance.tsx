@@ -1,34 +1,23 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import styles from "./PageHeader.module.css";
 
-// Un seul header animé par session (chargement / refresh), pas en navigation
-let hasAnimatedHeader = false;
-
-type State = "pending" | "animate" | "idle";
-
 export default function PageHeaderEntrance({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<State>("pending");
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (hasAnimatedHeader) {
-      setState("idle");
-      return;
-    }
-    hasAnimatedHeader = true;
-    setState("animate");
+    const el = ref.current;
+    if (!el) return;
+    const handler = () => {
+      el.setAttribute("data-entrance", "animate");
+    };
+    window.addEventListener("splash-dismissed", handler, { once: true });
+    return () => window.removeEventListener("splash-dismissed", handler);
   }, []);
 
-  const className =
-    state === "pending"
-      ? styles.headerEntrancePending
-      : state === "animate"
-        ? styles.headerEntrance
-        : styles.headerEntranceIdle;
-
   return (
-    <div className={className} data-page-header-entrance>
+    <div ref={ref} className={styles.headerEntranceWrap} data-page-header-entrance>
       {children}
     </div>
   );
