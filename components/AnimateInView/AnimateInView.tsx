@@ -1,7 +1,21 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion, type Variants } from "framer-motion";
+
+/** Module-level flag so any component that mounts after the event still gets ready=true */
+let _splashDismissed = false;
+
+function useSplashReady(): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (_splashDismissed) { setReady(true); return; }
+    const handler = () => { _splashDismissed = true; setReady(true); };
+    window.addEventListener('splash-dismissed', handler, { once: true });
+    return () => window.removeEventListener('splash-dismissed', handler);
+  }, []);
+  return ready;
+}
 
 /** Défaut : déclenche dès qu’une partie du bloc est visible (20 % + marge réduite), pour que l’intro s’anime sur mobile sans forcer à scroller */
 const defaultViewport = { once: true, amount: 0, margin: "0px 0px -40px 0px" };
@@ -85,10 +99,27 @@ export default function AnimateInView({
   viewport: manualViewport,
   initial = "hidden",
 }: Props) {
+  const splashReady = useSplashReady();
   const Component = motion[as] as typeof motion.div;
   const v = variants[variant];
   const isStagger = variant === "stagger";
   const viewport = manualViewport || (viewportSoon ? soonViewport : defaultViewport);
+
+  // Block animations until the page transition overlay has exited.
+  // Only applies when initial="hidden" (i.e. the animation is intended to play).
+  if (!splashReady && initial === "hidden") {
+    return (
+      <Component
+        initial="hidden"
+        animate="hidden"
+        variants={v}
+        className={className}
+        style={style}
+      >
+        {children}
+      </Component>
+    );
+  }
 
   return (
     <Component
