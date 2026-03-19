@@ -47,7 +47,7 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
       if (!el) return;
       s.fired = true;
       requestAnimationFrame(() => {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
       });
     };
 
