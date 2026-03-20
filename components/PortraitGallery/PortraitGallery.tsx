@@ -145,20 +145,36 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
       <div style={{ maxWidth: 1100, width: '100%' }}>
         {/* Render according to galleryType */}
         {(!settings.galleryType || settings.galleryType === 'masonry') && (
-          <div ref={gridRef} style={{ columnCount: columns, columnGap: gap, width: '100%' }}>
-            {items.map((it, i) => (
-              <div key={`${String(it.id)}-${i}`} style={{ breakInside: 'avoid', marginBottom: 12 }}>
-                <button onClick={() => { if (!settings.galleryType || settings.galleryType === 'masonry' || settings.galleryType === 'grid') open(i); }} aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}>
-                      {aspectPaddingPercent ? (
-                        <div style={{ width: '100%', borderRadius: 0, overflow: 'hidden', position: 'relative', paddingBottom: `${aspectPaddingPercent}%`, ...skeletonBg }}>
-                          <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, ...imgRevealStyle(i) }} />
-                        </div>
-                      ) : (
-                        <div style={{ width: '100%', borderRadius: 0, overflow: 'hidden', minHeight: 60, ...skeletonBg }}>
-                          <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', display: 'block', ...imgRevealStyle(i) }} />
-                        </div>
-                      )}
-                </button>
+          // Flex columns with row-major distribution: item 0→col0, item 1→col1, item 2→col2, item 3→col0…
+          // This ensures lazy loading respects visual top-to-bottom order (no layout jumps)
+          <div ref={gridRef} style={{ display: 'flex', gap, width: '100%', alignItems: 'flex-start' }}>
+            {Array.from({ length: columns }, (_, colIdx) => (
+              <div key={colIdx} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {items
+                  .map((it, i) => ({ it, i }))
+                  .filter(({ i }) => i % columns === colIdx)
+                  .map(({ it, i }) => {
+                    // Per-image aspect ratio placeholder (prevents layout jump on lazy load)
+                    const perItemPad = (!settings.aspect || settings.aspect === 'original') && it.width && it.height
+                      ? (it.height / it.width) * 100
+                      : null;
+                    const pad = aspectPaddingPercent ?? perItemPad;
+                    return (
+                      <div key={`${String(it.id)}-${i}`}>
+                        <button onClick={() => open(i)} aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}>
+                          {pad ? (
+                            <div style={{ width: '100%', overflow: 'hidden', position: 'relative', paddingBottom: `${pad}%`, ...skeletonBg }}>
+                              <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, ...imgRevealStyle(i) }} />
+                            </div>
+                          ) : (
+                            <div style={{ width: '100%', overflow: 'hidden', ...skeletonBg }}>
+                              <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', display: 'block', ...imgRevealStyle(i) }} />
+                            </div>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
               </div>
             ))}
           </div>

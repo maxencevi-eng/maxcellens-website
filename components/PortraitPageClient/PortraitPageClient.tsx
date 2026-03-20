@@ -30,6 +30,8 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
   // Après hydratation : sync avec le hash (ex. /portrait#entreprise)
   useEffect(() => {
     const validIds = PORTRAIT_GALLERIES.map((g) => g.id);
+    // spaTabTarget is consumed only once on mount (stored by PageTransitionOverlay)
+    let spaTabConsumed = false;
 
     function syncFromUrl() {
       const params = new URLSearchParams(window.location.search);
@@ -41,6 +43,21 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
       const hash = window.location.hash.slice(1).toLowerCase();
       if (hash && validIds.includes(hash as PortraitGalleryId)) {
         setActiveGallery(hash as PortraitGalleryId);
+        return;
+      }
+      // On first call only: read tab stored by PageTransitionOverlay (strips ?tab= from URL)
+      if (!spaTabConsumed) {
+        spaTabConsumed = true;
+        try {
+          const stored = sessionStorage.getItem("spaTabTarget");
+          if (stored) {
+            sessionStorage.removeItem("spaTabTarget");
+            const lower = stored.toLowerCase();
+            if (validIds.includes(lower as PortraitGalleryId)) {
+              setActiveGallery(lower as PortraitGalleryId);
+            }
+          }
+        } catch (_) {}
       }
     }
 
