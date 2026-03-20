@@ -1759,16 +1759,41 @@
   overflow-wrap: break-word;
 }
 
-/* Mobile: Quote carousel adjustments */
+/* Mobile: Quote swipe carousel */
 @media (max-width: 767px) {
+  /* Convert marquee to native horizontal snap scroll */
+  .quoteMarqueeWrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* Remove edge fade mask — not needed for snap scroll */
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+  .quoteMarqueeWrap::-webkit-scrollbar { display: none; }
+
+  /* Disable CSS animation on mobile — scroll is manual */
+  .quoteMarqueeInner {
+    animation: none !important;
+  }
+
+  /* Hide the 3 duplicate groups (keep only first for snap scroll) */
+  .quoteMarqueeGroup ~ .quoteMarqueeGroup {
+    display: none;
+  }
+
   .quoteMarqueeGroup {
     gap: 1rem;
     padding-right: 1rem;
   }
   .quoteCard {
-    min-width: 240px;
+    flex: 0 0 min(85vw, 290px);
+    min-width: 0;
     max-width: 290px;
     padding: 1rem 1.25rem;
+    scroll-snap-align: center;
   }
   .quoteText {
     font-size: clamp(0.85rem, 3.5vw, 0.95rem);

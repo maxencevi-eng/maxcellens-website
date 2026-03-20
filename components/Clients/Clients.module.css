@@ -126,36 +126,40 @@
   filter: grayscale(0%) opacity(1);
 }
 
-/* Mobile : mode nuage (disposition libre) quel que soit le mode desktop */
+/* Mobile : bande horizontale swipeable */
 @media (max-width: 900px) {
   .section .grid,
   .section .gridCloud {
     display: flex !important;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    justify-content: flex-start;
     align-items: center;
-    gap: 1.25rem 1.5rem;
+    gap: 1.5rem;
     max-width: 100%;
-    padding: 0 1rem;
+    padding: 0.5rem 1.5rem;
     box-sizing: border-box;
   }
+  .section .grid::-webkit-scrollbar,
+  .section .gridCloud::-webkit-scrollbar { display: none; }
+
+  /* Aplatir les lignes du mode nuage en une seule bande */
   .section .gridCloud .cloudRow {
-    flex-wrap: wrap;
-    gap: 1rem 1.25rem;
-    max-width: 100%;
+    display: contents;
   }
+
   .section .grid .item,
   .section .gridCloud .item {
+    flex: 0 0 auto;
     width: auto !important;
-    min-width: 80px;
-    max-width: 140px;
-    height: 52px !important;
+    min-width: 90px;
+    max-width: 160px;
+    height: 56px !important;
+    scroll-snap-align: center;
   }
-  .section .grid .item:nth-child(5n + 1) { max-width: 120px; }
-  .section .grid .item:nth-child(5n + 2) { max-width: 100px; }
-  .section .grid .item:nth-child(5n + 3) { max-width: 130px; }
-  .section .grid .item:nth-child(5n + 4) { max-width: 110px; }
-  .section .grid .item:nth-child(5n + 5) { max-width: 140px; }
   /* Loop mode mobile: respect CSS vars, only cap at viewport width */
   .section .loopItem {
     max-width: calc(100vw / 2.5);
@@ -164,23 +168,15 @@
 @media (max-width: 600px) {
   .section .grid,
   .section .gridCloud {
-    gap: 0.75rem 1rem;
-    padding: 0 0.5rem;
-  }
-  .section .gridCloud .cloudRow {
-    gap: 0.75rem 1rem;
+    gap: 1rem;
+    padding: 0.5rem 1rem;
   }
   .section .grid .item,
   .section .gridCloud .item {
-    min-width: 60px;
-    max-width: 100px !important;
-    height: 40px !important;
+    min-width: 70px;
+    max-width: 120px !important;
+    height: 44px !important;
   }
-  .section .grid .item:nth-child(5n + 1) { max-width: 85px; }
-  .section .grid .item:nth-child(5n + 2) { max-width: 75px; }
-  .section .grid .item:nth-child(5n + 3) { max-width: 90px; }
-  .section .grid .item:nth-child(5n + 4) { max-width: 80px; }
-  .section .grid .item:nth-child(5n + 5) { max-width: 100px; }
   /* Loop mode: still respect CSS vars */
   .section .loopItem {
     max-width: calc(100vw / 2);
@@ -192,17 +188,14 @@
   }
   .section .grid,
   .section .gridCloud {
-    padding: 0 0.25rem;
-    gap: 0.5rem 0.75rem;
-  }
-  .section .gridCloud .cloudRow {
-    gap: 0.5rem 0.75rem;
+    padding: 0.5rem 0.75rem;
+    gap: 0.75rem;
   }
   .section .grid .item,
   .section .gridCloud .item {
-    min-width: 50px;
-    max-width: 80px !important;
-    height: 36px !important;
+    min-width: 60px;
+    max-width: 100px !important;
+    height: 38px !important;
   }
   /* Loop mode: still respect CSS vars */
   .section .loopItem {
