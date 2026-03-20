@@ -734,8 +734,8 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
                   href={portraitSlideHref}
                   className={`${styles.portraitCta} btn-site-${(portraitBlock as any).ctaButtonStyle || "1"}`}
                   data-analytics-id="Accueil|CTA Portrait"
-                  onMouseDown={() => { try { const hashIdx = portraitSlideHref.indexOf('#'); const path = portraitSlideHref.split('#')[0]; const id = hashIdx !== -1 ? portraitSlideHref.slice(hashIdx + 1) : path === '/portrait' ? 'portrait-gallery-nav' : null; if (id) sessionStorage.setItem('spaScrollTarget', id); } catch (_) {} }}
-                  onTouchStart={() => { try { const hashIdx = portraitSlideHref.indexOf('#'); const path = portraitSlideHref.split('#')[0]; const id = hashIdx !== -1 ? portraitSlideHref.slice(hashIdx + 1) : path === '/portrait' ? 'portrait-gallery-nav' : null; if (id) sessionStorage.setItem('spaScrollTarget', id); } catch (_) {} }}
+                  onMouseDown={() => { try { const hashIdx = portraitSlideHref.indexOf('#'); const path = portraitSlideHref.split('?')[0].split('#')[0]; const id = hashIdx !== -1 ? portraitSlideHref.slice(hashIdx + 1) : path === '/portrait' ? 'portrait-gallery-nav' : null; if (id) sessionStorage.setItem('spaScrollTarget', id); } catch (_) {} }}
+                  onTouchStart={() => { try { const hashIdx = portraitSlideHref.indexOf('#'); const path = portraitSlideHref.split('?')[0].split('#')[0]; const id = hashIdx !== -1 ? portraitSlideHref.slice(hashIdx + 1) : path === '/portrait' ? 'portrait-gallery-nav' : null; if (id) sessionStorage.setItem('spaScrollTarget', id); } catch (_) {} }}
                 >
                   {(portraitBlock as any).ctaLabel || "Découvrir le portrait"}
                 </Link>
