@@ -24,7 +24,6 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
   // État initial = prop du serveur (?tab=) → bonne galerie dès le premier rendu
   const [activeGallery, setActiveGallery] = useState<PortraitGalleryId>(initialTab);
   const [introEditOpen, setIntroEditOpen] = useState(false);
-  const activeConfig = PORTRAIT_GALLERIES.find((g) => g.id === activeGallery) ?? PORTRAIT_GALLERIES[0];
 
   // Synchroniser avec le hash de l’URL (ex. /portrait#lifestyle), y compris sur changement de hash
   // Après hydratation : sync avec le hash (ex. /portrait#entreprise)
@@ -130,14 +129,17 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
           ))}
         </ul>
       </nav>
-      {/* Galerie : pas d'animation pour qu'elle s'affiche immédiatement sans interaction */}
-      <EditablePortraitGallery
-        key={activeGallery}
-        items={[]}
-        settingsKey={activeConfig.settingsKey}
-        uploadFolder={activeConfig.uploadFolder}
-        galleryLabel={activeConfig.label}
-      />
+      {/* Toutes les galeries restent montées — changement d'onglet instantané (display CSS uniquement) */}
+      {PORTRAIT_GALLERIES.map((g) => (
+        <div key={g.id} style={{ display: activeGallery === g.id ? "block" : "none" }}>
+          <EditablePortraitGallery
+            items={[]}
+            settingsKey={g.settingsKey}
+            uploadFolder={g.uploadFolder}
+            galleryLabel={g.label}
+          />
+        </div>
+      ))}
     </div>
   );
 

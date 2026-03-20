@@ -185,7 +185,9 @@ export default function SubmenuPageClient({
     [videosBlockId]: (
       <div className="container" style={{ padding: "1rem 0" }}>
         {submenuNav}
-        {activeTab === "film" ? filmSection : photoSection}
+        {/* Both sections stay mounted — tab switch is instant (CSS display only, no reload) */}
+        <div style={{ display: activeTab === "film" ? "block" : "none" }}>{filmSection}</div>
+        <div style={{ display: activeTab === "photo" ? "block" : "none" }}>{photoSection}</div>
       </div>
     ),
   };
