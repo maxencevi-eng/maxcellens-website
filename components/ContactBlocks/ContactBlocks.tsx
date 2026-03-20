@@ -8,7 +8,7 @@ import styles from './ContactBlocks.module.css';
 import type { ContactZonesData } from './ContactZonesEditModal';
 import type { ContactKitData } from './ContactKitEditModal';
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from '../BlockVisibility';
-import AnimateInView, { AnimateStaggerItem } from '../AnimateInView/AnimateInView';
+import AnimateInView, { AnimateStaggerItem, useSplashReady } from '../AnimateInView/AnimateInView';
 
 const ContactEditModal = dynamic(() => import('./ContactEditModal'), { ssr: false });
 import ContactZonesEditModal from './ContactZonesEditModal';
@@ -26,7 +26,7 @@ export default function ContactBlocks() {
   const [contactIntroBg, setContactIntroBg] = useState<string>('');
   const [photo, setPhoto] = useState<{ url?: string; path?: string } | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const [splashReady, setSplashReady] = useState(false);
+  const splashReady = useSplashReady();
   const imgRef = useRef<HTMLImageElement>(null);
   const [handleColor, setHandleColor] = useState('');
   const [handleFontSize, setHandleFontSize] = useState(0);
@@ -105,12 +105,6 @@ export default function ContactBlocks() {
     return () => { mounted = false; try { (listener as any)?.subscription?.unsubscribe?.(); } catch (_) {} window.removeEventListener('site-settings-updated', onUpdate as EventListener); };
   }, []);
 
-  // Attend splash-dismissed (fin du SPA overlay)
-  useEffect(() => {
-    const handler = () => setSplashReady(true);
-    window.addEventListener('splash-dismissed', handler, { once: true });
-    return () => window.removeEventListener('splash-dismissed', handler);
-  }, []);
 
   // Gère les images déjà en cache (complete avant onLoad)
   useEffect(() => {

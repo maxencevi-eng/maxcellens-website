@@ -6,7 +6,7 @@ import { motion, type Variants } from "framer-motion";
 /** Module-level flag so any component that mounts after the event still gets ready=true */
 let _splashDismissed = false;
 
-function useSplashReady(): boolean {
+export function useSplashReady(): boolean {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     if (_splashDismissed) { setReady(true); return; }

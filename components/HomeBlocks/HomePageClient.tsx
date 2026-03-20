@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from "react";
+import { useSplashReady } from "../AnimateInView/AnimateInView";
 import { useScrollReveal, revealInitialStyle, revealVisibleStyle } from "../../hooks/useScrollReveal";
 
 /** Enveloppe chaque section dans une animation de révélation au scroll */
@@ -193,13 +194,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   const [cadreurLightboxOpen, setCadreurLightboxOpen] = useState(false);
   const [cadreurLightboxIndex, setCadreurLightboxIndex] = useState(0);
   const [cadreurLightboxInitial, setCadreurLightboxInitial] = useState(0);
-  const [splashReady, setSplashReady] = useState(false);
-
-  useEffect(() => {
-    const onSplash = () => setSplashReady(true);
-    window.addEventListener('splash-dismissed', onSplash);
-    return () => window.removeEventListener('splash-dismissed', onSplash);
-  }, []);
+  const splashReady = useSplashReady();
 
   const cadreurVisibleVideos = useMemo(() => {
     const vids = (cadreurBlock as any).videos as CadreurVideoItem[] | undefined;
@@ -358,14 +353,8 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   const statItems = stats.items && stats.items.length ? stats.items : DEFAULT_STATS.items;
 
   const activePortraitSlide = portraitSlides[portraitIndex] || portraitSlides[0];
-  // Normalize href: strip ?tab= params from portrait URLs so the URL stays clean
-  const portraitSlideHref = (() => {
-    const raw = (activePortraitSlide as any)?.href || '';
-    if (!raw) return '/portrait';
-    const cleanPath = raw.split('?')[0].split('#')[0];
-    if (cleanPath === '/portrait') return '/portrait' + (raw.includes('#') ? '#' + raw.split('#')[1] : '');
-    return raw;
-  })();
+  // Keep ?tab= intact so PageTransitionOverlay can store it in sessionStorage for PortraitPageClient
+  const portraitSlideHref = (activePortraitSlide as any)?.href || '/portrait';
 
   const safeQuoteIndex = Math.max(0, Math.min(currentQuoteIndex, quoteList.length - 1));
   const visibleQuoteIndices = [0, 1, 2].map((i) => (safeQuoteIndex + i) % quoteList.length);
