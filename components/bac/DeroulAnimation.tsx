@@ -1,6 +1,8 @@
 'use client';
 
-const ETAPES = [
+import { useState, useEffect } from 'react';
+
+const ETAPES_DEFAULT = [
   {
     num: 1,
     icon: '🎬',
@@ -73,7 +75,70 @@ const ETAPES = [
   },
 ];
 
-export default function DeroulAnimation({ compact = false }: { compact?: boolean }) {
+type EtapeOverride = { num: number; titre: string; description: string; duree: string };
+
+function applyOverrides(overrides: EtapeOverride[]) {
+  return ETAPES_DEFAULT.map(def => {
+    const ov = overrides.find(o => o.num === def.num);
+    return ov ? { ...def, titre: ov.titre, description: ov.description, duree: ov.duree } : def;
+  });
+}
+
+export default function DeroulAnimation({ compact = false, isAdmin = false }: { compact?: boolean; isAdmin?: boolean }) {
+  const [etapes, setEtapes] = useState(ETAPES_DEFAULT);
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<{ titre: string; description: string; duree: string }>({ titre: '', description: '', duree: '' });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch('/bac/api/config-textes?cle=deroule.etapes')
+      .then(r => r.ok ? r.json() : {})
+      .then(data => {
+        if (data['deroule.etapes']) {
+          try {
+            const overrides: EtapeOverride[] = JSON.parse(data['deroule.etapes']);
+            setEtapes(applyOverrides(overrides));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  function startEdit(idx: number) {
+    setEditingIdx(idx);
+    setEditForm({ titre: etapes[idx].titre, description: etapes[idx].description, duree: etapes[idx].duree });
+  }
+
+  function cancelEdit() {
+    setEditingIdx(null);
+  }
+
+  async function saveEdit() {
+    if (editingIdx === null) return;
+    setSaving(true);
+    const updated = etapes.map((e, i) =>
+      i === editingIdx ? { ...e, titre: editForm.titre, description: editForm.description, duree: editForm.duree } : e
+    );
+    const overrides: EtapeOverride[] = updated.map(e => ({ num: e.num, titre: e.titre, description: e.description, duree: e.duree }));
+    try {
+      const res = await fetch('/bac/api/config-textes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cle: 'deroule.etapes', valeur: JSON.stringify(overrides) }),
+      });
+      if (res.ok) {
+        setEtapes(updated);
+        setEditingIdx(null);
+      } else {
+        const err = await res.json();
+        alert('Erreur : ' + (err.error || 'inconnue'));
+      }
+    } catch {
+      alert('Erreur réseau');
+    }
+    setSaving(false);
+  }
+
   return (
     <div
       style={{
@@ -96,7 +161,7 @@ export default function DeroulAnimation({ compact = false }: { compact?: boolean
               letterSpacing: '-0.02em',
             }}
           >
-            Déroulé de l'animation
+            Déroulé de l&apos;animation
           </h2>
           <p style={{ color: 'var(--bac-text-secondary)', fontSize: '0.9375rem' }}>
             Les grandes étapes de votre journée de tournage
@@ -120,7 +185,7 @@ export default function DeroulAnimation({ compact = false }: { compact?: boolean
         />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 16 : 20 }}>
-          {ETAPES.map((etape, idx) => (
+          {etapes.map((etape, idx) => (
             <div
               key={etape.num}
               className="bac-animate-in"
@@ -160,7 +225,7 @@ export default function DeroulAnimation({ compact = false }: { compact?: boolean
                       marginTop: 1,
                     }}
                   >
-                    {etape.num}/{ETAPES.length}
+                    {etape.num}/{etapes.length}
                   </span>
                 )}
               </div>
@@ -190,68 +255,161 @@ export default function DeroulAnimation({ compact = false }: { compact?: boolean
                   }}
                 />
 
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    gap: 8,
-                    paddingLeft: 4,
-                  }}
-                >
-                  <h3
-                    style={{
-                      fontWeight: 800,
-                      fontSize: compact ? '0.9375rem' : '1.0625rem',
-                      color: etape.couleur,
-                      margin: 0,
-                      letterSpacing: '-0.01em',
-                    }}
-                  >
-                    {etape.titre}
-                  </h3>
-                  <span
-                    style={{
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      color: etape.couleur,
-                      background: `${etape.couleur}22`,
-                      border: `1px solid ${etape.couleur}44`,
-                      borderRadius: 20,
-                      padding: '2px 8px',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                    }}
-                  >
-                    ⏱ {etape.duree}
-                  </span>
-                </div>
+                {editingIdx === idx ? (
+                  /* ── EDIT MODE ── */
+                  <div style={{ paddingLeft: 4, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        value={editForm.titre}
+                        onChange={e => setEditForm(f => ({ ...f, titre: e.target.value }))}
+                        placeholder="Titre"
+                        style={{
+                          flex: 1,
+                          padding: '6px 10px',
+                          borderRadius: 6,
+                          border: '1px solid var(--bac-border)',
+                          background: 'var(--bac-surface)',
+                          color: 'var(--bac-text)',
+                          fontWeight: 700,
+                          fontSize: '0.9375rem',
+                        }}
+                      />
+                      <input
+                        value={editForm.duree}
+                        onChange={e => setEditForm(f => ({ ...f, duree: e.target.value }))}
+                        placeholder="Durée"
+                        style={{
+                          width: 80,
+                          padding: '6px 10px',
+                          borderRadius: 6,
+                          border: '1px solid var(--bac-border)',
+                          background: 'var(--bac-surface)',
+                          color: 'var(--bac-text)',
+                          fontSize: '0.875rem',
+                        }}
+                      />
+                    </div>
+                    <textarea
+                      value={editForm.description}
+                      onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                      placeholder="Description"
+                      rows={3}
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        borderRadius: 6,
+                        border: '1px solid var(--bac-border)',
+                        background: 'var(--bac-surface)',
+                        color: 'var(--bac-text)',
+                        fontSize: '0.875rem',
+                        resize: 'vertical',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={saveEdit}
+                        disabled={saving}
+                        className="bac-btn bac-btn-primary"
+                        style={{ fontSize: '0.8125rem', padding: '5px 14px' }}
+                      >
+                        {saving ? 'Enregistrement…' : 'Enregistrer'}
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        disabled={saving}
+                        className="bac-btn bac-btn-ghost"
+                        style={{ fontSize: '0.8125rem', padding: '5px 14px' }}
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── VIEW MODE ── */
+                  <>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        gap: 8,
+                        paddingLeft: 4,
+                      }}
+                    >
+                      <h3
+                        style={{
+                          fontWeight: 800,
+                          fontSize: compact ? '0.9375rem' : '1.0625rem',
+                          color: etape.couleur,
+                          margin: 0,
+                          letterSpacing: '-0.01em',
+                        }}
+                      >
+                        {etape.titre}
+                      </h3>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                        <span
+                          style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            color: etape.couleur,
+                            background: `${etape.couleur}22`,
+                            border: `1px solid ${etape.couleur}44`,
+                            borderRadius: 20,
+                            padding: '2px 8px',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          ⏱ {etape.duree}
+                        </span>
+                        {isAdmin && (
+                          <button
+                            onClick={() => startEdit(idx)}
+                            style={{
+                              fontSize: '0.75rem',
+                              padding: '2px 10px',
+                              borderRadius: 6,
+                              border: '1px solid var(--bac-border)',
+                              background: 'var(--bac-surface)',
+                              color: 'var(--bac-text-secondary)',
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            Modifier
+                          </button>
+                        )}
+                      </div>
+                    </div>
 
-                {!compact && (
-                  <p
-                    style={{
-                      color: 'var(--bac-text-secondary)',
-                      fontSize: '0.875rem',
-                      marginTop: 6,
-                      lineHeight: 1.6,
-                      paddingLeft: 4,
-                    }}
-                  >
-                    {etape.description}
-                  </p>
-                )}
-                {compact && (
-                  <p
-                    style={{
-                      color: 'var(--bac-text-muted)',
-                      fontSize: '0.8125rem',
-                      marginTop: 4,
-                      lineHeight: 1.5,
-                      paddingLeft: 4,
-                    }}
-                  >
-                    {etape.description}
-                  </p>
+                    {!compact && (
+                      <p
+                        style={{
+                          color: 'var(--bac-text-secondary)',
+                          fontSize: '0.875rem',
+                          marginTop: 6,
+                          lineHeight: 1.6,
+                          paddingLeft: 4,
+                        }}
+                      >
+                        {etape.description}
+                      </p>
+                    )}
+                    {compact && (
+                      <p
+                        style={{
+                          color: 'var(--bac-text-muted)',
+                          fontSize: '0.8125rem',
+                          marginTop: 4,
+                          lineHeight: 1.5,
+                          paddingLeft: 4,
+                        }}
+                      >
+                        {etape.description}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </div>

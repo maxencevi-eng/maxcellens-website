@@ -16,7 +16,7 @@ const TAB_LABELS: Record<TabId, string> = {
   notes: '🎥 Notes réal',
 };
 
-const ROLES_TECHNIQUES = [
+const ROLES_TECHNIQUES_DEFAULT = [
   {
     categorie: 'Acteur',
     roles: [
@@ -67,6 +67,16 @@ const ROLES_TECHNIQUES = [
   },
 ];
 
+function applyRolesOverrides(overrides: Record<string, string>) {
+  return ROLES_TECHNIQUES_DEFAULT.map(cat => ({
+    ...cat,
+    roles: cat.roles.map(r => ({
+      ...r,
+      description: overrides[r.nom] ?? r.description,
+    })),
+  }));
+}
+
 export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: boolean }) {
   const [session, setSession] = useState<BacSession | null>(null);
   const [roles, setRoles] = useState<BacRole[]>([]);
@@ -78,6 +88,10 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
   const [section, setSection] = useState<SectionId>('tournage');
   const [tab, setTab] = useState<TabId>('script');
   const [selectedRole, setSelectedRole] = useState<string | null>('Acteur');
+  const [rolesTechniques, setRolesTechniques] = useState(ROLES_TECHNIQUES_DEFAULT);
+  const [editingRoleNom, setEditingRoleNom] = useState<string | null>(null);
+  const [editRoleDescription, setEditRoleDescription] = useState('');
+  const [savingPratique, setSavingPratique] = useState(false);
   const [loading, setLoading] = useState(true);
   // Regular scene editing
   const [editingSceneKey, setEditingSceneKey] = useState<string | null>(null);
@@ -120,6 +134,19 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
 
   async function loadData() {
     try {
+      // Charger les overrides de textes (indépendant de la session)
+      fetch('/bac/api/config-textes?cle=pratiques.roles')
+        .then(r => r.ok ? r.json() : {})
+        .then(data => {
+          if (data['pratiques.roles']) {
+            try {
+              const overrides: Record<string, string> = JSON.parse(data['pratiques.roles']);
+              setRolesTechniques(applyRolesOverrides(overrides));
+            } catch {}
+          }
+        })
+        .catch(() => {});
+
       const sessRes = await fetch('/bac/api/sessions');
       const sessions = await sessRes.json();
       const active = Array.isArray(sessions) ? sessions.find((s: BacSession) => s.statut === 'en-cours') : null;
@@ -1438,10 +1465,10 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
             {/* Role list */}
             <div style={{ flex: '0 0 240px', minWidth: 180 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {ROLES_TECHNIQUES.flatMap(cat => cat.roles).map(role => (
+                {rolesTechniques.flatMap(cat => cat.roles).map(role => (
                       <button
                         key={role.nom}
-                        onClick={() => setSelectedRole(selectedRole === role.nom ? null : role.nom)}
+                        onClick={() => { setSelectedRole(selectedRole === role.nom ? null : role.nom); setEditingRoleNom(null); }}
                         style={{
                           textAlign: 'left',
                           padding: '10px 14px',
@@ -1464,13 +1491,93 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
             {/* Description panel */}
             <div style={{ flex: 1, minWidth: 200 }}>
               {selectedRole ? (() => {
-                const found = ROLES_TECHNIQUES.flatMap(c => c.roles).find(r => r.nom === selectedRole);
-                return found ? (
+                const found = rolesTechniques.flatMap(c => c.roles).find(r => r.nom === selectedRole);
+                if (!found) return null;
+                if (editingRoleNom === found.nom) {
+                  return (
+                    <div className="bac-card" style={{ padding: 24 }}>
+                      <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 16 }}>{found.nom}</h3>
+                      <textarea
+                        value={editRoleDescription}
+                        onChange={e => setEditRoleDescription(e.target.value)}
+                        rows={10}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: 8,
+                          border: '1px solid var(--bac-border)',
+                          background: 'var(--bac-bg-tertiary)',
+                          color: 'var(--bac-text)',
+                          fontSize: '0.9375rem',
+                          lineHeight: 1.75,
+                          resize: 'vertical',
+                          boxSizing: 'border-box',
+                          marginBottom: 12,
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          className="bac-btn bac-btn-primary"
+                          style={{ fontSize: '0.875rem' }}
+                          disabled={savingPratique}
+                          onClick={async () => {
+                            const updated = rolesTechniques.map(cat => ({
+                              ...cat,
+                              roles: cat.roles.map(r => r.nom === found.nom ? { ...r, description: editRoleDescription } : r),
+                            }));
+                            const overrides: Record<string, string> = {};
+                            updated.flatMap(c => c.roles).forEach(r => { overrides[r.nom] = r.description; });
+                            setSavingPratique(true);
+                            try {
+                              const res = await fetch('/bac/api/config-textes', {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ cle: 'pratiques.roles', valeur: JSON.stringify(overrides) }),
+                              });
+                              if (res.ok) {
+                                setRolesTechniques(updated);
+                                setEditingRoleNom(null);
+                              } else {
+                                const err = await res.json();
+                                alert('Erreur : ' + (err.error || 'inconnue'));
+                              }
+                            } catch {
+                              alert('Erreur réseau');
+                            }
+                            setSavingPratique(false);
+                          }}
+                        >
+                          {savingPratique ? 'Enregistrement…' : 'Enregistrer'}
+                        </button>
+                        <button
+                          className="bac-btn bac-btn-ghost"
+                          style={{ fontSize: '0.875rem' }}
+                          disabled={savingPratique}
+                          onClick={() => setEditingRoleNom(null)}
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
                   <div className="bac-card" style={{ padding: 24 }}>
-                    <h3 style={{ fontWeight: 700, fontSize: '1.125rem', marginBottom: 16 }}>{found.nom}</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                      <h3 style={{ fontWeight: 700, fontSize: '1.125rem', margin: 0 }}>{found.nom}</h3>
+                      {isAdmin && (
+                        <button
+                          className="bac-btn bac-btn-ghost"
+                          style={{ fontSize: '0.8125rem', padding: '4px 12px' }}
+                          onClick={() => { setEditingRoleNom(found.nom); setEditRoleDescription(found.description); }}
+                        >
+                          Modifier
+                        </button>
+                      )}
+                    </div>
                     <p style={{ lineHeight: 1.75, color: 'var(--bac-text)', fontSize: '0.9375rem', whiteSpace: 'pre-line' }}>{found.description}</p>
                   </div>
-                ) : null;
+                );
               })() : (
                 <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--bac-text-muted)', fontSize: '0.9rem' }}>
                   Sélectionnez un rôle pour voir sa description
@@ -1484,7 +1591,7 @@ export default function TechniqueInterface({ isAdmin = false }: { isAdmin?: bool
       {/* ── DÉROULÉ TAB ── */}
       {tab === 'deroule' && (
         <div className="bac-animate-in">
-          <DeroulAnimation />
+          <DeroulAnimation isAdmin={isAdmin} />
         </div>
       )}
 
