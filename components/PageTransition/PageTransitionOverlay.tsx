@@ -77,7 +77,7 @@ export default function PageTransitionOverlay() {
               : 'portrait-gallery-nav';
             requestAnimationFrame(() => {
               const el = document.getElementById(scrollId);
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             });
           } else {
             sessionStorage.setItem('spaTabTarget', tab);
