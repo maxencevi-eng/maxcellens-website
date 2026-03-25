@@ -78,8 +78,8 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
         setActiveGalleryWithHash(tab);
       }
     };
-    window.addEventListener(‘spa-same-page-tab’, onSamePageTab);
-    return () => window.removeEventListener(‘spa-same-page-tab’, onSamePageTab);
+    window.addEventListener('spa-same-page-tab', onSamePageTab);
+    return () => window.removeEventListener('spa-same-page-tab', onSamePageTab);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mettre à jour le hash quand on change d’onglet (URL partageable)
