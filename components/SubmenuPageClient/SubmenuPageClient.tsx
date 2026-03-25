@@ -86,6 +86,19 @@ export default function SubmenuPageClient({
     return () => window.removeEventListener("popstate", syncFromUrl);
   }, []);
 
+  // Même page — richtext link avec ?tab= sans rechargement
+  useEffect(() => {
+    const validTabs: SubmenuTab[] = ["film", "photo"];
+    const onSamePageTab = (e: Event) => {
+      const tab = (e as CustomEvent).detail?.tab as SubmenuTab;
+      if (tab && validTabs.includes(tab)) {
+        setActiveTabWithHash(tab);
+      }
+    };
+    window.addEventListener('spa-same-page-tab', onSamePageTab);
+    return () => window.removeEventListener('spa-same-page-tab', onSamePageTab);
+  }, []);
+
   function setActiveTabWithHash(tab: SubmenuTab) {
     setActiveTab(tab);
     if (typeof window !== "undefined") {

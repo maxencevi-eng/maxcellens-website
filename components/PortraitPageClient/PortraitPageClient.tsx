@@ -69,6 +69,19 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
     };
   }, []);
 
+  // Même page — richtext link avec ?tab= sans rechargement
+  useEffect(() => {
+    const validIds = PORTRAIT_GALLERIES.map((g) => g.id);
+    const onSamePageTab = (e: Event) => {
+      const tab = (e as CustomEvent).detail?.tab?.toLowerCase() as PortraitGalleryId;
+      if (tab && validIds.includes(tab)) {
+        setActiveGalleryWithHash(tab);
+      }
+    };
+    window.addEventListener(‘spa-same-page-tab’, onSamePageTab);
+    return () => window.removeEventListener(‘spa-same-page-tab’, onSamePageTab);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Mettre à jour le hash quand on change d’onglet (URL partageable)
   function setActiveGalleryWithHash(id: PortraitGalleryId) {
     setActiveGallery(id);

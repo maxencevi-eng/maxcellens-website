@@ -59,20 +59,39 @@ export default function PageTransitionOverlay() {
 
       // Strip ?tab= from URL, store in sessionStorage for SubmenuPageClient/PortraitPageClient
       let cleanHref = href;
+      let isSamePageTabSwitch = false;
       try {
         const url = new URL(href, window.location.origin);
         const tab = url.searchParams.get('tab');
         if (tab) {
-          sessionStorage.setItem('spaTabTarget', tab);
           url.searchParams.delete('tab');
-          // Auto scroll-to-nav for pages using SubmenuPageClient (film/photo tabs)
-          const submenuPages = ['/corporate', '/realisation', '/evenement'];
-          if (submenuPages.includes(url.pathname) && !sessionStorage.getItem('spaScrollTarget')) {
-            sessionStorage.setItem('spaScrollTarget', 'submenu-gallery-nav');
+          const strippedPath = url.pathname + (url.search !== '?' ? url.search : '') + url.hash;
+
+          if (strippedPath === pathname) {
+            // Même page — pas de navigation, juste switcher l'onglet et scroller
+            isSamePageTabSwitch = true;
+            window.dispatchEvent(new CustomEvent('spa-same-page-tab', { detail: { tab } }));
+            const submenuPages = ['/corporate', '/realisation', '/evenement'];
+            const scrollId = submenuPages.includes(url.pathname)
+              ? 'submenu-gallery-nav'
+              : 'portrait-gallery-nav';
+            requestAnimationFrame(() => {
+              const el = document.getElementById(scrollId);
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+          } else {
+            sessionStorage.setItem('spaTabTarget', tab);
+            // Auto scroll-to-nav for pages using SubmenuPageClient (film/photo tabs)
+            const submenuPages = ['/corporate', '/realisation', '/evenement'];
+            if (submenuPages.includes(url.pathname) && !sessionStorage.getItem('spaScrollTarget')) {
+              sessionStorage.setItem('spaScrollTarget', 'submenu-gallery-nav');
+            }
+            cleanHref = strippedPath;
           }
-          cleanHref = url.pathname + (url.search !== '?' ? url.search : '') + url.hash;
         }
       } catch (_) {}
+
+      if (isSamePageTabSwitch) return;
 
       if (settings.mode === 'seamless') {
         router.push(cleanHref);
