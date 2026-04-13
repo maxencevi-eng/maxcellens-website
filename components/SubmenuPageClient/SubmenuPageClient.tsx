@@ -99,13 +99,9 @@ export default function SubmenuPageClient({
     return () => window.removeEventListener('spa-same-page-tab', onSamePageTab);
   }, []);
 
+  // Changer d'onglet sans modifier l'URL visible
   function setActiveTabWithHash(tab: SubmenuTab) {
     setActiveTab(tab);
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      url.searchParams.set("tab", tab);
-      window.history.replaceState(null, "", url.pathname + "?" + url.searchParams.toString());
-    }
   }
 
   const introSection = hide(introBlockId) ? null : (

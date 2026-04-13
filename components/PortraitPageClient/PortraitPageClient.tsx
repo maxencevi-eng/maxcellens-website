@@ -139,15 +139,9 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
     return () => window.removeEventListener('spa-same-page-tab', onSamePageTab);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Mettre à jour le hash quand on change d’onglet (URL partageable)
+  // Changer d’onglet sans modifier l’URL visible
   function setActiveGalleryWithHash(id: PortraitGalleryId) {
     setActiveGallery(id);
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      url.searchParams.set("tab", id);
-      url.hash = "";
-      window.history.replaceState(null, "", url.pathname + "?" + url.searchParams.toString());
-    }
   }
 
   const introSection = hide("portrait_intro") ? null : (
