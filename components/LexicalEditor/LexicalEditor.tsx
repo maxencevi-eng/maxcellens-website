@@ -48,6 +48,7 @@ const SITE_PAGES: { path: string; label: string; group?: string }[] = [
   { path: '/portrait?tab=lifestyle', label: 'Lifestyle', group: 'Portrait' },
   { path: '/portrait?tab=studio', label: 'Studio', group: 'Portrait' },
   { path: '/portrait?tab=couple', label: 'Couple', group: 'Portrait' },
+  { path: '/portrait?tab=corporate', label: 'Portrait - Corporate', group: 'Portrait' },
   { path: '/corporate', label: 'Corporate (Film & Photo)', group: 'Corporate' },
   { path: '/corporate?tab=film', label: 'Corporate - Film', group: 'Corporate' },
   { path: '/corporate?tab=photo', label: 'Corporate - Photo', group: 'Corporate' },
