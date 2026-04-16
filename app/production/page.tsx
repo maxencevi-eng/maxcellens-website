@@ -4,7 +4,6 @@ import ProductionPageClient from '../../components/ProductionPageClient/Producti
 
 export const metadata: Metadata = {
   title: 'Réalisation',
-  robots: { index: false, follow: false },
   alternates: { canonical: 'https://www.maxcellens.com/realisation' },
 };
 
