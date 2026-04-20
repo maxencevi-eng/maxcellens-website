@@ -36,7 +36,7 @@ export default async function DefaultJsonLd() {
     url: baseUrl,
     description: 'Vidéaste et photographe indépendant — portrait, corporate, événementiel et réalisation vidéo. Basé à Paris, disponible partout en France.',
     telephone: '+33674966458',
-    email: 'contact@maxcellens.com',
+    email: 'maxcellens@gmail.com',
     address: {
       '@type': 'PostalAddress',
       addressLocality: 'Paris',

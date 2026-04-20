@@ -5,6 +5,7 @@ import LegalPageClient from '../../components/LegalPage/LegalPageClient';
 export const metadata: Metadata = {
   title: 'Mentions légales — Maxcellens',
   description: 'Mentions légales du site Maxcellens — Vidéaste & Photographe.',
+  robots: { index: false, follow: false },
 };
 
 const defaultSections = [

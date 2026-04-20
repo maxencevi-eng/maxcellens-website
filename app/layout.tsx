@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'Maxcellens',
     locale: 'fr_FR',
-    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Maxcellens — Vidéaste & Photographe Indépendant' }],
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Maxcellens — Vidéaste & Photographe Indépendant' }],
   },
   twitter: {
     card: 'summary_large_image',

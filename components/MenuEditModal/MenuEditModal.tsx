@@ -192,10 +192,10 @@ export default function MenuEditModal({ onClose, onSaved }: { onClose: () => voi
           <div style={{ marginTop: 12 }}>
             <div style={{ fontSize: 13, color: 'var(--muted)' }}>Éléments visibles</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
-              {(['realisation','evenement','corporate','portrait','animation','galleries','contact','bac','admin','mentionsLegales','politiqueConfidentialite'] as (keyof MenuVisible)[]).map((k) => (
+              {navItems.map(({ key: k, label }) => (
                 <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input type="checkbox" checked={!!menuVisible?.[k]} onChange={() => toggleKey(k)} />
-                  <span style={{ textTransform: 'capitalize' }}>{k}</span>
+                  <span>{label}</span>
                 </label>
               ))}
             </div>

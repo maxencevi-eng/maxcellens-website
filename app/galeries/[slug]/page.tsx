@@ -14,6 +14,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return {
     title: gallery.name,
     description: `Galerie photo : ${gallery.name}`,
+    robots: { index: false, follow: false },
     openGraph: gallery.headerImageUrl
       ? { images: [gallery.headerImageUrl] }
       : undefined,

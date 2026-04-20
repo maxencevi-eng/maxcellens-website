@@ -95,17 +95,8 @@ export default function Footer() {
   const [bannerError, setBannerError] = useState(false);
   const [footerBgColor, setFooterBgColor] = useState<string>('#1C1C1A');
 
-  // Update bannerUrl with cache-busting when footerBanner changes
   useEffect(() => {
-    if (footerBanner?.url) {
-      // Add cache-busting parameter to force fresh load
-      const bustedUrl = footerBanner.url.includes('?') 
-        ? `${footerBanner.url}&_t=${Date.now()}`
-        : `${footerBanner.url}?_t=${Date.now()}`;
-      setBannerUrl(bustedUrl);
-    } else {
-      setBannerUrl('');
-    }
+    setBannerUrl(footerBanner?.url ?? '');
   }, [footerBanner?.url]);
 
   useEffect(() => {

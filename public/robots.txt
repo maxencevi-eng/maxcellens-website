@@ -4,4 +4,7 @@ Allow: /
 Disallow: /production
 Disallow: /admin
 Disallow: /bac
+Disallow: /mentions-legales
+Disallow: /politique-de-confidentialite
+Disallow: /galeries/
 Sitemap: https://www.maxcellens.com/sitemap.xml

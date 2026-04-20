@@ -5,6 +5,7 @@ import LegalPageClient from '../../components/LegalPage/LegalPageClient';
 export const metadata: Metadata = {
   title: 'Politique de confidentialité — Maxcellens',
   description: 'Politique de confidentialité et gestion des données personnelles — Maxcellens.',
+  robots: { index: false, follow: false },
 };
 
 const defaultSections = [
@@ -21,8 +22,7 @@ const defaultSections = [
     content: [
       'Maxcellens collecte uniquement les données strictement nécessaires à son activité :',
       "<strong>Formulaire de contact</strong> : nom, adresse e-mail, message. Ces données sont utilisées exclusivement pour répondre à votre demande et ne sont jamais transmises à des tiers.",
-      "<strong>Statistiques de visite</strong> : données de navigation anonymisées collectées via Google Analytics (pages visitées, durée de session, provenance géographique approximative). Ces données ne permettent pas de vous identifier personnellement.",
-      "<strong>Dashboard interne</strong> : Maxcellens collecte des données de navigation agrégées (pages vues, clics, interactions) à des fins de suivi de performance du site. Ces données sont anonymisées.",
+      "<strong>Statistiques de visite</strong> : données de navigation anonymisées collectées via un système interne (pages visitées, durée de session, provenance géographique approximative). Ces données ne permettent pas de vous identifier personnellement et ne sont jamais transmises à des tiers.",
     ],
   },
   {
@@ -35,9 +35,8 @@ const defaultSections = [
   {
     title: 'Cookies',
     content: [
-      'Ce site utilise des cookies pour les finalités suivantes :',
-      '<strong>Google Analytics</strong> : cookies de mesure d\'audience (_ga, _gid, _gat). Vous pouvez refuser ces cookies via les paramètres de votre navigateur ou en installant le module de désactivation Google Analytics disponible à : <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer">tools.google.com/dlpage/gaoptout</a>.',
-      "Aucun cookie publicitaire ou de traçage commercial n'est utilisé sur ce site.",
+      "Ce site n'utilise aucun cookie publicitaire ou de traçage commercial.",
+      "Un cookie de session technique peut être déposé lors d'une authentification administrateur. Il est strictement nécessaire au fonctionnement du site.",
     ],
   },
   {
@@ -46,14 +45,13 @@ const defaultSections = [
       'Les données collectées transitent ou sont stockées chez les prestataires suivants :',
       "<strong>Vercel, Inc.</strong> (hébergement web) — San Francisco, CA, États-Unis. Conformité aux transferts internationaux via les Clauses Contractuelles Types (CCT).",
       "<strong>Supabase, Inc.</strong> (base de données) — Conformité via CCT.",
-      "<strong>Google LLC</strong> (Google Analytics) — Données anonymisées, conformité via CCT.",
     ],
   },
   {
     title: 'Durée de conservation',
     content: [
       "<strong>Données de contact</strong> : conservées pendant la durée nécessaire au traitement de votre demande, puis supprimées dans un délai de 3 ans maximum.",
-      "<strong>Données analytics</strong> : conservées 26 mois (Google Analytics) / 12 mois (dashboard interne).",
+      "<strong>Données analytics</strong> : conservées 12 mois (système interne).",
     ],
   },
   {
