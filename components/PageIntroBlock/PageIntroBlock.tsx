@@ -47,13 +47,15 @@ function LucideIcon({ name, size = 22, color, strokeWidth = 1.5 }: { name?: stri
 }
 
 function titleTag(style: string | undefined, children: React.ReactNode, props: React.HTMLAttributes<HTMLElement>): React.ReactNode {
+  const styleKey = style || 'h2';
+  const merged = { ...props, className: `style-${styleKey}${props.className ? ` ${props.className}` : ''}` };
   switch (style) {
-    case 'h1': return <h1 {...(props as any)}>{children}</h1>;
-    case 'h3': return <h3 {...(props as any)}>{children}</h3>;
-    case 'h4': return <h4 {...(props as any)}>{children}</h4>;
-    case 'h5': return <h5 {...(props as any)}>{children}</h5>;
-    case 'p':  return <p {...(props as any)}>{children}</p>;
-    default:   return <h2 {...(props as any)}>{children}</h2>;
+    case 'h1': return <h1 {...(merged as any)}>{children}</h1>;
+    case 'h3': return <h3 {...(merged as any)}>{children}</h3>;
+    case 'h4': return <h4 {...(merged as any)}>{children}</h4>;
+    case 'h5': return <h5 {...(merged as any)}>{children}</h5>;
+    case 'p':  return <p {...(merged as any)}>{children}</p>;
+    default:   return <h2 {...(merged as any)}>{children}</h2>;
   }
 }
 
@@ -91,8 +93,7 @@ function FeatureColumn({ feature, index }: { feature: PageIntroFeature; index: n
         {
           style: {
             margin: 0,
-            fontSize: titleFs || '0.95rem',
-            fontWeight: 700,
+            ...(titleFs ? { fontSize: titleFs } : {}),
             color: feature.titleColor || 'var(--color-text, #fff)',
             textAlign: (feature.titleAlign as any) || 'left',
             lineHeight: 1.3,
@@ -213,8 +214,7 @@ export default function PageIntroBlock({ pageKey, settingsKey, blockId, external
           {
             style: {
               margin: '0 0 1.25rem',
-              fontSize: titleFs || 'clamp(1.6rem, 3.5vw, 2.5rem)',
-              fontWeight: 700,
+              ...(titleFs ? { fontSize: titleFs } : {}),
               color: data.titleColor || 'var(--color-text, #fff)',
               textAlign: titleAlign,
               lineHeight: 1.2,

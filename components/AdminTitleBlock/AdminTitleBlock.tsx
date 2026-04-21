@@ -25,14 +25,6 @@ const TITLE_STYLE_OPTIONS: { value: AdminTitleStyleKey; label: string }[] = [
   { value: "h5", label: "Titre 5" },
 ];
 
-const TITLE_STYLE_CSS: Record<AdminTitleStyleKey, React.CSSProperties> = {
-  h1: { fontSize: "1.75rem", fontWeight: 700, lineHeight: 1.2 },
-  h2: { fontSize: "1.5rem", fontWeight: 700, lineHeight: 1.25 },
-  h3: { fontSize: "1.25rem", fontWeight: 600, lineHeight: 1.3 },
-  h4: { fontSize: "1.1rem", fontWeight: 600, lineHeight: 1.35 },
-  h5: { fontSize: "1rem", fontWeight: 600, lineHeight: 1.4 },
-  p: { fontSize: "1rem", fontWeight: 400, lineHeight: 1.5 },
-};
 
 export default function AdminTitleBlock({
   initialTitle,
@@ -123,11 +115,10 @@ export default function AdminTitleBlock({
     }
   }
 
-  const TitleTag = titleStyle;
+  const TitleTag = titleStyle as React.ElementType;
   const titleInlineStyle: React.CSSProperties = {
     color: "var(--muted)",
     margin: 0,
-    ...TITLE_STYLE_CSS[titleStyle],
     ...(titleFontSize != null ? { fontSize: `${titleFontSize}px` } : {}),
   };
 
@@ -144,7 +135,7 @@ export default function AdminTitleBlock({
           textAlign: "center",
         }}
       >
-        <TitleTag style={titleInlineStyle}>{title}</TitleTag>
+        <TitleTag className={`style-${titleStyle}`} style={titleInlineStyle}>{title}</TitleTag>
         {isAdmin && (
           <button
             type="button"

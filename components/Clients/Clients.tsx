@@ -203,20 +203,24 @@ export default function Clients({ logos, title }: Props) {
         <div className={styles.inner}>
           <AnimateInView variant="fadeUp" viewportSoon>
             <div style={{ position: 'relative', display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', marginBottom: 28 }}>
-              {React.createElement(
-                titleStyle || 'h2',
-                {
-                  className: styles.title,
-                  style: {
-                    flex: 1,
-                    margin: 0,
-                    ...(titleFontSize ? { fontSize: `${titleFontSize}px` } : {}),
-                    ...(titleColor ? { color: titleColor } : {}),
-                    textAlign: (titleAlign as any) || 'left',
-                  },
-                },
-                hdr || ''
-              )}
+              {(() => {
+                const tagName = titleStyle || 'h2';
+                const Tag = tagName as React.ElementType;
+                return (
+                  <Tag
+                    className={`${styles.title} style-${tagName}`}
+                    style={{
+                      flex: 1,
+                      margin: 0,
+                      ...(titleFontSize ? { fontSize: `${titleFontSize}px` } : {}),
+                      ...(titleColor ? { color: titleColor } : {}),
+                      textAlign: (titleAlign as any) || 'left',
+                    }}
+                  >
+                    {hdr || ''}
+                  </Tag>
+                );
+              })()}
               {isAdmin ? (
                 <>
                   <BlockVisibilityToggle blockId="clients" />
