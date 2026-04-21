@@ -4,8 +4,39 @@ import React, { useEffect, useState } from "react";
 
 const DEFAULT_EMBED_URL = "https://kit.co/embed?url=https%3A%2F%2Fkit.co%2FMaxcellens%2Fmon-equipement";
 
+const TITLE_FONT_SIZE_MIN = 10;
+const TITLE_FONT_SIZE_MAX = 100;
+const clampTitleFontSize = (n: number) => Math.min(TITLE_FONT_SIZE_MAX, Math.max(TITLE_FONT_SIZE_MIN, Number(n) || 16));
+const parseFontSize = (v: string): number | "" => (v === "" ? "" : clampTitleFontSize(Number(v)));
+
+function FontSizeInput({ value, onChange }: { value: number | ""; onChange: (v: number | "") => void }) {
+  const [raw, setRaw] = React.useState(value === "" ? "" : String(value));
+  React.useEffect(() => { setRaw(value === "" ? "" : String(value)); }, [value]);
+  return (
+    <input
+      type="number"
+      min={TITLE_FONT_SIZE_MIN}
+      max={TITLE_FONT_SIZE_MAX}
+      value={raw}
+      onChange={(e) => setRaw(e.target.value)}
+      onBlur={(e) => {
+        const parsed = parseFontSize(e.target.value);
+        onChange(parsed);
+        setRaw(parsed === "" ? "" : String(parsed));
+      }}
+      placeholder="px"
+      style={{ width: 64, padding: "8px 12px", border: "1px solid #e6e6e6", borderRadius: 6, fontSize: 14, boxSizing: "border-box" }}
+      title={`Taille (${TITLE_FONT_SIZE_MIN}–${TITLE_FONT_SIZE_MAX} px)`}
+    />
+  );
+}
+
 export type ContactKitData = {
   title?: string;
+  titleStyle?: string;
+  titleFontSize?: number;
+  titleColor?: string;
+  titleAlign?: "left" | "center" | "right" | "";
   embedUrl?: string;
   backgroundColor?: string;
 };
@@ -27,6 +58,10 @@ export default function ContactKitEditModal({
   onSaved?: () => void;
 }) {
   const [title, setTitle] = useState("");
+  const [titleStyle, setTitleStyle] = useState("h3");
+  const [titleFontSize, setTitleFontSize] = useState<number | "">("");
+  const [titleColor, setTitleColor] = useState("");
+  const [titleAlign, setTitleAlign] = useState<"left" | "center" | "right" | "">("");
   const [embedUrl, setEmbedUrl] = useState(DEFAULT_EMBED_URL);
   const [backgroundColor, setBackgroundColor] = useState("");
   const [loading, setLoading] = useState(true);
@@ -45,6 +80,10 @@ export default function ContactKitEditModal({
           try {
             const parsed = JSON.parse(String(s.contact_kit)) as ContactKitData;
             setTitle(parsed.title ?? "");
+            setTitleStyle(parsed.titleStyle ?? "h3");
+            setTitleFontSize(parsed.titleFontSize ?? "");
+            setTitleColor(parsed.titleColor ?? "");
+            setTitleAlign(parsed.titleAlign ?? "");
             setEmbedUrl(parsed.embedUrl?.trim() || DEFAULT_EMBED_URL);
           } catch (_) {}
         }
@@ -61,6 +100,10 @@ export default function ContactKitEditModal({
     try {
       const payload: ContactKitData = {
         title: title.trim() || undefined,
+        titleStyle: titleStyle || undefined,
+        titleFontSize: typeof titleFontSize === "number" ? titleFontSize : undefined,
+        titleColor: titleColor.trim() || undefined,
+        titleAlign: titleAlign || undefined,
         embedUrl: embedUrl.trim() || DEFAULT_EMBED_URL,
         backgroundColor: backgroundColor?.trim() || undefined,
       };
@@ -105,9 +148,20 @@ export default function ContactKitEditModal({
         <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 16 }}>
           Ce bloc affiche votre liste d’équipement Kit.co sous la carte. Vous pouvez personnaliser le titre et l’URL d’intégration.
         </p>
-        <div style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: 8 }}>
           <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre au-dessus du widget (optionnel)</label>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Mon équipement" style={inputStyle} />
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+          <select value={titleStyle} onChange={(e) => setTitleStyle(e.target.value)} style={{ ...inputStyle, width: 130 }}>
+            {[{ value: "h1", label: "Titre 1" }, { value: "h2", label: "Titre 2" }, { value: "h3", label: "Titre 3" }, { value: "h4", label: "Titre 4" }, { value: "h5", label: "Titre 5" }, { value: "p", label: "Paragraphe" }].map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <FontSizeInput value={titleFontSize} onChange={setTitleFontSize} />
+          <input type="color" value={titleColor || "#1a1a18"} onChange={(e) => setTitleColor(e.target.value)} title="Couleur du titre" style={{ width: 40, height: 36, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} />
+          {titleColor && <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setTitleColor("")}>Effacer couleur</button>}
+          {(["left", "center", "right"] as const).map(a => (
+            <button key={a} type="button" onClick={() => setTitleAlign(titleAlign === a ? "" : a)} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #e6e6e6", fontSize: 12, cursor: "pointer", background: titleAlign === a ? "#111" : "#fff", color: titleAlign === a ? "#fff" : "inherit" }}>{a === "left" ? "←" : a === "center" ? "↔" : "→"}</button>
+          ))}
         </div>
         <div style={{ marginBottom: 20 }}>
           <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>URL d’intégration (embed Kit.co)</label>

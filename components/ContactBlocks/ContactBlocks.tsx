@@ -276,9 +276,18 @@ export default function ContactBlocks() {
           </div>
         )}
         <AnimateInView variant="fadeUp">
-          {kitData?.title?.trim() ? (
-            <h3 className={styles.kitTitle}>{kitData.title.trim()}</h3>
-          ) : null}
+          {kitData?.title?.trim() ? (() => {
+            const Tag = (kitData.titleStyle && ['h1','h2','h3','h4','h5','p'].includes(kitData.titleStyle) ? kitData.titleStyle : 'h3') as keyof JSX.IntrinsicElements;
+            return (
+              <Tag className={styles.kitTitle} style={{
+                ...(kitData.titleFontSize ? { fontSize: kitData.titleFontSize } : {}),
+                ...(kitData.titleColor ? { color: kitData.titleColor } : {}),
+                ...(kitData.titleAlign ? { textAlign: kitData.titleAlign as 'left' | 'center' | 'right' } : {}),
+              }}>
+                {kitData.title.trim()}
+              </Tag>
+            );
+          })() : null}
           <div className={styles.kitWidget}>
             <iframe
               src={kitData?.embedUrl?.trim() || 'https://kit.co/embed?url=https%3A%2F%2Fkit.co%2FMaxcellens%2Fmon-equipement'}
