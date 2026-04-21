@@ -277,7 +277,7 @@ export default function ContactBlocks() {
         )}
         <AnimateInView variant="fadeUp">
           {kitData?.title?.trim() ? (() => {
-            const Tag = (kitData.titleStyle && ['h1','h2','h3','h4','h5','p'].includes(kitData.titleStyle) ? kitData.titleStyle : 'h3') as keyof JSX.IntrinsicElements;
+            const Tag = (kitData.titleStyle && ['h1','h2','h3','h4','h5','p'].includes(kitData.titleStyle) ? kitData.titleStyle : 'h3') as React.ElementType;
             return (
               <Tag className={styles.kitTitle} style={{
                 ...(kitData.titleFontSize ? { fontSize: kitData.titleFontSize } : {}),
