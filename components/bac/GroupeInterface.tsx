@@ -1395,21 +1395,46 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
               </div>
             </div>
 
-            {/* Résumé casting */}
-            {casting.length > 0 && (
-              <div className="bac-card" style={{ marginBottom: 16, padding: 16 }}>
-                <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 12 }}>👥 Notre casting</h3>
-                {casting.map(c => (
-                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
-                    <strong>{c.prenom}</strong>
-                    <span style={{ fontSize: '0.875rem', color: 'var(--bac-text-secondary)' }}>
-                      {(c.role as any)?.nom || '—'}
-                      {(c.variant as any)?.emoji ? ` — ${(c.variant as any).emoji} ${(c.variant as any).nom}` : ''}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Résumé casting — own group + other validated groups */}
+            {(() => {
+              const validatedGroupSlugs = Array.from(new Set(
+                globalChoix.filter(c => c.statut === 'valide').map(c => c.groupe_slug)
+              ));
+              const otherValidatedGroups = validatedGroupSlugs
+                .filter(g => g !== slug)
+                .map(g => ({
+                  info: globalGroupes.find((gi: any) => gi.slug === g),
+                  members: globalCasting.filter(c => c.groupe_slug === g),
+                  groupSlug: g,
+                }))
+                .filter(g => g.members.length > 0);
+              const showOthers = otherValidatedGroups.length > 0;
+              return (casting.length > 0 || showOthers) ? (
+                <div className="bac-card" style={{ marginBottom: 16, padding: 16 }}>
+                  <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 12 }}>👥 Notre casting</h3>
+                  {casting.map(c => (
+                    <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
+                      <strong>{c.prenom}</strong>
+                      <span style={{ fontSize: '0.875rem', color: 'var(--bac-text-secondary)' }}>
+                        {(c.role as any)?.nom || '—'}
+                        {(c.variant as any)?.emoji ? ` — ${(c.variant as any).emoji} ${(c.variant as any).nom}` : ''}
+                      </span>
+                    </div>
+                  ))}
+                  {showOthers && otherValidatedGroups.map(({ info, members }) =>
+                    members.map(c => (
+                      <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--bac-border)' }}>
+                        <strong>{c.prenom}</strong>
+                        <span style={{ fontSize: '0.875rem', color: info?.couleur || 'var(--bac-text-secondary)' }}>
+                          {(c.role as any)?.nom || '—'}
+                          {(c.variant as any)?.emoji ? ` — ${(c.variant as any).emoji} ${(c.variant as any).nom}` : ''}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : null;
+            })()}
 
             {/* Script personnalisé */}
             {(isInIntro || histoireScenes.length > 0 || isInFinale || choix.length > 0) && (
@@ -1542,15 +1567,16 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
                   const seenIds = new Set(chosenScenes.map(s => s.id));
                   const otherValidated = globalChoix
                     .filter(c => c.statut === 'valide' && c.groupe_slug !== slug)
-                    .map(c => globalScenes.find(s => s.id === c.scene_id))
-                    .filter((s): s is BacScene => {
-                      if (!s || seenIds.has(s.id)) return false;
-                      seenIds.add(s.id);
+                    .map(c => ({ choix: c, scene: globalScenes.find(s => s.id === c.scene_id) }))
+                    .filter((e): e is { choix: BacChoixScene; scene: BacScene } => {
+                      if (!e.scene || seenIds.has(e.scene.id)) return false;
+                      seenIds.add(e.scene.id);
                       return true;
-                    });
-                  const combined: { scene: BacScene; type: 'histoire' | 'chosen' }[] = [
-                    ...chosenScenes.map(s => ({ scene: s, type: 'chosen' as const })),
-                    ...otherValidated.map(s => ({ scene: s, type: 'histoire' as const })),
+                    })
+                    .map(({ choix, scene }) => ({ scene, ownerSlug: choix.groupe_slug }));
+                  const combined: { scene: BacScene; type: 'histoire' | 'chosen'; ownerSlug: string }[] = [
+                    ...chosenScenes.map(s => ({ scene: s, type: 'chosen' as const, ownerSlug: slug })),
+                    ...otherValidated.map(({ scene, ownerSlug }) => ({ scene, type: 'histoire' as const, ownerSlug })),
                   ].sort((a, b) => Number(a.scene.acte) - Number(b.scene.acte));
                   return combined.map(({ scene: sc, type }) => {
                   const isEditing = editingPretSceneId === sc.id;
