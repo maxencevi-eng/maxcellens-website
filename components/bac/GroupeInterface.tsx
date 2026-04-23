@@ -137,7 +137,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
 
   // whenever we enter "pret", prefetch global data so we can overlay other groups' edits
   useEffect(() => {
-    if (phase === 'pret') {
+    if (phase === 'pret' || phase === 'personnalisation') {
       refreshGlobalData();
     }
   }, [phase]);
@@ -648,9 +648,14 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
   chosenScenes.sort((a, b) => Number(a.acte) - Number(b.acte));
 
 
-  // Histoire-derived mandatory scenes (scenes where group plays but does NOT choose — free-choice scenes are handled separately)
+  // Histoire scenes where this group plays but another group chose — only shown once that group validated
   const histoireScenes: BacScene[] = session
-    ? (session.histoire?.scenes || []).map(hs => hs.scene!).filter((s): s is BacScene => !!(s && (s.groupes_concernes || []).includes(slug) && s.groupe_acteur !== slug))
+    ? (session.histoire?.scenes || []).map(hs => hs.scene!).filter((s): s is BacScene => !!(
+        s &&
+        (s.groupes_concernes || []).includes(slug) &&
+        s.groupe_acteur !== slug &&
+        globalChoix.some(c => c.scene_id === s.id && c.statut === 'valide')
+      ))
     : [];
   const introScene = session?.histoire?.revelation || null;
   const isInIntro = !!(introScene && (introScene.groupes_concernes || []).includes(slug));
@@ -697,10 +702,10 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
     }
   }, [phase, casting, chosenScenes, histoireScenes, introScene, finaleScene, isInIntro, isInFinale, slug, saisies]);
 
-  // collect all acte numbers used by histoire or chosen scenes
+  // collect acte numbers from own chosen scenes + validated histoire scenes from other groups
   const actes = Array.from(new Set<string>([
-    ...histoireScenes.map(s => String(s.acte)),
     ...chosenScenes.map(s => String(s.acte)),
+    ...histoireScenes.map(s => String(s.acte)),
   ])).sort((a, b) => Number(a) - Number(b));
 
   function getSaisieKey(sceneId: string, blocIndex: number) {
@@ -1136,7 +1141,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
             {actes.map(acte => (
               <div key={acte} style={{ marginBottom: 24 }}>
                 <h2 style={{ fontWeight: 800, fontSize: '1.375rem', marginBottom: 12 }}>Acte {acte}</h2>
-                {/* histoire scenes for this acte */}
+                {/* histoire scenes validated by other groups — this group plays in them */}
                 {histoireScenes.filter(s => String(s.acte) === acte).map(hScene => (
                   <div key={hScene.id} className="bac-card" style={{ marginBottom: 20, padding: 20, borderLeft: '4px solid #f59e0b' }}>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
@@ -1163,7 +1168,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
                         return (
                           <div key={bIdx} className="bac-script-replique">
                             <div className="bac-script-role-name" style={{ color: colorMine }}>{groupe?.nom || slug}</div>
-                            {casting.length > 0 && (
+                            {casting.length > 1 && (
                               <div style={{ marginBottom: 8 }}>
                                 <label className="bac-label" style={{ fontSize: '0.8125rem' }}>Qui dit cette réplique ?</label>
                                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1178,15 +1183,6 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
                             )}
                             <div className="bac-script-directive">{repBloc.directive}</div>
                             <div className="bac-script-exemple">"{repBloc.exemple}"</div>
-                            <textarea
-                              className="bac-input"
-                              style={{ fontSize: '1rem', minHeight: 60, overflow: 'hidden', resize: 'none' }}
-                              placeholder="Vos mots..."
-                              value={saisie.texte_saisi || ''}
-                              onInput={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; }}
-                              onChange={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; saveSaisie(hScene.id, bIdx, e.target.value, saisie.acteur_id); }}
-                              ref={el => { if (el) { setTimeout(() => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }, 0); } }}
-                            />
                           </div>
                         );
                       })}
@@ -1541,11 +1537,26 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
                   );
                 })()}
 
-                {/* HISTOIRE scenes */}
-                {histoireScenes.map(sc => {
+                {/* All scenes sorted by acte: own chosen scene + all other groups' validated scenes */}
+                {(() => {
+                  const seenIds = new Set(chosenScenes.map(s => s.id));
+                  const otherValidated = globalChoix
+                    .filter(c => c.statut === 'valide' && c.groupe_slug !== slug)
+                    .map(c => globalScenes.find(s => s.id === c.scene_id))
+                    .filter((s): s is BacScene => {
+                      if (!s || seenIds.has(s.id)) return false;
+                      seenIds.add(s.id);
+                      return true;
+                    });
+                  const combined: { scene: BacScene; type: 'histoire' | 'chosen' }[] = [
+                    ...chosenScenes.map(s => ({ scene: s, type: 'chosen' as const })),
+                    ...otherValidated.map(s => ({ scene: s, type: 'histoire' as const })),
+                  ].sort((a, b) => Number(a.scene.acte) - Number(b.scene.acte));
+                  return combined.map(({ scene: sc, type }) => {
                   const isEditing = editingPretSceneId === sc.id;
+                  const isHistoire = type === 'histoire';
                   return (
-                    <div key={sc.id} className="bac-card" style={{ marginBottom: 16, padding: 20, borderLeft: '4px solid #f59e0b', border: isEditing ? '2px solid var(--bac-primary)' : undefined }}>
+                    <div key={sc.id} className="bac-card" style={{ marginBottom: 16, padding: 20, borderLeft: `4px solid ${isHistoire ? '#f59e0b' : groupColor}`, border: isEditing ? '2px solid var(--bac-primary)' : undefined }}>
                       <div style={{ marginBottom: 12 }}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
                           {isEditing ? (
@@ -1555,7 +1566,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
                           )}
                         </div>
                         <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-                          <span className="bac-badge" style={{ background: '#f59e0b', color: 'white' }}>📌 HISTOIRE</span>
+                          {isHistoire && <span className="bac-badge" style={{ background: '#f59e0b', color: 'white' }}>📌 HISTOIRE</span>}
                           <span className="bac-badge bac-badge-primary">Acte {sc.acte}</span>
                         </div>
                         <h4 style={{ fontWeight: 700, fontSize: '1.0625rem', marginBottom: 4 }}>{sc.titre}</h4>
@@ -1579,15 +1590,16 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
                           const isMyBloc = repBloc.role_id === slug;
                           const color = roleObj?.couleur || groupe?.couleur || 'var(--bac-text)';
                           const label = roleObj?.nom || groupe?.nom || repBloc.role_id || 'Groupe';
-                          if (isEditing && isMyBloc) {
+                          if (isEditing && !isHistoire) {
+                            // Chosen scene: all répliques editable, actor assignment only for own bloc
                             return (
                               <div key={i} className="bac-script-replique">
                                 <div className="bac-script-role-name" style={{ color }}>{label}</div>
-                                {casting.length > 0 && (
+                                {isMyBloc && casting.length > 0 && (
                                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
                                     {casting.map(cst => (
                                       <label key={cst.id} className={`bac-radio-label ${saisie.acteur_id === cst.id ? 'selected' : ''}`} style={{ padding: '4px 8px', cursor: 'pointer', fontSize: '0.8125rem' }}>
-                                        <input type="radio" name={`pret-hist-${sc.id}-${i}`} checked={saisie.acteur_id === cst.id} onChange={() => saveSaisie(sc.id, i, saisie.texte_saisi || '', cst.id)} />
+                                        <input type="radio" name={`pret-chosen-${sc.id}-${i}`} checked={saisie.acteur_id === cst.id} onChange={() => saveSaisie(sc.id, i, saisie.texte_saisi || '', cst.id)} />
                                         {cst.prenom}
                                       </label>
                                     ))}
@@ -1606,6 +1618,31 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
                               </div>
                             );
                           }
+                          if (isEditing && isHistoire && isMyBloc) {
+                            // Histoire scene: actor assignment only (no text edit), auto-assign if single actor
+                            const effectiveActeurId = casting.length === 1 && !saisie.acteur_id
+                              ? casting[0].id : saisie.acteur_id;
+                            if (casting.length === 1 && !saisie.acteur_id) {
+                              setTimeout(() => saveSaisie(sc.id, i, saisie.texte_saisi || '', casting[0].id), 0);
+                            }
+                            return (
+                              <div key={i} className="bac-script-replique">
+                                <div className="bac-script-role-name" style={{ color }}>{label}</div>
+                                {casting.length > 1 && (
+                                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                                    {casting.map(cst => (
+                                      <label key={cst.id} className={`bac-radio-label ${effectiveActeurId === cst.id ? 'selected' : ''}`} style={{ padding: '4px 8px', cursor: 'pointer', fontSize: '0.8125rem' }}>
+                                        <input type="radio" name={`pret-hist-${sc.id}-${i}`} checked={effectiveActeurId === cst.id} onChange={() => saveSaisie(sc.id, i, saisie.texte_saisi || '', cst.id)} />
+                                        {cst.prenom}
+                                      </label>
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="bac-script-directive">{repBloc.directive}</div>
+                                {saisie.texte_saisi ? <div className="bac-script-exemple">"{saisie.texte_saisi}"</div> : <div className="bac-script-exemple">"{repBloc.exemple}"</div>}
+                              </div>
+                            );
+                          }
                           return (
                             <div key={i} className="bac-script-replique" style={!isMyBloc ? { opacity: 0.55 } : undefined}>
                               <div className="bac-script-role-name" style={{ color }}>{label}{acteur ? ` — ${acteur.prenom}` : ''}</div>
@@ -1617,129 +1654,9 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
                       </div>
                     </div>
                   );
-                })}
+                  });
+                })()}
 
-                {/* Free scenes */}
-                {[...choix].sort((a, b) => a.acte.localeCompare(b.acte)).map(c => {
-                  const scene = scenes.find(s => s.id === c.scene_id);
-                  if (!scene) return null;
-                  const champSaisie = saisies[`${scene.id}_-1`];
-                  const isEditing = editingPretSceneId === scene.id;
-                  return (
-                    <div key={c.id} className="bac-card" style={{ marginBottom: 16, padding: 20, border: isEditing ? '2px solid var(--bac-primary)' : undefined }}>
-                      {/* Scene header */}
-                      <div style={{ marginBottom: 12 }}>
-                        {/* Line 1 : bouton à droite */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
-                          {isEditing ? (
-                            <button
-                              className="bac-btn bac-btn-success bac-btn-sm"
-                              onClick={() => { setEditingPretSceneId(null); showToastMsg('Modifications enregistrées ✓'); }}
-                            >
-                              ✓ Enregistrer
-                            </button>
-                          ) : (
-                            <button
-                              className="bac-btn bac-btn-ghost bac-btn-sm"
-                              onClick={() => setEditingPretSceneId(scene.id)}
-                            >
-                              ✏️ Modifier
-                            </button>
-                          )}
-                        </div>
-                        {/* Line 2 : titre */}
-                        <h4 style={{ fontWeight: 700, fontSize: '1.0625rem', marginBottom: 4 }}>{scene.titre}</h4>
-                        {/* Line 3 : acte + durée */}
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                          <span className="bac-badge bac-badge-primary">Acte {c.acte}</span>
-                          <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>
-                        </div>
-                      </div>
-
-                      {/* Script blocs */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {(scene.script_json || []).map((bloc: ScriptBloc, i: number) => {
-                          if (bloc.type === 'didascalie') {
-                            return <div key={i} className="bac-script-didascalie">{(bloc as any).texte}</div>;
-                          }
-                          const repBloc = bloc as any;
-                          const roleObj = roles.find(r => r.id === repBloc.role_id);
-                          const groupe = globalGroupes.find((g: any) => g.slug === repBloc.role_id);
-                          let saisie = saisies[`${scene.id}_${i}`] || {};
-                          const color = roleObj?.couleur || groupe?.couleur || 'var(--bac-text)';
-                          const label = roleObj?.nom || groupe?.nom || repBloc.role_id || 'Groupe';
-                          if (phase === 'pret') {
-                            const alt = getAnySaisie(scene.id, i);
-                            if (alt) {
-                              if (alt.texte_saisi && !saisie.texte_saisi) saisie = { ...saisie, texte_saisi: alt.texte_saisi };
-                              if (alt.acteur_id && !saisie.acteur_id) saisie = { ...saisie, acteur_id: alt.acteur_id };
-                            }
-                          }
-                          const acteur = saisie.acteur_id ? (casting.find(cst => cst.id === saisie.acteur_id) || globalCasting.find(cst => cst.id === saisie.acteur_id)) : null;
-
-                          if (isEditing) {
-                            return (
-                              <div key={i} className="bac-script-replique">
-                                <div className="bac-script-role-name" style={{ color }}>
-                                  {label}
-                                </div>
-                                {(() => {
-                                  const isGroupReplique = repBloc.role_id === slug;
-                                  const eligible = isGroupReplique ? casting : [];
-                                  if (eligible.length === 0) return null;
-                                  return (
-                                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-                                      {eligible.map(cst => (
-                                        <label key={cst.id} className={`bac-radio-label ${saisie.acteur_id === cst.id ? 'selected' : ''}`} style={{ padding: '4px 8px', cursor: 'pointer', fontSize: '0.8125rem' }}>
-                                          <input type="radio" name={`pret-actor-${scene.id}-${i}`} checked={saisie.acteur_id === cst.id} onChange={() => saveSaisie(scene.id, i, saisie.texte_saisi || '', cst.id)} />
-                                          {cst.prenom}
-                                        </label>
-                                      ))}
-                                    </div>
-                                  );
-                                })()}
-                                <div className="bac-script-directive">{repBloc.directive}</div>
-                                <textarea
-                                  className="bac-input"
-                                  style={{ fontSize: '0.9375rem', minHeight: 52, marginTop: 6, overflow: 'hidden', resize: 'none' }}
-                                  placeholder={`"${repBloc.exemple}" (optionnel)`}
-                                  value={saisie.texte_saisi || ''}
-                                  onInput={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; }}
-                                  onChange={e => { (e.target as HTMLTextAreaElement).style.height = 'auto'; (e.target as HTMLTextAreaElement).style.height = (e.target as HTMLTextAreaElement).scrollHeight + 'px'; saveSaisie(scene.id, i, e.target.value, saisie.acteur_id); }}
-                                  ref={el => { if (el) { setTimeout(() => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }, 0); } }}
-                                />
-                              </div>
-                            );
-                          }
-
-                          return (
-                            <div key={i} className="bac-script-replique">
-                              <div className="bac-script-role-name" style={{ color }}>
-                                {label}{acteur ? ` — ${acteur.prenom}` : ''}
-                              </div>
-                              <div className="bac-script-directive">{repBloc.directive}</div>
-                              {saisie.texte_saisi ? (
-                                <div className="bac-script-exemple">"{saisie.texte_saisi}"</div>
-                              ) : (
-                                <div className="bac-script-exemple">"{repBloc.exemple}"</div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {isEditing && (
-                        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
-                          <button
-                            className="bac-btn bac-btn-success bac-btn-sm"
-                            onClick={() => { setEditingPretSceneId(null); showToastMsg('Modifications enregistrées ✓'); }}
-                          >
-                            ✓ Enregistrer
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
 
                 {/* FINALE */}
                 {isInFinale && finaleScene && (() => {
@@ -1944,24 +1861,21 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
 
                   {/* Actes: Fil rouge + free scenes interleaved */}
                   {(() => {
-                    const allHistoireScenes = (session?.histoire?.scenes || []).map(hs => hs.scene!).filter((s): s is BacScene => !!s).sort((a, b) => Number(a.acte) - Number(b.acte));
                     const validatedEntries = globalChoix.filter(c => c.statut === 'valide').map(c => ({ choix: c, scene: globalScenes.find(s => s.id === c.scene_id) })).filter(e => e.scene).sort((a, b) => {
-                      const diff = Number(a.choix.acte) - Number(b.choix.acte);
+                      const diff = Number(a.scene!.acte) - Number(b.scene!.acte);
                       return diff !== 0 ? diff : a.choix.groupe_slug.localeCompare(b.choix.groupe_slug);
                     });
-                    const acteSet = new Set([...allHistoireScenes.map(s => String(s.acte)), ...validatedEntries.map(e => String(e.choix.acte))]);
+                    const acteSet = new Set(validatedEntries.map(e => String(e.scene!.acte)));
                     const actes = Array.from(acteSet).sort((a, b) => Number(a) - Number(b));
                     if (actes.length === 0) return <div className="bac-empty"><p>Aucune scène validée</p></div>;
                     return actes.map((acte, idx) => {
-                      const histForActe = allHistoireScenes.filter(s => String(s.acte) === acte);
-                      const freeForActe = validatedEntries.filter(e => String(e.choix.acte) === acte);
+                      const forActe = validatedEntries.filter(e => String(e.scene!.acte) === acte);
                       return (
                         <div key={`acte-${acte}`}>
                           <h3 style={{ fontWeight: 800, fontSize: '1.125rem', marginTop: idx === 0 ? 0 : 16, marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid var(--bac-border)' }}>
                             Acte {acte}
                           </h3>
-                          {histForActe.map(sc => renderGlobalScriptScene(sc, '', 'histoire'))}
-                          {freeForActe.map(({ choix, scene }) => renderGlobalScriptScene(scene!, choix.groupe_slug, `${choix.groupe_slug}`))}
+                          {forActe.map(({ choix, scene }) => renderGlobalScriptScene(scene!, choix.groupe_slug, choix.groupe_slug))}
                         </div>
                       );
                     });
