@@ -27,7 +27,7 @@ export default async function GroupSlugPage({ params }: { params: Promise<{ slug
       .select('nb_scenes_requis')
       .eq('slug', slug)
       .single();
-    if (data?.nb_scenes_requis != null) nbScenesRequis = data.nb_scenes_requis;
+    if (data?.nb_scenes_requis != null) nbScenesRequis = Math.min(data.nb_scenes_requis, 3);
   } catch { }
 
   return <GroupeClient slug={slug} nbScenesRequis={nbScenesRequis} />;

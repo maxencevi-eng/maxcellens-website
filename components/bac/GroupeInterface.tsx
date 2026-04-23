@@ -69,7 +69,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
   const currentGroup = globalGroupes.find(g => g.slug === slug);
   const groupColor = currentGroup?.couleur || 'var(--bac-primary)';
   const minScenes = session?.min_scenes ?? 1;
-  const maxScenes = session?.max_scenes ?? nbScenesRequis;
+  const maxScenes = session?.max_scenes ?? 1;
 
   // helper that updates phase and keeps localStorage in sync
   function setPhasePersist(p: Phase) {
@@ -545,10 +545,10 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
   }
 
   // ========== SCENE CHOICE ==========
-  function getScenesForActe(acte: number) {
+  function getSelectableScenes() {
     return (session?.histoire?.scenes || [])
       .map(hs => hs.scene!)
-      .filter((s): s is BacScene => !!(s && s.groupe_acteur === slug && s.acte === String(acte)));
+      .filter((s): s is BacScene => !!(s && s.groupe_acteur === slug));
   }
 
   async function selectScene(_acte: number, sceneId: string) {
@@ -648,14 +648,30 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
   chosenScenes.sort((a, b) => Number(a.acte) - Number(b.acte));
 
 
-  // Histoire-derived mandatory scenes
+  // Histoire-derived mandatory scenes (scenes where group plays but does NOT choose — free-choice scenes are handled separately)
   const histoireScenes: BacScene[] = session
-    ? (session.histoire?.scenes || []).map(hs => hs.scene!).filter((s): s is BacScene => !!(s && (s.groupes_concernes || []).includes(slug)))
+    ? (session.histoire?.scenes || []).map(hs => hs.scene!).filter((s): s is BacScene => !!(s && (s.groupes_concernes || []).includes(slug) && s.groupe_acteur !== slug))
     : [];
   const introScene = session?.histoire?.revelation || null;
   const isInIntro = !!(introScene && (introScene.groupes_concernes || []).includes(slug));
   const finaleScene = session?.histoire?.denouement || null;
   const isInFinale = !!finaleScene;
+
+  // Default to first acte that has selectable scenes for this group, fallback to acte 1
+  useEffect(() => {
+    if (phase === 'scenes' && session) {
+      const selectableActes = (session.histoire?.scenes || [])
+        .map(hs => hs.scene!)
+        .filter((s): s is BacScene => !!(s && s.groupe_acteur === slug))
+        .map(s => Number(s.acte))
+        .filter(n => !isNaN(n) && n > 0);
+      if (selectableActes.length > 0) {
+        setCurrentActe(Math.min(...selectableActes));
+      } else {
+        setCurrentActe(1);
+      }
+    }
+  }, [phase, session]);
 
   // auto-assign actor when personalization begins and only one cast member exists
   useEffect(() => {
@@ -893,11 +909,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
           <div className="bac-animate-in">
             <div style={{ textAlign: 'center', marginBottom: 16 }}>
               <h2 className="bac-h2">Vos scènes</h2>
-              <p style={{ color: 'var(--bac-text-secondary)' }}>
-                {(isInIntro || histoireScenes.length > 0 || isInFinale)
-                  ? 'Scènes obligatoires + 1 choix libre'
-                  : 'Choisissez au moins 1 scène'}
-              </p>
+              <p style={{ color: 'var(--bac-text-secondary)' }}>Choisissez 1 scène parmi les options de chaque acte</p>
             </div>
 
             {/* INTRO locked card */}
@@ -930,33 +942,15 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
               })}
             </div>
 
-            {/* Histoire locked cards for current acte */}
-            {histoireScenes.filter(s => s.acte === String(currentActe)).map(scene => (
-              <div key={`hist-${scene.id}`} className="bac-card" style={{ marginBottom: 12, borderLeft: '4px solid #f59e0b', background: 'rgba(245,158,11,0.05)', padding: 14, cursor: 'pointer' }} onClick={() => setDetailLockedScene(scene)}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <span className="bac-badge" style={{ background: '#f59e0b', color: 'white', marginBottom: 4, display: 'inline-block' }}>📌 HISTOIRE</span>
-                    <h3 style={{ fontWeight: 700, fontSize: '1.0625rem', marginTop: 4 }}>{scene.titre}</h3>
-                    <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>
-                      {scene.ton_principal && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>{scene.ton_principal}</span>}
-                    </div>
-                  </div>
-                  <span className="bac-badge bac-badge-success" style={{ flexShrink: 0, marginLeft: 8 }}>✓</span>
-                </div>
-              </div>
-            ))}
-            {(histoireScenes.filter(s => s.acte === String(currentActe)).length > 0 || isInIntro || isInFinale) && (
-              <p style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: 6, color: 'var(--bac-text-secondary)' }}>Votre scène libre :</p>
-            )}
+            {/* Selectable scenes for current acte: only histoire scenes where this group is groupe_acteur */}
             <div className="bac-stagger" style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: isInFinale ? 20 : 120 }}>
-              {getScenesForActe(currentActe).map(scene => {
-                const isChosen = choix.find(c => c.acte === String(currentActe))?.scene_id === scene.id;
+              {getSelectableScenes().filter(s => s.acte === String(currentActe)).map(scene => {
+                const isChosen = choix.some(c => c.scene_id === scene.id);
                 return (
                   <div
                     key={scene.id}
                     className={`bac-scene-card ${isChosen ? 'selected' : ''}`}
-                    onClick={() => selectScene(currentActe, scene.id)}
+                    onClick={() => selectScene(Number(scene.acte), scene.id)}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <h3 style={{ fontWeight: 700, fontSize: '1.0625rem' }}>{scene.titre}</h3>
@@ -969,6 +963,38 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
                   </div>
                 );
               })}
+
+              {/* Read-only scenes: histoire scenes for this acte managed by other groups */}
+              {(() => {
+                const otherScenes = (session?.histoire?.scenes || [])
+                  .map(hs => hs.scene!)
+                  .filter((s): s is BacScene => !!(s && s.groupe_acteur && s.groupe_acteur !== slug && s.acte === String(currentActe)));
+                if (otherScenes.length === 0) return null;
+                return (
+                  <>
+                    <p style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--bac-text-muted)', marginTop: 8, marginBottom: 2 }}>Scènes des autres groupes</p>
+                    {otherScenes.map(scene => {
+                      const ownerGroup = globalGroupes.find((g: any) => g.slug === scene.groupe_acteur);
+                      return (
+                        <div key={scene.id} style={{ padding: 14, cursor: 'default', pointerEvents: 'none', background: 'var(--bac-bg-secondary, #f3f4f6)', borderRadius: 10, border: '1.5px dashed #d1d5db', color: 'var(--bac-text-muted)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                            <h3 style={{ fontWeight: 700, fontSize: '1.0625rem', margin: 0 }}>{scene.titre}</h3>
+                            {ownerGroup && (
+                              <span className="bac-badge" style={{ background: ownerGroup.couleur || '#888', color: 'white', flexShrink: 0, fontSize: '0.75rem' }}>
+                                {ownerGroup.nom}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-secondary)' }}>⏱️ {scene.duree_min}-{scene.duree_max} min</span>
+                            {scene.ton_principal && <span style={{ fontSize: '0.8125rem', color: 'var(--bac-text-muted)' }}>{scene.ton_principal}</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                );
+              })()}
             </div>
 
             {/* Scene detail modal */}
@@ -988,10 +1014,10 @@ export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: st
                   </div>
                   <div className="bac-modal-footer">
                     <button className="bac-btn bac-btn-secondary" onClick={() => { setShowSceneDetail(false); setDetailScene(null); }}>Annuler</button>
-                    {choix.find(c => c.acte === String(currentActe))?.scene_id === detailScene.id ? (
-                      <button className="bac-btn bac-btn-warning" style={{ marginRight: 8 }} onClick={() => deselectScene(currentActe, detailScene.id)}>Désélectionner</button>
+                    {choix.some(c => c.scene_id === detailScene.id) ? (
+                      <button className="bac-btn bac-btn-warning" style={{ marginRight: 8 }} onClick={() => deselectScene(Number(detailScene.acte), detailScene.id)}>Désélectionner</button>
                     ) : null}
-                    <button className="bac-btn bac-btn-primary" onClick={() => confirmSelectScene(currentActe, detailScene.id)}>
+                    <button className="bac-btn bac-btn-primary" onClick={() => confirmSelectScene(Number(detailScene.acte), detailScene.id)}>
                       Choisir cette scène
                     </button>
                   </div>
