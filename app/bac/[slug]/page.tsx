@@ -20,7 +20,7 @@ export default async function GroupSlugPage({ params }: { params: Promise<{ slug
   }
 
   // Fetch group config (nb_scenes_requis)
-  let nbScenesRequis = 4;
+  let nbScenesRequis = 3;
   try {
     const { data } = await supabaseAdmin
       .from('bac_profils_acces')

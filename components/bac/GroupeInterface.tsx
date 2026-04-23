@@ -13,7 +13,7 @@ interface CastingMember {
   variant_id: string;
 }
 
-export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: string; nbScenesRequis?: number }) {
+export default function GroupeInterface({ slug, nbScenesRequis = 3 }: { slug: string; nbScenesRequis?: number }) {
   const [phase, setPhase] = useState<Phase>('loading');
   const [dataLoaded, setDataLoaded] = useState(false);
   const [session, setSession] = useState<BacSession | null>(null);
@@ -546,7 +546,9 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
 
   // ========== SCENE CHOICE ==========
   function getScenesForActe(acte: number) {
-    return scenes.filter(s => s.acte === String(acte));
+    return (session?.histoire?.scenes || [])
+      .map(hs => hs.scene!)
+      .filter((s): s is BacScene => !!(s && s.groupe_acteur === slug && s.acte === String(acte)));
   }
 
   async function selectScene(_acte: number, sceneId: string) {
@@ -653,7 +655,7 @@ export default function GroupeInterface({ slug, nbScenesRequis = 4 }: { slug: st
   const introScene = session?.histoire?.revelation || null;
   const isInIntro = !!(introScene && (introScene.groupes_concernes || []).includes(slug));
   const finaleScene = session?.histoire?.denouement || null;
-  const isInFinale = !!(finaleScene && (finaleScene.groupes_concernes || []).includes(slug));
+  const isInFinale = !!finaleScene;
 
   // auto-assign actor when personalization begins and only one cast member exists
   useEffect(() => {
