@@ -60,12 +60,12 @@ export default function ViewVideoBlock({ block }: { block: ViewBlock }) {
     );
   }
 
-  // Fix 4: show thumbnail with play overlay
   return (
     <button
       className={styles.videoThumb}
       onClick={(e) => { e.stopPropagation(); setPlaying(true); }}
       onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
       aria-label="Lire la vidéo"
       style={{ color: block.textColor || undefined }}
     >

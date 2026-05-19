@@ -30,6 +30,7 @@ export default function ViewLinkBlock({ block }: { block: ViewBlock }) {
         className={styles.linkCompact}
         style={{ color: block.textColor || undefined }}
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
       >
         <div className={styles.linkCompactThumb}>
           {image ? (
