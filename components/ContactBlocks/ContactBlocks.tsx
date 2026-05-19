@@ -14,8 +14,10 @@ const ContactEditModal = dynamic(() => import('./ContactEditModal'), { ssr: fals
 import ContactZonesEditModal from './ContactZonesEditModal';
 const ContactKitEditModal = dynamic(() => import('./ContactKitEditModal'), { ssr: false });
 const ContactFaqEditModal = dynamic(() => import('./ContactFaqEditModal'), { ssr: false });
+const ContactGalleryEditModal = dynamic(() => import('./ContactGalleryEditModal'), { ssr: false });
 import type { AboutRow } from './ContactEditModal';
 import type { ContactFaqData } from './ContactFaqEditModal';
+import type { ContactGalleryData } from './ContactGalleryEditModal';
 
 export default function ContactBlocks() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -39,6 +41,8 @@ export default function ContactBlocks() {
   const [faqData, setFaqData] = useState<ContactFaqData | null>(null);
   const [openFaq, setOpenFaq] = useState(false);
   const [faqOpenIndex, setFaqOpenIndex] = useState<number | null>(null);
+  const [galleryData, setGalleryData] = useState<ContactGalleryData | null>(null);
+  const [openGallery, setOpenGallery] = useState(false);
   const { hiddenBlocks, blockWidthModes, blockOrderContact, isAdmin: isAdminCtx } = useBlockVisibility();
   const hide = (id: string) => !isAdminCtx && hiddenBlocks.includes(id);
   const blockWidthClass = (id: string) => (blockWidthModes[id] === 'max1600' ? 'block-width-1600' : '');
@@ -50,7 +54,7 @@ export default function ContactBlocks() {
 
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=contact_handle,contact_intro,contact_photo,contact_zones,contact_kit,contact_faq,contact_handle_color,contact_handle_font_size,contact_handle_font_weight,contact_handle_font_family');
+        const resp = await fetch('/api/admin/site-settings?keys=contact_handle,contact_intro,contact_photo,contact_zones,contact_kit,contact_faq,contact_gallery,contact_handle_color,contact_handle_font_size,contact_handle_font_weight,contact_handle_font_family');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
@@ -90,6 +94,12 @@ export default function ContactBlocks() {
           try {
             const parsed = JSON.parse(String(s.contact_kit)) as ContactKitData;
             if (parsed && typeof parsed === 'object') setKitData(parsed);
+          } catch (_) {}
+        }
+        if (s.contact_gallery) {
+          try {
+            const parsed = JSON.parse(String(s.contact_gallery)) as ContactGalleryData;
+            if (parsed && typeof parsed === 'object') setGalleryData(parsed);
           } catch (_) {}
         }
         if (s.contact_handle_color) setHandleColor(String(s.contact_handle_color));
@@ -258,6 +268,69 @@ export default function ContactBlocks() {
       </div>
   );
 
+  const galleryItems = galleryData?.items ?? [];
+  const gallerySection = hide('contact_gallery') ? null : (
+    <div className={`${styles.blockInner} ${styles.blockFullWidthBg} ${blockWidthClass('contact_gallery')}`.trim()} style={{ position: 'relative', marginTop: '2.5rem', ...(galleryData?.backgroundColor ? { backgroundColor: galleryData.backgroundColor } : {}) }}>
+      {isAdmin && (
+        <div style={{ ...btnWrap, top: -16 }}>
+          <BlockVisibilityToggle blockId="contact_gallery" />
+          <BlockWidthToggle blockId="contact_gallery" />
+          <button type="button" className="btn-secondary" onClick={() => setOpenGallery(true)}
+            style={{ position: 'static', background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>
+            Modifier
+          </button>
+          <BlockOrderButtons page="contact" blockId="contact_gallery" />
+        </div>
+      )}
+      <AnimateInView variant="fadeUp">
+        <div className={styles.galleryBlock}>
+          {(galleryData?.title?.trim() || galleryData?.description?.trim()) && (
+            <div className={styles.galleryHeader}>
+              {galleryData?.title?.trim() && (() => {
+                const tagName = (galleryData.titleStyle && ['h1','h2','h3','h4','h5','p'].includes(galleryData.titleStyle) ? galleryData.titleStyle : 'h2');
+                const Tag = tagName as React.ElementType;
+                return (
+                  <Tag className={`${styles.galleryTitle} style-${tagName}`} style={{
+                    ...(galleryData.titleFontSize ? { fontSize: galleryData.titleFontSize } : {}),
+                    ...(galleryData.titleColor ? { color: galleryData.titleColor } : {}),
+                    ...(galleryData.titleAlign ? { textAlign: galleryData.titleAlign as 'left' | 'center' | 'right' } : {}),
+                  }}>
+                    {galleryData.title}
+                  </Tag>
+                );
+              })()}
+              {galleryData?.description?.trim() && (
+                <p className={styles.galleryDescription} style={{
+                  ...(galleryData.descriptionFontSize ? { fontSize: galleryData.descriptionFontSize } : {}),
+                  ...(galleryData.descriptionColor ? { color: galleryData.descriptionColor } : {}),
+                }}>
+                  {galleryData.description}
+                </p>
+              )}
+            </div>
+          )}
+          {(galleryItems.length > 0 || isAdmin) && (
+            <div className={styles.galleryScroll}>
+              {galleryItems.map((item, i) => (
+                <div key={i} className={styles.galleryItem}>
+                  <div className={styles.galleryImgWrap}>
+                    <img src={item.url} alt={item.caption ?? ''} className={styles.galleryImg} loading="lazy" />
+                  </div>
+                  {item.caption && <p className={styles.galleryCaption}>{item.caption}</p>}
+                </div>
+              ))}
+              {galleryItems.length === 0 && isAdmin && (
+                <div style={{ padding: '24px 32px', color: 'var(--muted)', fontSize: 13, border: '1.5px dashed #ccc', borderRadius: 8, whiteSpace: 'nowrap' }}>
+                  Aucune photo — cliquez sur « Modifier »
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </AnimateInView>
+    </div>
+  );
+
   const kitSection = hide('contact_kit') ? null : (
       <div className={`${styles.blockInner} ${styles.blockFullWidthBg} ${blockWidthClass('contact_kit')}`.trim()} style={{ position: 'relative', marginTop: '2.5rem', ...(kitData?.backgroundColor ? { backgroundColor: kitData.backgroundColor } : {}) }}>
         {isAdmin && (
@@ -366,6 +439,7 @@ export default function ContactBlocks() {
   const sections: Record<string, React.ReactNode> = {
     contact_intro: introSection,
     contact_zones: zonesSection,
+    contact_gallery: gallerySection,
     contact_kit: kitSection,
     contact_faq: faqSection,
   };
@@ -386,6 +460,9 @@ export default function ContactBlocks() {
       ) : null}
       {openFaq ? (
         <ContactFaqEditModal onClose={() => setOpenFaq(false)} onSaved={() => setOpenFaq(false)} />
+      ) : null}
+      {openGallery ? (
+        <ContactGalleryEditModal onClose={() => setOpenGallery(false)} onSaved={() => setOpenGallery(false)} />
       ) : null}
     </div>
   );

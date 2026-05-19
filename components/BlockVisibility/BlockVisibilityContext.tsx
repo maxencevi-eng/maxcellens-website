@@ -59,7 +59,7 @@ function mergeKnownBlocks(saved: string[], defaults: string[]): string[] {
   }
   return result;
 }
-const DEFAULT_ORDER_CONTACT = ['contact_intro', 'contact_zones', 'contact_kit', 'contact_faq'];
+const DEFAULT_ORDER_CONTACT = ['contact_intro', 'contact_zones', 'contact_gallery', 'contact_kit', 'contact_faq'];
 const DEFAULT_ORDER_ANIMATION = ['animation_s1', 'animation_s2', 'animation_s3', 'animation_cta'];
 const DEFAULT_ORDER_REALISATION = ['production_intro', 'production_videos'];
 const DEFAULT_ORDER_EVENEMENT = ['evenement_intro', 'evenement_videos'];
@@ -106,7 +106,7 @@ export function BlockVisibilityProvider({ children }: { children: React.ReactNod
         const modes = data?.blockWidthModes;
         setBlockWidthModesState(modes && typeof modes === 'object' && !Array.isArray(modes) ? modes : {});
         setBlockOrderHome(Array.isArray(data?.blockOrderHome) ? mergeKnownBlocks(data.blockOrderHome, DEFAULT_ORDER_HOME) : DEFAULT_ORDER_HOME);
-        setBlockOrderContact(Array.isArray(data?.blockOrderContact) ? data.blockOrderContact : DEFAULT_ORDER_CONTACT);
+        setBlockOrderContact(Array.isArray(data?.blockOrderContact) ? mergeKnownBlocks(data.blockOrderContact, DEFAULT_ORDER_CONTACT) : DEFAULT_ORDER_CONTACT);
         setBlockOrderAnimation(Array.isArray(data?.blockOrderAnimation) ? data.blockOrderAnimation : DEFAULT_ORDER_ANIMATION);
         setBlockOrderRealisation(Array.isArray(data?.blockOrderRealisation) ? data.blockOrderRealisation : DEFAULT_ORDER_REALISATION);
         setBlockOrderEvenement(Array.isArray(data?.blockOrderEvenement) ? data.blockOrderEvenement : DEFAULT_ORDER_EVENEMENT);
