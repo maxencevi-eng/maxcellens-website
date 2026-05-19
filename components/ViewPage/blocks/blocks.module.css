@@ -1,0 +1,244 @@
+/* TEXT */
+.textContent {
+  padding: 12px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+/* LINK */
+.linkBlock {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+}
+.linkImage {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.linkImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.linkBody {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: inherit;
+}
+.linkMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.linkFavicon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.linkTitle {
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.linkDescription {
+  font-size: 12px;
+  opacity: 0.7;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+.linkUrl {
+  font-size: 11px;
+  opacity: 0.5;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* LINK compact */
+.linkCompact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+  padding: 0 12px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.linkCompactThumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.linkCompactImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.linkCompactBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* VIDEO */
+.videoEmpty, .videoFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  opacity: 0.4;
+  font-size: 13px;
+  text-decoration: none;
+  color: inherit;
+  flex-direction: column;
+}
+.videoFallback {
+  opacity: 1;
+  flex-direction: row;
+  gap: 8px;
+}
+.videoIframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+.videoThumb {
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.08);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.2s;
+}
+.videoThumb:hover { background: rgba(0,0,0,0.13); }
+/* Fix 4: thumbnail image */
+.videoThumbnailImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.videoThumb { position: relative; }
+
+.videoPlayIcon {
+  position: relative;
+  z-index: 1;
+  width: 48px;
+  height: 48px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.videoLabel {
+  font-size: 11px;
+  opacity: 0.6;
+  color: inherit;
+}
+
+/* PHOTO */
+.photoEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  opacity: 0.35;
+  font-size: 13px;
+}
+.photoBlock {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+.photoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.photoNav {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 12px;
+}
+.photoNav button {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+/* MAP */
+.mapEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  opacity: 0.35;
+  font-size: 13px;
+}
+.mapIframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}

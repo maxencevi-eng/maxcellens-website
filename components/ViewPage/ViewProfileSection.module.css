@@ -1,0 +1,132 @@
+.profileSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 20px 20px;
+  gap: 12px;
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Avatar */
+.avatarWrap {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+.avatar, .avatarPlaceholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--bg, #fff);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--block-bg, #f5f0e8);
+  color: var(--muted, #aaa);
+}
+.avatarActions {
+  position: absolute;
+  bottom: -4px;
+  display: flex;
+  gap: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.avatarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s;
+}
+.avatarBtn:hover { background: rgba(0,0,0,0.75); }
+
+/* Text area */
+.textArea {
+  position: relative;
+  width: 100%;
+  text-align: center;
+  padding-top: 6px;
+}
+.editTextBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  padding: 0;
+}
+.editProfileBtn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: none;
+  border: 1px solid var(--border, #e5e1d8);
+  border-radius: 6px;
+  padding: 4px 6px;
+  cursor: pointer;
+  color: var(--muted, #888);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  transition: border-color 0.15s;
+}
+.editProfileBtn:hover { border-color: var(--color-primary, #c89a5a); color: var(--color-primary, #c89a5a); }
+.emptyTitle {
+  display: block;
+  font-size: 14px;
+  color: var(--muted, #aaa);
+  border: 1.5px dashed var(--border, #ccc);
+  border-radius: 6px;
+  padding: 8px 16px;
+}
+.subtitle {
+  font-size: 14px;
+  color: var(--muted, #666);
+  margin: 4px 0 0;
+  line-height: 1.4;
+}
+
+/* Social icons */
+.social {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.socialLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text, #333);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.socialLink:hover { opacity: 0.7; }
+.socialIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.socialIcon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}

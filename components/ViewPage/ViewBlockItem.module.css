@@ -1,0 +1,78 @@
+.block {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--block-bg, #fff);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  min-height: 80px;
+}
+
+/* Sizes — grid column/row spans */
+.square  { grid-column: span 1; grid-row: span 2; }
+.wide    { grid-column: span 2; grid-row: span 2; }
+.compact { grid-column: span 2; grid-row: span 1; }
+.tall    { grid-column: span 1; grid-row: span 4; }
+.large   { grid-column: span 2; grid-row: span 4; }
+
+.dragHandle {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s;
+  line-height: 1;
+  user-select: none;
+}
+.dragHandle:hover { background: rgba(0,0,0,0.65); }
+.dragHandle:active { cursor: grabbing; }
+.dragging { z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+
+/* Menu button (...) */
+.menuBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  transition: background 0.15s;
+  line-height: 1;
+}
+.menuBtn:hover { background: rgba(0,0,0,0.75); }
+
+/* Caption */
+.caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 4px 10px;
+  background: rgba(0,0,0,0.35);
+  color: #fff;
+  font-size: 11px;
+  text-align: center;
+  backdrop-filter: blur(2px);
+}
