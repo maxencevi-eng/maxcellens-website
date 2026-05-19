@@ -6,13 +6,11 @@ import dynamic from 'next/dynamic';
 import { supabase } from '../../lib/supabase';
 import styles from './ContactBlocks.module.css';
 import type { ContactZonesData } from './ContactZonesEditModal';
-import type { ContactKitData } from './ContactKitEditModal';
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from '../BlockVisibility';
 import AnimateInView, { AnimateStaggerItem, useSplashReady } from '../AnimateInView/AnimateInView';
 
 const ContactEditModal = dynamic(() => import('./ContactEditModal'), { ssr: false });
 import ContactZonesEditModal from './ContactZonesEditModal';
-const ContactKitEditModal = dynamic(() => import('./ContactKitEditModal'), { ssr: false });
 const ContactFaqEditModal = dynamic(() => import('./ContactFaqEditModal'), { ssr: false });
 const ContactGalleryEditModal = dynamic(() => import('./ContactGalleryEditModal'), { ssr: false });
 import type { AboutRow } from './ContactEditModal';
@@ -22,28 +20,89 @@ import type { ContactGalleryData, ContactGalleryItem } from './ContactGalleryEdi
 function GalleryRow({ items, speed }: { items: ContactGalleryItem[]; speed: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const animatingRef = useRef(false);
-  const [animate, setAnimate] = useState(false);
+  const overflowsRef = useRef(false);
+  const pausedRef = useRef(false);
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartScrollLeft = useRef(0);
+  const [overflows, setOverflows] = useState(false);
 
+  // Mesure — observe container + track (déclenche après chargement des images)
   useEffect(() => {
-    if (speed === 0) { animatingRef.current = false; setAnimate(false); return; }
+    if (speed === 0) { overflowsRef.current = false; setOverflows(false); return; }
     function check() {
-      if (!containerRef.current || !trackRef.current) return;
-      const cw = containerRef.current.offsetWidth;
-      // If currently animated, track has 2× items — divide to get natural width
-      const naturalW = animatingRef.current
-        ? trackRef.current.scrollWidth / 2
-        : trackRef.current.scrollWidth;
-      const should = naturalW > cw;
-      animatingRef.current = should;
-      setAnimate(should);
+      const el = containerRef.current;
+      const track = trackRef.current;
+      if (!el || !track) return;
+      const does = track.scrollWidth > el.clientWidth;
+      if (does !== overflowsRef.current) {
+        overflowsRef.current = does;
+        setOverflows(does);
+      }
     }
     check();
     const ro = new ResizeObserver(check);
     if (containerRef.current) ro.observe(containerRef.current);
+    if (trackRef.current) ro.observe(trackRef.current);
     return () => ro.disconnect();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, speed]);
+
+  // Auto-scroll via scrollLeft — simple, pas de duplication
+  // Arrive à la fin → repart au début
+  useEffect(() => {
+    if (!overflows || speed === 0) return;
+    const el = containerRef.current;
+    const track = trackRef.current;
+    if (!el || !track) return;
+    let raf: number;
+    let last: number | null = null;
+    function tick(now: number) {
+      if (last !== null && !pausedRef.current) {
+        const maxScroll = track!.scrollWidth - el!.clientWidth;
+        if (maxScroll > 0) {
+          const pps = maxScroll / speed;
+          el!.scrollLeft += (pps * (now - last)) / 1000;
+          if (el!.scrollLeft >= maxScroll) el!.scrollLeft = 0;
+        }
+      }
+      last = now;
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [overflows, speed]);
+
+  useEffect(() => () => { if (resumeTimer.current) clearTimeout(resumeTimer.current); }, []);
+
+  function onTouchStart() {
+    pausedRef.current = true;
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+  }
+  function onTouchEnd() {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    resumeTimer.current = setTimeout(() => { pausedRef.current = false; }, 1200);
+  }
+
+  function onMouseDown(e: React.MouseEvent) {
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragStartScrollLeft.current = containerRef.current?.scrollLeft ?? 0;
+    pausedRef.current = true;
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+  }
+  function onMouseMove(e: React.MouseEvent) {
+    if (!isDragging.current || !containerRef.current) return;
+    e.preventDefault();
+    containerRef.current.scrollLeft = dragStartScrollLeft.current - (e.clientX - dragStartX.current);
+  }
+  function onMouseUp() {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    resumeTimer.current = setTimeout(() => { pausedRef.current = false; }, 1200);
+  }
 
   const itemEl = (item: ContactGalleryItem, i: number) => (
     <div key={i} className={styles.galleryItem}>
@@ -54,22 +113,19 @@ function GalleryRow({ items, speed }: { items: ContactGalleryItem[]; speed: numb
     </div>
   );
 
-  if (speed === 0) {
-    return (
-      <div className={styles.galleryScrollStatic}>
-        <div className={styles.galleryTrackStatic}>{items.map(itemEl)}</div>
-      </div>
-    );
-  }
-
   return (
-    <div ref={containerRef} className={styles.galleryScroll}>
-      <div
-        ref={trackRef}
-        className={animate ? styles.galleryTrack : styles.galleryTrackStatic}
-        style={animate ? { animationDuration: `${speed}s` } : undefined}
-      >
-        {(animate ? [...items, ...items] : items).map(itemEl)}
+    <div
+      ref={containerRef}
+      className={styles.galleryScrollJS}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseUp}
+    >
+      <div ref={trackRef} className={styles.galleryTrackJS}>
+        {items.map(itemEl)}
       </div>
     </div>
   );
@@ -91,8 +147,6 @@ export default function ContactBlocks() {
   const [handleFontWeight, setHandleFontWeight] = useState(0);
   const [handleFontFamily, setHandleFontFamily] = useState('');
   const [zones, setZones] = useState<ContactZonesData | null>(null);
-  const [kitData, setKitData] = useState<ContactKitData | null>(null);
-  const [openKit, setOpenKit] = useState(false);
   const [labelStyle, setLabelStyle] = useState<{ fontSize?: number; color?: string; fontFamily?: string }>({});
   const [faqData, setFaqData] = useState<ContactFaqData | null>(null);
   const [openFaq, setOpenFaq] = useState(false);
@@ -110,7 +164,7 @@ export default function ContactBlocks() {
 
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=contact_handle,contact_intro,contact_photo,contact_zones,contact_kit,contact_faq,contact_gallery,contact_handle_color,contact_handle_font_size,contact_handle_font_weight,contact_handle_font_family');
+        const resp = await fetch('/api/admin/site-settings?keys=contact_handle,contact_intro,contact_photo,contact_zones,contact_faq,contact_gallery,contact_handle_color,contact_handle_font_size,contact_handle_font_weight,contact_handle_font_family');
         if (!resp.ok) return;
         const j = await resp.json();
         const s = j?.settings || {};
@@ -144,12 +198,6 @@ export default function ContactBlocks() {
           try {
             const parsed = JSON.parse(String(s.contact_zones)) as ContactZonesData;
             if (parsed && typeof parsed === 'object') setZones(parsed);
-          } catch (_) {}
-        }
-        if (s.contact_kit) {
-          try {
-            const parsed = JSON.parse(String(s.contact_kit)) as ContactKitData;
-            if (parsed && typeof parsed === 'object') setKitData(parsed);
           } catch (_) {}
         }
         if (s.contact_gallery) {
@@ -399,49 +447,6 @@ export default function ContactBlocks() {
     </div>
   );
 
-  const kitSection = hide('contact_kit') ? null : (
-      <div className={`${styles.blockInner} ${styles.blockFullWidthBg} ${blockWidthClass('contact_kit')}`.trim()} style={{ position: 'relative', marginTop: '2.5rem', ...(kitData?.backgroundColor ? { backgroundColor: kitData.backgroundColor } : {}) }}>
-        {isAdmin && (
-          <div style={{ ...btnWrap, top: -16 }}>
-            <BlockVisibilityToggle blockId="contact_kit" />
-            <BlockWidthToggle blockId="contact_kit" />
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => setOpenKit(true)}
-              style={{ position: 'static', background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}
-            >
-              Modifier
-            </button>
-            <BlockOrderButtons page="contact" blockId="contact_kit" />
-          </div>
-        )}
-        <AnimateInView variant="fadeUp">
-          {kitData?.title?.trim() ? (() => {
-            const tagName = (kitData.titleStyle && ['h1','h2','h3','h4','h5','p'].includes(kitData.titleStyle) ? kitData.titleStyle : 'h3');
-            const Tag = tagName as React.ElementType;
-            return (
-              <Tag className={`${styles.kitTitle} style-${tagName}`} style={{
-                ...(kitData.titleFontSize ? { fontSize: kitData.titleFontSize } : {}),
-                ...(kitData.titleColor ? { color: kitData.titleColor } : {}),
-                ...(kitData.titleAlign ? { textAlign: kitData.titleAlign as 'left' | 'center' | 'right' } : {}),
-              }}>
-                {kitData.title.trim()}
-              </Tag>
-            );
-          })() : null}
-          <div className={styles.kitWidget}>
-            <iframe
-              src={kitData?.embedUrl?.trim() || 'https://kit.co/embed?url=https%3A%2F%2Fkit.co%2FMaxcellens%2Fmon-equipement'}
-              className={styles.kitIframe}
-              scrolling="no"
-              title="Mon équipement — Kit.co"
-              loading="lazy"
-            />
-          </div>
-        </AnimateInView>
-      </div>
-  );
 
   const faqItems = faqData?.items ?? [];
   const faqSection = hide('contact_faq') ? null : (
@@ -508,7 +513,6 @@ export default function ContactBlocks() {
     contact_intro: introSection,
     contact_zones: zonesSection,
     contact_gallery: gallerySection,
-    contact_kit: kitSection,
     contact_faq: faqSection,
   };
 
@@ -522,9 +526,6 @@ export default function ContactBlocks() {
       ) : null}
       {openZones ? (
         <ContactZonesEditModal onClose={() => setOpenZones(false)} onSaved={() => setOpenZones(false)} />
-      ) : null}
-      {openKit ? (
-        <ContactKitEditModal onClose={() => setOpenKit(false)} onSaved={() => setOpenKit(false)} />
       ) : null}
       {openFaq ? (
         <ContactFaqEditModal onClose={() => setOpenFaq(false)} onSaved={() => setOpenFaq(false)} />
