@@ -48,7 +48,6 @@ export default function ViewVideoBlock({ block }: { block: ViewBlock }) {
     );
   }
 
-  // Fix 5: when playing, the iframe must be fully interactive — no overlay
   if (playing) {
     return (
       <iframe
@@ -57,7 +56,6 @@ export default function ViewVideoBlock({ block }: { block: ViewBlock }) {
         allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
         allowFullScreen
         title="Vidéo"
-        style={{ pointerEvents: 'all' }}
       />
     );
   }

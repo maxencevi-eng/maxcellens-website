@@ -41,9 +41,9 @@ export default function ViewBlockItem({ block, isAdmin, onUpdate, onDelete }: Pr
   const [showModal, setShowModal] = useState(false);
 
   const {
-    attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
     transform,
     transition,
     isDragging,
@@ -66,13 +66,13 @@ export default function ViewBlockItem({ block, isAdmin, onUpdate, onDelete }: Pr
         ref={setNodeRef}
         style={style}
         className={`${styles.block} ${sizeClass} ${isDragging ? styles.dragging : ''}`}
-        {...(isAdmin ? attributes : {})}
       >
         <BlockContent block={block} />
 
         {isAdmin && (
           <>
             <div
+              ref={setActivatorNodeRef}
               className={styles.dragHandle}
               {...listeners}
               aria-label="Déplacer le bloc"

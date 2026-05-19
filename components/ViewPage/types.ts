@@ -40,6 +40,7 @@ export interface ViewBlock {
   // PHOTO block
   photos?: Array<{ url: string; path?: string; focus?: { x: number; y: number } }>;
   photoInterval?: number; // seconds between slides, 0 = manual
+  hideCounter?: boolean;
 
   // MAP block
   mapQuery?: string;

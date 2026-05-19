@@ -50,6 +50,7 @@ export default function ViewBlockModal({ block, onClose, onSave, onDelete }: Pro
   const [photos, setPhotos] = useState<Array<{ url: string; path?: string; focus?: { x: number; y: number } }>>(block.photos || []);
   const [focusIndex, setFocusIndex] = useState<number | null>(null);
   const [photoIntervalStr, setPhotoIntervalStr] = useState(String(block.photoInterval ?? 0));
+  const [hideCounter, setHideCounter] = useState(block.hideCounter || false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // MAP
@@ -140,9 +141,9 @@ export default function ViewBlockModal({ block, onClose, onSave, onDelete }: Pro
     }
     if (block.type === 'photo') {
       updated.photos = photos;
-      // Fix 1 + 6: clamp interval on save, not during typing
       const parsed = parseInt(photoIntervalStr, 10);
       updated.photoInterval = isNaN(parsed) ? 0 : Math.max(0, Math.min(60, parsed));
+      updated.hideCounter = hideCounter || undefined;
     }
     if (block.type === 'map') {
       updated.mapQuery = mapQuery;
@@ -412,6 +413,18 @@ export default function ViewBlockModal({ block, onClose, onSave, onDelete }: Pro
               />
               <span style={{ fontSize: 13, color: 'var(--muted,#888)' }}>secondes entre chaque photo (0 = manuel)</span>
             </div>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
+              <input
+                type="checkbox"
+                checked={hideCounter}
+                onChange={(e) => setHideCounter(e.target.checked)}
+                style={{ width: 16, height: 16 }}
+              />
+              Masquer la numérotation (x / x)
+            </label>
           </div>
         </div>
       )}

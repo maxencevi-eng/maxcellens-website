@@ -22,21 +22,26 @@ export default function ViewPhotoBlock({ block }: { block: ViewBlock }) {
     );
   }
 
-  const photo = photos[current];
   const hasMultiple = photos.length > 1;
-  const objectPosition = photo.focus
-    ? `${photo.focus.x}% ${photo.focus.y}%`
-    : 'center center';
 
   return (
     <div className={styles.photoBlock}>
-      <img
-        src={photo.url}
-        alt=""
-        className={styles.photoImg}
-        style={{ objectPosition }}
-      />
-      {hasMultiple && (
+      {photos.map((photo, i) => (
+        <img
+          key={photo.url}
+          src={photo.url}
+          alt=""
+          className={styles.photoImg}
+          style={{
+            objectPosition: photo.focus ? `${photo.focus.x}% ${photo.focus.y}%` : 'center center',
+            opacity: i === current ? 1 : 0,
+            transition: 'opacity 0.4s ease',
+            position: 'absolute',
+            inset: 0,
+          }}
+        />
+      ))}
+      {hasMultiple && !block.hideCounter && (
         <div className={styles.photoNav}>
           <button
             onClick={(e) => { e.stopPropagation(); setCurrent((c) => (c - 1 + photos.length) % photos.length); }}

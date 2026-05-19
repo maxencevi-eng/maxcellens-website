@@ -29,7 +29,7 @@ interface Props {
 export default function ViewBlockGrid({ blocks, isAdmin, onReorder, onUpdate, onDelete }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 8 } }),
   );
 
   function handleDragEnd(event: DragEndEvent) {

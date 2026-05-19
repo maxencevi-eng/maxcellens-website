@@ -127,15 +127,17 @@
   flex-direction: row;
   gap: 8px;
 }
+
 .videoIframe {
   width: 100%;
   height: 100%;
   border: none;
   display: block;
 }
+/* Thumbnail button fills the block absolutely so height chain doesn't matter */
 .videoThumb {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   background: rgba(0,0,0,0.08);
   border: none;
   cursor: pointer;
@@ -147,7 +149,6 @@
   transition: background 0.2s;
 }
 .videoThumb:hover { background: rgba(0,0,0,0.13); }
-/* Fix 4: thumbnail image */
 .videoThumbnailImg {
   position: absolute;
   inset: 0;
@@ -156,7 +157,6 @@
   object-fit: cover;
   display: block;
 }
-.videoThumb { position: relative; }
 
 .videoPlayIcon {
   position: relative;
@@ -199,6 +199,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  /* crossfade: absolute stacking, opacity controlled inline */
 }
 .photoNav {
   position: absolute;
