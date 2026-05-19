@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { ViewBlock } from '../types';
 import styles from './blocks.module.css';
 
@@ -7,10 +7,20 @@ export default function ViewPhotoBlock({ block }: { block: ViewBlock }) {
   const photos = block.photos || [];
   const [current, setCurrent] = useState(0);
 
+  // Use a ref so the interval callback always reads the latest photos.length
+  // without needing to be recreated (prevents stale-closure stops on re-render)
+  const photosLenRef = useRef(photos.length);
+  photosLenRef.current = photos.length;
+
   useEffect(() => {
     if (!block.photoInterval || block.photoInterval <= 0 || photos.length <= 1) return;
-    const id = setInterval(() => setCurrent((c) => (c + 1) % photos.length), block.photoInterval * 1000);
+    const id = setInterval(
+      () => setCurrent((c) => (c + 1) % photosLenRef.current),
+      block.photoInterval * 1000,
+    );
     return () => clearInterval(id);
+  // Only restart the interval if interval duration or photo count changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [block.photoInterval, photos.length]);
 
   if (!photos.length) {
@@ -22,15 +32,18 @@ export default function ViewPhotoBlock({ block }: { block: ViewBlock }) {
     );
   }
 
-  const hasMultiple = photos.length > 1;
-
   return (
-    <div className={styles.photoBlock}>
+    <div
+      className={styles.photoBlock}
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+    >
       {photos.map((photo, i) => (
         <img
           key={photo.url}
           src={photo.url}
           alt=""
+          draggable={false}
           className={styles.photoImg}
           style={{
             objectPosition: photo.focus ? `${photo.focus.x}% ${photo.focus.y}%` : 'center center',
@@ -41,21 +54,6 @@ export default function ViewPhotoBlock({ block }: { block: ViewBlock }) {
           }}
         />
       ))}
-      {hasMultiple && !block.hideCounter && (
-        <div className={styles.photoNav}>
-          <button
-            onClick={(e) => { e.stopPropagation(); setCurrent((c) => (c - 1 + photos.length) % photos.length); }}
-            onPointerDown={(e) => e.stopPropagation()}
-            aria-label="Précédent"
-          >‹</button>
-          <span>{current + 1} / {photos.length}</span>
-          <button
-            onClick={(e) => { e.stopPropagation(); setCurrent((c) => (c + 1) % photos.length); }}
-            onPointerDown={(e) => e.stopPropagation()}
-            aria-label="Suivant"
-          >›</button>
-        </div>
-      )}
     </div>
   );
 }
