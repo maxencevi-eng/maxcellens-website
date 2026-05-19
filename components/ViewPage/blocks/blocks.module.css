@@ -134,27 +134,6 @@
   border: none;
   display: block;
 }
-/* "Open in app" overlay button, bottom-left, above the iframe */
-.videoAppLink {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  background: rgba(0,0,0,0.65);
-  color: #fff;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  text-decoration: none;
-  backdrop-filter: blur(4px);
-  pointer-events: all;
-  transition: background 0.15s;
-}
-.videoAppLink:hover { background: rgba(0,0,0,0.85); }
 /* Thumbnail button fills the block absolutely so height chain doesn't matter */
 .videoThumb {
   position: absolute;

@@ -7,21 +7,25 @@ export default function ViewPhotoBlock({ block }: { block: ViewBlock }) {
   const photos = block.photos || [];
   const [current, setCurrent] = useState(0);
 
-  // Use a ref so the interval callback always reads the latest photos.length
-  // without needing to be recreated (prevents stale-closure stops on re-render)
-  const photosLenRef = useRef(photos.length);
-  photosLenRef.current = photos.length;
+  // Always hold the latest block in a ref so the interval never captures stale values
+  const blockRef = useRef(block);
+  blockRef.current = block;
 
+  // Create the interval once on mount; reads live values via blockRef each tick
+  // so React re-renders (DnD state, parent updates) can never clear it
   useEffect(() => {
-    if (!block.photoInterval || block.photoInterval <= 0 || photos.length <= 1) return;
-    const id = setInterval(
-      () => setCurrent((c) => (c + 1) % photosLenRef.current),
-      block.photoInterval * 1000,
-    );
+    const interval = blockRef.current.photoInterval;
+    const len = (blockRef.current.photos || []).length;
+    if (!interval || interval <= 0 || len <= 1) return;
+
+    const id = setInterval(() => {
+      const currentLen = (blockRef.current.photos || []).length;
+      if (currentLen > 1) setCurrent((c) => (c + 1) % currentLen);
+    }, interval * 1000);
+
     return () => clearInterval(id);
-  // Only restart the interval if interval duration or photo count changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [block.photoInterval, photos.length]);
+  }, []); // intentionally empty — interval is self-managed via blockRef
 
   if (!photos.length) {
     return (
@@ -33,11 +37,7 @@ export default function ViewPhotoBlock({ block }: { block: ViewBlock }) {
   }
 
   return (
-    <div
-      className={styles.photoBlock}
-      onPointerDown={(e) => e.stopPropagation()}
-      onTouchStart={(e) => e.stopPropagation()}
-    >
+    <div className={styles.photoBlock}>
       {photos.map((photo, i) => (
         <img
           key={photo.url}
