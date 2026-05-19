@@ -214,7 +214,7 @@ export default function ViewProfileSection({ profile, isAdmin, onUpdate }: Props
             return (
               <a key={key} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className={styles.socialLink}>
                 {customIcons[key] ? (
-                  <img src={customIcons[key]} alt={label} width={22} height={22} />
+                  <img src={customIcons[key]} alt={label} className={styles.socialIcon} style={{ width: 28, height: 28, objectFit: 'contain' }} />
                 ) : (
                   <span className={styles.socialIcon}>{svg}</span>
                 )}
