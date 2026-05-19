@@ -6,26 +6,42 @@ import styles from './blocks.module.css';
 export default function ViewPhotoBlock({ block }: { block: ViewBlock }) {
   const photos = block.photos || [];
   const [current, setCurrent] = useState(0);
+  const [paused, setPaused] = useState(false);
 
-  // Always hold the latest block in a ref so the interval never captures stale values
+  // Refs so the interval closure always reads live values without being recreated
   const blockRef = useRef(block);
   blockRef.current = block;
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
+  const divRef = useRef<HTMLDivElement>(null);
 
-  // Create the interval once on mount; reads live values via blockRef each tick
-  // so React re-renders (DnD state, parent updates) can never clear it
+  // Single interval created on mount — checks pausedRef each tick, never reset by re-renders
   useEffect(() => {
     const interval = blockRef.current.photoInterval;
     const len = (blockRef.current.photos || []).length;
     if (!interval || interval <= 0 || len <= 1) return;
 
     const id = setInterval(() => {
+      if (pausedRef.current) return;
       const currentLen = (blockRef.current.photos || []).length;
       if (currentLen > 1) setCurrent((c) => (c + 1) % currentLen);
     }, interval * 1000);
 
     return () => clearInterval(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally empty — interval is self-managed via blockRef
+  }, []);
+
+  // Click outside the block → resume
+  useEffect(() => {
+    if (!paused) return;
+    function handleOutside(e: PointerEvent) {
+      if (divRef.current && !divRef.current.contains(e.target as Node)) {
+        setPaused(false);
+      }
+    }
+    document.addEventListener('pointerdown', handleOutside, true);
+    return () => document.removeEventListener('pointerdown', handleOutside, true);
+  }, [paused]);
 
   if (!photos.length) {
     return (
@@ -37,7 +53,14 @@ export default function ViewPhotoBlock({ block }: { block: ViewBlock }) {
   }
 
   return (
-    <div className={styles.photoBlock}>
+    <div
+      ref={divRef}
+      className={styles.photoBlock}
+      onClick={() => { if (photos.length > 1) setPaused(true); }}
+      onPointerDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      style={{ cursor: photos.length > 1 ? 'pointer' : 'default' }}
+    >
       {photos.map((photo, i) => (
         <img
           key={photo.url}
@@ -54,6 +77,9 @@ export default function ViewPhotoBlock({ block }: { block: ViewBlock }) {
           }}
         />
       ))}
+      {paused && photos.length > 1 && (
+        <div className={styles.photoPausedHint}>⏸</div>
+      )}
     </div>
   );
 }

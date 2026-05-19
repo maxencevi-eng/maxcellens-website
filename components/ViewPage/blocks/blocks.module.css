@@ -225,6 +225,17 @@
   padding: 0 2px;
 }
 
+/* PHOTO pause hint */
+.photoPausedHint {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 14px;
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: 2;
+}
+
 /* MAP */
 .mapEmpty {
   display: flex;
