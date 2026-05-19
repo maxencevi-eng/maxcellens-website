@@ -17,7 +17,63 @@ const ContactFaqEditModal = dynamic(() => import('./ContactFaqEditModal'), { ssr
 const ContactGalleryEditModal = dynamic(() => import('./ContactGalleryEditModal'), { ssr: false });
 import type { AboutRow } from './ContactEditModal';
 import type { ContactFaqData } from './ContactFaqEditModal';
-import type { ContactGalleryData } from './ContactGalleryEditModal';
+import type { ContactGalleryData, ContactGalleryItem } from './ContactGalleryEditModal';
+
+function GalleryRow({ items, speed }: { items: ContactGalleryItem[]; speed: number }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const animatingRef = useRef(false);
+  const [animate, setAnimate] = useState(false);
+
+  useEffect(() => {
+    if (speed === 0) { animatingRef.current = false; setAnimate(false); return; }
+    function check() {
+      if (!containerRef.current || !trackRef.current) return;
+      const cw = containerRef.current.offsetWidth;
+      // If currently animated, track has 2× items — divide to get natural width
+      const naturalW = animatingRef.current
+        ? trackRef.current.scrollWidth / 2
+        : trackRef.current.scrollWidth;
+      const should = naturalW > cw;
+      animatingRef.current = should;
+      setAnimate(should);
+    }
+    check();
+    const ro = new ResizeObserver(check);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, speed]);
+
+  const itemEl = (item: ContactGalleryItem, i: number) => (
+    <div key={i} className={styles.galleryItem}>
+      <div className={styles.galleryImgWrap}>
+        <img src={item.url} alt={item.caption ?? ''} className={styles.galleryImg} loading="lazy" />
+      </div>
+      {item.caption && <p className={styles.galleryCaption}>{item.caption}</p>}
+    </div>
+  );
+
+  if (speed === 0) {
+    return (
+      <div className={styles.galleryScrollStatic}>
+        <div className={styles.galleryTrackStatic}>{items.map(itemEl)}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className={styles.galleryScroll}>
+      <div
+        ref={trackRef}
+        className={animate ? styles.galleryTrack : styles.galleryTrackStatic}
+        style={animate ? { animationDuration: `${speed}s` } : undefined}
+      >
+        {(animate ? [...items, ...items] : items).map(itemEl)}
+      </div>
+    </div>
+  );
+}
 
 export default function ContactBlocks() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -269,6 +325,20 @@ export default function ContactBlocks() {
   );
 
   const galleryItems = galleryData?.items ?? [];
+  const galleryCategories = galleryData?.categories ?? [];
+  // Build rows: one per defined category (with items), then uncategorized items
+  const galleryCatRows: { label: string | null; items: typeof galleryItems }[] = [];
+  if (galleryCategories.length > 0) {
+    for (const cat of galleryCategories) {
+      const catItems = galleryItems.filter((it) => it.category === cat);
+      if (catItems.length > 0) galleryCatRows.push({ label: cat, items: catItems });
+    }
+    const uncategorized = galleryItems.filter((it) => !it.category || !galleryCategories.includes(it.category));
+    if (uncategorized.length > 0) galleryCatRows.push({ label: null, items: uncategorized });
+  } else if (galleryItems.length > 0) {
+    galleryCatRows.push({ label: null, items: galleryItems });
+  }
+
   const gallerySection = hide('contact_gallery') ? null : (
     <div className={`${styles.blockInner} ${styles.blockFullWidthBg} ${blockWidthClass('contact_gallery')}`.trim()} style={{ position: 'relative', marginTop: '2.5rem', ...(galleryData?.backgroundColor ? { backgroundColor: galleryData.backgroundColor } : {}) }}>
       {isAdmin && (
@@ -309,30 +379,21 @@ export default function ContactBlocks() {
               )}
             </div>
           )}
-          {(galleryItems.length > 0 || isAdmin) && (
-            <div className={styles.galleryScroll}>
-              {galleryItems.length > 0 ? (
-                <div
-                  className={styles.galleryTrack}
-                  style={{ animationDuration: `${galleryData?.scrollSpeed ?? 20}s` }}
-                >
-                  {/* items dupliqués pour boucle seamless */}
-                  {[...galleryItems, ...galleryItems].map((item, i) => (
-                    <div key={i} className={styles.galleryItem}>
-                      <div className={styles.galleryImgWrap}>
-                        <img src={item.url} alt={item.caption ?? ''} className={styles.galleryImg} loading="lazy" />
-                      </div>
-                      {item.caption && <p className={styles.galleryCaption}>{item.caption}</p>}
-                    </div>
-                  ))}
+
+          {galleryCatRows.length > 0 ? (
+            <div className={styles.galleryRows}>
+              {galleryCatRows.map((row, ri) => (
+                <div key={ri} className={styles.galleryRow}>
+                  {row.label && <p className={styles.galleryCategoryLabel}>{row.label}</p>}
+                  <GalleryRow items={row.items} speed={galleryData?.scrollSpeed ?? 22} />
                 </div>
-              ) : isAdmin ? (
-                <div style={{ padding: '24px 32px', color: 'var(--muted)', fontSize: 13, border: '1.5px dashed #ccc', borderRadius: 8, whiteSpace: 'nowrap' }}>
-                  Aucune photo — cliquez sur « Modifier »
-                </div>
-              ) : null}
+              ))}
             </div>
-          )}
+          ) : isAdmin ? (
+            <div style={{ padding: '24px 32px', color: 'var(--muted)', fontSize: 13, border: '1.5px dashed #ccc', borderRadius: 8 }}>
+              Aucune photo — cliquez sur « Modifier »
+            </div>
+          ) : null}
         </div>
       </AnimateInView>
     </div>
