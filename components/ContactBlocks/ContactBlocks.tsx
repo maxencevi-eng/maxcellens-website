@@ -311,19 +311,26 @@ export default function ContactBlocks() {
           )}
           {(galleryItems.length > 0 || isAdmin) && (
             <div className={styles.galleryScroll}>
-              {galleryItems.map((item, i) => (
-                <div key={i} className={styles.galleryItem}>
-                  <div className={styles.galleryImgWrap}>
-                    <img src={item.url} alt={item.caption ?? ''} className={styles.galleryImg} loading="lazy" />
-                  </div>
-                  {item.caption && <p className={styles.galleryCaption}>{item.caption}</p>}
+              {galleryItems.length > 0 ? (
+                <div
+                  className={styles.galleryTrack}
+                  style={{ animationDuration: `${galleryData?.scrollSpeed ?? 20}s` }}
+                >
+                  {/* items dupliqués pour boucle seamless */}
+                  {[...galleryItems, ...galleryItems].map((item, i) => (
+                    <div key={i} className={styles.galleryItem}>
+                      <div className={styles.galleryImgWrap}>
+                        <img src={item.url} alt={item.caption ?? ''} className={styles.galleryImg} loading="lazy" />
+                      </div>
+                      {item.caption && <p className={styles.galleryCaption}>{item.caption}</p>}
+                    </div>
+                  ))}
                 </div>
-              ))}
-              {galleryItems.length === 0 && isAdmin && (
+              ) : isAdmin ? (
                 <div style={{ padding: '24px 32px', color: 'var(--muted)', fontSize: 13, border: '1.5px dashed #ccc', borderRadius: 8, whiteSpace: 'nowrap' }}>
                   Aucune photo — cliquez sur « Modifier »
                 </div>
-              )}
+              ) : null}
             </div>
           )}
         </div>

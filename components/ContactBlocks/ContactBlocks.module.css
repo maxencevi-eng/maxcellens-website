@@ -276,27 +276,25 @@
   color: var(--color-text-muted, rgba(0,0,0,0.55));
 }
 .galleryScroll {
+  overflow: hidden;
+  width: 100%;
+}
+.galleryTrack {
   display: flex;
   gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 12px;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
+  width: max-content;
+  animation: galleryAutoScroll 20s linear infinite;
 }
-.galleryScroll::-webkit-scrollbar {
-  height: 4px;
+.galleryTrack:hover {
+  animation-play-state: paused;
 }
-.galleryScroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-.galleryScroll::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.15);
-  border-radius: 2px;
+@keyframes galleryAutoScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 .galleryItem {
   flex-shrink: 0;
   width: 200px;
-  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
   gap: 8px;

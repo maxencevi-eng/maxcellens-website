@@ -19,6 +19,7 @@ export type ContactGalleryData = {
   descriptionFontSize?: number;
   descriptionColor?: string;
   backgroundColor?: string;
+  scrollSpeed?: number;
   items: ContactGalleryItem[];
 };
 
@@ -47,6 +48,7 @@ export default function ContactGalleryEditModal({
   const [descriptionFontSize, setDescriptionFontSize] = useState<number | "">("");
   const [descriptionColor, setDescriptionColor] = useState("");
   const [backgroundColor, setBackgroundColor] = useState("");
+  const [scrollSpeed, setScrollSpeed] = useState(20);
   const [items, setItems] = useState<ContactGalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -73,6 +75,7 @@ export default function ContactGalleryEditModal({
             setDescriptionFontSize(parsed.descriptionFontSize ?? "");
             setDescriptionColor(parsed.descriptionColor ?? "");
             setBackgroundColor(parsed.backgroundColor ?? "");
+            setScrollSpeed(parsed.scrollSpeed ?? 20);
             setItems(Array.isArray(parsed.items) ? parsed.items : []);
           } catch (_) {}
         }
@@ -148,6 +151,7 @@ export default function ContactGalleryEditModal({
         descriptionFontSize: typeof descriptionFontSize === "number" ? descriptionFontSize : undefined,
         descriptionColor: descriptionColor.trim() || undefined,
         backgroundColor: backgroundColor.trim() || undefined,
+        scrollSpeed: scrollSpeed,
         items: items.filter((it) => it.url),
       };
       const resp = await fetch("/api/admin/site-settings", {
@@ -227,6 +231,23 @@ export default function ContactGalleryEditModal({
             <input type="color" value={backgroundColor || "#fafaf9"} onChange={(e) => setBackgroundColor(e.target.value)} style={{ width: 48, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6 }} />
             <input type="text" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} placeholder="ou hex" style={{ width: 120, ...inputStyle }} />
             {backgroundColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setBackgroundColor("")}>Effacer</button> : null}
+          </div>
+        </div>
+
+        {/* Scroll speed */}
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>Vitesse de défilement</label>
+          <div style={{ display: "flex", gap: 6 }}>
+            {([{ label: "Lent", value: 35 }, { label: "Normal", value: 22 }, { label: "Rapide", value: 13 }, { label: "Très rapide", value: 7 }] as const).map(({ label, value }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setScrollSpeed(value)}
+                style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid #e6e6e6", fontSize: 12, cursor: "pointer", background: scrollSpeed === value ? "#111" : "#fff", color: scrollSpeed === value ? "#fff" : "inherit", transition: "background 0.1s" }}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
