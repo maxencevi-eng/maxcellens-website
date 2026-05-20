@@ -8,19 +8,19 @@ export const dynamic = 'force-dynamic';
 function getDateRange(period: string, days: number): { since: Date; until: Date } {
   const now = new Date();
   const until = new Date(now);
-  until.setHours(23, 59, 59, 999);
+  until.setUTCHours(23, 59, 59, 999);
   if (period === 'current_month') {
-    return { since: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0), until };
+    return { since: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)), until };
   }
   if (period === 'last_month') {
     return {
-      since: new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0),
-      until: new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999),
+      since: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)),
+      until: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59, 999)),
     };
   }
   const since = new Date(now);
-  since.setDate(since.getDate() - days);
-  since.setHours(0, 0, 0, 0);
+  since.setUTCDate(since.getUTCDate() - days);
+  since.setUTCHours(0, 0, 0, 0);
   return { since, until };
 }
 
@@ -99,8 +99,8 @@ export async function GET(req: Request) {
 
   const emptyResponse = () => {
     const dailyVisits: { date: string; count: number }[] = [];
-    const cur = new Date(since); cur.setHours(0, 0, 0, 0);
-    while (cur <= until) { dailyVisits.push({ date: cur.toISOString().slice(0, 10), count: 0 }); cur.setDate(cur.getDate() + 1); }
+    const cur = new Date(since); cur.setUTCHours(0, 0, 0, 0);
+    while (cur <= until) { dailyVisits.push({ date: cur.toISOString().slice(0, 10), count: 0 }); cur.setUTCDate(cur.getUTCDate() + 1); }
     return NextResponse.json({ totalViews: 0, uniqueVisitors: 0, directVisits: 0, bySource: [], dailyVisits, visitors: [] });
   };
 
@@ -275,11 +275,11 @@ export async function GET(req: Request) {
   }
 
   const dailyVisits: { date: string; count: number }[] = [];
-  const cur = new Date(since); cur.setHours(0, 0, 0, 0);
+  const cur = new Date(since); cur.setUTCHours(0, 0, 0, 0);
   while (cur <= until) {
     const key = cur.toISOString().slice(0, 10);
     dailyVisits.push({ date: key, count: dailyCount.get(key) || 0 });
-    cur.setDate(cur.getDate() + 1);
+    cur.setUTCDate(cur.getUTCDate() + 1);
   }
 
   // Total visits = unique sessions that viewed /view (not raw event count)
