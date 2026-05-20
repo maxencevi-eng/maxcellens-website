@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../../lib/supabaseAdmin';
-import { isLikelyBot } from '../../../../../lib/bot-detection';
+import { isLikelyBot, isLikelyDatacenterIp } from '../../../../../lib/bot-detection';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
 
     let res = await supabaseAdmin
       .from('analytics_sessions')
-      .select('id, session_id, ip_hash, user_agent, is_bot, human_validated');
+      .select('id, session_id, ip_hash, ip, user_agent, is_bot, human_validated');
 
     if (res.error && /column.*user_agent/i.test(res.error.message)) {
       return NextResponse.json({ hashes: [], message: 'Colonne user_agent absente. Exécutez la migration analytics (user_agent).' });
@@ -39,11 +39,11 @@ export async function GET(req: Request) {
     if (res.error && /column.*is_bot/i.test(res.error.message)) {
       res = await supabaseAdmin
         .from('analytics_sessions')
-        .select('id, session_id, ip_hash, user_agent, human_validated');
+        .select('id, session_id, ip_hash, ip, user_agent, human_validated');
     }
     if (res.error) return NextResponse.json({ error: res.error.message }, { status: 500 });
 
-    const rows = (res.data || []) as { id: string; session_id: string; ip_hash: string; user_agent?: string | null; is_bot?: boolean | null; human_validated?: boolean | null }[];
+    const rows = (res.data || []) as { id: string; session_id: string; ip_hash: string; ip?: string | null; user_agent?: string | null; is_bot?: boolean | null; human_validated?: boolean | null }[];
     const hasBotColumn = rows.length > 0 && 'is_bot' in rows[0];
     
     // 1. Récupérer les événements pour calculer les durées de TOUTES les sessions
@@ -88,16 +88,16 @@ export async function GET(req: Request) {
       }
     }
     
-    // 2. Filtrer comme le toggle : bot UA OU durée < 1s (ignorer human_validated)
-    const isBotByUa = (r: typeof rows[0]) => (hasBotColumn && r.is_bot === true) || (!hasBotColumn && isLikelyBot(r.user_agent));
-    
+    // 2. Filtrer comme le toggle : bot UA/IP OU durée < 1.5s (ignorer human_validated)
+    // Toujours re-exécuter les détections runtime pour capter les bots enregistrés avant
+    // l'ajout de nouveaux patterns (même logique que le filtre principal du dashboard).
     const filteredRows = rows.filter((r) => {
       const duration = sessionDurations.get(r.session_id) || 0;
-      const isShortDuration = duration < 1500;
-      const isBot = isBotByUa(r);
-      
-      // Exclure si bot OU durée courte (même logique que le toggle)
-      return isBot || isShortDuration;
+      if (duration < 1500) return true;
+      if (hasBotColumn && r.is_bot === true) return true;
+      if (isLikelyBot(r.user_agent)) return true;
+      if (isLikelyDatacenterIp(r.ip ?? null)) return true;
+      return false;
     });
     
     const hashes = [...new Set(

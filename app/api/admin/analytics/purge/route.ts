@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../../lib/supabaseAdmin';
 import { hashIp } from '../../../../../lib/analytics';
-import { isLikelyBot } from '../../../../../lib/bot-detection';
+import { isLikelyBot, isLikelyDatacenterIp } from '../../../../../lib/bot-detection';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,20 +69,20 @@ export async function POST(req: Request) {
       // Purge bots only
       let sessionsRes = await supabaseAdmin
         .from('analytics_sessions')
-        .select('id, session_id, user_agent, is_bot, human_validated');
+        .select('id, session_id, ip, user_agent, is_bot, human_validated');
       if (sessionsRes.error && /column.*user_agent/i.test(sessionsRes.error.message)) {
         return NextResponse.json({ error: 'Colonne user_agent absente. Exécutez la migration analytics (user_agent).' }, { status: 400 });
       }
       if (sessionsRes.error && /column.*is_bot/i.test(sessionsRes.error.message)) {
         sessionsRes = await supabaseAdmin
           .from('analytics_sessions')
-          .select('id, session_id, user_agent, is_bot, human_validated');
+          .select('id, session_id, ip, user_agent, human_validated');
       }
       if (sessionsRes.error) {
         console.error('analytics purge bots fetch error', sessionsRes.error);
         return NextResponse.json({ error: sessionsRes.error.message }, { status: 500 });
       }
-      const allSessions = (sessionsRes.data || []) as { id: string; session_id: string; user_agent?: string | null; is_bot?: boolean | null; human_validated?: boolean | null }[];
+      const allSessions = (sessionsRes.data || []) as { id: string; session_id: string; ip?: string | null; user_agent?: string | null; is_bot?: boolean | null; human_validated?: boolean | null }[];
       const hasBotColumn = allSessions.length > 0 && 'is_bot' in allSessions[0];
       
       // 1. Calculer les durées pour TOUTES les sessions (comme le filtre principal)
@@ -127,16 +127,15 @@ export async function POST(req: Request) {
         }
       }
       
-      // 2. Filtrer : bot UA OU durée < 1.5s (ignorer human_validated)
-      const isBotByUa = (s: typeof allSessions[0]) => (hasBotColumn && s.is_bot === true) || (!hasBotColumn && isLikelyBot(s.user_agent));
-      
+      // 2. Filtrer : bot UA/IP OU durée < 1.5s — toujours re-exécuter les détections
+      // runtime pour capter les bots enregistrés avant l'ajout de nouveaux patterns.
       const sessionsToDelete = allSessions.filter((s) => {
         const duration = sessionDurations.get(s.session_id) || 0;
-        const isShortDuration = duration < 1500; // 1.5s comme le filtre principal
-        const isBot = isBotByUa(s);
-        
-        // Supprimer si bot OU durée courte (même logique que le toggle)
-        return isBot || isShortDuration;
+        if (duration < 1500) return true;
+        if (hasBotColumn && s.is_bot === true) return true;
+        if (isLikelyBot(s.user_agent)) return true;
+        if (isLikelyDatacenterIp(s.ip ?? null)) return true;
+        return false;
       });
       
       const botSessionIds = sessionsToDelete.map((s) => s.session_id);

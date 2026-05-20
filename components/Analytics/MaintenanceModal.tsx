@@ -13,6 +13,8 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
   const [purgingByIp, setPurgingByIp] = useState(false);
   const [myIpLoading, setMyIpLoading] = useState(false);
   const [purgeByIpResult, setPurgeByIpResult] = useState<string | null>(null);
+  const [purgingBots, setPurgingBots] = useState(false);
+  const [purgeBotsResult, setPurgeBotsResult] = useState<string | null>(null);
 
   const fillMyIp = async () => {
     setMyIpLoading(true);
@@ -72,6 +74,35 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
       setPurgeByIpResult(e instanceof Error ? e.message : String(e));
     } finally {
       setPurgingByIp(false);
+    }
+  };
+
+  const runPurgeBots = async () => {
+    if (!confirm('Supprimer définitivement en base toutes les sessions et événements identifiés comme bots (crawlers, durée < 1.5s, IP datacenter) ?')) return;
+    setPurgingBots(true);
+    setPurgeBotsResult(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) {
+        setPurgeBotsResult('Non connecté');
+        return;
+      }
+      const res = await fetch('/api/admin/analytics/purge?bots=1', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPurgeBotsResult(json?.error || `Erreur ${res.status}`);
+        return;
+      }
+      const count = json?.deleted ?? 0;
+      setPurgeBotsResult(count === 0 ? 'Aucun bot / session courte trouvé.' : `${count} session(s) bot supprimée(s).`);
+    } catch (e: unknown) {
+      setPurgeBotsResult(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPurgingBots(false);
     }
   };
 
@@ -238,6 +269,35 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
                   {purgeResult}
                 </span>
               )}
+            </div>
+
+            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 16, marginTop: 8 }}>
+              <p style={{ fontSize: 14, color: '#475569', marginBottom: 12, lineHeight: 1.5 }}>
+                Supprimer définitivement toutes les sessions identifiées comme crawlers/bots (User-Agent suspect, IP datacenter ou durée &lt; 1.5s).
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={runPurgeBots}
+                  disabled={purgingBots}
+                  style={{
+                    padding: '8px 16px',
+                    background: purgingBots ? '#94a3b8' : '#dc2626',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    cursor: purgingBots ? 'not-allowed' : 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  {purgingBots ? 'Purge en cours…' : 'Purger les traces bots'}
+                </button>
+                {purgeBotsResult && (
+                  <span style={{ fontSize: 13, color: purgeBotsResult.startsWith('Erreur') || purgeBotsResult === 'Non connecté' ? '#dc2626' : '#059669', fontWeight: 500 }}>
+                    {purgeBotsResult}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 16, marginTop: 8 }}>
