@@ -5,6 +5,36 @@
 }
 
 .inner {
+  position: relative;
+}
+
+.adminTopBar {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+}
+
+.statsBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  border: none;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  letter-spacing: 0.02em;
+  transition: background 0.15s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+.statsBtn:hover { background: rgba(45, 107, 95, 0.88); }
+
+.inner {
   max-width: 480px;
   margin: 0 auto;
   min-height: 100vh;
