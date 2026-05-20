@@ -16,6 +16,10 @@ interface VisitorData {
   visits: number;
   lastVisit: string;
   source: string;
+  userAgent: string | null;
+  durationMs: number;
+  clicks: number;
+  pages: string[];
 }
 interface StatsData {
   totalViews: number;
@@ -47,7 +51,7 @@ function BarChart({ data }: { data: DayData[] }) {
   const chartH = H - PAD_T - PAD_B;
   const gap = chartW / data.length;
   const barW = Math.max(2, gap - Math.max(1, gap * 0.25));
-  const yTicks = max <= 2 ? [0, 1, max] : [0, Math.round(max / 2), max];
+  const yTicks = [...new Set(max <= 2 ? [0, 1, max] : [0, Math.round(max / 2), max])];
   const xLabelIndices = new Set<number>([0, data.length - 1]);
   if (data.length >= 14) for (let i = 7; i < data.length - 3; i += 7) xLabelIndices.add(i);
   else if (data.length >= 7) xLabelIndices.add(Math.floor(data.length / 2));
@@ -98,6 +102,7 @@ interface Props { onClose: () => void; }
 export default function ViewStatsModal({ onClose }: Props) {
   const [period, setPeriod] = useState<Period>('days');
   const [view, setView] = useState<View>('stats');
+  const [expandedVisitor, setExpandedVisitor] = useState<string | null>(null);
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -175,7 +180,7 @@ export default function ViewStatsModal({ onClose }: Props) {
               <div className={styles.kpiRow}>
                 <div className={styles.kpiCard}>
                   <span className={styles.kpiValue}>{stats.totalViews.toLocaleString('fr-FR')}</span>
-                  <span className={styles.kpiLabel}>Vues totales</span>
+                  <span className={styles.kpiLabel}>Visites totales</span>
                 </div>
                 <div className={styles.kpiCard}>
                   <span className={styles.kpiValue}>{stats.uniqueVisitors.toLocaleString('fr-FR')}</span>
@@ -229,23 +234,52 @@ export default function ViewStatsModal({ onClose }: Props) {
                     <span>Vues</span>
                     <span>Dernière visite</span>
                   </div>
-                  {stats.visitors.map((v, i) => (
-                    <div key={i} className={styles.visitorRow}>
-                      <span className={styles.visitorIp}>
-                        {v.ip ? v.ip : <span className={styles.ipHash} title={v.ip_hash}>{v.ip_hash.slice(0, 10)}…</span>}
-                      </span>
-                      <span className={styles.visitorLoc}>
-                        {[v.city !== '—' ? v.city : null, v.country !== '—' ? v.country : null].filter(Boolean).join(', ') || '—'}
-                      </span>
-                      <span className={styles.visitorSource} style={{ color: SOURCE_COLORS[v.source] ?? 'inherit' }}>
-                        {v.source}
-                      </span>
-                      <span className={styles.visitorVisits}>{v.visits}</span>
-                      <span className={styles.visitorDate}>
-                        {new Date(v.lastVisit).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  ))}
+                  {stats.visitors.map((v, i) => {
+                    const key = v.ip_hash;
+                    const isOpen = expandedVisitor === key;
+                    const durSec = Math.round(v.durationMs / 1000);
+                    const durLabel = durSec < 60 ? `${durSec}s` : `${Math.floor(durSec / 60)}m${durSec % 60 > 0 ? ` ${durSec % 60}s` : ''}`;
+                    return (
+                      <React.Fragment key={i}>
+                        <div
+                          className={`${styles.visitorRow} ${isOpen ? styles.visitorRowOpen : ''}`}
+                          onClick={() => setExpandedVisitor(isOpen ? null : key)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <span className={styles.visitorIp}>
+                            <span className={styles.expandArrow}>{isOpen ? '▾' : '▸'}</span>
+                            {v.ip ?? <span className={styles.ipHash} title={v.ip_hash}>{v.ip_hash.slice(0, 10)}…</span>}
+                          </span>
+                          <span className={styles.visitorLoc}>{[v.city !== '—' ? v.city : null, v.country !== '—' ? v.country : null].filter(Boolean).join(', ') || '—'}</span>
+                          <span className={styles.visitorSource} style={{ color: SOURCE_COLORS[v.source] ?? 'inherit' }}>{v.source}</span>
+                          <span className={styles.visitorVisits}>{v.visits}</span>
+                          <span className={styles.visitorDate}>{new Date(v.lastVisit).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        {isOpen && (
+                          <div className={styles.visitorDetail}>
+                            <div className={styles.detailGrid}>
+                              <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>Durée session</span>
+                                <span className={styles.detailValue}>{v.durationMs === 0 ? '< 1s' : durLabel}</span>
+                              </div>
+                              <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>Clics</span>
+                                <span className={styles.detailValue}>{v.clicks}</span>
+                              </div>
+                              <div className={styles.detailItem}>
+                                <span className={styles.detailLabel}>Pages visitées</span>
+                                <span className={styles.detailValue}>{v.pages.length > 0 ? v.pages.join(', ') : '—'}</span>
+                              </div>
+                              <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
+                                <span className={styles.detailLabel}>User-Agent</span>
+                                <span className={styles.detailValue} style={{ wordBreak: 'break-all', fontSize: '0.68rem' }}>{v.userAgent ?? '—'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </div>
               )}
             </div>

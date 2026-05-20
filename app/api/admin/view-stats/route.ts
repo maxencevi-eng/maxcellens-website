@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 import { parseIpFilter, hashedIpList, hashIp, getClientIp } from '../../../../lib/analytics';
-import { isLikelyBot } from '../../../../lib/bot-detection';
+import { isLikelyBot, isLikelyDatacenterIp } from '../../../../lib/bot-detection';
 
 export const dynamic = 'force-dynamic';
 
@@ -175,17 +175,15 @@ export async function GET(req: Request) {
       }
     }
 
-    if (useBotColumns) {
-      sessions = sessions.filter((s) => {
-        const dur = sessionDurations.get(s.session_id) ?? 0;
-        return s.is_bot !== true && dur >= 1500;
-      });
-    } else {
-      sessions = sessions.filter((s) => {
-        const dur = sessionDurations.get(s.session_id) ?? 0;
-        return !isLikelyBot(s.user_agent) && dur >= 1500;
-      });
-    }
+    sessions = sessions.filter((s) => {
+      const dur = sessionDurations.get(s.session_id) ?? 0;
+      if (dur < 1500) return false;
+      if (useBotColumns && s.is_bot === true) return false;
+      // Always re-run UA + IP checks to catch bots recorded before detection patterns were added
+      if (isLikelyBot(s.user_agent)) return false;
+      if (isLikelyDatacenterIp(s.ip ?? null)) return false;
+      return true;
+    });
   }
 
   // Only keep events whose session passed all filters
@@ -198,25 +196,80 @@ export async function GET(req: Request) {
   const dailyCount = new Map<string, number>();
   let directVisits = 0;
 
-  type VisitorEntry = { ip: string | null; ip_hash: string; country: string; city: string; visits: number; lastVisit: string; source: string };
+  // Fetch ALL events for valid sessions (clicks, other pages) to compute duration + clicks
+  const allEventsForSessions: { session_id: string; event_type: string; path: string | null; created_at: string }[] = [];
+  for (let i = 0; i < allSessionIds.length; i += BATCH) {
+    const chunk = [...validIds].slice(i, i + BATCH);
+    if (!chunk.length) break;
+    const { data: allEvts } = await supabaseAdmin
+      .from('analytics_events')
+      .select('session_id, event_type, path, created_at')
+      .in('session_id', chunk)
+      .order('created_at', { ascending: true });
+    if (allEvts) allEventsForSessions.push(...allEvts);
+  }
+
+  // Compute per-session: duration, clicks, pages visited
+  type SessionDetail = { firstEvent: string; lastEvent: string; clicks: number; pages: Set<string> };
+  const sessionDetails = new Map<string, SessionDetail>();
+  for (const e of allEventsForSessions) {
+    let d = sessionDetails.get(e.session_id);
+    if (!d) { d = { firstEvent: e.created_at, lastEvent: e.created_at, clicks: 0, pages: new Set() }; sessionDetails.set(e.session_id, d); }
+    if (e.created_at > d.lastEvent) d.lastEvent = e.created_at;
+    if (e.event_type === 'click') d.clicks++;
+    if (e.event_type === 'pageview' && e.path) d.pages.add(e.path);
+  }
+
+  type VisitorEntry = {
+    ip: string | null; ip_hash: string; country: string; city: string;
+    visits: number; lastVisit: string; source: string;
+    userAgent: string | null; durationMs: number; clicks: number; pages: string[];
+  };
   const visitorMap = new Map<string, VisitorEntry>();
+  // Track counted sessions per visitor to avoid double-counting multiple events from the same session
+  const visitorSessions = new Map<string, Set<string>>();
 
   for (const event of events) {
     const session = sessionMap.get(event.session_id);
     if (!session) continue;
     if (session.ip_hash) uniqueIpHashes.add(session.ip_hash);
-    const source = categorizeSource(session.referrer);
-    sourceCount.set(source, (sourceCount.get(source) || 0) + 1);
-    if (source === 'Direct') directVisits++;
-    const day = event.created_at.slice(0, 10);
-    dailyCount.set(day, (dailyCount.get(day) || 0) + 1);
 
     const key = session.ip_hash ?? session.session_id;
+    if (!visitorSessions.has(key)) visitorSessions.set(key, new Set());
+    const isNewSession = !visitorSessions.get(key)!.has(event.session_id);
+    visitorSessions.get(key)!.add(event.session_id);
+
+    // Count sources and daily visits only once per session
+    if (isNewSession) {
+      const source = categorizeSource(session.referrer);
+      sourceCount.set(source, (sourceCount.get(source) || 0) + 1);
+      if (source === 'Direct') directVisits++;
+      const day = session.created_at.slice(0, 10);
+      dailyCount.set(day, (dailyCount.get(day) || 0) + 1);
+    }
+
+    const detail = sessionDetails.get(event.session_id);
+    const durationMs = detail ? new Date(detail.lastEvent).getTime() - new Date(detail.firstEvent).getTime() : 0;
+    const source = categorizeSource(session.referrer);
+
     const existing = visitorMap.get(key);
     if (!existing) {
-      visitorMap.set(key, { ip: session.ip ?? null, ip_hash: session.ip_hash ?? key, country: session.country ?? '—', city: session.city ?? '—', visits: 1, lastVisit: event.created_at, source });
+      visitorMap.set(key, {
+        ip: session.ip ?? null, ip_hash: session.ip_hash ?? key,
+        country: session.country ?? '—', city: session.city ?? '—',
+        visits: 1, lastVisit: event.created_at, source,
+        userAgent: session.user_agent ?? null,
+        durationMs,
+        clicks: detail?.clicks ?? 0,
+        pages: detail ? [...detail.pages] : [],
+      });
     } else {
-      existing.visits++;
+      if (isNewSession) {
+        existing.visits++;
+        existing.durationMs = Math.max(existing.durationMs, durationMs);
+        existing.clicks += detail?.clicks ?? 0;
+        if (detail) for (const p of detail.pages) if (!existing.pages.includes(p)) existing.pages.push(p);
+      }
       if (event.created_at > existing.lastVisit) existing.lastVisit = event.created_at;
     }
   }
@@ -229,8 +282,11 @@ export async function GET(req: Request) {
     cur.setDate(cur.getDate() + 1);
   }
 
+  // Total visits = unique sessions that viewed /view (not raw event count)
+  const totalVisits = new Set(events.map((e) => e.session_id)).size;
+
   return NextResponse.json({
-    totalViews: events.length,
+    totalViews: totalVisits,
     uniqueVisitors: uniqueIpHashes.size,
     directVisits,
     bySource: Array.from(sourceCount.entries()).map(([source, count]) => ({ source, count })).sort((a, b) => b.count - a.count),

@@ -327,6 +327,15 @@
 }
 .visitorRow:last-child { border-bottom: none; }
 .visitorRow:hover { background: rgba(0,0,0,0.02); }
+.visitorRowOpen { background: rgba(45,107,95,0.05); }
+
+.expandArrow {
+  display: inline-block;
+  width: 14px;
+  color: rgba(0,0,0,0.35);
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
 
 .visitorIp {
   font-family: ui-monospace, monospace;
@@ -335,6 +344,42 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.visitorDetail {
+  background: rgba(45,107,95,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding: 10px 14px 12px;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 16px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detailLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(0,0,0,0.35);
+}
+
+.detailValue {
+  font-size: 0.78rem;
+  color: #111;
+  font-family: ui-monospace, monospace;
+  line-height: 1.4;
 }
 
 .ipHash {
