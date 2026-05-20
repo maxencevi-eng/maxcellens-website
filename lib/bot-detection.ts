@@ -56,7 +56,31 @@ const BOT_UA_PATTERNS = [
   /\bcheck\s*url\b/i,
   /\bfeed\s*validator\b/i,
   /\bw3c\s*validator\b/i,
-  /\bscreenshot\b/i, // Ajouté : outils de capture d'écran
+  /\bscreenshot\b/i,
+  /\b360spider\b/i,       // Qihoo 360 crawler (se déguise en Chrome)
+  /\bsogou\b/i,           // Sogou crawler (Chine)
+  /\bbaiduspider\b/i,     // Baidu crawler
+  /\bnaverbot\b/i,        // Naver (Corée)
+  /\bexabot\b/i,
+  /\bia_archiver\b/i,     // Wayback Machine / Alexa
+  /\barchive\.org_bot\b/i,
+  /\bapplebot\b/i,
+  /\bslackbot\b/i,
+  /\bdiscordbot\b/i,
+  /\bclaudebot\b/i,        // Anthropic AI crawler (se déguise en Chrome/Safari)
+  /\bGPTBot\b/i,           // OpenAI GPT crawler
+  /\bOAI-SearchBot\b/i,    // OpenAI Search
+  /\bChatGPT-User\b/i,     // OpenAI ChatGPT browsing
+  /\bPerplexityBot\b/i,    // Perplexity AI crawler
+  /\bBrave-AI\b/i,
+  /\bDuckAssistBot\b/i,    // DuckDuckGo AI
+  /\bcohere-ai\b/i,
+  /Nexus 5X Build\/MMB29P/i, // Fingerprint exclusif Googlebot mobile (filet de sécurité)
+  /\bdataprovider\.com\b/i,  // Dataprovider scraper
+  /\bMJ12bot\b/i,
+  /\bSiteAuditBot\b/i,
+  /\bSEOkicks\b/i,
+  /\bmagpie-crawler\b/i,
 ];
 
 /**
@@ -84,8 +108,33 @@ const DATACENTER_IP_PREFIXES: string[] = [
   '64.233.', '66.102.', '66.249.', '72.14.', '74.125.', '108.177.', '142.250.', '172.217.', '173.194.', '209.85.', '216.58.', '216.239.',
   // Meta / Facebook datacenters
   '66.220.', '66.221.', '173.252.', '179.60.', '185.60.',
+  // Google (Googlebot, Applebot use 66.249.x already above)
+  '66.249.',
+  // Microsoft / Bing datacenter
+  '40.77.', '65.55.', '157.55.',
+  // Apple (Applebot) — AS714, exclusivement Apple
+  '17.0.', '17.1.', '17.2.', '17.3.', '17.4.', '17.5.', '17.6.', '17.7.', '17.8.', '17.9.',
+  '17.10.', '17.11.', '17.12.', '17.13.', '17.14.', '17.15.', '17.16.', '17.17.', '17.18.', '17.19.',
+  '17.20.', '17.21.', '17.22.', '17.23.', '17.24.', '17.25.', '17.26.', '17.27.', '17.28.', '17.29.',
+  '17.30.', '17.31.', '17.32.', '17.33.', '17.34.', '17.35.', '17.36.', '17.37.', '17.38.', '17.39.',
+  '17.40.', '17.41.', '17.42.', '17.43.', '17.44.', '17.45.', '17.46.', '17.47.', '17.48.', '17.49.',
+  '17.50.', '17.51.', '17.52.', '17.53.', '17.54.', '17.55.', '17.56.', '17.57.', '17.58.', '17.59.',
+  '17.220.', '17.221.', '17.222.', '17.223.', '17.224.', '17.225.', '17.226.', '17.227.', '17.228.', '17.229.',
+  '17.230.', '17.231.', '17.232.', '17.233.', '17.234.', '17.235.', '17.236.', '17.237.', '17.238.', '17.239.',
+  '17.240.', '17.241.', '17.242.', '17.243.', '17.244.', '17.245.', '17.246.', '17.247.', '17.248.', '17.249.',
+  '17.250.', '17.251.', '17.252.', '17.253.', '17.254.', '17.255.',
+  // Ahrefs datacenter (Singapour)
+  '202.8.',
+  // Baidu / Baiduspider (Chine)
+  '116.179.',
+  // ByteDance / ByteSpider (Chine)
+  '111.225.', '110.249.',
+  // 360Spider (Chine, Alibaba Cloud)
+  '180.153.',
+  // OVH Canada (Dataprovider.com)
+  '149.56.', '144.217.',
   '51.83.', '51.89.', '51.91.', '51.161.', '51.210.', '51.222.', '54.36.', '54.37.', '54.38.', '54.39.',
-  '37.59.', '37.187.', '46.105.', '51.68.', '51.75.', '51.77.', '51.77.', '51.83.', '51.89.', '51.91.', '54.36.', '54.37.', '54.38.', '54.39.',
+  '37.59.', '37.187.', '46.105.', '51.68.', '51.75.', '51.77.',
 ];
 
 function isPrivateOrLocal(ip: string): boolean {
