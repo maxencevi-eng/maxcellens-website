@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 import { parseIpFilter, hashedIpList } from '../../../../lib/analytics';
-import { isLikelyBot } from '../../../../lib/bot-detection';
+import { isLikelyBot, isLikelyDatacenterIp } from '../../../../lib/bot-detection';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,21 +12,20 @@ type PeriodMode = 'days' | 'current_month' | 'last_month';
 function getDateRange(period: PeriodMode, daysNum: number): { since: Date; until: Date } {
   const now = new Date();
   const until = new Date(now);
-  until.setHours(23, 59, 59, 999);
+  until.setUTCHours(23, 59, 59, 999);
 
   if (period === 'current_month') {
-    const since = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-    return { since, until };
+    return { since: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)), until };
   }
   if (period === 'last_month') {
-    // Mois précédent : 1er jour du mois dernier → dernier jour du mois dernier
-    const since = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-    const endLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-    return { since, until: endLastMonth };
+    return {
+      since: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)),
+      until: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0, 23, 59, 59, 999)),
+    };
   }
   const since = new Date(now);
-  since.setDate(since.getDate() - daysNum);
-  since.setHours(0, 0, 0, 0);
+  since.setUTCDate(since.getUTCDate() - daysNum);
+  since.setUTCHours(0, 0, 0, 0);
   return { since, until };
 }
 
@@ -91,8 +90,8 @@ export async function GET(req: Request) {
     })();
 
     let useBotColumns = true;
-    const sessionSelectWithBot = 'id, session_id, ip_hash, country, city, referrer, browser, created_at, user_agent, is_bot, human_validated';
-    const sessionSelectFallback = 'id, session_id, ip_hash, country, city, referrer, browser, created_at, user_agent';
+    const sessionSelectWithBot = 'id, session_id, ip_hash, ip, country, city, referrer, browser, created_at, user_agent, is_bot, human_validated';
+    const sessionSelectFallback = 'id, session_id, ip_hash, ip, country, city, referrer, browser, created_at, user_agent';
     let sessionsRes = await supabaseAdmin
       .from('analytics_sessions')
       .select(sessionSelectWithBot)
@@ -189,21 +188,15 @@ export async function GET(req: Request) {
     // Appliquer les filtres dans l'ordre correct
     // 1. Filtre bots (si activé) - EXCLURE les bots et sessions courtes
     if (excludeBots) {
-      if (useBotColumns) {
-        sessions = sessions.filter((s) => {
-          const sessionDuration = sessionDurations.get(s.session_id) || 0;
-          const isBotByDuration = sessionDuration < 1500; // moins d'1.5 seconde totale
-          const isBot = (s as SessionRow).is_bot === true;
-          return !isBot && !isBotByDuration;
-        });
-      } else {
-        sessions = sessions.filter((s) => {
-          const sessionDuration = sessionDurations.get(s.session_id) || 0;
-          const isBotByDuration = sessionDuration < 1500; // moins d'1.5 seconde totale
-          const isBotByUa = isLikelyBot(s.user_agent);
-          return !isBotByUa && !isBotByDuration;
-        });
-      }
+      sessions = sessions.filter((s) => {
+        const dur = sessionDurations.get(s.session_id) || 0;
+        if (dur < 1500) return false;
+        if (useBotColumns && (s as SessionRow).is_bot === true) return false;
+        // Re-vérifier UA + IP à chaque requête pour capter les bots enregistrés avant la mise à jour des patterns
+        if (isLikelyBot(s.user_agent)) return false;
+        if (isLikelyDatacenterIp((s as any).ip ?? null)) return false;
+        return true;
+      });
     }
     
     // 2. Filtre IP exclusion
@@ -228,97 +221,6 @@ export async function GET(req: Request) {
         return requestedCountries.includes(c);
       });
     }
-
-    let visitors: { ip: string | null; ip_hash: string | null; country: string; city: string; sessionCount: number }[] = [];
-    try {
-      const visitorSelectWithBot = 'session_id, ip_hash, ip, country, city, user_agent, is_bot, human_validated';
-    const visitorSelectFallback = 'session_id, ip_hash, ip, country, city, user_agent';
-    let visitorsUseBotColumns = true;
-    let visitorsRes = await supabaseAdmin
-        .from('analytics_sessions')
-        .select(visitorSelectWithBot)
-        .gte('created_at', sinceStr)
-        .lte('created_at', untilStr)
-        .or('is_authenticated.is.null,is_authenticated.eq.false');
-    if (visitorsRes.error && /column.*(is_bot|human_validated)/i.test(visitorsRes.error.message)) {
-      visitorsUseBotColumns = false;
-      visitorsRes = await supabaseAdmin
-          .from('analytics_sessions')
-          .select(visitorSelectFallback)
-          .gte('created_at', sinceStr)
-          .lte('created_at', untilStr)
-          .or('is_authenticated.is.null,is_authenticated.eq.false');
-    }
-      if (visitorsRes.error && /column.*ip/i.test(visitorsRes.error.message)) {
-        visitorsRes = await supabaseAdmin
-          .from('analytics_sessions')
-          .select(visitorsUseBotColumns ? 'session_id, ip_hash, country, city, user_agent, is_bot, human_validated' : 'session_id, ip_hash, country, city, user_agent')
-          .gte('created_at', sinceStr)
-          .lte('created_at', untilStr)
-          .or('is_authenticated.is.null,is_authenticated.eq.false');
-      }
-      if (visitorsRes.error && /column.*user_agent/i.test(visitorsRes.error.message)) {
-        visitorsRes = await supabaseAdmin
-          .from('analytics_sessions')
-          .select(visitorsUseBotColumns ? 'session_id, ip_hash, ip, country, city, is_bot, human_validated' : 'session_id, ip_hash, ip, country, city')
-          .gte('created_at', sinceStr)
-          .lte('created_at', untilStr)
-          .or('is_authenticated.is.null,is_authenticated.eq.false');
-      }
-      
-      // Traiter les visiteurs après le calcul des durées
-      if (!visitorsRes.error && visitorsRes.data?.length) {
-        type VisitorRow = { session_id: string; ip_hash: string | null; ip?: string | null; country: string | null; city: string | null; user_agent?: string | null; is_bot?: boolean | null; human_validated?: boolean | null };
-        let allSessions = (visitorsRes.data || []) as VisitorRow[];
-        if (excludeBots) {
-          if (visitorsUseBotColumns) {
-            allSessions = allSessions.filter((s) => {
-              const sessionDuration = sessionDurations.get(s.session_id) || 0;
-              const isBotByDuration = sessionDuration < 1500; // moins d'1.5 seconde totale
-              const isBot = s.is_bot === true;
-              // Garder seulement si pas bot ET durée > 1s
-              return !isBot && !isBotByDuration;
-            });
-          } else {
-            allSessions = allSessions.filter((s) => {
-              const sessionDuration = sessionDurations.get(s.session_id) || 0;
-              const isBotByDuration = sessionDuration < 1500; // moins d'1.5 seconde totale
-              const isBotByUa = isLikelyBot(s.user_agent);
-              // Garder seulement si pas bot par UA ET durée > 1s
-              return !isBotByUa && !isBotByDuration;
-            });
-          }
-        }
-        const byHash = new Map<string, { ip: string | null; ip_hash: string | null; country: string; city: string; count: number }>();
-        allSessions.forEach((s) => {
-          const key = s.ip_hash ?? '';
-          const countryLabel = (s.country && String(s.country).trim()) ? String(s.country).trim() : 'Inconnu';
-          const cityLabel = (s.city && String(s.city).trim()) ? String(s.city).trim() : 'Inconnu';
-          const cur = byHash.get(key);
-          if (!cur) byHash.set(key, { ip: s.ip ?? null, ip_hash: s.ip_hash ?? null, country: countryLabel, city: cityLabel, count: 1 });
-          else cur.count += 1;
-        });
-        visitors = Array.from(byHash.entries())
-          .map(([, v]) => ({ ip: v.ip, ip_hash: v.ip_hash, country: v.country, city: v.city, sessionCount: v.count }))
-          .sort((a, b) => b.sessionCount - a.sessionCount);
-        // Exclure les visiteurs dont le hash est dans le filtre d'exclusion (ils ne doivent plus apparaître dans la liste)
-        if (excludeHashesOrNull?.length) {
-          visitors = visitors.filter((v) => !v.ip_hash || !excludeHashesOrNull.includes(v.ip_hash));
-        }
-        // Si filtre "inclure uniquement" : ne garder que les visiteurs dont l'IP/hash est dans la liste
-        if (includeHashes?.length) {
-          visitors = visitors.filter((v) => v.ip_hash && includeHashes.includes(v.ip_hash));
-        }
-        // Filtre par visiteurs sélectionnés (temporaire)
-        if (requestedVisitorHashes?.length) {
-          visitors = visitors.filter((v) => v.ip_hash && requestedVisitorHashes.includes(v.ip_hash));
-        }
-        // Filtre par pays sélectionnés (temporaire)
-        if (requestedCountries?.length) {
-          visitors = visitors.filter((v) => requestedCountries.includes(v.country));
-        }
-      }
-    } catch (_) {}
 
     const eventsRes = await supabaseAdmin
       .from('analytics_events')
@@ -354,13 +256,13 @@ export async function GET(req: Request) {
 
     const byDay = new Map<string, { views: number; visitors: Set<string> }>();
     const walk = new Date(since);
-    walk.setHours(0, 0, 0, 0);
+    walk.setUTCHours(0, 0, 0, 0);
     const untilDay = new Date(until);
-    untilDay.setHours(0, 0, 0, 0);
+    untilDay.setUTCHours(0, 0, 0, 0);
     while (walk <= untilDay) {
       const key = walk.toISOString().slice(0, 10);
       byDay.set(key, { views: 0, visitors: new Set() });
-      walk.setDate(walk.getDate() + 1);
+      walk.setUTCDate(walk.getUTCDate() + 1);
     }
     pageviews.forEach((e) => {
       const key = e.created_at.slice(0, 10);
@@ -389,6 +291,33 @@ export async function GET(req: Request) {
       .slice(0, 20);
 
     const sessionById = new Map(sessions.map((s) => [s.session_id, s]));
+
+    // Build enriched visitors from already-filtered sessions + events (no extra DB query)
+    type EnrichedVisitor = { ip: string | null; ip_hash: string | null; country: string; city: string; sessionCount: number; userAgent: string | null; durationMs: number; clicks: number; pages: string[] };
+    const enrichedMap = new Map<string, EnrichedVisitor>();
+    const countryLbl = (v: string | null | undefined) => (v && String(v).trim()) ? String(v).trim() : 'Inconnu';
+    for (const s of sessions) {
+      const key = s.ip_hash ?? `_${s.session_id}`;
+      const dur = sessionDurations.get(s.session_id) ?? 0;
+      const existing = enrichedMap.get(key);
+      if (!existing) {
+        enrichedMap.set(key, { ip: (s as any).ip ?? null, ip_hash: s.ip_hash ?? null, country: countryLbl(s.country), city: countryLbl(s.city), sessionCount: 1, userAgent: s.user_agent ?? null, durationMs: dur, clicks: 0, pages: [] });
+      } else {
+        existing.sessionCount++;
+        existing.durationMs = Math.max(existing.durationMs, dur);
+        if (!existing.userAgent && s.user_agent) existing.userAgent = s.user_agent;
+      }
+    }
+    for (const e of filteredEvents) {
+      const s = sessionById.get(e.session_id);
+      if (!s) continue;
+      const key = s.ip_hash ?? `_${s.session_id}`;
+      const v = enrichedMap.get(key);
+      if (!v) continue;
+      if (e.event_type === 'click') v.clicks++;
+      if (e.event_type === 'pageview' && e.path && !v.pages.includes(e.path)) v.pages.push(e.path);
+    }
+    const visitors = Array.from(enrichedMap.values()).sort((a, b) => b.sessionCount - a.sessionCount);
 
     const countryCount = new Map<string, number>();
     const cityCount = new Map<string, number>();

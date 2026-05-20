@@ -28,7 +28,7 @@ type AnalyticsData = {
   topClicks: { path: string; element_id: string; count: number }[];
   bySource?: { source: string; browser: string; count: number; avgTimeSeconds?: number }[];
   visitsByPage?: { path: string; uniqueVisitors: number; avgTimeSeconds?: number }[];
-  visitors?: { ip: string | null; ip_hash: string | null; country: string; city: string; sessionCount: number }[];
+  visitors?: { ip: string | null; ip_hash: string | null; country: string; city: string; sessionCount: number; userAgent?: string | null; durationMs?: number; clicks?: number; pages?: string[] }[];
   filterApplied: { include: boolean; exclude: boolean };
   excludeBots?: boolean;
 };
@@ -104,6 +104,7 @@ export default function StatisticsModal({
   const [pageSource, setPageSource] = useState(1);
   const [pageVisitsByPage, setPageVisitsByPage] = useState(1);
   const [pageVisitors, setPageVisitors] = useState(1);
+  const [expandedVisitorHash, setExpandedVisitorHash] = useState<string | null>(null);
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
@@ -1142,7 +1143,9 @@ export default function StatisticsModal({
                               const visitorIpHash = visitor.ip_hash;
                               const visitorCountry = visitor.country;
                               const visitorCity = visitor.city;
-                              
+                              const rowKey = visitorIpHash ?? visitorIp ?? `_${index}`;
+                              const isExpanded = expandedVisitorHash === rowKey;
+
                               const handleToggle = () => {
                                 if (visitorIpHash) {
                                   setSelectedVisitorHashes((prev) => {
@@ -1153,56 +1156,84 @@ export default function StatisticsModal({
                                   });
                                 }
                               };
-                              
-                              const handleExcludeIp = () => {
+
+                              const handleExcludeIp = (e: React.MouseEvent) => {
+                                e.stopPropagation();
                                 if (visitorIp) addIpToExclude(visitorIp);
                               };
-                              
-                              const handleExcludeHash = () => {
+
+                              const handleExcludeHash = (e: React.MouseEvent) => {
+                                e.stopPropagation();
                                 if (visitorIpHash) addHashToExclude(visitorIpHash);
                               };
-                              
+
+                              const durSec = Math.round((visitor.durationMs ?? 0) / 1000);
+                              const durLabel = durSec === 0 ? '< 1s' : durSec < 60 ? `${durSec}s` : `${Math.floor(durSec / 60)}m${durSec % 60 > 0 ? ` ${durSec % 60}s` : ''}`;
+
                               return (
-                                <tr key={`${visitorIpHash ?? visitorIp ?? ''}-${visitorCountry}-${visitorCity}-${index}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                  <td style={{ padding: '10px 14px', color: '#1e293b' }}>
-                                    {hasHash ? (
-                                      <input
-                                        type="checkbox"
-                                        checked={isSelected}
-                                        onChange={handleToggle}
-                                        aria-label={`Sélectionner ${formatCity(visitorCountry)} ${formatCity(visitorCity)}`}
-                                      />
-                                    ) : (
-                                      <span style={{ color: '#cbd5e1' }}>—</span>
-                                    )}
-                                  </td>
-                                  <td style={{ padding: '10px 14px', color: '#1e293b', fontFamily: 'monospace', fontSize: 13 }}>{visitorIp ?? '—'}</td>
-                                  <td style={{ padding: '10px 14px', color: '#1e293b' }}>{formatCity(visitorCountry)}</td>
-                                  <td style={{ padding: '10px 14px', color: '#1e293b' }}>{formatCity(visitorCity)}</td>
-                                  <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{visitor.sessionCount}</td>
-                                  <td style={{ padding: '10px 14px', color: '#1e293b' }}>
-                                    {visitorIp ? (
-                                      <button
-                                        type="button"
-                                        onClick={handleExcludeIp}
-                                        style={{ padding: '4px 10px', fontSize: 12, background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: 6, cursor: 'pointer', fontWeight: 500 }}
-                                      >
-                                        Exclure cette IP
-                                      </button>
-                                    ) : visitorIpHash ? (
-                                      <button
-                                        type="button"
-                                        onClick={handleExcludeHash}
-                                        style={{ padding: '4px 10px', fontSize: 12, background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d', borderRadius: 6, cursor: 'pointer', fontWeight: 500 }}
-                                        title="Exclure ce visiteur (IP non enregistrée, exclusion par identifiant)"
-                                      >
-                                        Exclure ce visiteur
-                                      </button>
-                                    ) : (
-                                      <span style={{ fontSize: 12, color: '#94a3b8' }}>—</span>
-                                    )}
-                                  </td>
-                                </tr>
+                                <React.Fragment key={`${rowKey}-${index}`}>
+                                  <tr
+                                    style={{ borderBottom: isExpanded ? 'none' : '1px solid #e2e8f0', cursor: 'pointer', background: isExpanded ? '#f8faff' : undefined, transition: 'background 0.1s' }}
+                                    onClick={() => setExpandedVisitorHash(isExpanded ? null : rowKey)}
+                                  >
+                                    <td style={{ padding: '10px 14px', color: '#1e293b' }} onClick={(e) => e.stopPropagation()}>
+                                      {hasHash ? (
+                                        <input
+                                          type="checkbox"
+                                          checked={isSelected}
+                                          onChange={handleToggle}
+                                          aria-label={`Sélectionner ${formatCity(visitorCountry)} ${formatCity(visitorCity)}`}
+                                        />
+                                      ) : (
+                                        <span style={{ color: '#cbd5e1' }}>—</span>
+                                      )}
+                                    </td>
+                                    <td style={{ padding: '10px 14px', color: '#1e293b', fontFamily: 'monospace', fontSize: 13 }}>
+                                      <span style={{ color: '#94a3b8', marginRight: 6, fontSize: 10 }}>{isExpanded ? '▾' : '▸'}</span>
+                                      {visitorIp ?? '—'}
+                                    </td>
+                                    <td style={{ padding: '10px 14px', color: '#1e293b' }}>{formatCity(visitorCountry)}</td>
+                                    <td style={{ padding: '10px 14px', color: '#1e293b' }}>{formatCity(visitorCity)}</td>
+                                    <td style={{ padding: '10px 14px', color: '#1e293b', fontWeight: 500 }}>{visitor.sessionCount}</td>
+                                    <td style={{ padding: '10px 14px', color: '#1e293b' }} onClick={(e) => e.stopPropagation()}>
+                                      {visitorIp ? (
+                                        <button type="button" onClick={handleExcludeIp} style={{ padding: '4px 10px', fontSize: 12, background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: 6, cursor: 'pointer', fontWeight: 500 }}>
+                                          Exclure cette IP
+                                        </button>
+                                      ) : visitorIpHash ? (
+                                        <button type="button" onClick={handleExcludeHash} style={{ padding: '4px 10px', fontSize: 12, background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d', borderRadius: 6, cursor: 'pointer', fontWeight: 500 }} title="Exclure ce visiteur (IP non enregistrée, exclusion par identifiant)">
+                                          Exclure ce visiteur
+                                        </button>
+                                      ) : (
+                                        <span style={{ fontSize: 12, color: '#94a3b8' }}>—</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                  {isExpanded && (
+                                    <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                      <td colSpan={6} style={{ padding: '10px 14px 14px', background: '#f0f4ff' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px 20px' }}>
+                                          <div>
+                                            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(0,0,0,0.38)', marginBottom: 2 }}>Durée session</div>
+                                            <div style={{ fontSize: 13, fontFamily: 'monospace', color: '#1e293b' }}>{durLabel}</div>
+                                          </div>
+                                          <div>
+                                            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(0,0,0,0.38)', marginBottom: 2 }}>Clics</div>
+                                            <div style={{ fontSize: 13, fontFamily: 'monospace', color: '#1e293b' }}>{visitor.clicks ?? 0}</div>
+                                          </div>
+                                          <div>
+                                            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(0,0,0,0.38)', marginBottom: 2 }}>Pages visitées</div>
+                                            <div style={{ fontSize: 13, fontFamily: 'monospace', color: '#1e293b' }}>{visitor.pages?.length ? visitor.pages.join(', ') : '—'}</div>
+                                          </div>
+                                          <div style={{ gridColumn: '1 / -1' }}>
+                                            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'rgba(0,0,0,0.38)', marginBottom: 2 }}>User-Agent</div>
+                                            <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#475569', wordBreak: 'break-all', lineHeight: 1.5 }}>{visitor.userAgent ?? '—'}</div>
+                                          </div>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
                               );
                             })}
                             {visitorsData.length === 0 && (
