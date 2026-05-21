@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React from 'react';
 import type { ViewBlock } from '../types';
 import { parseVideoUrl, getVideoLabel } from '../utils/parseVideoUrl';
 import styles from './blocks.module.css';
@@ -25,8 +25,12 @@ function getYouTubeThumbnail(url: string): string | null {
   return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
 }
 
-export default function ViewVideoBlock({ block }: { block: ViewBlock }) {
-  const [playing, setPlaying] = useState(false);
+interface Props {
+  block: ViewBlock;
+  onOpenLightbox?: () => void;
+}
+
+export default function ViewVideoBlock({ block, onOpenLightbox }: Props) {
   const embedUrl = block.videoUrl ? parseVideoUrl(block.videoUrl) : null;
   const label = block.videoUrl ? getVideoLabel(block.videoUrl) : '';
   const thumbnail = block.videoUrl ? getYouTubeThumbnail(block.videoUrl) : null;
@@ -52,22 +56,10 @@ export default function ViewVideoBlock({ block }: { block: ViewBlock }) {
     );
   }
 
-  if (playing) {
-    return (
-      <iframe
-        className={styles.videoIframe}
-        src={`${embedUrl}?autoplay=1&playsinline=1&rel=0`}
-        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-        allowFullScreen
-        title="Vidéo"
-      />
-    );
-  }
-
   return (
     <button
       className={styles.videoThumb}
-      onClick={(e) => { e.stopPropagation(); setPlaying(true); }}
+      onClick={(e) => { e.stopPropagation(); onOpenLightbox?.(); }}
       onPointerDown={(e) => e.stopPropagation()}
       onTouchStart={(e) => e.stopPropagation()}
       aria-label="Lire la vidéo"

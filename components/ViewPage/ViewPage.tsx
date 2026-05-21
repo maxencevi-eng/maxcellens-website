@@ -1,14 +1,16 @@
 "use client";
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import type { ViewBlock, ViewBlockType, ViewProfile } from './types';
 import ViewProfileSection from './ViewProfileSection';
 import ViewBlockGrid from './ViewBlockGrid';
 import ViewAddBlockMenu from './ViewAddBlockMenu';
 import { useBlockVisibility } from '../BlockVisibility/BlockVisibilityContext';
+import { parseVideoUrl } from './utils/parseVideoUrl';
 import styles from './ViewPage.module.css';
 
 const ViewStatsModal = dynamic(() => import('./ViewStatsModal'), { ssr: false });
+const VideoLightbox = dynamic(() => import('../VideoGallery/VideoLightbox'), { ssr: false });
 
 let idCounter = 0;
 function genId(): string {
@@ -42,6 +44,24 @@ export default function ViewPage({ initialProfile, initialBlocks }: Props) {
   const [profile, setProfile] = useState<ViewProfile>(initialProfile);
   const [blocks, setBlocks] = useState<ViewBlock[]>(initialBlocks);
   const [showStats, setShowStats] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  // Liste des blocs vidéo avec un embedUrl valide (pour la lightbox)
+  const videoItems = useMemo(() => {
+    return blocks
+      .filter((b) => b.type === 'video' && b.videoUrl && parseVideoUrl(b.videoUrl))
+      .map((b) => ({
+        blockId: b.id,
+        url: b.videoUrl!,
+        embedUrl: parseVideoUrl(b.videoUrl!)!,
+        isShort: b.videoUrl!.includes('/shorts/'),
+      }));
+  }, [blocks]);
+
+  const handleOpenLightbox = useCallback((blockId: string) => {
+    const idx = videoItems.findIndex((v) => v.blockId === blockId);
+    if (idx >= 0) setLightboxIndex(idx);
+  }, [videoItems]);
 
   const handleProfileUpdate = useCallback(async (updated: ViewProfile) => {
     setProfile(updated);
@@ -109,6 +129,7 @@ export default function ViewPage({ initialProfile, initialBlocks }: Props) {
           onReorder={handleBlocksReorder}
           onUpdate={handleBlockUpdate}
           onDelete={handleBlockDelete}
+          onOpenLightbox={handleOpenLightbox}
         />
 
         {isAdmin && (
@@ -117,6 +138,17 @@ export default function ViewPage({ initialProfile, initialBlocks }: Props) {
       </div>
 
       {showStats && <ViewStatsModal onClose={() => setShowStats(false)} />}
+
+      {lightboxIndex !== null && videoItems.length > 0 && (
+        <VideoLightbox
+          videos={videoItems}
+          index={lightboxIndex}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onPrev={() => setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : videoItems.length - 1))}
+          onNext={() => setLightboxIndex((i) => (i !== null && i < videoItems.length - 1 ? i + 1 : 0))}
+        />
+      )}
     </div>
   );
 }

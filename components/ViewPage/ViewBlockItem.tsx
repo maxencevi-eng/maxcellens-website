@@ -16,6 +16,7 @@ interface Props {
   isAdmin: boolean;
   onUpdate: (updated: ViewBlock) => void;
   onDelete: (id: string) => void;
+  onOpenLightbox?: (blockId: string) => void;
 }
 
 const SIZE_CLASSES: Record<string, string> = {
@@ -26,18 +27,18 @@ const SIZE_CLASSES: Record<string, string> = {
   large: styles.large,
 };
 
-function BlockContent({ block }: { block: ViewBlock }) {
+function BlockContent({ block, onOpenLightbox }: { block: ViewBlock; onOpenLightbox?: () => void }) {
   switch (block.type) {
     case 'text': return <ViewTextBlock block={block} />;
     case 'link': return <ViewLinkBlock block={block} />;
-    case 'video': return <ViewVideoBlock block={block} />;
+    case 'video': return <ViewVideoBlock block={block} onOpenLightbox={onOpenLightbox} />;
     case 'photo': return <ViewPhotoBlock block={block} />;
     case 'map': return <ViewMapBlock block={block} />;
     default: return null;
   }
 }
 
-export default function ViewBlockItem({ block, isAdmin, onUpdate, onDelete }: Props) {
+export default function ViewBlockItem({ block, isAdmin, onUpdate, onDelete, onOpenLightbox }: Props) {
   const [showModal, setShowModal] = useState(false);
 
   const {
@@ -67,7 +68,7 @@ export default function ViewBlockItem({ block, isAdmin, onUpdate, onDelete }: Pr
         style={style}
         className={`${styles.block} ${sizeClass} ${isDragging ? styles.dragging : ''}`}
       >
-        <BlockContent block={block} />
+        <BlockContent block={block} onOpenLightbox={onOpenLightbox ? () => onOpenLightbox(block.id) : undefined} />
 
         {isAdmin && (
           <>

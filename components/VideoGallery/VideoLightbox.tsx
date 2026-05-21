@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-export type VideoLightboxItem = { url: string; isShort?: boolean };
+export type VideoLightboxItem = { url: string; embedUrl?: string; isShort?: boolean };
 
 type Props = {
   videos: VideoLightboxItem[];
@@ -61,7 +61,9 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
   const isShort = item.isShort ?? false;
   const aspectRatio = isShort ? 9 / 16 : 16 / 9;
   const autoplay = index === initialIndex && !hasNavigated;
-  const embedSrc = `https://www.youtube.com/embed/${id}${autoplay ? '?autoplay=1' : ''}`;
+  const embedBase = item.embedUrl ?? `https://www.youtube.com/embed/${id}`;
+  const sep = embedBase.includes('?') ? '&' : '?';
+  const embedSrc = autoplay ? `${embedBase}${sep}autoplay=1` : embedBase;
   const overlayStyle = {
     position: 'fixed' as const,
     inset: 0,

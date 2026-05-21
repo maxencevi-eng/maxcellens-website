@@ -24,9 +24,10 @@ interface Props {
   onReorder: (blocks: ViewBlock[]) => void;
   onUpdate: (updated: ViewBlock) => void;
   onDelete: (id: string) => void;
+  onOpenLightbox?: (blockId: string) => void;
 }
 
-export default function ViewBlockGrid({ blocks, isAdmin, onReorder, onUpdate, onDelete }: Props) {
+export default function ViewBlockGrid({ blocks, isAdmin, onReorder, onUpdate, onDelete, onOpenLightbox }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 8 } }),
@@ -54,6 +55,7 @@ export default function ViewBlockGrid({ blocks, isAdmin, onReorder, onUpdate, on
               isAdmin={isAdmin}
               onUpdate={onUpdate}
               onDelete={onDelete}
+              onOpenLightbox={onOpenLightbox}
             />
           ))}
         </div>
