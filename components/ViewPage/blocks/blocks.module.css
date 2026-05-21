@@ -157,6 +157,10 @@
   object-fit: cover;
   display: block;
 }
+/* Zoom pour les blocs tall : croppes les barres noires intégrées dans le thumbnail */
+.videoThumbnailImgZoom {
+  transform: scale(1.5);
+}
 
 .videoPlayIcon {
   position: relative;

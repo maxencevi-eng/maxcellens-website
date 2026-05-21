@@ -20,9 +20,13 @@ function getYouTubeId(url: string): string | null {
   return null;
 }
 
-function getYouTubeThumbnail(url: string): string | null {
+function getYouTubeThumbnail(url: string): { src: string; fallback: string } | null {
   const id = getYouTubeId(url);
-  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
+  if (!id) return null;
+  return {
+    src: `https://img.youtube.com/vi/${id}/maxresdefault.jpg`,
+    fallback: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+  };
 }
 
 interface Props {
@@ -33,7 +37,7 @@ interface Props {
 export default function ViewVideoBlock({ block, onOpenLightbox }: Props) {
   const embedUrl = block.videoUrl ? parseVideoUrl(block.videoUrl) : null;
   const label = block.videoUrl ? getVideoLabel(block.videoUrl) : '';
-  const thumbnail = block.videoUrl ? getYouTubeThumbnail(block.videoUrl) : null;
+  const thumbnailData = block.videoUrl ? getYouTubeThumbnail(block.videoUrl) : null;
 
   if (!block.videoUrl) {
     return (
@@ -65,13 +69,18 @@ export default function ViewVideoBlock({ block, onOpenLightbox }: Props) {
       aria-label="Lire la vidéo"
       style={{ color: block.textColor || undefined }}
     >
-      {thumbnail && (
-        <img src={thumbnail} alt="" className={styles.videoThumbnailImg} />
+      {thumbnailData && (
+        <img
+          src={thumbnailData.src}
+          alt=""
+          className={`${styles.videoThumbnailImg}${block.size === 'tall' ? ` ${styles.videoThumbnailImgZoom}` : ''}`}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = thumbnailData.fallback; }}
+        />
       )}
       <div className={styles.videoPlayIcon}>
         <svg viewBox="0 0 24 24" fill="currentColor" width={36} height={36}><polygon points="5,3 19,12 5,21" /></svg>
       </div>
-      {label && !thumbnail && <div className={styles.videoLabel}>{label}</div>}
+      {label && !thumbnailData && <div className={styles.videoLabel}>{label}</div>}
     </button>
   );
 }
