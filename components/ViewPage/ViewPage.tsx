@@ -54,7 +54,7 @@ export default function ViewPage({ initialProfile, initialBlocks }: Props) {
         blockId: b.id,
         url: b.videoUrl!,
         embedUrl: parseVideoUrl(b.videoUrl!)!,
-        isShort: b.videoUrl!.includes('/shorts/'),
+        isShort: b.videoUrl!.includes('/shorts/') || b.size === 'tall',
       }));
   }, [blocks]);
 

@@ -63,7 +63,9 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
   const autoplay = index === initialIndex && !hasNavigated;
   const embedBase = item.embedUrl ?? `https://www.youtube.com/embed/${id}`;
   const sep = embedBase.includes('?') ? '&' : '?';
-  const embedSrc = autoplay ? `${embedBase}${sep}autoplay=1` : embedBase;
+  // Instagram/in-app browsers block autoplay — only request it in standard browsers
+  const canAutoplay = autoplay && (typeof navigator === 'undefined' || !/Instagram|FBAN|FBAV/i.test(navigator.userAgent));
+  const embedSrc = `${embedBase}${sep}${canAutoplay ? 'autoplay=1&' : ''}playsinline=1&rel=0`;
   const overlayStyle = {
     position: 'fixed' as const,
     inset: 0,
@@ -84,17 +86,30 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
     maxHeight: '100%',
   };
 
-  const videoScrollStyle = {
+  // Portrait (Shorts / blocs tall) : contraindre par hauteur pour tenir dans l'écran
+  // Paysage : contraindre par largeur comme avant
+  const videoScrollStyle = isShort ? {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  } : {
     maxHeight: '85vh',
     overflowY: 'auto' as const,
     display: 'flex',
     justifyContent: 'center',
   };
 
-  const videoWrapStyle = {
+  const videoWrapStyle = isShort ? {
+    height: '80vh',
+    maxHeight: '80vh',
+    aspectRatio: '9 / 16',
+    position: 'relative' as const,
+    background: '#000',
+    flexShrink: 0,
+  } : {
     width: '95vw',
     maxWidth: '95vw',
-    aspectRatio: String(aspectRatio),
+    aspectRatio: '16 / 9',
     position: 'relative' as const,
     background: '#000',
     flexShrink: 0,
