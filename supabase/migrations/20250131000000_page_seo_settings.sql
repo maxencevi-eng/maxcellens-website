@@ -66,7 +66,7 @@ CREATE TRIGGER page_seo_settings_updated_at
 -- =============================================================================
 -- Bucket Storage: seo-assets
 -- Créer le bucket depuis le dashboard Supabase (Storage > New bucket > seo-assets, public).
--- Ou via SQL (si votre projet a l’extension storage) :
+-- Ou via SQL (Et si votre projet a l’extension storage) :
 -- INSERT INTO storage.buckets (id, name, public) VALUES ('seo-assets', 'seo-assets', true)
 -- ON CONFLICT (id) DO NOTHING;
 -- Politique: lecture publique pour les images OG/Twitter, écriture via service role.
