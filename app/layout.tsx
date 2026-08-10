@@ -73,7 +73,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   try {
     if (supabaseAdmin) {
-      const keys = ['navHeight','navGap','navFontFamily','navFontSize','navFontWeight','navTextColor','navHoverTextColor','navBgColor','siteLogoHeight','site_style','google_site_verification'];
+      const keys = ['navHeight','navGap','navFontFamily','navFontSize','navFontWeight','navTextColor','navHoverTextColor','navBgColor','siteLogoHeight','siteFooterLogoHeight','site_style','google_site_verification'];
       const { data } = await supabaseAdmin.from('site_settings').select('key,value').in('key', keys as any);
       const map: Record<string,string> = {};
       (data || []).forEach((r: any) => { if (r && typeof r.key !== 'undefined') map[r.key] = String(r.value || ''); });
@@ -89,6 +89,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       if (map.navMobileActiveTextColor) cssVars += `--nav-mobile-active-text-color: ${map.navMobileActiveTextColor};`;
       if (map.navBgColor) cssVars += `--nav-bg-color: ${map.navBgColor};`;
       if (map.siteLogoHeight) cssVars += `--site-logo-height: ${Number(map.siteLogoHeight)}px;`;
+      // Injectée dès le rendu serveur : le Footer la chargeait uniquement côté
+      // client, le logo apparaissait donc brièvement à la mauvaise taille.
+      if (map.siteFooterLogoHeight) cssVars += `--site-footer-logo-height: ${Number(map.siteFooterLogoHeight)}px;`;
       if (map.siteLogoVersion) cssVars += `--site-logo-version: ${map.siteLogoVersion};`;
       if (map.google_site_verification) googleVerificationCode = map.google_site_verification;
 
