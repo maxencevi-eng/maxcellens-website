@@ -15,8 +15,15 @@
 
 :root {
   /* ── Surfaces ─────────────────────────────────────────────────────────── */
-  /** Fond des zones admin larges (coque, tableau de bord) */
-  --adm-canvas: #f3f1ec;
+  /**
+   * Fond des zones admin larges.
+   *
+   * Suit la zone de contenu du site (`--block-bg`, réglable dans Style du
+   * site) : les écrans d'administration doivent prolonger la page, pas
+   * introduire leur propre teinte. Le tableau de bord, lui, ne peint rien du
+   * tout et hérite simplement de son conteneur.
+   */
+  --adm-canvas: var(--block-bg, var(--bg, #fafaf8));
   /** Fond des panneaux, modales, cartes */
   --adm-surface: #ffffff;
   /** Fond légèrement en retrait : entêtes de section, lignes alternées */

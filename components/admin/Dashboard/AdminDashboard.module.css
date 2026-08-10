@@ -1,6 +1,10 @@
 .shell {
   min-height: 100%;
-  background: var(--adm-canvas);
+  /* Aucun fond propre : la page admin laisse voir celui du site.
+     Elle est rendue dans `.content-inner`, qui peint déjà `--block-bg` comme
+     sur toutes les autres pages — repeindre par-dessus créait une bande d'une
+     teinte différente au milieu de la page. */
+  background: transparent;
   padding-bottom: var(--adm-space-7);
 }
 

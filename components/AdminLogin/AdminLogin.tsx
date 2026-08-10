@@ -72,7 +72,6 @@ export default function AdminLogin() {
               </svg>
             </div>
             <h2 className={styles.title}>Connexion admin</h2>
-            <p className={styles.subtitle}>Gérez les contenus, le menu et le référencement depuis un espace plus clair et plus rapide.</p>
           </div>
 
           {user ? (
