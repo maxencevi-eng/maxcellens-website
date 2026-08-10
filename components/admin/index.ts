@@ -25,6 +25,9 @@ export {
 
 export { default as AdminToolbar } from './AdminToolbar';
 
+export { default as AdminDialogHost } from './AdminDialogHost';
+export { confirmDialog, promptDialog, alertDialog } from './dialog';
+
 export { default as Field } from './fields/Field';
 export { default as TextField } from './fields/TextField';
 export { default as NumberField } from './fields/NumberField';

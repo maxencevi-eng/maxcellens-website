@@ -2,7 +2,7 @@
 
 import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
 import { Pencil } from 'lucide-react';
-import BuiltinPageBlocks from '../PageBuilder/BuiltinPageBlocks';
+import useBuiltinPageBlocks from '../PageBuilder/useBuiltinPageBlocks';
 import type { BuiltinPageKey } from '../PageBuilder/builtinPages';
 import React, { Fragment, useState, useEffect } from "react";
 import PageIntroBlock from "../PageIntroBlock/PageIntroBlock";
@@ -11,8 +11,6 @@ import EditablePortraitGallery from "../PortraitGallery/EditablePortraitGallery"
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
 import AnimateInView from "../AnimateInView/AnimateInView";
 import styles from "./SubmenuPageClient.module.css";
-
-const btnWrapStyle: React.CSSProperties = { display: "flex", gap: 8, alignItems: "center", position: "absolute", right: 12, top: 12, zIndex: 5 };
 
 export type SubmenuTab = "film" | "photo";
 
@@ -49,6 +47,11 @@ export default function SubmenuPageClient({
     blockOrderCorporate,
     isAdmin 
   } = useBlockVisibility();
+
+  /* Blocs ajoutés depuis l'administration : leurs sections sont fusionnées
+     dans la table ci-dessous et leurs identifiants figurent dans le même
+     ordre que les blocs intégrés. */
+  const dynamicBlocks = useBuiltinPageBlocks(page as BuiltinPageKey);
   
   const hide = (id: string) => !isAdmin && hiddenBlocks.includes(id);
   const blockWidthClass = (id: string) => (blockWidthModes[id] === "max1600" ? "block-width-1600" : "");
@@ -203,6 +206,10 @@ export default function SubmenuPageClient({
     ),
   };
 
+  // Les blocs dynamiques s'ajoutent à la table de rendu, indexés par
+  // leur identifiant d'ordre (« dyn:<uuid> »).
+  Object.assign(sections, dynamicBlocks.sections);
+
   // Ordre par défaut pour les pages avec sous-menu
   const defaultOrder = [introBlockId, videosBlockId];
   const order = blockOrder?.length ? blockOrder : defaultOrder;
@@ -212,8 +219,8 @@ export default function SubmenuPageClient({
       {order.map((blockId) => (
         <Fragment key={blockId}>{sections[blockId] ?? null}</Fragment>
       ))}
-      {/* Blocs ajoutés depuis l’administration, après les blocs intégrés */}
-      <BuiltinPageBlocks pageKey={page as BuiltinPageKey} />
+      {dynamicBlocks.addButton}
+      {dynamicBlocks.modals}
     </section>
   );
 }

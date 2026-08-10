@@ -62,7 +62,9 @@ export default function AddBlockMenu({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         aria-label="Rechercher un bloc"
-        autoFocus
+        // Pas d'`autoFocus` : il ne permet pas `preventScroll` et peut donc
+        // faire défiler la page. Le piège de focus d'AdminModal place déjà le
+        // curseur sur le premier champ, lui sans effet de bord.
       />
 
       {grouped.length === 0 ? (

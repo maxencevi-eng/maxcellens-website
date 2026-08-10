@@ -7,6 +7,7 @@ import AdminButton from '../AdminButton';
 import AdminTabs, { type AdminTab } from '../AdminTabs';
 import { pushModal, popModal, isTopModal, modalDepth } from '../modalStack';
 import useFocusTrap from '../useFocusTrap';
+import { confirmDialog } from '../dialog';
 import styles from './AdminModal.module.css';
 
 export type AdminModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
@@ -87,11 +88,16 @@ export default function AdminModal({
   }, [id]);
 
   /** Fermeture avec garde-fou si des modifications sont en attente. */
-  const requestClose = useCallback(() => {
+  const requestClose = useCallback(async () => {
     if (dirty && !saving) {
-      const ok = window.confirm(
-        'Des modifications n’ont pas été enregistrées. Fermer quand même ?'
-      );
+      const ok = await confirmDialog({
+        title: 'Modifications non enregistrées',
+        message:
+          'Vos changements seront perdus si vous fermez maintenant.',
+        confirmLabel: 'Fermer sans enregistrer',
+        cancelLabel: 'Continuer l’édition',
+        tone: 'danger',
+      });
       if (!ok) return;
     }
     onClose();

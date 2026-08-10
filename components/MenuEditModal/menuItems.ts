@@ -40,6 +40,20 @@ export function builtinItemId(key: string) {
   return `builtin:${key}`;
 }
 
+/**
+ * Entrées réservées à une session connectée.
+ *
+ * Leur réglage de visibilité dans l'éditeur de menu ne s'applique pas : un
+ * visiteur ne les voit jamais, un administrateur les voit toujours. Cela évite
+ * d'exposer publiquement le chemin de l'espace d'administration parce qu'une
+ * case a été laissée cochée.
+ */
+export const ADMIN_ONLY_ITEM_IDS = new Set<string>([builtinItemId('admin')]);
+
+export function isAdminOnlyItem(id: string): boolean {
+  return ADMIN_ONLY_ITEM_IDS.has(id);
+}
+
 export function pageItemId(slug: string) {
   return `page:${slug}`;
 }
@@ -148,4 +162,23 @@ export function isItemVisible(
   if (key && key in defaults) return Boolean(defaults[key]);
   // Une page créée depuis l'admin n'apparaît que si on l'active explicitement.
   return item.builtin ? false : false;
+}
+
+/**
+ * Entrées réellement affichables, dans l'ordre.
+ *
+ * Point unique de décision, partagé par le menu de bureau, le menu mobile et
+ * le pied de page : les trois appliquent donc exactement les mêmes règles.
+ */
+export function visibleMenuItems(
+  items: MenuItem[],
+  visible: Record<string, boolean>,
+  defaults: Record<string, boolean>,
+  isAdmin: boolean
+): MenuItem[] {
+  return items.filter((item) => {
+    // La session prime sur le réglage de visibilité.
+    if (isAdminOnlyItem(item.id)) return isAdmin;
+    return isItemVisible(item, visible, defaults);
+  });
 }

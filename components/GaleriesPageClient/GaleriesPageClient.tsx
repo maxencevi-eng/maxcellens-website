@@ -1,17 +1,20 @@
 "use client";
 
-import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
-import { Pencil } from 'lucide-react';
-import BuiltinPageBlocks from '../PageBuilder/BuiltinPageBlocks';
 import React from "react";
+import { AdminToolbarShell } from '../admin/AdminToolbar';
+import useBuiltinPageBlocks from '../PageBuilder/useBuiltinPageBlocks';
 import GalleriesMenuClient from "../GalleriesPages/GalleriesMenuClient";
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
 import AnimateInView from "../AnimateInView/AnimateInView";
 
-const btnWrapStyle: React.CSSProperties = { display: "flex", gap: 8, alignItems: "center", position: "absolute", right: 12, top: 12, zIndex: 5 };
-
 export default function GaleriesPageClient() {
   const { hiddenBlocks, blockWidthModes, blockOrderGaleries, isAdmin } = useBlockVisibility();
+
+  /* Blocs ajoutés depuis l'administration : leurs sections sont fusionnées
+     dans la table ci-dessous et leurs identifiants figurent dans le même
+     ordre que les blocs intégrés. */
+  const dynamicBlocks = useBuiltinPageBlocks('galeries');
+
   const hide = (id: string) => !isAdmin && hiddenBlocks.includes(id);
   const blockWidthClass = (id: string) => (blockWidthModes[id] === "max1600" ? "block-width-1600" : "");
 
@@ -30,13 +33,21 @@ export default function GaleriesPageClient() {
     </div>
   );
 
+  const sections: Record<string, React.ReactNode> = {
+    galeries_menu: menuSection,
+  };
+
+  // Les blocs dynamiques s'ajoutent à la table de rendu, indexés par
+  // leur identifiant d'ordre (« dyn:<uuid> »).
+  Object.assign(sections, dynamicBlocks.sections);
+
   return (
     <section className="page-blocks" style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' as const }}>
       {blockOrderGaleries.map((blockId) => (
-        blockId === "galeries_menu" ? <React.Fragment key={blockId}>{menuSection}</React.Fragment> : null
+        <React.Fragment key={blockId}>{sections[blockId] ?? null}</React.Fragment>
       ))}
-      {/* Blocs ajoutés depuis l’administration, après les blocs intégrés */}
-      <BuiltinPageBlocks pageKey="galeries" />
+      {dynamicBlocks.addButton}
+      {dynamicBlocks.modals}
     </section>
   );
 }

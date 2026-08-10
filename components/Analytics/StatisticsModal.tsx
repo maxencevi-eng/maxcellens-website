@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmDialog } from '../admin/dialog';
 import React, { useEffect, useState, useCallback } from 'react';
 import { AdminModal } from '../admin';
 import {
@@ -350,7 +351,14 @@ export default function StatisticsModal({
   };
 
   const purgeBotsOnly = async () => {
-    if (!confirm('Supprimer définitivement en base toutes les sessions et événements identifiés comme bots (crawlers) ?')) return;
+    const ok = await confirmDialog({
+      title: 'Purger les sessions de robots ?',
+      message:
+        'Toutes les sessions identifiées comme crawlers et leurs événements seront supprimés définitivement.',
+      confirmLabel: 'Purger',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setPurgeBotsLoading(true);
     setPurgeBotsResult(null);
     try {
@@ -386,7 +394,13 @@ export default function StatisticsModal({
       setPurgeHashResult('Aucun hash à purger. Ajoutez des hash dans "Exclure Hash" puis enregistrez.');
       return;
     }
-    if (!confirm(`Supprimer définitivement les sessions et événements pour ${hashes.length} hash ?`)) return;
+    const ok = await confirmDialog({
+      title: `Purger ${hashes.length} visiteur(s) ?`,
+      message: 'Les sessions et les événements correspondants seront supprimés définitivement.',
+      confirmLabel: 'Purger',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setPurgingHashes(true);
     setPurgeHashResult(null);
     try {

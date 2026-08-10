@@ -18,6 +18,7 @@ import {
   type BlockOrderPage,
   type BlockWidthMode,
 } from '../BlockVisibility';
+import { confirmDialog } from './dialog';
 import styles from './AdminToolbar.module.css';
 
 type ToolbarCtx = {
@@ -251,10 +252,13 @@ function Delete({ onClick, name }: { onClick: () => void; name?: string }) {
     <button
       type="button"
       className={`${styles.btn} ${styles.btnDanger}`}
-      onClick={() => {
-        const ok = window.confirm(
-          `Supprimer définitivement ce bloc${name ? ` « ${name} »` : ''} ?`
-        );
+      onClick={async () => {
+        const ok = await confirmDialog({
+          title: `Supprimer ce bloc${name ? ` « ${name} »` : ''} ?`,
+          message: 'Son contenu et ses médias associés seront supprimés définitivement.',
+          confirmLabel: 'Supprimer',
+          tone: 'danger',
+        });
         if (ok) onClick();
       }}
       aria-label="Supprimer le bloc"

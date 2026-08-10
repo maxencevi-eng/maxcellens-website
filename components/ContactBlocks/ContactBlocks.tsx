@@ -1,7 +1,9 @@
 "use no memo";
 "use client";
 
-import BuiltinPageBlocks from '../PageBuilder/BuiltinPageBlocks';
+import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
+import { Pencil } from 'lucide-react';
+import useBuiltinPageBlocks from '../PageBuilder/useBuiltinPageBlocks';
 import React, { Fragment, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { supabase } from '../../lib/supabase';
@@ -155,6 +157,11 @@ export default function ContactBlocks() {
   const [galleryData, setGalleryData] = useState<ContactGalleryData | null>(null);
   const [openGallery, setOpenGallery] = useState(false);
   const { hiddenBlocks, blockWidthModes, blockOrderContact, isAdmin: isAdminCtx } = useBlockVisibility();
+
+  /* Blocs ajoutés depuis l'administration : leurs sections sont fusionnées
+     dans la table ci-dessous et leurs identifiants figurent dans le même
+     ordre que les blocs intégrés. */
+  const dynamicBlocks = useBuiltinPageBlocks("contact");
   const hide = (id: string) => !isAdminCtx && hiddenBlocks.includes(id);
   const blockWidthClass = (id: string) => (blockWidthModes[id] === 'max1600' ? 'block-width-1600' : '');
 
@@ -239,18 +246,22 @@ export default function ContactBlocks() {
   ];
   const displayRows = rows.length > 0 ? rows : DEFAULT_ROWS;
 
-  const btnWrap = { display: 'flex', gap: 8, alignItems: 'center', position: 'absolute' as const, right: 12, top: -16, zIndex: 5 };
-
   const introSection = hide('contact_intro') ? null : (
       <div className={`${styles.blockInner} ${styles.blockFullWidthBg} ${blockWidthClass('contact_intro')}`.trim()} style={{ ...(contactIntroBg ? { backgroundColor: contactIntroBg } : {}), marginTop: 0 }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative' }}>
         {isAdmin && (
-          <div style={btnWrap}>
+          <AdminToolbarShell>
+            <AdminToolbarButton
+              variant="primary"
+              showLabel
+              icon={<Pencil size={14} aria-hidden="true" />}
+              label="Modifier"
+              onClick={() => setOpen(true)}
+            />
             <BlockVisibilityToggle blockId="contact_intro" />
             <BlockWidthToggle blockId="contact_intro" />
-            <button className="btn-secondary" onClick={() => setOpen(true)} style={{ position: 'static', background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>Modifier</button>
             <BlockOrderButtons page="contact" blockId="contact_intro" />
-          </div>
+          </AdminToolbarShell>
         )}
       </div>
 
@@ -309,7 +320,7 @@ export default function ContactBlocks() {
   const zonesSection = hide('contact_zones') ? null : (
       <div className={`${styles.blockInner} ${styles.blockFullWidthBg} ${blockWidthClass('contact_zones')}`.trim()} style={{ position: 'relative', marginTop: '2rem', ...(zones?.backgroundColor ? { backgroundColor: zones.backgroundColor } : {}) }}>
         {isAdmin && (
-          <div style={{ ...btnWrap, top: -16 }}>
+          <AdminToolbarShell>
             <BlockVisibilityToggle blockId="contact_zones" />
             <BlockWidthToggle blockId="contact_zones" />
             <button
@@ -321,7 +332,7 @@ export default function ContactBlocks() {
               Modifier
             </button>
             <BlockOrderButtons page="contact" blockId="contact_zones" />
-          </div>
+          </AdminToolbarShell>
         )}
         <AnimateInView variant="stagger" className={styles.threeCols}>
           <AnimateStaggerItem>
@@ -391,7 +402,7 @@ export default function ContactBlocks() {
   const gallerySection = hide('contact_gallery') ? null : (
     <div className={`${styles.blockInner} ${styles.blockFullWidthBg} ${blockWidthClass('contact_gallery')}`.trim()} style={{ position: 'relative', marginTop: '2.5rem', ...(galleryData?.backgroundColor ? { backgroundColor: galleryData.backgroundColor } : {}) }}>
       {isAdmin && (
-        <div style={{ ...btnWrap, top: -16 }}>
+        <AdminToolbarShell>
           <BlockVisibilityToggle blockId="contact_gallery" />
           <BlockWidthToggle blockId="contact_gallery" />
           <button type="button" className="btn-secondary" onClick={() => setOpenGallery(true)}
@@ -399,7 +410,7 @@ export default function ContactBlocks() {
             Modifier
           </button>
           <BlockOrderButtons page="contact" blockId="contact_gallery" />
-        </div>
+        </AdminToolbarShell>
       )}
       <AnimateInView variant="fadeUp">
         <div className={styles.galleryBlock}>
@@ -454,7 +465,7 @@ export default function ContactBlocks() {
     <div className={`${styles.blockInner} ${styles.blockFullWidthBg} ${styles.faqBlockWrap} ${blockWidthClass('contact_faq')}`.trim()}
       style={{ position: 'relative', marginTop: '2rem', ...(faqData?.backgroundColor ? { backgroundColor: faqData.backgroundColor } : {}) }}>
       {isAdmin && (
-        <div style={{ ...btnWrap, top: -16 }}>
+        <AdminToolbarShell>
           <BlockVisibilityToggle blockId="contact_faq" />
           <BlockWidthToggle blockId="contact_faq" />
           <button type="button" className="btn-secondary" onClick={() => setOpenFaq(true)}
@@ -462,7 +473,7 @@ export default function ContactBlocks() {
             Modifier
           </button>
           <BlockOrderButtons page="contact" blockId="contact_faq" />
-        </div>
+        </AdminToolbarShell>
       )}
       <AnimateInView variant="fadeUp">
         <div className={styles.faqBlock}>
@@ -517,13 +528,17 @@ export default function ContactBlocks() {
     contact_faq: faqSection,
   };
 
+  // Les blocs dynamiques s'ajoutent à la table de rendu, indexés par
+  // leur identifiant d'ordre (« dyn:<uuid> »).
+  Object.assign(sections, dynamicBlocks.sections);
+
   return (
     <div className={`${styles.wrapper} page-blocks`}>
       {blockOrderContact.map((blockId) => (
         <Fragment key={blockId}>{sections[blockId] ?? null}</Fragment>
       ))}
-      {/* Blocs ajoutés depuis l’administration, après les blocs intégrés */}
-      <BuiltinPageBlocks pageKey="contact" />
+      {dynamicBlocks.addButton}
+      {dynamicBlocks.modals}
       {open ? (
         <ContactEditModal onClose={() => setOpen(false)} onSaved={() => setOpen(false)} />
       ) : null}

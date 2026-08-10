@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
+import { Pencil } from 'lucide-react';
 import styles from './Clients.module.css';
 
 type Props = {
@@ -225,7 +227,15 @@ export default function Clients({ logos, title }: Props) {
                 <>
                   <BlockVisibilityToggle blockId="clients" />
                   <BlockWidthToggle blockId="clients" />
-                  <button onClick={() => setEditing(true)} className="btn-secondary" style={{ background: '#111', color: '#fff', border: 'none' }}>Modifier</button>
+                  <AdminToolbarShell>
+                    <AdminToolbarButton
+                      variant="primary"
+                      showLabel
+                      icon={<Pencil size={14} aria-hidden="true" />}
+                      label="Modifier"
+                      onClick={() => setEditing(true)}
+                    />
+                  </AdminToolbarShell>
                   <BlockOrderButtons page="home" blockId="clients" />
                 </>
               ) : null}

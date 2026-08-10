@@ -1,4 +1,7 @@
 "use client";
+import { alertDialog } from '../admin/dialog';
+import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
+import { Pencil } from 'lucide-react';
 import { AdminModal } from '../admin';
 
 import React, { useEffect, useState, useRef } from "react";
@@ -144,7 +147,15 @@ export default function EditablePortraitGallery({ items: initialItems, settingsK
     <div>
       <div style={{ position: 'relative', marginBottom: 12 }}>
         {isAdmin && (
-          <button className="btn-secondary" onClick={openEditor} style={{ position: 'absolute', left: 12, top: -16, zIndex: 5, background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>Modifier la galerie{galleryLabel ? ` ${galleryLabel}` : ''}</button>
+          <AdminToolbarShell position="topLeft">
+            <AdminToolbarButton
+              variant="primary"
+              showLabel
+              icon={<Pencil size={14} aria-hidden="true" />}
+              label={`Modifier la galerie${galleryLabel ? ` ${galleryLabel}` : ''}`}
+              onClick={openEditor}
+            />
+          </AdminToolbarShell>
         )}
       </div>
       <div>
@@ -265,13 +276,13 @@ function AddUrl({ onAdd, uploadPage = 'portrait', uploadFolder = 'Portrait/Galer
       if (json && json.url) {
         onAdd({ url: json.url, path: json.path });
       } else if (json && json.error) {
-        alert('Upload failed: ' + json.error);
+        await alertDialog({ title: 'Import impossible', message: String(json.error), tone: 'danger' });
       } else {
-        alert('Upload failed');
+        await alertDialog({ title: 'Import impossible', message: 'Le fichier n’a pas pu être envoyé.', tone: 'danger' });
       }
     } catch (e) {
       console.error('upload error', e);
-      alert('Upload error');
+      await alertDialog({ title: 'Import impossible', message: 'Une erreur est survenue pendant l’envoi du fichier.', tone: 'danger' });
     }
   }
 
@@ -300,13 +311,13 @@ function SmallReplace({ onReplace, oldPath, uploadPage = 'portrait', uploadFolde
       if (json && json.url) {
         onReplace({ url: json.url, path: json.path });
       } else if (json && json.error) {
-        alert('Upload failed: ' + json.error);
+        await alertDialog({ title: 'Import impossible', message: String(json.error), tone: 'danger' });
       } else {
-        alert('Upload failed');
+        await alertDialog({ title: 'Import impossible', message: 'Le fichier n’a pas pu être envoyé.', tone: 'danger' });
       }
     } catch (e) {
       console.error('upload error', e);
-      alert('Upload error');
+      await alertDialog({ title: 'Import impossible', message: 'Une erreur est survenue pendant l’envoi du fichier.', tone: 'danger' });
     }
   }
 

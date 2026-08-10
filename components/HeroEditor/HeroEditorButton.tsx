@@ -1,4 +1,6 @@
 "use client";
+import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
+import { Pencil } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import HeroEditor from './HeroEditor';
 import { supabase } from '../../lib/supabase';
@@ -21,7 +23,15 @@ export default function HeroEditorButton({ page }: { page: string }) {
   if (!isAdmin) return null;
   return (
     <>
-      <button onClick={() => setOpen(true)} style={{ position: 'absolute', right: 12, bottom: 12, padding: '8px 10px', borderRadius: 6, background: '#fff', border: '1px solid #ddd', cursor: 'pointer', zIndex: 2 }}>Modifier Hero</button>
+      <AdminToolbarShell position="bottomRight">
+        <AdminToolbarButton
+          variant="primary"
+          showLabel
+          icon={<Pencil size={14} aria-hidden="true" />}
+          label="Modifier l’en-tête"
+          onClick={() => setOpen(true)}
+        />
+      </AdminToolbarShell>
       {open ? <HeroEditor page={page} onClose={() => setOpen(false)} /> : null}
     </>
   );

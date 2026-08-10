@@ -1,9 +1,9 @@
 "use client";
 
 import React from 'react';
-import { ArrowDown, ArrowUp, Eye, EyeOff, FileText, Layers } from 'lucide-react';
+import { ArrowDown, ArrowUp, Eye, EyeOff, FileText, Layers, Lock } from 'lucide-react';
 import { AdminButton, AdminNotice } from '../admin';
-import type { MenuItem } from './menuItems';
+import { isAdminOnlyItem, type MenuItem } from './menuItems';
 import styles from './MenuItemsField.module.css';
 
 /**
@@ -35,11 +35,13 @@ export default function MenuItemsField({
     <ul className={styles.list}>
       {items.map((item, index) => {
         const isVisible = Boolean(visible[item.id]);
-        const Icon = item.builtin ? Layers : FileText;
+        // Entrée réservée : la bascule de visibilité ne s'y applique pas.
+        const adminOnly = isAdminOnlyItem(item.id);
+        const Icon = adminOnly ? Lock : item.builtin ? Layers : FileText;
         return (
           <li
             key={item.id}
-            className={`${styles.item} ${isVisible ? '' : styles.itemHidden}`}
+            className={`${styles.item} ${isVisible || adminOnly ? '' : styles.itemHidden}`}
           >
             <Icon size={15} className={styles.icon} aria-hidden="true" />
 
@@ -48,7 +50,9 @@ export default function MenuItemsField({
               <span className={styles.href}>{item.href}</span>
             </span>
 
-            {!item.builtin ? (
+            {adminOnly ? (
+              <span className={styles.badge}>Visible par vous seul</span>
+            ) : !item.builtin ? (
               <span className={styles.badge}>Page créée</span>
             ) : null}
 
@@ -75,14 +79,22 @@ export default function MenuItemsField({
               </AdminButton>
               <AdminButton
                 size="sm"
-                variant={isVisible ? 'secondary' : 'ghost'}
+                variant={isVisible && !adminOnly ? 'secondary' : 'ghost'}
                 iconOnly
+                // La bascule est neutralisée : l'entrée dépend de la session,
+                // pas d'un réglage. La désactiver plutôt que la masquer garde
+                // la rangée alignée sur les autres.
+                disabled={adminOnly}
                 aria-label={
-                  isVisible ? `Masquer ${item.label}` : `Afficher ${item.label}`
+                  adminOnly
+                    ? `${item.label} n’est visible que par les administrateurs`
+                    : isVisible
+                      ? `Masquer ${item.label}`
+                      : `Afficher ${item.label}`
                 }
                 onClick={() => onToggle(item.id, !isVisible)}
               >
-                {isVisible
+                {adminOnly || isVisible
                   ? <Eye size={14} aria-hidden="true" />
                   : <EyeOff size={14} aria-hidden="true" />}
               </AdminButton>

@@ -1,6 +1,8 @@
 "use client";
 
-import BuiltinPageBlocks from '../PageBuilder/BuiltinPageBlocks';
+import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
+import { Pencil } from 'lucide-react';
+import useBuiltinPageBlocks from '../PageBuilder/useBuiltinPageBlocks';
 import React, { Fragment, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
@@ -207,18 +209,13 @@ export default function AnimationPageClient() {
   }, []);
 
   const { hiddenBlocks, blockWidthModes, blockOrderAnimation, isAdmin: isAdminCtx } = useBlockVisibility();
+
+  /* Blocs ajoutés depuis l'administration : leurs sections sont fusionnées
+     dans la table ci-dessous et leurs identifiants figurent dans le même
+     ordre que les blocs intégrés. */
+  const dynamicBlocks = useBuiltinPageBlocks("animation");
   const hide = (id: string) => !isAdminCtx && hiddenBlocks.includes(id);
   const blockWidthClass = (id: string) => (blockWidthModes[id] === "max1600" ? "block-width-1600" : "");
-  const editButtonWrapStyle: React.CSSProperties = { position: "absolute", right: 12, top: 12, zIndex: 5, display: "flex", gap: 8, alignItems: "center" };
-  const editButtonStyle: React.CSSProperties = {
-    background: "#111",
-    color: "#fff",
-    border: "none",
-    padding: "8px 12px",
-    borderRadius: 6,
-    boxShadow: "0 6px 14px rgba(0,0,0,0.08)",
-    cursor: "pointer",
-  };
 
   const sectionStyle = (bg: string | undefined) =>
     bg ? { backgroundColor: bg } : undefined;
@@ -236,14 +233,18 @@ export default function AnimationPageClient() {
         <div className={`container ${blockWidthClass("animation_s1")}`.trim()}>
           <div className={styles.sectionInner}>
             {isAdmin && (
-              <div style={editButtonWrapStyle}>
+              <AdminToolbarShell>
+                <AdminToolbarButton
+                  variant="primary"
+                  showLabel
+                  icon={<Pencil size={14} aria-hidden="true" />}
+                  label="Modifier"
+                  onClick={() => setEditBlock("animation_s1")}
+                />
                 <BlockVisibilityToggle blockId="animation_s1" />
                 <BlockWidthToggle blockId="animation_s1" />
-                <button className="btn-secondary" style={editButtonStyle} onClick={() => setEditBlock("animation_s1")}>
-                  Modifier
-                </button>
                 <BlockOrderButtons page="animation" blockId="animation_s1" />
-              </div>
+              </AdminToolbarShell>
             )}
             <AnimateInView variant="fadeUp">
             <div className={styles.grid}>
@@ -272,14 +273,18 @@ export default function AnimationPageClient() {
         <div className={`container ${blockWidthClass("animation_s2")}`.trim()}>
           <div className={styles.sectionInner}>
             {isAdmin && (
-              <div style={editButtonWrapStyle}>
+              <AdminToolbarShell>
+                <AdminToolbarButton
+                  variant="primary"
+                  showLabel
+                  icon={<Pencil size={14} aria-hidden="true" />}
+                  label="Modifier"
+                  onClick={() => setEditBlock("animation_s2")}
+                />
                 <BlockVisibilityToggle blockId="animation_s2" />
                 <BlockWidthToggle blockId="animation_s2" />
-                <button className="btn-secondary" style={editButtonStyle} onClick={() => setEditBlock("animation_s2")}>
-                  Modifier
-                </button>
                 <BlockOrderButtons page="animation" blockId="animation_s2" />
-              </div>
+              </AdminToolbarShell>
             )}
             <AnimateInView variant="fadeUp">
             <div className={`${styles.grid} ${styles.gridReverse}`}>
@@ -308,14 +313,18 @@ export default function AnimationPageClient() {
         <div className={`container ${blockWidthClass("animation_s3")}`.trim()}>
           <div className={styles.sectionInner}>
             {isAdmin && (
-              <div style={editButtonWrapStyle}>
+              <AdminToolbarShell>
+                <AdminToolbarButton
+                  variant="primary"
+                  showLabel
+                  icon={<Pencil size={14} aria-hidden="true" />}
+                  label="Modifier"
+                  onClick={() => setEditBlock("animation_s3")}
+                />
                 <BlockVisibilityToggle blockId="animation_s3" />
                 <BlockWidthToggle blockId="animation_s3" />
-                <button className="btn-secondary" style={editButtonStyle} onClick={() => setEditBlock("animation_s3")}>
-                  Modifier
-                </button>
                 <BlockOrderButtons page="animation" blockId="animation_s3" />
-              </div>
+              </AdminToolbarShell>
             )}
             <AnimateInView variant="fadeUp">
             <div className={styles.grid}>
@@ -354,14 +363,18 @@ export default function AnimationPageClient() {
         <div className={`container ${blockWidthClass("animation_cta")}`.trim()}>
           <div className={styles.sectionInner}>
             {isAdmin && (
-              <div style={editButtonWrapStyle}>
+              <AdminToolbarShell>
+                <AdminToolbarButton
+                  variant="primary"
+                  showLabel
+                  icon={<Pencil size={14} aria-hidden="true" />}
+                  label="Modifier"
+                  onClick={() => setEditBlock("animation_cta")}
+                />
                 <BlockVisibilityToggle blockId="animation_cta" />
                 <BlockWidthToggle blockId="animation_cta" />
-                <button className="btn-secondary" style={editButtonStyle} onClick={() => setEditBlock("animation_cta")}>
-                  Modifier
-                </button>
                 <BlockOrderButtons page="animation" blockId="animation_cta" />
-              </div>
+              </AdminToolbarShell>
             )}
             <AnimateInView variant="fadeUp">
             <div className={styles.ctaGrid}>
@@ -412,13 +425,17 @@ export default function AnimationPageClient() {
     animation_cta: ctaSection,
   };
 
+  // Les blocs dynamiques s'ajoutent à la table de rendu, indexés par
+  // leur identifiant d'ordre (« dyn:<uuid> »).
+  Object.assign(sections, dynamicBlocks.sections);
+
   return (
     <div className="page-blocks" style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' }}>
       {blockOrderAnimation.map((blockId) => (
         <Fragment key={blockId}>{sections[blockId] ?? null}</Fragment>
       ))}
-      {/* Blocs ajoutés depuis l’administration, après les blocs intégrés */}
-      <BuiltinPageBlocks pageKey="animation" />
+      {dynamicBlocks.addButton}
+      {dynamicBlocks.modals}
       {editBlock && (
         <AnimationBlockModal
           blockKey={editBlock}

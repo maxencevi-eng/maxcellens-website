@@ -9,6 +9,7 @@ import Header from '../components/Header/Header';
 import Container from '../components/Container/Container';
 import Footer from '../components/Footer/Footer';
 import AdminSidebarClient from '../components/AdminSidebar/AdminSidebarClient';
+import AdminDialogHost from '../components/admin/AdminDialogHost';
 import SiteStyleProvider from '../components/SiteStyle/SiteStyleProvider';
 import DisableImageSave from '../components/DisableImageSave/DisableImageSave';
 import PageLayoutProvider from '../components/PageLayoutModal/PageLayoutProvider';
@@ -274,6 +275,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
               <DisableImageSave />
               <AnalyticsCollector />
               <AdminSidebarClient />
+              {/* Confirmations et saisies de l'admin, rendues dans le site
+                  plutôt que par les boîtes natives du navigateur. */}
+              <AdminDialogHost />
             <div id="site-content">
             <Header />
             <main>

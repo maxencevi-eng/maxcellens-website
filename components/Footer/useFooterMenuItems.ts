@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import {
   applyMenuOrder,
   buildMenuItems,
-  isItemVisible,
   parseMenuOrder,
+  visibleMenuItems,
   type MenuItem,
 } from '../MenuEditModal/menuItems';
+import { useBlockVisibility } from '../BlockVisibility';
 
 /**
  * Visibilité par défaut du pied de page.
@@ -39,6 +40,7 @@ const DEFAULTS: Record<string, boolean> = {
 export function useFooterMenuItems(
   visibleFromSettings: Record<string, boolean> | null
 ): { items: MenuItem[] } {
+  const { isAdmin } = useBlockVisibility();
   const [pages, setPages] = useState<{ slug: string; title: string }[]>([]);
   const [order, setOrder] = useState<string[]>([]);
 
@@ -73,7 +75,7 @@ export function useFooterMenuItems(
   const all = applyMenuOrder(buildMenuItems(pages), order);
   const visible = { ...DEFAULTS, ...(visibleFromSettings || {}) };
 
-  return { items: all.filter((i) => isItemVisible(i, visible, DEFAULTS)) };
+  return { items: visibleMenuItems(all, visible, DEFAULTS, isAdmin) };
 }
 
 export default useFooterMenuItems;

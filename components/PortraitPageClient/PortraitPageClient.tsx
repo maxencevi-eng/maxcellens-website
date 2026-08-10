@@ -3,7 +3,7 @@ import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
 import { Pencil } from 'lucide-react';
 import { AdminModal, AdminSection, ToggleField } from '../admin';
 
-import BuiltinPageBlocks from '../PageBuilder/BuiltinPageBlocks';
+import useBuiltinPageBlocks from '../PageBuilder/useBuiltinPageBlocks';
 import React, { Fragment, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import PageIntroBlock from "../PageIntroBlock/PageIntroBlock";
@@ -11,8 +11,6 @@ import EditablePortraitGallery from "../PortraitGallery/EditablePortraitGallery"
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from "../BlockVisibility";
 import AnimateInView from "../AnimateInView/AnimateInView";
 import styles from "./PortraitPageClient.module.css";
-
-const btnWrapStyle: React.CSSProperties = { display: "flex", gap: 8, alignItems: "center", position: "absolute", right: 12, top: 12, zIndex: 5 };
 
 const PORTRAIT_GALLERIES = [
   { id: "lifestyle", label: "Lifestyle", settingsKey: "portrait_gallery", uploadFolder: "Portrait/Galerie1" },
@@ -24,6 +22,11 @@ type PortraitGalleryId = (typeof PORTRAIT_GALLERIES)[number]["id"];
 
 export default function PortraitPageClient({ initialTab = "lifestyle" }: { initialTab?: PortraitGalleryId }) {
   const { hiddenBlocks, blockWidthModes, blockOrderPortrait, isAdmin } = useBlockVisibility();
+
+  /* Blocs ajoutés depuis l'administration : leurs sections sont fusionnées
+     dans la table ci-dessous et leurs identifiants figurent dans le même
+     ordre que les blocs intégrés. */
+  const dynamicBlocks = useBuiltinPageBlocks("portrait");
   const hide = (id: string) => !isAdmin && hiddenBlocks.includes(id);
   const blockWidthClass = (id: string) => (blockWidthModes[id] === "max1600" ? "block-width-1600" : "");
 
@@ -179,9 +182,13 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
         <AdminToolbarShell>
           <BlockVisibilityToggle blockId="portrait_gallery" />
           <BlockWidthToggle blockId="portrait_gallery" />
-          <button className={styles.editBtn} onClick={openTabsModal}>
-            Modifier les onglets
-          </button>
+          <AdminToolbarButton
+            variant="primary"
+            showLabel
+            icon={<Pencil size={14} aria-hidden="true" />}
+            label="Modifier les onglets"
+            onClick={openTabsModal}
+          />
           <BlockOrderButtons page="portrait" blockId="portrait_gallery" />
         </AdminToolbarShell>
       )}
@@ -249,13 +256,17 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
     portrait_gallery: gallerySection,
   };
 
+  // Les blocs dynamiques s'ajoutent à la table de rendu, indexés par
+  // leur identifiant d'ordre (« dyn:<uuid> »).
+  Object.assign(sections, dynamicBlocks.sections);
+
   return (
     <section className="page-blocks" style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' as const }}>
       {blockOrderPortrait.map((blockId) => (
         <Fragment key={blockId}>{sections[blockId] ?? null}</Fragment>
       ))}
-      {/* Blocs ajoutés depuis l’administration, après les blocs intégrés */}
-      <BuiltinPageBlocks pageKey="portrait" />
+      {dynamicBlocks.addButton}
+      {dynamicBlocks.modals}
       {tabsModal}
     </section>
   );

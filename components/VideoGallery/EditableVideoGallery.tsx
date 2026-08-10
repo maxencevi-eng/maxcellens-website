@@ -1,4 +1,7 @@
 "use client";
+import { alertDialog } from '../admin/dialog';
+import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
+import { Pencil } from 'lucide-react';
 import { AdminModal } from '../admin';
 
 import React, { useEffect, useState } from 'react';
@@ -171,7 +174,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
         setVideos((prev) => prev.map((v, idx) => idx === index ? { ...v, cover: { url: j.url, path: j.path ?? undefined } } : v));
       } else throw new Error('Pas d\'URL retournée');
     } catch (e) {
-      alert((e as Error)?.message ?? 'Erreur upload couverture');
+      await alertDialog({ title: 'Import impossible', message: (e as Error)?.message ?? 'La couverture n’a pas pu être importée.', tone: 'danger' });
     } finally {
       setUploadingCoverIndex(null);
     }
@@ -199,7 +202,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error(err);
-      alert('Erreur lors de la sauvegarde');
+      await alertDialog({ title: 'Enregistrement impossible', message: 'La galerie n’a pas pu être enregistrée.', tone: 'danger' });
     } finally {
       setSaving(false);
     }
@@ -218,7 +221,15 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
     <div className={className ?? ''}>
       {isAdmin ? (
         <div style={{ position: 'relative', marginBottom: 12 }}>
-          <button onClick={openEditor} className="btn-secondary" style={{ position: 'absolute', left: 12, top: -16, zIndex: 5, background: '#111', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 6, boxShadow: '0 6px 14px rgba(0,0,0,0.08)' }}>Modifier la galerie</button>
+          <AdminToolbarShell position="topLeft">
+            <AdminToolbarButton
+              variant="primary"
+              showLabel
+              icon={<Pencil size={14} aria-hidden="true" />}
+              label="Modifier la galerie"
+              onClick={openEditor}
+            />
+          </AdminToolbarShell>
         </div>
       ) : null}
 

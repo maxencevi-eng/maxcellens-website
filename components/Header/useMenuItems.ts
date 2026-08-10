@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import {
   applyMenuOrder,
   buildMenuItems,
-  isItemVisible,
   parseMenuOrder,
   parseMenuVisible,
+  visibleMenuItems,
   type MenuItem,
 } from '../MenuEditModal/menuItems';
+import { useBlockVisibility } from '../BlockVisibility';
 
 /** Visibilité par défaut, alignée sur celle de l'éditeur de menu. */
 const DEFAULTS: Record<string, boolean> = {
@@ -36,7 +37,10 @@ export function useMenuItems(scope: 'desktop' | 'mobile'): {
   items: MenuItem[];
   ready: boolean;
 } {
-  const [items, setItems] = useState<MenuItem[]>([]);
+  const { isAdmin } = useBlockVisibility();
+  /** Liste complète, non filtrée : le filtrage dépend de la session. */
+  const [all, setAll] = useState<MenuItem[]>([]);
+  const [visible, setVisible] = useState<Record<string, boolean>>(DEFAULTS);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -58,16 +62,16 @@ export function useMenuItems(scope: 'desktop' | 'mobile'): {
         const pagesJson = pagesResp.ok ? await pagesResp.json() : { pages: [] };
         if (!mounted) return;
 
-        const visible = { ...DEFAULTS, ...parseMenuVisible(settings[visibleKey]) };
         const order = parseMenuOrder(settings[orderKey]);
-        const all = applyMenuOrder(buildMenuItems(pagesJson?.pages || []), order);
-
-        setItems(all.filter((i) => isItemVisible(i, visible, DEFAULTS)));
+        setVisible({ ...DEFAULTS, ...parseMenuVisible(settings[visibleKey]) });
+        setAll(applyMenuOrder(buildMenuItems(pagesJson?.pages || []), order));
       } catch (_) {
         // Repli : entrées historiques par défaut, pour ne jamais rendre un
         // header sans navigation.
-        const all = buildMenuItems([]);
-        if (mounted) setItems(all.filter((i) => isItemVisible(i, DEFAULTS, DEFAULTS)));
+        if (mounted) {
+          setVisible(DEFAULTS);
+          setAll(buildMenuItems([]));
+        }
       } finally {
         if (mounted) setReady(true);
       }
@@ -82,7 +86,10 @@ export function useMenuItems(scope: 'desktop' | 'mobile'): {
     };
   }, [scope]);
 
-  return { items, ready };
+  // Filtrage au rendu, pas au chargement : la session Supabase se résout après
+  // le premier rendu, et l'entrée Admin doit apparaître dès qu'elle est connue
+  // sans qu'il faille recharger les réglages.
+  return { items: visibleMenuItems(all, visible, DEFAULTS, isAdmin), ready };
 }
 
 export default useMenuItems;

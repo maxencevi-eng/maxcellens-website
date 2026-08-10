@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmDialog } from '../admin/dialog';
 import React, { useState } from 'react';
 import { AdminModal } from '../admin';
 import { supabase } from '../../lib/supabase';
@@ -49,7 +50,13 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
       setPurgeByIpResult('Saisissez une ou plusieurs IP (une par ligne) ou utilisez "Utiliser mon IP".');
       return;
     }
-    if (!confirm(`Supprimer définitivement toutes les sessions et événements associés à ${ips.length} IP ?`)) return;
+    const ok = await confirmDialog({
+      title: `Purger ${ips.length} adresse(s) IP ?`,
+      message: `Toutes les sessions et les événements associés seront supprimés définitivement.`,
+      confirmLabel: 'Purger',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setPurgingByIp(true);
     setPurgeByIpResult(null);
     try {
@@ -79,7 +86,14 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
   };
 
   const runPurgeBots = async () => {
-    if (!confirm('Supprimer définitivement en base toutes les sessions et événements identifiés comme bots (crawlers, durée < 1.5s, IP datacenter) ?')) return;
+    const ok = await confirmDialog({
+      title: 'Purger les sessions de robots ?',
+      message:
+        'Sont concernées les sessions identifiées comme crawlers, celles de moins de 1,5 s et celles provenant d’IP de centres de données.',
+      confirmLabel: 'Purger',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setPurgingBots(true);
     setPurgeBotsResult(null);
     try {
@@ -111,7 +125,13 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
     const msg = all
       ? 'Supprimer définitivement TOUTES les sessions et tous les événements analytics ?'
       : 'Supprimer définitivement les sessions et événements de plus de 3 mois ?';
-    if (!confirm(msg)) return;
+    const ok = await confirmDialog({
+      title: 'Purger les données analytics ?',
+      message: msg,
+      confirmLabel: 'Purger',
+      tone: 'danger',
+    });
+    if (!ok) return;
     if (all) setPurgingAll(true);
     else setPurging(true);
     setPurgeResult(null);
@@ -146,7 +166,14 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
     const now = new Date();
     const firstOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const label = firstOfLastMonth.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-    if (!confirm(`Supprimer définitivement toutes les sessions et événements avant le ${label} ? (ex. le 5 fév. → tout avant le 1er janv.)`)) return;
+    const ok = await confirmDialog({
+      title: `Purger les données avant le ${label} ?`,
+      message:
+        'Toutes les sessions et les événements antérieurs à cette date seront supprimés définitivement.',
+      confirmLabel: 'Purger',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setPurgingOlderThan1Month(true);
     setPurgeResult(null);
     try {

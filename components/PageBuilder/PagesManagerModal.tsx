@@ -20,6 +20,7 @@ import {
   AdminSection,
   TextField,
   ToggleField,
+  promptDialog,
 } from '../admin';
 import { supabase } from '../../lib/supabase';
 import { slugify, validateSlug, type SitePageSummary } from './pageTypes';
@@ -126,16 +127,21 @@ export default function PagesManagerModal({ onClose }: { onClose: () => void }) 
   }
 
   async function deletePage(page: SitePageSummary) {
-    const typed = window.prompt(
-      `Cette action supprime « ${page.title} » et ses ${page.blockCount} bloc(s).\n` +
-        `La page reste récupérable 30 jours.\n\n` +
-        `Saisissez le titre exact pour confirmer :`
-    );
+    // La saisie du titre est exigée par le dialogue lui-même : le bouton de
+    // confirmation reste inactif tant qu'elle ne correspond pas.
+    const typed = await promptDialog({
+      title: `Supprimer « ${page.title} » ?`,
+      message:
+        `Cette page et ses ${page.blockCount} bloc(s) seront retirés du site. ` +
+        `Elle reste récupérable pendant 30 jours.`,
+      label: 'Titre de la page',
+      placeholder: page.title,
+      mustMatch: page.title,
+      confirmLabel: 'Supprimer la page',
+      tone: 'danger',
+    });
     if (typed === null) return;
-    if (typed.trim() !== page.title) {
-      setError('Le titre saisi ne correspond pas — suppression annulée.');
-      return;
-    }
+
     setBusy(true);
     try {
       const headers = await authHeaders();

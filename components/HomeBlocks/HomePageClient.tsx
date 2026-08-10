@@ -1,6 +1,8 @@
 "use client";
 
-import BuiltinPageBlocks from '../PageBuilder/BuiltinPageBlocks';
+import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
+import { Pencil } from 'lucide-react';
+import useBuiltinPageBlocks from '../PageBuilder/useBuiltinPageBlocks';
 import React, { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useSplashReady } from "../AnimateInView/AnimateInView";
 import { useScrollReveal, revealInitialStyle, revealVisibleStyle } from "../../hooks/useScrollReveal";
@@ -65,20 +67,6 @@ function parse<T>(val: string | undefined, def: T): T {
   }
 }
 
-const editBtnStyle: React.CSSProperties = {
-  position: "absolute",
-  right: 12,
-  top: 12,
-  zIndex: 5,
-  background: "#111",
-  color: "#fff",
-  border: "none",
-  padding: "8px 14px",
-  borderRadius: 6,
-  fontSize: "0.85rem",
-  cursor: "pointer",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-};
 
 const ANIMATION_SECTIONS = [
   { label: "Le concept", hash: "animation_s1" },
@@ -170,6 +158,11 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   const [loaded, setLoaded] = useState(() => initialSettings !== undefined);
   const [editBlock, setEditBlock] = useState<HomeBlockKey | null>(null);
   const { hiddenBlocks, blockWidthModes, blockOrderHome, isAdmin: isAdminFromContext } = useBlockVisibility();
+
+  /* Blocs ajoutés depuis l'administration : leurs sections sont fusionnées
+     dans la table ci-dessous et leurs identifiants figurent dans le même
+     ordre que les blocs intégrés. */
+  const dynamicBlocks = useBuiltinPageBlocks("home");
   const hide = (id: string) => !isAdminFromContext && hiddenBlocks.includes(id);
   const blockWidthClass = (id: string) => (blockWidthModes[id] === "max1600" ? "block-width-1600" : "");
 
@@ -361,8 +354,6 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   const visibleQuoteIndices = [0, 1, 2].map((i) => (safeQuoteIndex + i) % quoteList.length);
   const quoteScrollDuration = Math.max(5, Math.min(120, Math.round((quoteData.carouselSpeed ?? 5000) / 1000))); // valeur en secondes = durée d'un cycle (ex. 5 = rapide, 30 = lent)
 
-  const btnWrapStyle: React.CSSProperties = { display: 'flex', gap: 8, alignItems: 'center', position: 'absolute', right: 12, top: 12, zIndex: 5 };
-
   const introSection = hide("home_intro") ? null : (() => {
     const iv = intro as any;
     const sectionStyle: React.CSSProperties = {};
@@ -381,14 +372,18 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
       <section className={styles.intro} style={Object.keys(sectionStyle).length ? sectionStyle : undefined}>
           <div className={styles.introInner}>
             {isAdmin && (
-              <div style={btnWrapStyle}>
+              <AdminToolbarShell>
+                <AdminToolbarButton
+                  variant="primary"
+                  showLabel
+                  icon={<Pencil size={14} aria-hidden="true" />}
+                  label="Modifier"
+                  onClick={() => setEditBlock("home_intro")}
+                />
                 <BlockVisibilityToggle blockId="home_intro" />
                 <BlockWidthToggle blockId="home_intro" />
-                <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_intro")}>
-                  Modifier
-                </button>
                 <BlockOrderButtons page="home" blockId="home_intro" />
-              </div>
+              </AdminToolbarShell>
             )}
             {/* Eyebrow */}
             {iv.eyebrow && (
@@ -508,14 +503,18 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
     const isTextMode = b.textMode === 'text';
     const imgRight = b.textImagePosition !== 'left';
     const adminBar = isAdmin && (
-      <div style={{ ...btnWrapStyle, top: 42 }}>
+      <AdminToolbarShell>
+        <AdminToolbarButton
+          variant="primary"
+          showLabel
+          icon={<Pencil size={14} aria-hidden="true" />}
+          label="Modifier"
+          onClick={() => setEditBlock("home_banner")}
+        />
         <BlockVisibilityToggle blockId="home_banner" />
         <BlockWidthToggle blockId="home_banner" />
-        <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_banner")}>
-          Modifier
-        </button>
         <BlockOrderButtons page="home" blockId="home_banner" />
-      </div>
+      </AdminToolbarShell>
     );
 
     if (isTextMode) {
@@ -595,14 +594,18 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
         <div className={`container ${blockWidthClass("home_services")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
-              <div style={btnWrapStyle}>
+              <AdminToolbarShell>
+                <AdminToolbarButton
+                  variant="primary"
+                  showLabel
+                  icon={<Pencil size={14} aria-hidden="true" />}
+                  label="Modifier"
+                  onClick={() => setEditBlock("home_services")}
+                />
                 <BlockVisibilityToggle blockId="home_services" />
                 <BlockWidthToggle blockId="home_services" />
-                <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_services")}>
-                  Modifier
-                </button>
                 <BlockOrderButtons page="home" blockId="home_services" />
-              </div>
+              </AdminToolbarShell>
             )}
             <AnimateInView variant="fadeUp">
               {(services as any).blockTitle ? (() => { const Tag = (services as any).blockTitleStyle || "h2"; const fs = (services as any).blockTitleFontSize; const color = (services as any).blockTitleColor; const align = (services as any).blockTitleAlign; return <Tag className={`${styles.servicesTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{(services as any).blockTitle}</Tag>; })() : null}
@@ -640,14 +643,18 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
         <div className={`container ${blockWidthClass("home_portrait")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
-              <div style={btnWrapStyle}>
+              <AdminToolbarShell>
+                <AdminToolbarButton
+                  variant="primary"
+                  showLabel
+                  icon={<Pencil size={14} aria-hidden="true" />}
+                  label="Modifier"
+                  onClick={() => setEditBlock("home_portrait")}
+                />
                 <BlockVisibilityToggle blockId="home_portrait" />
                 <BlockWidthToggle blockId="home_portrait" />
-                <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_portrait")}>
-                  Modifier
-                </button>
                 <BlockOrderButtons page="home" blockId="home_portrait" />
-              </div>
+              </AdminToolbarShell>
             )}
             <AnimateInView variant="fadeUp">
               {(() => {
@@ -802,14 +809,18 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
         <div className={`container ${blockWidthClass("home_cadreur")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
-              <div style={btnWrapStyle}>
+              <AdminToolbarShell>
+                <AdminToolbarButton
+                  variant="primary"
+                  showLabel
+                  icon={<Pencil size={14} aria-hidden="true" />}
+                  label="Modifier"
+                  onClick={() => setEditBlock("home_cadreur")}
+                />
                 <BlockVisibilityToggle blockId="home_cadreur" />
                 <BlockWidthToggle blockId="home_cadreur" />
-                <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_cadreur")}>
-                  Modifier
-                </button>
                 <BlockOrderButtons page="home" blockId="home_cadreur" />
-              </div>
+              </AdminToolbarShell>
             )}
             <div className={styles.cadreurGrid}>
               <AnimateInView variant="slideFromLeft" className={styles.cadreurContent}>
@@ -918,14 +929,18 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
         <div className={`container ${blockWidthClass("home_animation")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
-              <div style={btnWrapStyle}>
+              <AdminToolbarShell>
+                <AdminToolbarButton
+                  variant="primary"
+                  showLabel
+                  icon={<Pencil size={14} aria-hidden="true" />}
+                  label="Modifier"
+                  onClick={() => setEditBlock("home_animation")}
+                />
                 <BlockVisibilityToggle blockId="home_animation" />
                 <BlockWidthToggle blockId="home_animation" />
-                <button className={styles.editBtn} style={{ background: "#fff", color: "#111", position: "static" }} onClick={() => setEditBlock("home_animation")}>
-                  Modifier
-                </button>
                 <BlockOrderButtons page="home" blockId="home_animation" />
-              </div>
+              </AdminToolbarShell>
             )}
             <AnimateInView variant="scaleIn">
             <div className={styles.animationBlockCard}>
@@ -984,14 +999,18 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
         <div className={`container ${blockWidthClass("home_stats")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
-              <div style={btnWrapStyle}>
+              <AdminToolbarShell>
+                <AdminToolbarButton
+                  variant="primary"
+                  showLabel
+                  icon={<Pencil size={14} aria-hidden="true" />}
+                  label="Modifier"
+                  onClick={() => setEditBlock("home_stats")}
+                />
                 <BlockVisibilityToggle blockId="home_stats" />
                 <BlockWidthToggle blockId="home_stats" />
-                <button className={styles.editBtn} style={{ background: "#fff", color: "#111", position: 'static' }} onClick={() => setEditBlock("home_stats")}>
-                  Modifier
-                </button>
                 <BlockOrderButtons page="home" blockId="home_stats" />
-              </div>
+              </AdminToolbarShell>
             )}
             <AnimateInView variant="stagger" className={styles.statsGrid}>
               {statItems.map((item, i) => (
@@ -1015,14 +1034,18 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
         <div className={`container ${blockWidthClass("home_quote")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
-              <div style={btnWrapStyle}>
+              <AdminToolbarShell>
+                <AdminToolbarButton
+                  variant="primary"
+                  showLabel
+                  icon={<Pencil size={14} aria-hidden="true" />}
+                  label="Modifier"
+                  onClick={() => setEditBlock("home_quote")}
+                />
                 <BlockVisibilityToggle blockId="home_quote" />
                 <BlockWidthToggle blockId="home_quote" />
-                <button className={styles.editBtn} style={{ position: 'static' }} onClick={() => setEditBlock("home_quote")}>
-                  Modifier
-                </button>
                 <BlockOrderButtons page="home" blockId="home_quote" />
-              </div>
+              </AdminToolbarShell>
             )}
             <AnimateInView variant="fadeUp">
               {(() => {
@@ -1070,14 +1093,18 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
         <div className={`container ${blockWidthClass("home_cta")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
-              <div style={btnWrapStyle}>
+              <AdminToolbarShell>
+                <AdminToolbarButton
+                  variant="primary"
+                  showLabel
+                  icon={<Pencil size={14} aria-hidden="true" />}
+                  label="Modifier"
+                  onClick={() => setEditBlock("home_cta")}
+                />
                 <BlockVisibilityToggle blockId="home_cta" />
                 <BlockWidthToggle blockId="home_cta" />
-                <button className={styles.editBtn} style={{ background: "#fff", color: "#111", position: 'static' }} onClick={() => setEditBlock("home_cta")}>
-                  Modifier
-                </button>
                 <BlockOrderButtons page="home" blockId="home_cta" />
-              </div>
+              </AdminToolbarShell>
             )}
             <AnimateInView variant="fadeUp">
               {cta.title ? (() => { const Tag = (cta as any).titleStyle || "h2"; const fs = (cta as any).titleFontSize; const color = (cta as any).titleColor; const align = (cta as any).titleAlign; return <Tag className={`${styles.ctaTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{cta.title}</Tag>; })() : null}
@@ -1103,6 +1130,10 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
     home_cta: ctaSection,
   };
 
+  // Les blocs dynamiques s'ajoutent à la table de rendu, indexés par
+  // leur identifiant d'ordre (« dyn:<uuid> »).
+  Object.assign(sections, dynamicBlocks.sections);
+
   // These blocks manage their own internal animations — wrapping them in RevealSection
   // would animate the background too, which looks wrong (background should always be visible).
   const noRevealBlocks = new Set(['home_stats', 'clients', 'home_banner']);
@@ -1111,13 +1142,16 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
     <div className="page-blocks" style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))' }}>
       {blockOrderHome.map((blockId) =>
         sections[blockId] ? (
-          noRevealBlocks.has(blockId)
+          // Les blocs ajoutés depuis l'admin portent leur barre d'outils en
+          // position absolue : le `transform` de RevealSection en ferait le
+          // bloc conteneur et décalerait la barre. On les rend tels quels.
+          noRevealBlocks.has(blockId) || blockId.startsWith('dyn:')
             ? <React.Fragment key={blockId}>{sections[blockId]}</React.Fragment>
             : <RevealSection key={blockId}>{sections[blockId]}</RevealSection>
         ) : null
       )}
-      {/* Blocs ajoutés depuis l’administration, après les blocs intégrés */}
-      <BuiltinPageBlocks pageKey="home" />
+      {dynamicBlocks.addButton}
+      {dynamicBlocks.modals}
       {editBlock && (
         <HomeBlockModal
           blockKey={editBlock}

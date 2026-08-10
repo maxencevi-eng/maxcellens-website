@@ -1,6 +1,7 @@
 "use no memo";
 "use client";
 
+import { confirmDialog } from '../admin/dialog';
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { compressImageClient } from "@/lib/compressImageClient";
@@ -633,7 +634,13 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   async function removeService(index: number) {
     const item = serviceItems[index];
     if (!item) return;
-    if (!confirm("Supprimer ce service ? L'image associée sera supprimée du stockage.")) return;
+    const ok = await confirmDialog({
+      title: 'Supprimer ce service ?',
+      message: 'L’image associée sera également supprimée du stockage.',
+      confirmLabel: 'Supprimer',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setDeletingServiceIndex(index);
     setError(null);
     try {
