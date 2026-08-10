@@ -8,6 +8,10 @@
 
 CREATE TABLE IF NOT EXISTS site_pages (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  -- UNIQUE porte sur toutes les lignes, corbeille comprise. Une page
+  -- supprimée voit donc son slug réécrit en « __trash/<horodatage>/<slug> »
+  -- par la route DELETE, ce qui libère l'adresse d'origine tout en gardant la
+  -- page récupérable.
   slug         TEXT NOT NULL UNIQUE,
   title        TEXT NOT NULL,
   status       TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),

@@ -39,10 +39,14 @@ export async function POST(req: Request) {
 
     // Unicité : la contrainte SQL protège de toute façon, mais un message
     // clair vaut mieux qu'une erreur Postgres brute.
+    // `deleted_at is null` : une page en corbeille ne doit pas bloquer la
+    // recréation d'une page au même slug — le sien a été libéré à sa
+    // suppression.
     const { data: existing } = await supabaseAdmin
       .from('site_pages')
       .select('id')
       .eq('slug', slug)
+      .is('deleted_at', null)
       .maybeSingle();
     if (existing) {
       return NextResponse.json(

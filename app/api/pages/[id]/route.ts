@@ -3,7 +3,13 @@ import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 import { getAuthUser } from '../../../../lib/adminAuth';
 import { getBlocksForPage } from '../../../../lib/pages';
-import { rowToPage, slugify, validateSlug } from '../../../../components/PageBuilder/pageTypes';
+import {
+  isTrashSlug,
+  rowToPage,
+  slugify,
+  toTrashSlug,
+  validateSlug,
+} from '../../../../components/PageBuilder/pageTypes';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,11 +59,13 @@ export async function PATCH(req: Request, ctx: Ctx) {
       const check = validateSlug(slug);
       if (!check.ok) return NextResponse.json({ error: check.reason }, { status: 400 });
 
+      // Les pages en corbeille ne comptent pas : leur slug a été libéré.
       const { data: clash } = await supabaseAdmin
         .from('site_pages')
         .select('id')
         .eq('slug', slug)
         .neq('id', id)
+        .is('deleted_at', null)
         .maybeSingle();
       if (clash) {
         return NextResponse.json(
@@ -128,9 +136,25 @@ export async function DELETE(req: Request, ctx: Ctx) {
     const { error } = await supabaseAdmin.from('site_pages').delete().eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   } else {
+    // Le slug est libéré en même temps que la page part à la corbeille.
+    // Sans cela, la contrainte `UNIQUE` sur `site_pages.slug` — qui porte sur
+    // toutes les lignes, supprimées comprises — empêchait de recréer une page
+    // à la même adresse. Le slug d'origine reste lisible dans le slug de
+    // corbeille, la page demeure donc récupérable.
+    const currentSlug = String((page as any)?.slug || '');
+    // Une page déjà en corbeille garde son slug tel quel : le re-préfixer
+    // empilerait les marqueurs et rendrait le slug d'origine irrécupérable.
+    const nextSlug =
+      currentSlug && !isTrashSlug(currentSlug) ? toTrashSlug(currentSlug) : currentSlug;
+
     const { error } = await supabaseAdmin
       .from('site_pages')
-      .update({ deleted_at: new Date().toISOString(), status: 'draft' })
+      .update({
+        deleted_at: new Date().toISOString(),
+        status: 'draft',
+        show_in_menu: false,
+        slug: nextSlug,
+      })
       .eq('id', id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }

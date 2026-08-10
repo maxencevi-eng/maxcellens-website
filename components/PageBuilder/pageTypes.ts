@@ -69,8 +69,44 @@ export type SitePageSummary = {
  * être atteignable. On refuse la création plutôt que de laisser une page
  * fantôme en base.
  */
+/**
+ * Préfixe des slugs mis à la corbeille.
+ *
+ * `site_pages.slug` porte une contrainte `UNIQUE` sur TOUTES les lignes, y
+ * compris celles marquées supprimées : une page en corbeille continuait donc
+ * d'occuper son slug, rendant impossible la recréation d'une page au même
+ * nom. À la suppression douce, le slug est réécrit sous cette forme —
+ * l'adresse redevient libre, et la page reste récupérable puisque son slug
+ * d'origine est conservé dans le préfixe.
+ *
+ * Forme : `__trash/<horodatage>/<slug d'origine>`
+ */
+export const TRASH_PREFIX = '__trash/';
+
+/** Slug de corbeille pour une page supprimée. */
+export function toTrashSlug(slug: string): string {
+  return `${TRASH_PREFIX}${Date.now()}/${slug}`;
+}
+
+/** Slug d'origine d'une page en corbeille, ou `null` si ce n'en est pas une. */
+export function fromTrashSlug(slug: string): string | null {
+  if (!slug.startsWith(TRASH_PREFIX)) return null;
+  // On retire le préfixe et l'horodatage ; le reste est le slug d'origine,
+  // qui peut lui-même contenir des barres obliques.
+  const rest = slug.slice(TRASH_PREFIX.length);
+  const separator = rest.indexOf('/');
+  return separator < 0 ? null : rest.slice(separator + 1);
+}
+
+export function isTrashSlug(slug: string): boolean {
+  return typeof slug === 'string' && slug.startsWith(TRASH_PREFIX);
+}
+
 export const RESERVED_SLUGS = new Set([
   'admin',
+  // Réservés au système : pages hôtes des pages historiques et corbeille
+  '__builtin',
+  '__trash',
   'animation',
   'api',
   'bac',
