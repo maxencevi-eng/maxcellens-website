@@ -1,0 +1,108 @@
+.page {
+  position: relative;
+  z-index: 20;
+  background: var(--block-bg, var(--bg, #f2f0eb));
+}
+
+.block {
+  position: relative;
+}
+
+/* Liseré au survol : repère le bloc sous la barre d'actions, sans déplacer
+   quoi que ce soit (outline n'occupe pas de place dans le flux). */
+.blockAdmin:hover {
+  outline: 1px dashed var(--adm-border-strong);
+  outline-offset: -1px;
+}
+
+.blockHidden {
+  opacity: 0.45;
+  outline: 2px dashed var(--adm-border-strong);
+  outline-offset: -2px;
+}
+
+/* ── Zone d'insertion entre blocs ─────────────────────────────────────── */
+.inserter {
+  position: relative;
+  height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--adm-z-toolbar);
+}
+
+.inserterButton {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--adm-radius-pill);
+  border: 1px solid var(--adm-border);
+  background: var(--adm-surface);
+  color: var(--adm-ink-soft);
+  font-family: var(--adm-font);
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--adm-shadow-sm);
+  opacity: 0;
+  transition: opacity var(--adm-duration) var(--adm-ease),
+              background var(--adm-duration) var(--adm-ease);
+}
+
+.inserter:hover .inserterButton,
+.inserterButton:focus-visible {
+  opacity: 1;
+}
+
+.inserterButton:hover {
+  background: var(--adm-accent);
+  color: var(--adm-accent-ink);
+  border-color: var(--adm-accent);
+}
+
+.inserterButton:focus-visible { outline: none; box-shadow: var(--adm-shadow-focus); }
+
+/* La dernière zone reste visible : c'est le point d'entrée sur une page vide */
+.inserterLast {
+  height: 56px;
+}
+
+.inserterLast .inserterButton { opacity: 1; }
+
+/* ── Page vide ────────────────────────────────────────────────────────── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--adm-space-4);
+  padding: var(--adm-space-7) var(--adm-space-4);
+  text-align: center;
+  color: var(--muted, #6b7280);
+  font-family: var(--adm-font);
+}
+
+.emptyTitle {
+  font-size: var(--adm-text-lg);
+  font-weight: 700;
+  color: var(--adm-ink);
+}
+
+/* ── Bandeau brouillon ────────────────────────────────────────────────── */
+.draftBanner {
+  position: sticky;
+  top: 0;
+  z-index: var(--adm-z-toolbar);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--adm-space-2);
+  padding: var(--adm-space-2) var(--adm-space-4);
+  background: var(--adm-warning-wash);
+  color: var(--adm-warning);
+  font-family: var(--adm-font);
+  font-size: var(--adm-text-sm);
+  font-weight: 700;
+}

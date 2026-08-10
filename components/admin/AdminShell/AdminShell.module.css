@@ -1,0 +1,298 @@
+/* ── Poignée d'ouverture ──────────────────────────────────────────────── */
+.handle {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: var(--adm-z-sidebar);
+  width: 38px;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--adm-border);
+  border-left: none;
+  border-radius: 0 var(--adm-radius) var(--adm-radius) 0;
+  background: var(--adm-surface);
+  color: var(--adm-ink-soft);
+  box-shadow: var(--adm-shadow);
+  cursor: pointer;
+  transition: background var(--adm-duration) var(--adm-ease),
+              color var(--adm-duration) var(--adm-ease);
+}
+
+.handle:hover { background: var(--adm-surface-hover); color: var(--adm-ink); }
+.handle:focus-visible { outline: none; box-shadow: var(--adm-shadow-focus); }
+
+/* ── Barre latérale ───────────────────────────────────────────────────── */
+.shell {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--adm-sidebar-width);
+  z-index: var(--adm-z-sidebar);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: var(--adm-surface);
+  color: var(--adm-ink);
+  border-right: 1px solid var(--adm-border);
+  box-shadow: var(--adm-shadow-lg);
+  font-family: var(--adm-font);
+  font-size: var(--adm-text-base);
+}
+
+.header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--adm-space-2);
+  padding: var(--adm-space-4);
+  border-bottom: 1px solid var(--adm-border);
+}
+
+.brand {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--adm-space-2);
+  font-size: var(--adm-text-sm);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--adm-ink);
+  text-decoration: none;
+}
+
+.brandDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--adm-accent);
+  flex: 0 0 auto;
+}
+
+.iconBtn {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--adm-radius-sm);
+  background: transparent;
+  color: var(--adm-ink-muted);
+  cursor: pointer;
+  transition: background var(--adm-duration) var(--adm-ease),
+              color var(--adm-duration) var(--adm-ease);
+}
+.iconBtn:hover { background: var(--adm-surface-hover); color: var(--adm-ink); }
+.iconBtn:focus-visible { outline: none; box-shadow: var(--adm-shadow-focus); }
+
+/* ── Recherche ────────────────────────────────────────────────────────── */
+/* Champ de recherche : l'icône et le raccourci sont des enfants FLEX du
+   cadre, pas des éléments positionnés en absolu par-dessus l'input. Le
+   positionnement absolu recouvrait la première lettre du texte de
+   substitution dès que la largeur du panneau changeait. */
+.searchWrap {
+  flex: 0 0 auto;
+  padding: var(--adm-space-3) var(--adm-space-4);
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: var(--adm-space-2);
+  height: 36px;
+  padding: 0 var(--adm-space-2) 0 var(--adm-space-3);
+  border: 1px solid var(--adm-border-strong);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface-sunken);
+  box-sizing: border-box;
+  transition: border-color var(--adm-duration) var(--adm-ease),
+              box-shadow var(--adm-duration) var(--adm-ease),
+              background var(--adm-duration) var(--adm-ease);
+}
+
+.searchBox:focus-within {
+  border-color: var(--adm-border-focus);
+  box-shadow: var(--adm-shadow-focus);
+  background: var(--adm-surface);
+}
+
+.searchIcon {
+  flex: 0 0 auto;
+  color: var(--adm-ink-muted);
+  pointer-events: none;
+}
+
+.search {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--adm-ink);
+  font-family: inherit;
+  font-size: var(--adm-text-sm);
+}
+
+.search::placeholder { color: var(--adm-ink-muted); }
+.search:focus { outline: none; }
+
+/* Masque la croix native de `input[type=search]`, qui doublonne avec Échap */
+.search::-webkit-search-cancel-button { display: none; }
+
+.kbd {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  border-radius: var(--adm-radius-xs);
+  border: 1px solid var(--adm-border);
+  background: var(--adm-surface);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--adm-ink-muted);
+  pointer-events: none;
+}
+
+/* ── Navigation ───────────────────────────────────────────────────────── */
+.nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--adm-space-3) var(--adm-space-4);
+}
+
+.groupLabel {
+  margin: var(--adm-space-4) var(--adm-space-2) var(--adm-space-2);
+  font-size: var(--adm-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--adm-ink-muted);
+}
+
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--adm-space-3);
+  padding: var(--adm-space-2) var(--adm-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--adm-radius-sm);
+  background: transparent;
+  color: var(--adm-ink-soft);
+  font-family: inherit;
+  font-size: var(--adm-text-base);
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background var(--adm-duration) var(--adm-ease),
+              color var(--adm-duration) var(--adm-ease);
+}
+
+.item:hover { background: var(--adm-surface-hover); color: var(--adm-ink); }
+.item:focus-visible { outline: none; box-shadow: var(--adm-shadow-focus); }
+
+.itemHighlighted {
+  background: var(--adm-accent-wash);
+  color: var(--adm-ink);
+}
+
+.itemIcon { flex: 0 0 auto; color: var(--adm-ink-muted); }
+.item:hover .itemIcon,
+.itemHighlighted .itemIcon { color: var(--adm-accent); }
+
+.itemText { flex: 1 1 auto; min-width: 0; }
+
+.itemLabel {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemDescription {
+  display: block;
+  font-size: var(--adm-text-xs);
+  font-weight: 500;
+  color: var(--adm-ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noResult {
+  padding: var(--adm-space-5) var(--adm-space-3);
+  text-align: center;
+  font-size: var(--adm-text-sm);
+  color: var(--adm-ink-muted);
+}
+
+/* ── Pied ─────────────────────────────────────────────────────────────── */
+.footer {
+  flex: 0 0 auto;
+  padding: var(--adm-space-3) var(--adm-space-4);
+  padding-bottom: max(var(--adm-space-3), env(safe-area-inset-bottom));
+  border-top: 1px solid var(--adm-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--adm-space-2);
+}
+
+.user {
+  font-size: var(--adm-text-sm);
+  color: var(--adm-ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Poignée de redimensionnement ─────────────────────────────────────── */
+.resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  border: none;
+  padding: 0;
+  z-index: 1;
+}
+
+.resizer:hover,
+.resizerActive { background: var(--adm-accent-wash); }
+
+/* ── Mobile : tiroir plein écran ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .shell {
+    width: 100%;
+    max-width: 100%;
+    border-right: none;
+  }
+
+  .resizer { display: none; }
+
+  .handle {
+    left: auto;
+    right: var(--adm-space-4);
+    top: auto;
+    bottom: calc(var(--adm-space-4) + env(safe-area-inset-bottom));
+    transform: none;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--adm-radius-pill);
+    border: 1px solid var(--adm-border);
+  }
+}

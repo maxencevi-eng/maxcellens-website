@@ -1,14 +1,11 @@
 import type { Metadata } from 'next';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import ContactBlocks from '../../components/ContactBlocks/ContactBlocks';
-import { getPageSeo, buildMetadataFromSeo } from '../../lib/pageSeo';
+import { buildPageMetadata } from '../../lib/pageSeo';
 import JsonLdScript from '../../components/SeoCommandCenter/JsonLdScript';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const seo = await getPageSeo('contact');
-  const built = buildMetadataFromSeo(seo);
-  if (built) return built;
-  return { title: 'Contact', description: 'Contact — Maxcellens' };
+  return buildPageMetadata('contact', { title: 'Contact', description: 'Contact — Maxcellens' });
 }
 
 export default async function ContactPage() {

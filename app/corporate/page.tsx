@@ -1,14 +1,15 @@
 import type { Metadata } from 'next';
-import { getPageSeo, buildMetadataFromSeo } from '../../lib/pageSeo';
+import { buildPageMetadata } from '../../lib/pageSeo';
 import JsonLdScript from '../../components/SeoCommandCenter/JsonLdScript';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import CorporatePageClient from '../../components/CorporatePageClient/CorporatePageClient';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const seo = await getPageSeo('corporate');
-  const built = buildMetadataFromSeo(seo);
-  if (built) return built;
-  return { title: 'Corporate' };
+  return buildPageMetadata('corporate', {
+    title: 'Corporate',
+    description:
+      'Photo et vidéo corporate : portraits d’équipe, communication institutionnelle et contenus de marque.',
+  });
 }
 
 export default function Corporate() {

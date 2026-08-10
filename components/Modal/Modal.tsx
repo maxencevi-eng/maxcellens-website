@@ -1,30 +1,44 @@
 "use client";
-import React, { useEffect } from 'react';
-import ReactDOM from 'react-dom';
-import styles from './Modal.module.css';
 
-export default function Modal({ title, onClose, children, footer, bodyClassName }: { title?: string; onClose: () => void; children: React.ReactNode; footer?: React.ReactNode; bodyClassName?: string }) {
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+import React from 'react';
+import AdminModal, { type AdminModalSize } from '../admin/AdminModal/AdminModal';
 
-  if (typeof document === 'undefined') return null;
-
-  return ReactDOM.createPortal(
-    <div className={`${styles.overlay} modal-overlay-mobile`} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={styles.modal} role="dialog" aria-modal="true" aria-label={title || 'Modal'}>
-        <div className={styles.header}>
-          <div style={{ fontWeight: 700 }}>{title}</div>
-          <button onClick={onClose} aria-label="Fermer" style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>✕</button>
-        </div>
-        <div className={[styles.body, bodyClassName].filter(Boolean).join(' ')}>{children}</div>
-        {footer ? <div className={styles.footer}>{footer}</div> : null}
-      </div>
-    </div>,
-    document.body
+/**
+ * Modale historique — conservée comme adaptateur.
+ *
+ * Elle ne fait plus que déléguer à `AdminModal`, ce qui apporte d'un coup à
+ * tous ses consommateurs le verrou de scroll, le piège de focus, l'empilement,
+ * la feuille plein écran sur mobile et le thème admin. Les nouveaux écrans
+ * doivent importer `AdminModal` directement.
+ *
+ * @deprecated Utiliser `components/admin` → `AdminModal`.
+ */
+export default function Modal({
+  title,
+  onClose,
+  children,
+  footer,
+  bodyClassName,
+  size = 'lg',
+}: {
+  title?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  bodyClassName?: string;
+  size?: AdminModalSize;
+}) {
+  return (
+    <AdminModal
+      title={title || 'Modification'}
+      size={size}
+      onClose={onClose}
+      // `footer` était un ReactNode libre : on le passe tel quel, et l'absence
+      // de footer reste l'absence de footer (et non la barre auto).
+      footer={footer ?? null}
+      bodyClassName={bodyClassName}
+    >
+      {children}
+    </AdminModal>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from '../admin';
 
 import React, { useEffect, useState } from "react";
 import { compressImageClient } from "../../lib/compressImageClient";
@@ -241,28 +242,23 @@ export default function ContactGalleryEditModal({
   });
 
   if (loading) {
+    // Même coque que l'état chargé : la modale ne « saute » pas à l'arrivée
+    // des données.
     return (
-      <div className="modal-overlay-mobile" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50000 }}>
-        <div style={{ background: "#fff", color: "#000", padding: 24, borderRadius: 12 }}>Chargement…</div>
-      </div>
+      <AdminModal title="Bloc Galerie" size="md" onClose={onClose} footer={null}>
+        Chargement…
+      </AdminModal>
     );
   }
 
   return (
-    <div
-      className="modal-overlay-mobile"
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50000, overflowY: "auto", padding: "16px 0" }}
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    <AdminModal
+      title="Bloc Galerie"
+      subtitle="Photos mises en avant sur la page Contact."
+      size="md"
+      onClose={onClose}
+      footer={null}
     >
-      <div
-        style={{ background: "#fff", color: "#000", width: 560, maxWidth: "calc(100% - 24px)", borderRadius: 12, boxShadow: "0 20px 50px rgba(0,0,0,0.2)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 20px 0" }}>
-          <h3 style={{ margin: 0, fontSize: 18 }}>Bloc Galerie</h3>
-          <button type="button" aria-label="Fermer" onClick={onClose} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#666" }}>✕</button>
-        </div>
 
         {/* Tabs */}
         <div style={{ display: "flex", borderBottom: "1px solid #e6e6e6", padding: "0 12px", marginTop: 8 }}>
@@ -445,7 +441,6 @@ export default function ContactGalleryEditModal({
           <button type="button" className="btn-ghost" onClick={onClose} disabled={saving}>Annuler</button>
           <button type="button" className="btn-primary" onClick={save} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button>
         </div>
-      </div>
-    </div>
+    </AdminModal>
   );
 }

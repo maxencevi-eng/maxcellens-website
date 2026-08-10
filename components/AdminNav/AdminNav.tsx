@@ -6,17 +6,17 @@ import { usePathname } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import styles from "./AdminNav.module.css";
 
-const MAIN_PAGES: { href: string; label: string }[] = [
-  { href: "/", label: "Accueil" },
-  { href: "/realisation", label: "Réalisation" },
-  { href: "/evenement", label: "Évènement" },
-  { href: "/corporate", label: "Corporate" },
-  { href: "/portrait", label: "Portrait" },
-  { href: "/animation", label: "Animation" },
-  { href: "/galeries", label: "Galeries" },
-  { href: "/contact", label: "Contact" },
-  { href: "/bac", label: "Bureau à la Carte" },
-  { href: "/admin", label: "Admin" },
+const MAIN_PAGES: { href: string; label: string; description: string }[] = [
+  { href: "/", label: "Accueil", description: "Voir et modifier l’introduction du site" },
+  { href: "/realisation", label: "Réalisation", description: "Accéder à la section portfolio vidéo" },
+  { href: "/evenement", label: "Évènement", description: "Modifier la page événements et reportages" },
+  { href: "/corporate", label: "Corporate", description: "Gérer la page entreprise et témoignages" },
+  { href: "/portrait", label: "Portrait", description: "Mettre à jour les galeries portrait" },
+  { href: "/animation", label: "Animation", description: "Piloter les contenus animation" },
+  { href: "/galeries", label: "Galeries", description: "Organiser les collections photo" },
+  { href: "/contact", label: "Contact", description: "Mettre à jour les informations de contact" },
+  { href: "/bac", label: "Bureau à la Carte", description: "Accéder à l’espace B.A.C " },
+  { href: "/admin", label: "Admin", description: "Retour au tableau de bord principal" },
 ];
 
 export default function AdminNav() {
@@ -51,15 +51,22 @@ export default function AdminNav() {
 
   return (
     <nav className={styles.nav} aria-label="Menu du site (admin)">
-      <span className={styles.label}>Pages du site</span>
-      <ul className={styles.list}>
-        {MAIN_PAGES.map(({ href, label }) => (
+      <div className={styles.header}>
+        <div>
+          <span className={styles.label}>Pages du site</span>
+          <p className={styles.description}>Choisissez une section pour la modifier.</p>
+        </div>
+        <span className={styles.status}>En ligne</span>
+      </div>
+      <ul className={styles.grid}>
+        {MAIN_PAGES.map(({ href, label, description }) => (
           <li key={href}>
             <Link
               href={href}
               className={isActive(href) ? `${styles.link} ${styles.active}` : styles.link}
             >
-              {label}
+              <span className={styles.tileTitle}>{label}</span>
+              <span className={styles.tileDescription}>{description}</span>
             </Link>
           </li>
         ))}

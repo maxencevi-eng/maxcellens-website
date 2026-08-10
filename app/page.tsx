@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import PageHeader from '../components/PageHeader/PageHeader';
 import HomePageClient from '../components/HomeBlocks/HomePageClient';
 import { getPageSeo, buildMetadataFromSeo } from '../lib/pageSeo';
+import { SITE_URL } from '../lib/siteUrl';
 import JsonLdScript from '../components/SeoCommandCenter/JsonLdScript';
 import DefaultJsonLd from '../components/SeoCommandCenter/DefaultJsonLd';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
@@ -30,11 +31,17 @@ async function getHomeInitialSettings(): Promise<Record<string, string> | undefi
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo('home');
   const built = buildMetadataFromSeo(seo);
-  if (built) return built;
+  // Même sans ligne SEO, la page d'accueil doit porter sa canonique.
+  if (built) {
+    return {
+      ...built,
+      alternates: built.alternates?.canonical ? built.alternates : { canonical: SITE_URL },
+    };
+  }
   return {
     title: 'Maxcellens | Vidéaste & Photographe Indépendant — Portrait, Événement, Corporate',
     description: 'Vidéaste et photographe indépendant. Portrait, événementiel, corporate et réalisation vidéo. Paris, Île-de-France et France. Missions sur mesure.',
-    alternates: { canonical: `${baseUrl}/` },
+    alternates: { canonical: SITE_URL },
     openGraph: {
       title: 'Maxcellens | Vidéaste & Photographe Indépendant — Portrait, Événement, Corporate',
       description: 'Vidéaste et photographe indépendant. Portrait, événementiel, corporate et réalisation vidéo. Paris et France.',

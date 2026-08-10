@@ -1,18 +1,15 @@
 import type { Metadata } from "next";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import AnimationPageClient from "../../components/AnimationEditor/AnimationPageClient";
-import { getPageSeo, buildMetadataFromSeo } from "../../lib/pageSeo";
+import { buildPageMetadata } from "../../lib/pageSeo";
 import JsonLdScript from "../../components/SeoCommandCenter/JsonLdScript";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const seo = await getPageSeo("animation");
-  const built = buildMetadataFromSeo(seo);
-  if (built) return built;
-  return {
+  return buildPageMetadata('animation', {
     title: "Animation",
     description:
       "Un épisode de série TV personnalisé pour votre entreprise — team building créatif pour PME.",
-  };
+  });
 }
 
 export default async function AnimationPage() {

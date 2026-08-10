@@ -1,0 +1,60 @@
+.preview {
+  margin-bottom: var(--adm-space-5);
+}
+
+.stage {
+  position: relative;
+  height: 168px;
+  border-radius: var(--adm-radius);
+  border: 1px solid var(--adm-border);
+  background: var(--adm-surface-sunken);
+  overflow: hidden;
+  /* Contient l'animation du voile dans le cadre de l'aperçu */
+  isolation: isolate;
+}
+
+.fakePage {
+  position: absolute;
+  inset: 0;
+  padding: var(--adm-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--adm-space-3);
+}
+
+.fakeBar {
+  display: block;
+  height: 12px;
+  width: 45%;
+  border-radius: var(--adm-radius-xs);
+  background: var(--adm-accent);
+  opacity: 0.75;
+}
+
+.fakeBlock {
+  display: block;
+  height: 34px;
+  width: 100%;
+  border-radius: var(--adm-radius-xs);
+  background: var(--adm-surface-active);
+}
+
+.veil {
+  position: absolute;
+  inset: 0;
+  will-change: transform, opacity, clip-path;
+}
+
+.previewBar {
+  display: flex;
+  align-items: center;
+  gap: var(--adm-space-3);
+  margin-top: var(--adm-space-3);
+  flex-wrap: wrap;
+}
+
+.previewMeta {
+  font-size: var(--adm-text-sm);
+  color: var(--adm-ink-muted);
+  font-variant-numeric: tabular-nums;
+}

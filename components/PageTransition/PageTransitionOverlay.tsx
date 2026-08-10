@@ -1,189 +1,286 @@
 "use client";
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, type Transition } from 'framer-motion';
 import { useTransitionSettings } from './TransitionProvider';
+import {
+  EASE_COVER,
+  EASE_REVEAL,
+  phaseDurations,
+  type TransitionStyle,
+} from './transitionSettings';
+import { decideLink, scrollTargetForTab } from './linkTarget';
+import styles from './PageTransitionOverlay.module.css';
 
 /**
- * Phase machine:
- *   idle → enter  (overlay monte du bas, couvre l'écran)
- *        → waiting (overlay couvre, attend la page destination)
- *        → exit   (overlay monte vers le haut, révèle la nouvelle page)
+ * Machine à états :
+ *   idle → covering (l'overlay recouvre l'écran)
+ *        → covered  (l'overlay couvre, on attend la page destination)
+ *        → revealing (l'overlay se retire, la nouvelle page apparaît)
  *        → idle
  *
- * Mode "standard" : router.push lancé à la FIN de l'enter.
- * Mode "seamless" : router.push lancé au DÉBUT de l'enter (page charge en
- *   background pendant que l'overlay monte). Si la page est prête avant la
- *   fin de l'enter → exit s'enchaîne directement sans phase waiting.
+ * Différence majeure avec la version précédente : `router.push()` est appelé
+ * DÈS LE CLIC, plus à la fin du recouvrement. Le chargement réseau et
+ * l'animation se déroulent donc en parallèle. Combiné au préchargement au
+ * survol, la phase `covered` est le plus souvent nulle.
  *
- * À la fin de l'exit : dispatch 'splash-dismissed' pour déclencher les
- * animations de blocs (HomePageClient, AnimationPageClient…)
+ * À la fin de la révélation : `splash-dismissed` déclenche les animations de
+ * blocs (HomePageClient, AnimationPageClient…).
  */
-type Phase = 'idle' | 'enter' | 'waiting' | 'exit';
+type Phase = 'idle' | 'covering' | 'covered' | 'revealing';
+
+/** Au-delà de ce délai d'attente, on affiche un indicateur de chargement. */
+const PROGRESS_AFTER_MS = 400;
 
 export default function PageTransitionOverlay() {
   const { settings } = useTransitionSettings();
   const router = useRouter();
   const pathname = usePathname();
+
   const [phase, setPhase] = useState<Phase>('idle');
-  const targetHref = useRef<string | null>(null);
+  const [showProgress, setShowProgress] = useState(false);
   const prevPathname = useRef(pathname);
-  // seamless : true si le pathname a changé pendant la phase enter
-  const pageReadyDuringEnter = useRef(false);
+  /** Vrai si la destination est rendue avant la fin du recouvrement. */
+  const pageReady = useRef(false);
+  /** Destination mémorisée au clic, navigée une fois l'écran couvert. */
+  const targetHref = useRef<string | null>(null);
+  /** Horodatage du début du recouvrement, pour la durée minimale. */
+  const coverStartedAt = useRef(0);
+  const prefetched = useRef<Set<string>>(new Set());
+  const reducedMotion = useRef(false);
 
-  const enterDuration = settings.duration * 0.55;
-  const exitDuration  = settings.duration * 0.65;
+  useEffect(() => {
+    reducedMotion.current =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
 
-  // Intercept internal link clicks
+  const { cover: coverDuration, reveal: revealDuration } = phaseDurations(settings.duration);
+
+  /** Passe à la révélation, en respectant la durée minimale de recouvrement. */
+  const startReveal = useCallback(() => {
+    const elapsed = Date.now() - coverStartedAt.current;
+    const remaining = Math.max(0, settings.minCover * 1000 - elapsed);
+    const go = () => {
+      // Double rAF : garantit que la nouvelle page est peinte avant qu'on ne
+      // découvre l'écran, sinon on révèle un fond vide.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+          setShowProgress(false);
+          setPhase('revealing');
+        });
+      });
+    };
+    if (remaining > 0) setTimeout(go, remaining);
+    else go();
+  }, [settings.minCover]);
+
+  /* ── Préchargement à l'intention ────────────────────────────────────────
+     Le handler de clic appelle router.push(), ce qui court-circuite le
+     préchargement automatique de <Link>. On le refait donc explicitement au
+     survol / au toucher : c'est ce qui supprime le temps mort. */
+  useEffect(() => {
+    if (!settings.enabled || !settings.prefetch) return;
+
+    function maybePrefetch(e: Event) {
+      const link = (e.target as Element | null)?.closest?.('a');
+      if (!link) return;
+      const decision = decideLink(link as HTMLAnchorElement, new MouseEvent('click'), pathname || '/');
+      if (decision.kind !== 'navigate') return;
+      if (prefetched.current.has(decision.href)) return;
+      prefetched.current.add(decision.href);
+      try { router.prefetch(decision.href); } catch (_) {}
+    }
+
+    document.addEventListener('mouseover', maybePrefetch, { passive: true });
+    document.addEventListener('touchstart', maybePrefetch, { passive: true });
+    document.addEventListener('focusin', maybePrefetch, { passive: true });
+    return () => {
+      document.removeEventListener('mouseover', maybePrefetch);
+      document.removeEventListener('touchstart', maybePrefetch);
+      document.removeEventListener('focusin', maybePrefetch);
+    };
+  }, [settings.enabled, settings.prefetch, pathname, router]);
+
+  /* ── Interception des clics ─────────────────────────────────────────── */
   useEffect(() => {
     if (!settings.enabled) return;
 
     function handleClick(e: MouseEvent) {
-      const link = (e.target as Element).closest('a');
+      // defaultPrevented : un autre handler a déjà pris la main
+      if (e.defaultPrevented) return;
+      const link = (e.target as Element | null)?.closest?.('a');
       if (!link) return;
 
-      const href = link.getAttribute('href');
-      if (!href) return;
+      const decision = decideLink(link as HTMLAnchorElement, e, pathname || '/');
+      if (decision.kind === 'ignore') return;
 
-      // Skip external, anchor, mailto, tel links
-      if (/^(https?:|mailto:|tel:|#)/.test(href)) return;
-      // Skip new-tab / modifier-key navigations
-      if (link.target === '_blank' || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      // Same page — no transition needed
-      if (href === pathname) return;
+      if (decision.kind === 'sameTab') {
+        e.preventDefault();
+        window.dispatchEvent(
+          new CustomEvent('spa-same-page-tab', { detail: { tab: decision.tab } })
+        );
+        requestAnimationFrame(() => {
+          document.getElementById(decision.scrollId)?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          });
+        });
+        return;
+      }
 
       e.preventDefault();
       e.stopPropagation();
 
-      pageReadyDuringEnter.current = false;
-
-      // Strip ?tab= from URL, store in sessionStorage for SubmenuPageClient/PortraitPageClient
-      let cleanHref = href;
-      let isSamePageTabSwitch = false;
-      try {
-        const url = new URL(href, window.location.origin);
-        const tab = url.searchParams.get('tab');
-        if (tab) {
-          url.searchParams.delete('tab');
-          const strippedPath = url.pathname + (url.search !== '?' ? url.search : '') + url.hash;
-
-          if (strippedPath === pathname) {
-            // Même page — pas de navigation, juste switcher l'onglet et scroller
-            isSamePageTabSwitch = true;
-            window.dispatchEvent(new CustomEvent('spa-same-page-tab', { detail: { tab } }));
-            const submenuPages = ['/corporate', '/realisation', '/evenement'];
-            const scrollId = submenuPages.includes(url.pathname)
-              ? 'submenu-gallery-nav'
-              : 'portrait-gallery-nav';
-            requestAnimationFrame(() => {
-              const el = document.getElementById(scrollId);
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            });
-          } else {
-            sessionStorage.setItem('spaTabTarget', tab);
-            // Auto scroll-to-nav for pages using SubmenuPageClient (film/photo tabs)
-            const submenuPages = ['/corporate', '/realisation', '/evenement'];
-            if (submenuPages.includes(url.pathname) && !sessionStorage.getItem('spaScrollTarget')) {
-              sessionStorage.setItem('spaScrollTarget', 'submenu-gallery-nav');
-            }
-            cleanHref = strippedPath;
+      if (decision.tab) {
+        try {
+          sessionStorage.setItem('spaTabTarget', decision.tab);
+          const scrollId = scrollTargetForTab(new URL(decision.href, window.location.origin).pathname);
+          if (scrollId && !sessionStorage.getItem('spaScrollTarget')) {
+            sessionStorage.setItem('spaScrollTarget', scrollId);
           }
-        }
-      } catch (_) {}
-
-      if (isSamePageTabSwitch) return;
-
-      if (settings.mode === 'seamless') {
-        router.push(cleanHref);
-      } else {
-        targetHref.current = cleanHref;
+        } catch (_) {}
       }
 
-      setPhase('enter');
+      pageReady.current = false;
+      coverStartedAt.current = Date.now();
+      // La navigation n'est PAS lancée ici.
+      //
+      // Le volet monte du bas : tant qu'il n'a pas atteint le haut de l'écran,
+      // une partie de la page reste visible. Naviguer au clic faisait donc
+      // apparaître la nouvelle page dans cette bande encore découverte.
+      // On mémorise la destination et on navigue une fois l'écran couvert.
+      //
+      // Le coût est nul : la route a déjà été préchargée au survol du lien
+      // (voir l'effet de préchargement ci-dessus), `router.push` est donc
+      // quasi instantané à ce moment-là.
+      targetHref.current = decision.href;
+      setPhase('covering');
     }
 
     document.addEventListener('click', handleClick, true);
     return () => document.removeEventListener('click', handleClick, true);
-  }, [settings.enabled, settings.mode, pathname, router]);
+  }, [settings.enabled, pathname, router]);
 
-  // Quand pathname change (Next.js a rendu la nouvelle route)
+  /* ── Arrivée de la nouvelle route ───────────────────────────────────── */
   useEffect(() => {
-    if (prevPathname.current !== pathname) {
-      prevPathname.current = pathname;
+    if (prevPathname.current === pathname) return;
+    prevPathname.current = pathname;
 
-      if (phase === 'enter' && settings.mode === 'seamless') {
-        // Page prête pendant l'enter → on le note, l'exit s'enchaînera dès la fin
-        pageReadyDuringEnter.current = true;
-      } else if (phase === 'waiting') {
-        // Double rAF : garantit que le DOM est peint avant de révéler
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-            setPhase('exit');
-          });
-        });
-      }
-    }
-  }, [pathname, phase, settings.mode]);
+    // La navigation n'est lancée qu'une fois l'écran couvert : un changement
+    // de pathname pendant `covering` ne peut donc venir que d'une navigation
+    // externe (bouton Précédent). On laisse la machine suivre son cours.
+    if (phase === 'covered') startReveal();
+  }, [pathname, phase, startReveal]);
 
-  // Délai max configurable — ouvre la page même si elle n'est pas encore prête
+  /* ── Attente : indicateur puis ouverture forcée ─────────────────────── */
   useEffect(() => {
-    if (phase === 'waiting') {
-      const ms = Math.round((settings.maxWait ?? 2) * 1000);
-      const timeout = setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-        setPhase('exit');
-      }, ms);
-      return () => clearTimeout(timeout);
+    if (phase !== 'covered') {
+      setShowProgress(false);
+      return;
     }
-  }, [phase, settings.maxWait]);
+    const progressTimer = settings.showProgress
+      ? setTimeout(() => setShowProgress(true), PROGRESS_AFTER_MS)
+      : null;
+    const maxWaitTimer = setTimeout(() => {
+      startReveal();
+    }, Math.round(settings.maxWait * 1000));
 
-  const handleAnimationComplete = useCallback(() => {
-    if (phase === 'enter') {
-      if (settings.mode === 'seamless') {
-        if (pageReadyDuringEnter.current) {
-          // Page déjà rendue pendant l'enter → exit immédiat, sans waiting
-          pageReadyDuringEnter.current = false;
-          window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-          setPhase('exit');
-        } else {
-          // Page pas encore prête → on attend le changement de pathname
-          setPhase('waiting');
-        }
-      } else {
-        // Standard : router.push ici, overlay couvre tout l'écran
-        if (targetHref.current) {
-          router.push(targetHref.current);
-          targetHref.current = null;
-        }
-        setPhase('waiting');
+    return () => {
+      if (progressTimer) clearTimeout(progressTimer);
+      clearTimeout(maxWaitTimer);
+    };
+  }, [phase, settings.maxWait, settings.showProgress, startReveal]);
+
+  const onAnimationComplete = useCallback(() => {
+    if (phase === 'covering') {
+      // L'écran est entièrement couvert : c'est seulement maintenant que la
+      // navigation peut avoir lieu sans que le changement de page se voie.
+      if (targetHref.current) {
+        router.push(targetHref.current);
+        targetHref.current = null;
       }
-    } else if (phase === 'exit') {
+      setPhase('covered');
+    } else if (phase === 'revealing') {
       setPhase('idle');
       window.dispatchEvent(new CustomEvent('splash-dismissed'));
     }
-  }, [phase, router, settings.mode]);
+  }, [phase, router]);
 
   if (!settings.enabled || phase === 'idle') return null;
 
-  const animateY = phase === 'exit' ? '-100%' : '0%';
+  const revealing = phase === 'revealing';
+  const style: TransitionStyle = reducedMotion.current ? 'fade' : settings.style;
+  const frames = getFrames(style);
+
+  const transition: Transition = reducedMotion.current
+    ? { duration: 0.12, ease: 'linear' }
+    : {
+        duration: revealing ? revealDuration : coverDuration,
+        ease: revealing ? EASE_REVEAL : EASE_COVER,
+      };
 
   return (
     <motion.div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 999999,
-        background: settings.overlayColor,
-        pointerEvents: phase === 'enter' || phase === 'waiting' ? 'all' : 'none',
-      }}
-      initial={{ y: '100%' }}
-      animate={{ y: animateY }}
-      transition={{
-        duration: phase === 'exit' ? exitDuration : enterDuration,
-        ease: [0.25, 0.46, 0.45, 0.94],
-      }}
-      onAnimationComplete={handleAnimationComplete}
-    />
+      className={styles.overlay}
+      style={{ background: settings.overlayColor }}
+      initial={frames.initial}
+      animate={revealing ? frames.reveal : frames.cover}
+      transition={transition}
+      onAnimationComplete={onAnimationComplete}
+      // pointer-events fixe : le basculement en cours d'animation provoquait
+      // des clics traversants au moment exact du changement de phase.
+      aria-hidden="true"
+    >
+      {showProgress ? (
+        <span className={styles.progress}>
+          <span className={styles.progressBar} />
+        </span>
+      ) : null}
+    </motion.div>
   );
 }
+
+type Frames = {
+  initial: Record<string, string | number>;
+  cover: Record<string, string | number>;
+  reveal: Record<string, string | number>;
+};
+
+/**
+ * Images-clés par style. Toutes les propriétés animées sont composées par le
+ * GPU (transform / opacity / clip-path) — aucune ne déclenche de reflow.
+ */
+function getFrames(style: TransitionStyle): Frames {
+  switch (style) {
+    case 'fade':
+      return {
+        initial: { opacity: 0 },
+        cover: { opacity: 1 },
+        reveal: { opacity: 0 },
+      };
+    case 'slide':
+      return {
+        initial: { x: '100%' },
+        cover: { x: '0%' },
+        reveal: { x: '-100%' },
+      };
+    case 'mask':
+      return {
+        initial: { clipPath: 'circle(0% at 50% 50%)' },
+        cover: { clipPath: 'circle(75% at 50% 50%)' },
+        reveal: { clipPath: 'circle(0% at 50% 50%)' },
+      };
+    case 'curtain':
+    default:
+      return {
+        initial: { y: '100%' },
+        cover: { y: '0%' },
+        reveal: { y: '-100%' },
+      };
+  }
+}
+
+export { getFrames };

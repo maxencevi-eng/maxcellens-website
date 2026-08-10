@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { AdminModal } from '../admin';
 import {
   LineChart,
   Line,
@@ -497,35 +498,16 @@ export default function StatisticsModal({
   const excludeHashesCount = excludeHashesList.length;
 
   return (
-    <div
-      className={styles.overlay}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 50000,
-      }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+    <AdminModal
+      title="Statistiques"
+      subtitle="Fréquentation, contenus consultés et sources de trafic."
+      size="xl"
+      onClose={onClose}
+      footer={null}
     >
-      <div
-        className={styles.modalBox}
-        style={{
-          background: '#fff',
-          borderRadius: 12,
-          maxWidth: 960,
-          width: '100%',
-          maxHeight: '90vh',
-          overflow: 'auto',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid #e5e7eb' }}>
-          <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 700, color: '#111827' }}>Statistiques</h2>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      {/* Filtres de période — remontés de l’ancienne entête, qui portait
+          aussi son propre bouton de fermeture (désormais fourni par AdminModal). */}
+      <div className={styles.filterBar} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
             <select
               value={timeMode}
               onChange={(e) => setTimeMode(e.target.value as TimeMode)}
@@ -555,16 +537,7 @@ export default function StatisticsModal({
                 <option value="last_month">Mois dernier</option>
               </select>
             )}
-            <button
-              type="button"
-              onClick={onClose}
-              style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer', color: '#475569' }}
-              aria-label="Fermer"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
+      </div>
 
         {loading && (
           <div style={{ padding: '2rem', textAlign: 'center', color: '#475569', fontWeight: 500 }}>Chargement…</div>
@@ -1453,7 +1426,6 @@ export default function StatisticsModal({
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </AdminModal>
   );
 }

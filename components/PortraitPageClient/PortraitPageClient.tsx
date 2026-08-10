@@ -1,5 +1,9 @@
 "use client";
+import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
+import { Pencil } from 'lucide-react';
+import { AdminModal, AdminSection, ToggleField } from '../admin';
 
+import BuiltinPageBlocks from '../PageBuilder/BuiltinPageBlocks';
 import React, { Fragment, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import PageIntroBlock from "../PageIntroBlock/PageIntroBlock";
@@ -147,14 +151,12 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
   const introSection = hide("portrait_intro") ? null : (
     <div className={`container ${blockWidthClass("portrait_intro")}`.trim()} style={{ padding: "1.5rem 0", paddingLeft: 0, paddingRight: 0, position: "relative" }}>
       {isAdmin && (
-        <div style={btnWrapStyle}>
+        <AdminToolbarShell>
           <BlockVisibilityToggle blockId="portrait_intro" />
           <BlockWidthToggle blockId="portrait_intro" />
-          <button className={styles.editBtn} onClick={() => setIntroEditOpen(true)}>
-            Modifier
-          </button>
+          <AdminToolbarButton variant="primary" showLabel icon={<Pencil size={14} aria-hidden="true" />} label="Modifier" onClick={() => setIntroEditOpen(true)} />
           <BlockOrderButtons page="portrait" blockId="portrait_intro" />
-        </div>
+        </AdminToolbarShell>
       )}
       <AnimateInView variant="fadeUp">
         <PageIntroBlock
@@ -174,14 +176,14 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
   const gallerySection = hide("portrait_gallery") ? null : (
     <div className={`container ${blockWidthClass("portrait_gallery")}`.trim()} style={{ padding: "1.5rem 0", paddingLeft: 0, paddingRight: 0, position: "relative" }}>
       {isAdmin && (
-        <div style={btnWrapStyle}>
+        <AdminToolbarShell>
           <BlockVisibilityToggle blockId="portrait_gallery" />
           <BlockWidthToggle blockId="portrait_gallery" />
           <button className={styles.editBtn} onClick={openTabsModal}>
             Modifier les onglets
           </button>
           <BlockOrderButtons page="portrait" blockId="portrait_gallery" />
-        </div>
+        </AdminToolbarShell>
       )}
       <nav id="portrait-gallery-nav" aria-label="Galeries portrait" className={styles.portraitGalleryNav}>
         <ul className={styles.portraitGalleryNavList}>
@@ -217,46 +219,29 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
   );
 
   // Modal de gestion de la visibilité des onglets
-  const tabsModal = tabsModalOpen && typeof document !== 'undefined' ? createPortal(
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '70px 16px 32px', overflowY: 'auto' }}
-      onMouseDown={(e) => { if (e.target === e.currentTarget) closeTabsModal(); }}
+  const tabsModal = tabsModalOpen ? (
+    <AdminModal
+      title="Visibilité des onglets"
+      subtitle="Onglets de galerie proposés aux visiteurs."
+      size="sm"
+      onClose={closeTabsModal}
+      onSave={saveTabsVisibility}
+      saving={tabsSaving}
     >
-      <div style={{ width: '95%', maxWidth: 500, background: '#fff', borderRadius: 8, padding: 24, alignSelf: 'flex-start', flexShrink: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h3 style={{ margin: 0 }}>Visibilité des onglets</h3>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={closeTabsModal} className="btn-ghost">Annuler</button>
-            <button onClick={saveTabsVisibility} className="btn-primary" disabled={tabsSaving}>
-              {tabsSaving ? 'Enregistrement…' : 'Enregistrer'}
-            </button>
-          </div>
-        </div>
-        <p style={{ margin: '0 0 16px', color: 'var(--muted, #666)', fontSize: 14 }}>
-          Cochez les onglets à <strong>afficher</strong> pour les visiteurs non-connectés.
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {PORTRAIT_GALLERIES.map((g) => {
-            const isVisible = !tabsModalDraft.includes(g.id);
-            return (
-              <label key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', padding: '10px 14px', borderRadius: 6, border: '1px solid #eee', background: isVisible ? '#f9fafb' : '#fff' }}>
-                <input
-                  type="checkbox"
-                  checked={isVisible}
-                  onChange={() => toggleTabDraft(g.id)}
-                  style={{ width: 18, height: 18, accentColor: '#213431', cursor: 'pointer' }}
-                />
-                <span style={{ fontWeight: 500, fontSize: 15 }}>{g.label}</span>
-                {!isVisible && (
-                  <span style={{ marginLeft: 'auto', fontSize: 12, color: '#999' }}>Caché aux visiteurs</span>
-                )}
-              </label>
-            );
-          })}
-        </div>
-      </div>
-    </div>,
-    document.body
+      <AdminSection description="Les onglets décochés restent visibles pour vous, mais pas pour les visiteurs.">
+        {PORTRAIT_GALLERIES.map((g) => (
+          <ToggleField
+            key={g.id}
+            label={g.label}
+            checked={!tabsModalDraft.includes(g.id)}
+            onChange={() =>
+              // `tabsModalDraft` liste les onglets MASQUÉS : cocher le retire.
+              toggleTabDraft(g.id)
+            }
+          />
+        ))}
+      </AdminSection>
+    </AdminModal>
   ) : null;
 
   const sections: Record<string, React.ReactNode> = {
@@ -265,10 +250,12 @@ export default function PortraitPageClient({ initialTab = "lifestyle" }: { initi
   };
 
   return (
-    <section style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' as const }}>
+    <section className="page-blocks" style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' as const }}>
       {blockOrderPortrait.map((blockId) => (
         <Fragment key={blockId}>{sections[blockId] ?? null}</Fragment>
       ))}
+      {/* Blocs ajoutés depuis l’administration, après les blocs intégrés */}
+      <BuiltinPageBlocks pageKey="portrait" />
       {tabsModal}
     </section>
   );

@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from '../admin';
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -144,15 +145,8 @@ function IconPicker({ current, onSelect, onClose }: { current?: string; onSelect
   const [search, setSearch] = useState('');
   const filtered = AVAILABLE_ICONS.filter(n => n.toLowerCase().includes(search.toLowerCase()));
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 50001,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', borderRadius: 12, padding: 20, width: 380, maxHeight: '80vh', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <strong style={{ fontSize: 15 }}>Choisir une icône</strong>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}>✕</button>
-        </div>
+    // Empilée au-dessus de la modale du bloc : AdminModal gère la pile.
+    <AdminModal title="Choisir une icône" size="sm" onClose={onClose} footer={null}>
         <input
           style={{ ...inputStyle }}
           placeholder="Rechercher..."
@@ -182,8 +176,7 @@ function IconPicker({ current, onSelect, onClose }: { current?: string; onSelect
             );
           })}
         </div>
-      </div>
-    </div>
+    </AdminModal>
   );
 }
 
@@ -339,29 +332,19 @@ export default function PageIntroBlockModal({ pageKey, settingsKey, initialData,
     { id: 'style', label: 'Style' },
   ];
 
-  const overlayStyle: React.CSSProperties = {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-    display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-    zIndex: 50000, padding: '70px 16px 16px', overflowY: 'auto',
-  };
-  const boxStyle: React.CSSProperties = {
-    background: '#fff', color: '#000', padding: 24,
-    width: 580, maxWidth: '100%', borderRadius: 10,
-    alignSelf: 'flex-start', boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
-  };
 
   return createPortal(
     <>
-      <div style={overlayStyle} onClick={onClose}>
-        <div style={boxStyle} onClick={(e) => e.stopPropagation()}>
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <strong style={{ fontSize: 16 }}>Modifier le bloc intro</strong>
-            <button type="button" onClick={onClose} aria-label="Fermer"
-              style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>✕</button>
-          </div>
-
-          <ModalTabs tabs={TABS} active={tab} onChange={setTab} />
+      <AdminModal
+        title="Bloc intro"
+        subtitle="Sur-titre, titre et texte d’introduction de la page."
+        size="md"
+        onClose={onClose}
+        footer={null}
+        tabs={TABS}
+        activeTab={tab}
+        onTabChange={(t) => setTab(t as typeof tab)}
+      >
 
         {/* ── CONTENU ── */}
         {tab === 'contenu' && (
@@ -660,8 +643,7 @@ export default function PageIntroBlockModal({ pageKey, settingsKey, initialData,
               {saving ? 'Sauvegarde...' : 'Sauvegarder'}
             </button>
           </div>
-        </div>
-      </div>
+      </AdminModal>
 
       {/* Icon picker overlay */}
       {iconPickerIndex !== null && (

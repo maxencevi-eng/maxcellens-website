@@ -1,5 +1,9 @@
 "use client";
 
+import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
+import { Pencil } from 'lucide-react';
+import BuiltinPageBlocks from '../PageBuilder/BuiltinPageBlocks';
+import type { BuiltinPageKey } from '../PageBuilder/builtinPages';
 import React, { Fragment, useState, useEffect } from "react";
 import PageIntroBlock from "../PageIntroBlock/PageIntroBlock";
 import EditableVideoGallery from "../VideoGallery/EditableVideoGallery";
@@ -107,14 +111,12 @@ export default function SubmenuPageClient({
   const introSection = hide(introBlockId) ? null : (
     <div className={`container ${blockWidthClass(introBlockId)}`.trim()} style={{ padding: "1.5rem 0", position: "relative" }}>
       {isAdmin && (
-        <div style={btnWrapStyle}>
+        <AdminToolbarShell>
           <BlockVisibilityToggle blockId={introBlockId} />
           <BlockWidthToggle blockId={introBlockId} />
-          <button className={styles.editBtn} onClick={() => setIntroEditOpen(true)}>
-            Modifier
-          </button>
+          <AdminToolbarButton variant="primary" showLabel icon={<Pencil size={14} aria-hidden="true" />} label="Modifier" onClick={() => setIntroEditOpen(true)} />
           <BlockOrderButtons page={page} blockId={introBlockId} />
-        </div>
+        </AdminToolbarShell>
       )}
       <AnimateInView variant="fadeUp">
         <PageIntroBlock
@@ -158,11 +160,11 @@ export default function SubmenuPageClient({
   const filmSection = hide(videosBlockId) ? null : (
     <div className={`container ${blockWidthClass(videosBlockId)}`.trim()} style={{ padding: "1.5rem 0", position: "relative" }}>
       {isAdmin && (
-        <div style={btnWrapStyle}>
+        <AdminToolbarShell>
           <BlockVisibilityToggle blockId={videosBlockId} />
           <BlockWidthToggle blockId={videosBlockId} />
           <BlockOrderButtons page={page} blockId={videosBlockId} />
-        </div>
+        </AdminToolbarShell>
       )}
       <AnimateInView variant="slideUp" viewportSoon>
         <EditableVideoGallery key={`videos_${videoKey}`} keyName={`videos_${videoKey}`} initial={[]} />
@@ -173,11 +175,11 @@ export default function SubmenuPageClient({
   const photoSection = hide(photosBlockId) ? null : (
     <div className={`container ${blockWidthClass(photosBlockId)}`.trim()} style={{ padding: "1.5rem 0", position: "relative" }}>
       {isAdmin && (
-        <div style={btnWrapStyle}>
+        <AdminToolbarShell>
           <BlockVisibilityToggle blockId={photosBlockId} />
           <BlockWidthToggle blockId={photosBlockId} />
           <BlockOrderButtons page={page} blockId={photosBlockId} />
-        </div>
+        </AdminToolbarShell>
       )}
       <EditablePortraitGallery
         key={`photos_${photoSettingsKey}`}
@@ -206,10 +208,12 @@ export default function SubmenuPageClient({
   const order = blockOrder?.length ? blockOrder : defaultOrder;
 
   return (
-    <section style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' as const }}>
+    <section className="page-blocks" style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' as const }}>
       {order.map((blockId) => (
         <Fragment key={blockId}>{sections[blockId] ?? null}</Fragment>
       ))}
+      {/* Blocs ajoutés depuis l’administration, après les blocs intégrés */}
+      <BuiltinPageBlocks pageKey={page as BuiltinPageKey} />
     </section>
   );
 }

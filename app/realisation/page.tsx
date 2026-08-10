@@ -1,14 +1,15 @@
 import type { Metadata } from 'next';
-import { getPageSeo, buildMetadataFromSeo } from '../../lib/pageSeo';
+import { buildPageMetadata } from '../../lib/pageSeo';
 import JsonLdScript from '../../components/SeoCommandCenter/JsonLdScript';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import ProductionPageClient from '../../components/ProductionPageClient/ProductionPageClient';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const seo = await getPageSeo('realisation');
-  const built = buildMetadataFromSeo(seo);
-  if (built) return built;
-  return { title: 'Réalisation' };
+  return buildPageMetadata('realisation', {
+    title: 'Réalisation',
+    description:
+      'Réalisation de vidéos commerciales et de reportages photo sur mesure, en Île-de-France et partout en France.',
+  });
 }
 
 export default function RealisationPage() {

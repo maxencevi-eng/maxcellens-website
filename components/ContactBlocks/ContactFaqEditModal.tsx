@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from '../admin';
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -200,16 +201,14 @@ export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () 
 
   if (typeof document === 'undefined') return null;
 
-  return createPortal(
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 50000, padding: '70px 16px 16px', overflowY: 'auto' }}
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', color: '#000', padding: 24, width: 700, maxWidth: '100%', borderRadius: 10, alignSelf: 'flex-start', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}
-        onClick={(e) => e.stopPropagation()}>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <strong style={{ fontSize: 16 }}>Modifier le bloc FAQ</strong>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>✕</button>
-        </div>
+  return (
+    <AdminModal
+      title="Bloc FAQ"
+      subtitle="Questions fréquentes affichées sur la page Contact."
+      size="lg"
+      onClose={onClose}
+      footer={null}
+    >
 
         <ModalTabs
           tabs={[{ id: 'contenu', label: 'Entête' }, { id: 'questions', label: 'Questions' }, { id: 'style', label: 'Style' }]}
@@ -361,8 +360,6 @@ export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () 
             </button>
           </div>
         </div>
-      </div>
-    </div>,
-    document.body
+    </AdminModal>
   );
 }

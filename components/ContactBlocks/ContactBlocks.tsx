@@ -1,6 +1,7 @@
 "use no memo";
 "use client";
 
+import BuiltinPageBlocks from '../PageBuilder/BuiltinPageBlocks';
 import React, { Fragment, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { supabase } from '../../lib/supabase';
@@ -517,10 +518,12 @@ export default function ContactBlocks() {
   };
 
   return (
-    <div className={styles.wrapper}>
+    <div className={`${styles.wrapper} page-blocks`}>
       {blockOrderContact.map((blockId) => (
         <Fragment key={blockId}>{sections[blockId] ?? null}</Fragment>
       ))}
+      {/* Blocs ajoutés depuis l’administration, après les blocs intégrés */}
+      <BuiltinPageBlocks pageKey="contact" />
       {open ? (
         <ContactEditModal onClose={() => setOpen(false)} onSaved={() => setOpen(false)} />
       ) : null}

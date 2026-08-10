@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from '../admin';
 
 import React, { useEffect, useState } from "react";
 import { PAGE_SEO_SLUGS, type PageSeoSlug } from "../../lib/pageSeo";
@@ -300,14 +301,13 @@ export default function SeoCommandCenterModal({
   }
 
   return (
-    <div className={`${styles.seoModalOverlay} modal-overlay-mobile`} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={styles.seoModal}>
-        <div className={styles.seoModalHeader}>
-          <h2>SEO Command Center</h2>
-          <button type="button" onClick={onClose} aria-label="Fermer" className={styles.seoClose}>
-            ✕
-          </button>
-        </div>
+    <AdminModal
+      title="SEO"
+      subtitle="Titres, descriptions, images de partage et données structurées."
+      size="xl"
+      onClose={onClose}
+      footer={null}
+    >
 
         <div className={styles.seoTabs}>
           <button type="button" className={`${styles.seoTab} ${activeTab === 'pages' ? styles.seoTabActive : ''}`} onClick={() => setActiveTab('pages')}>Pages SEO</button>
@@ -598,7 +598,6 @@ export default function SeoCommandCenterModal({
             )}
           </div>
         </div>
-      </div>
-    </div>
+    </AdminModal>
   );
 }

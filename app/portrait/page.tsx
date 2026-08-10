@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getPageSeo, buildMetadataFromSeo } from '../../lib/pageSeo';
+import { buildPageMetadata } from '../../lib/pageSeo';
 import JsonLdScript from '../../components/SeoCommandCenter/JsonLdScript';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import PortraitPageClient from '../../components/PortraitPageClient/PortraitPageClient';
@@ -7,10 +7,11 @@ import PortraitPageClient from '../../components/PortraitPageClient/PortraitPage
 const PORTRAIT_TAB_IDS = ['lifestyle', 'studio', 'couple', 'corporate'] as const;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const seo = await getPageSeo('portrait');
-  const built = buildMetadataFromSeo(seo);
-  if (built) return built;
-  return { title: 'Portrait' };
+  return buildPageMetadata('portrait', {
+    title: 'Portrait',
+    description:
+      'Séances portrait en studio et en extérieur : lifestyle, corporate, couple et entreprise.',
+  });
 }
 
 type SearchParams = Promise<{ tab?: string }>;

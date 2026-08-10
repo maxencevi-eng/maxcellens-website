@@ -1,401 +1,620 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import Modal from '../Modal/Modal';
-import styles from './SiteStyle.module.css';
-import ModalTabs from '../ui/ModalTabs';
-import { useSiteStyle } from './SiteStyleProvider';
-import type { SiteStyle, BackgroundStyle } from './SiteStyleProvider';
 
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Trash2, Upload } from 'lucide-react';
+import {
+  AdminButton,
+  AdminCard,
+  AdminModal,
+  AdminNotice,
+  AdminSection,
+  ColorField,
+  SegmentedField,
+  SelectField,
+  SliderField,
+  TextField,
+  ToggleField,
+} from '../admin';
+import { useSiteStyle } from './SiteStyleProvider';
+import type {
+  AdminUiSettings,
+  BackgroundStyle,
+  SiteStyle,
+  TypographyKey,
+} from './SiteStyleProvider';
+import styles from './SiteStyle.module.css';
+
+type Tab = 'colors' | 'buttons' | 'typography' | 'background' | 'admin';
+
+const TYPO_ROWS: { key: TypographyKey; label: string; placeholder: string; defaultWeight: number }[] = [
+  { key: 'h1', label: 'Titre 1', placeholder: '32px', defaultWeight: 800 },
+  { key: 'h2', label: 'Titre 2', placeholder: '28px', defaultWeight: 600 },
+  { key: 'h3', label: 'Titre 3', placeholder: '22px', defaultWeight: 600 },
+  { key: 'h4', label: 'Titre 4', placeholder: '18px', defaultWeight: 600 },
+  { key: 'h5', label: 'Titre 5', placeholder: '16px', defaultWeight: 600 },
+  { key: 'p', label: 'Paragraphe', placeholder: '16px', defaultWeight: 400 },
+];
+
+const SYSTEM_FONT =
+  'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial';
+
+const BACKGROUND_PRESETS: { value: BackgroundStyle; label: string; desc: string }[] = [
+  { value: 'none', label: 'Aucun', desc: 'Fond uni, sans texture' },
+  { value: 'grain', label: 'Grain', desc: 'Texture granuleuse, effet argentique' },
+  { value: 'dots', label: 'Points', desc: 'Grille de micro-points' },
+  { value: 'lines', label: 'Lignes', desc: 'Hachures diagonales discrètes' },
+  { value: 'custom', label: 'Image', desc: 'Votre propre texture ou motif' },
+];
+
+/**
+ * Centre de style du site.
+ *
+ * Ajouts par rapport à la version précédente :
+ *  · onglet « Interface admin » — l'accent de l'admin dérive des boutons du
+ *    site, et la densité des contrôles est réglable ;
+ *  · contrôle de contraste WCAG sur chaque paire fond / texte ;
+ *  · l'aperçu en direct est temporisé (l'ancien réécrivait les variables CSS
+ *    à chaque frappe clavier) ;
+ *  · annuler restaure l'état d'avant l'ouverture.
+ */
 export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
   const { style, setStyle, saveStyle } = useSiteStyle();
-  const [tab, setTab] = useState<'colors'|'typography'|'background'>('colors');
-  const [uploadingBg, setUploadingBg] = useState(false);
+  const [tab, setTab] = useState<Tab>('colors');
   const [local, setLocal] = useState<SiteStyle>(() => style || {});
-  const [uploading, setUploading] = useState(false);
+  const [baseline, setBaseline] = useState<string>(() => JSON.stringify(style || {}));
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadingBg, setUploadingBg] = useState(false);
+  const fontInputRef = useRef<HTMLInputElement | null>(null);
+  const bgInputRef = useRef<HTMLInputElement | null>(null);
+  /** Passe à true à la première modification de l'utilisateur. */
+  const touched = useRef(false);
 
-  useEffect(() => setLocal(style || {}), [style]);
-
-  // Garantir des valeurs string pour les inputs contrôlés (éviter controlled/uncontrolled)
-  const colorKeys = ['bgColor', 'blockBgColor', 'primary', 'secondary', 'text', 'link', 'linkHover', 'linkActive'] as const;
-  const safeColor = (key: typeof colorKeys[number]) => {
-    const v = local?.colors?.[key];
-    return typeof v === 'string' ? v : undefined;
-  };
-  const safeButtonColor = (styleKey: 'button1' | 'button2', prop: 'bg' | 'color') => {
-    const v = local?.colors?.[styleKey]?.[prop];
-    return typeof v === 'string' ? v : undefined;
-  };
-  const fallback = (v: string | undefined, d: string) => (v !== undefined && v !== null && v !== '') ? v : d;
-
-  // Apply live preview while editing (don't persist until Save)
+  /**
+   * Synchronisation avec le provider.
+   *
+   * `SiteStyleProvider` charge le style de façon asynchrone : au montage il
+   * vaut encore `{}`. Capturer la référence de comparaison une seule fois à
+   * l'initialisation la figeait donc sur `{}`, et la modale se croyait
+   * modifiée en permanence — le garde-fou de fermeture se déclenchait même
+   * juste après un enregistrement réussi.
+   *
+   * On suit donc le provider tant que l'utilisateur n'a rien saisi.
+   */
   useEffect(() => {
-    try { setStyle(local); } catch (e) {}
-  }, [local]);
+    if (touched.current) return;
+    setLocal(style || {});
+    setBaseline(JSON.stringify(style || {}));
+  }, [style]);
 
-  function updateColors(next: Partial<any>) {
+  /**
+   * Aperçu en direct, temporisé.
+   * L'ancienne version appliquait le style dans un `useEffect([local])` sans
+   * délai : chaque caractère saisi déclenchait une réécriture complète des
+   * variables CSS et des règles @font-face.
+   */
+  useEffect(() => {
+    if (!touched.current) return;
+    const t = setTimeout(() => setStyle(local), 90);
+    return () => clearTimeout(t);
+  }, [local, setStyle]);
+
+  const dirty = JSON.stringify(local) !== baseline;
+
+  /** Marque le formulaire comme saisi : le provider ne l'écrasera plus. */
+  function markTouched() {
+    touched.current = true;
+    setSaved(false);
+  }
+
+  function updateColors(next: Record<string, any>) {
+    markTouched();
     setLocal((s) => ({ ...s, colors: { ...(s.colors || {}), ...next } }));
   }
 
-  function updateTypography(key: string, next: Partial<any>) {
-    setLocal((s) => ({ ...s, typography: { ...(s.typography || {}), [key]: { ...(s.typography?.[key] || {}), ...next } } }));
+  function updateTypography(key: TypographyKey, next: Record<string, any>) {
+    markTouched();
+    setLocal((s) => ({
+      ...s,
+      typography: {
+        ...(s.typography || {}),
+        [key]: { ...(s.typography?.[key] || {}), ...next },
+      },
+    }));
   }
 
-  function updateBackground(next: Partial<any>) {
+  function updateBackground(next: Record<string, any>) {
+    markTouched();
     setLocal((s) => ({ ...s, background: { ...(s.background || {}), ...next } }));
   }
 
-  async function handleBgImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setUploadingBg(true);
-    setMessage(null);
-    try {
-      const fd = new FormData();
-      fd.append('file', f);
-      fd.append('page', 'site');
-      fd.append('kind', 'image');
-      fd.append('folder', 'site/backgrounds');
-      const resp = await fetch('/api/admin/upload-hero-media', { method: 'POST', body: fd });
-      const json = await resp.json();
-      if (!resp.ok) throw new Error(json?.error || 'Upload failed');
-      const url = json?.url;
-      if (!url) throw new Error('No url returned');
-      updateBackground({ imageUrl: url, style: 'custom' });
-      setMessage('Image importée');
-    } catch (err: any) {
-      setMessage(err?.message || String(err));
-    } finally {
-      setUploadingBg(false);
-    }
+  function updateAdmin(next: Partial<AdminUiSettings>) {
+    markTouched();
+    setLocal((s) => ({ ...s, admin: { ...(s.admin || {}), ...next } }));
   }
 
-  async function handleFontUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
+  async function handleFontUpload(file: File) {
     setUploading(true);
+    setError(null);
     setMessage(null);
     try {
       const fd = new FormData();
-      fd.append('file', f);
+      fd.append('file', file);
       const resp = await fetch('/api/admin/upload-font', { method: 'POST', body: fd });
       const json = await resp.json();
-      if (!resp.ok) throw new Error(json?.error || 'Upload failed');
+      if (!resp.ok) throw new Error(json?.error || 'Échec de l’import');
       const url = json?.publicUrl || json?.url;
-      if (!url) throw new Error('No url returned');
-      const name = f.name.replace(/\.[^.]+$/, '') || `font-${Date.now()}`;
-      const fonts = [...(local.fonts || []), { name, url }];
-      setLocal((s) => ({ ...s, fonts }));
-      setMessage('Police importée');
-    } catch (err: any) {
-      setMessage(err?.message || String(err));
+      if (!url) throw new Error('Réponse sans URL');
+      const name = file.name.replace(/\.[^.]+$/, '') || `police-${Date.now()}`;
+      touched.current = true;
+      setLocal((s) => ({ ...s, fonts: [...(s.fonts || []), { name, url }] }));
+      setMessage(`Police « ${name} » importée.`);
+    } catch (e: any) {
+      setError(e?.message || String(e));
     } finally {
       setUploading(false);
     }
   }
 
-  function onSave() {
-    setStyle(local);
-    saveStyle(local);
+  async function handleBgUpload(file: File) {
+    setUploadingBg(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('page', 'site');
+      fd.append('kind', 'image');
+      fd.append('folder', 'site/backgrounds');
+      const resp = await fetch('/api/admin/upload-hero-media', { method: 'POST', body: fd });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json?.error || 'Échec de l’import');
+      if (!json?.url) throw new Error('Réponse sans URL');
+      updateBackground({ imageUrl: json.url, style: 'custom' });
+      setMessage('Image de fond importée.');
+    } catch (e: any) {
+      setError(e?.message || String(e));
+    } finally {
+      setUploadingBg(false);
+    }
+  }
+
+  function removeFont(index: number) {
+    touched.current = true;
+    setLocal((s) => ({ ...s, fonts: (s.fonts || []).filter((_, i) => i !== index) }));
+  }
+
+  async function onSave() {
+    setSaving(true);
+    setError(null);
+    try {
+      setStyle(local);
+      await saveStyle(local);
+      // Nouvelle référence de comparaison : sans cela la modale se croyait
+      // encore modifiée et redemandait confirmation à la fermeture.
+      setBaseline(JSON.stringify(local));
+      setSaved(true);
+    } catch (e: any) {
+      setError(e?.message || 'Échec de l’enregistrement');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /** Annuler : on rend au site son apparence d'avant l'ouverture. */
+  function handleClose() {
+    if (dirty) {
+      try { setStyle(JSON.parse(baseline)); } catch (_) {}
+    }
     onClose();
   }
 
-  const fontOptions = (local.fonts || []).map((f: any) => ({ label: f.name, value: f.name }));
+  const fontOptions = useMemo(
+    () => [
+      { value: '', label: '(hérité)' },
+      { value: SYSTEM_FONT, label: 'Police système' },
+      ...(local.fonts || []).map((f) => ({ value: f.name, label: f.name })),
+    ],
+    [local.fonts]
+  );
 
-  // Extracted constants to avoid complex inline expressions in JSX
-  const colorBg = fallback(safeColor('bgColor'), '#ffffff');
-  const colorBlockBg = fallback(safeColor('blockBgColor'), '#fafaf9');
-  const colorPrimary = fallback(safeColor('primary'), '#0070f3');
-  const colorSecondary = fallback(safeColor('secondary'), '#111111');
-  const colorText = fallback(safeColor('text'), '#111111');
-  const colorLink = fallback(safeColor('link'), '#0070f3');
-  const colorLinkHover = fallback(safeColor('linkHover'), '#005bb5');
-  const colorLinkActive = fallback(safeColor('linkActive'), '#004080');
-
-  const btn1Bg = fallback(safeButtonColor('button1', 'bg'), '#213431');
-  const btn1Color = fallback(safeButtonColor('button1', 'color'), '#ffffff');
-  const btn2Bg = fallback(safeButtonColor('button2', 'bg'), '#ffffff');
-  const btn2Color = fallback(safeButtonColor('button2', 'color'), '#213431');
-
-  const h1Family = local.typography?.h1?.family || '';
-  const h1Size = local.typography?.h1?.size || '';
-  const h1Weight = String(local.typography?.h1?.weight || 800);
-
-  const h2Family = local.typography?.h2?.family || '';
-  const h2Size = local.typography?.h2?.size || '';
-  const h2Weight = String(local.typography?.h2?.weight || 600);
-
-  const h3Family = local.typography?.h3?.family || '';
-  const h3Size = local.typography?.h3?.size || '';
-  const h3Weight = String(local.typography?.h3?.weight || 600);
-
-  const h4Family = local.typography?.h4?.family || '';
-  const h4Size = local.typography?.h4?.size || '';
-  const h4Weight = String(local.typography?.h4?.weight || 600);
-
-  const h5Family = local.typography?.h5?.family || '';
-  const h5Size = local.typography?.h5?.size || '';
-  const h5Weight = String(local.typography?.h5?.weight || 600);
-
-  const pFamily = local.typography?.p?.family || '';
-  const pSize = local.typography?.p?.size || '';
-  const pWeight = String(local.typography?.p?.weight || 400);
+  const c = local.colors || {};
+  const bg = local.colors?.bgColor || '#ffffff';
+  const blockBg = local.colors?.blockBgColor || '#fafaf9';
 
   return (
-    <Modal title="Modifier le style" onClose={onClose} footer={(
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button className="menu-item" onClick={onClose}>Annuler</button>
-        <button className="menu-item" onClick={onSave}>Enregistrer</button>
-      </div>
-    )}>
-      <ModalTabs
-        tabs={[
-          { id: 'colors', label: 'Couleurs' },
-          { id: 'typography', label: 'Typographie' },
-          { id: 'background', label: 'Fond' },
-        ]}
-        active={tab}
-        onChange={(t) => setTab(t as any)}
-      />
+    <AdminModal
+      title="Style du site"
+      subtitle="Couleurs, boutons, typographies, fond et interface d’administration."
+      size="lg"
+      onClose={handleClose}
+      tabs={[
+        { id: 'colors', label: 'Couleurs' },
+        { id: 'buttons', label: 'Boutons' },
+        { id: 'typography', label: 'Typographie', badge: (local.fonts || []).length || undefined },
+        { id: 'background', label: 'Fond' },
+        { id: 'admin', label: 'Interface admin' },
+      ]}
+      activeTab={tab}
+      onTabChange={(id) => setTab(id as Tab)}
+      dirty={dirty}
+      saving={saving}
+      saved={saved}
+      error={error}
+      onSave={onSave}
+    >
+      {message ? <AdminNotice tone="success">{message}</AdminNotice> : null}
 
+      {/* ── Couleurs ─────────────────────────────────────────────────── */}
       {tab === 'colors' && (
-        <div className={`${styles.panel} ${styles.colorsGrid}`}>
-          <div>
-            <div className={styles.colorRow}>
-              <label>Couleur de fond (page)</label>
-              <input type="color" value={colorBg} onChange={(e) => updateColors({ bgColor: e.target.value })} />
-            </div>
-            <div className={styles.colorRow}>
-              <label>Couleur de fond des blocs</label>
-              <input type="color" value={colorBlockBg} onChange={(e) => updateColors({ blockBgColor: e.target.value })} />
-            </div>
-            <div className={styles.colorRow}>
-              <label>Couleur primaire</label>
-              <input type="color" value={colorPrimary} onChange={(e) => updateColors({ primary: e.target.value })} />
-            </div>
-            <div className={styles.colorRow}>
-              <label>Couleur secondaire</label>
-              <input type="color" value={colorSecondary} onChange={(e) => updateColors({ secondary: e.target.value })} />
-            </div>
-            <div className={styles.colorRow}>
-              <label>Couleur du texte</label>
-              <input type="color" value={colorText} onChange={(e) => updateColors({ text: e.target.value })} />
-            </div>
-            <h4 style={{ margin: '16px 0 8px' }}>Liens hypertextes</h4>
-            <div className={styles.colorRow}>
-              <label>Liens (couleur par défaut)</label>
-              <input type="color" value={colorLink} onChange={(e) => updateColors({ link: e.target.value })} />
-            </div>
-            <div className={styles.colorRow}>
-              <label>Liens au survol</label>
-              <input type="color" value={colorLinkHover} onChange={(e) => updateColors({ linkHover: e.target.value })} />
-            </div>
-            <div className={styles.colorRow}>
-              <label>Liens au clic</label>
-              <input type="color" value={colorLinkActive} onChange={(e) => updateColors({ linkActive: e.target.value })} />
-            </div>
-          </div>
-          <div>
-            <h4 style={{ margin: '0 0 12px' }}>Boutons</h4>
-            <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>Deux styles de boutons utilisables dans les modaux (CTA, liens principaux).</p>
-            <div style={{ marginBottom: 12 }}>
-              <div className={styles.colorRow}>
-                <label>Style 1 — Fond</label>
-                <input type="color" value={btn1Bg} onChange={(e) => updateColors({ button1: { ...(local.colors?.button1 || {}), bg: e.target.value } })} />
-              </div>
-              <div className={styles.colorRow}>
-                <label>Style 1 — Texte</label>
-                <input type="color" value={btn1Color} onChange={(e) => updateColors({ button1: { ...(local.colors?.button1 || {}), color: e.target.value } })} />
-              </div>
-            </div>
-            <div>
-              <div className={styles.colorRow}>
-                <label>Style 2 — Fond</label>
-                <input type="color" value={btn2Bg} onChange={(e) => updateColors({ button2: { ...(local.colors?.button2 || {}), bg: e.target.value } })} />
-              </div>
-              <div className={styles.colorRow}>
-                <label>Style 2 — Texte</label>
-                <input type="color" value={btn2Color} onChange={(e) => updateColors({ button2: { ...(local.colors?.button2 || {}), color: e.target.value } })} />
-              </div>
-            </div>
-          </div>
-        </div>
+        <>
+          <AdminSection
+            title="Surfaces"
+            description="Le contraste est mesuré face à la couleur de texte."
+            columns={2}
+          >
+            <ColorField
+              label="Fond de la page"
+              value={c.bgColor}
+              onChange={(v) => updateColors({ bgColor: v })}
+              fallback="#ffffff"
+              contrastAgainst={c.text || '#111111'}
+            />
+            <ColorField
+              label="Fond des blocs"
+              value={c.blockBgColor}
+              onChange={(v) => updateColors({ blockBgColor: v })}
+              fallback="#fafaf9"
+              contrastAgainst={c.text || '#111111'}
+            />
+          </AdminSection>
+
+          <AdminSection title="Texte et accents" columns={2}>
+            <ColorField
+              label="Couleur du texte"
+              value={c.text}
+              onChange={(v) => updateColors({ text: v })}
+              fallback="#111111"
+              contrastAgainst={blockBg}
+            />
+            <ColorField
+              label="Couleur primaire"
+              value={c.primary}
+              onChange={(v) => updateColors({ primary: v })}
+              fallback="#0070f3"
+              contrastAgainst={bg}
+            />
+            <ColorField
+              label="Couleur secondaire"
+              value={c.secondary}
+              onChange={(v) => updateColors({ secondary: v })}
+              fallback="#111111"
+              contrastAgainst={bg}
+            />
+            <ColorField
+              label="Couleur d’accent"
+              value={c.accent}
+              onChange={(v) => updateColors({ accent: v })}
+              fallback="#ff4081"
+              contrastAgainst={bg}
+            />
+          </AdminSection>
+
+          <AdminSection title="Liens hypertextes" columns={3}>
+            <ColorField
+              label="Par défaut"
+              value={c.link}
+              onChange={(v) => updateColors({ link: v })}
+              fallback="#0070f3"
+              contrastAgainst={blockBg}
+            />
+            <ColorField
+              label="Au survol"
+              value={c.linkHover}
+              onChange={(v) => updateColors({ linkHover: v })}
+              fallback="#005bb5"
+              contrastAgainst={blockBg}
+            />
+            <ColorField
+              label="Au clic"
+              value={c.linkActive}
+              onChange={(v) => updateColors({ linkActive: v })}
+              fallback="#004080"
+              contrastAgainst={blockBg}
+            />
+          </AdminSection>
+        </>
       )}
 
+      {/* ── Boutons ──────────────────────────────────────────────────── */}
+      {tab === 'buttons' && (
+        <>
+          <AdminNotice>
+            Ces deux styles sont utilisés par tous les boutons du site (CTA, liens
+            principaux). Le style 1 sert aussi d’accent à l’interface d’administration.
+          </AdminNotice>
+
+          <AdminSection title="Style 1 — bouton principal" columns={2}>
+            <ColorField
+              label="Fond"
+              value={c.button1?.bg}
+              onChange={(v) => updateColors({ button1: { ...(c.button1 || {}), bg: v } })}
+              fallback="#213431"
+              contrastAgainst={c.button1?.color || '#ffffff'}
+            />
+            <ColorField
+              label="Texte"
+              value={c.button1?.color}
+              onChange={(v) => updateColors({ button1: { ...(c.button1 || {}), color: v } })}
+              fallback="#ffffff"
+              contrastAgainst={c.button1?.bg || '#213431'}
+            />
+          </AdminSection>
+
+          <AdminSection title="Style 2 — bouton secondaire" columns={2}>
+            <ColorField
+              label="Fond"
+              value={c.button2?.bg}
+              onChange={(v) => updateColors({ button2: { ...(c.button2 || {}), bg: v } })}
+              fallback="#ffffff"
+              contrastAgainst={c.button2?.color || '#213431'}
+            />
+            <ColorField
+              label="Texte"
+              value={c.button2?.color}
+              onChange={(v) => updateColors({ button2: { ...(c.button2 || {}), color: v } })}
+              fallback="#213431"
+              contrastAgainst={c.button2?.bg || '#ffffff'}
+            />
+          </AdminSection>
+
+          <AdminSection title="Aperçu">
+            <div className={styles.buttonPreview}>
+              <button type="button" className="btn-site-1">Bouton principal</button>
+              <button type="button" className="btn-site-2">Bouton secondaire</button>
+            </div>
+          </AdminSection>
+        </>
+      )}
+
+      {/* ── Typographie ──────────────────────────────────────────────── */}
       {tab === 'typography' && (
-        <div className={styles.panel}>
-          <div style={{ marginBottom: 8 }}>
-            <label>Importer une police (.woff/.ttf)</label>
-            <input type="file" accept=".woff,.woff2,.ttf,.otf" onChange={handleFontUpload} />
-            {uploading ? <div>Import...</div> : null}
-            {message ? <div style={{ fontSize: 13, marginTop: 6 }}>{message}</div> : null}
-          </div>
+        <>
+          <AdminSection
+            title="Polices importées"
+            description="Formats acceptés : .woff2, .woff, .ttf, .otf."
+            actions={
+              <AdminButton
+                size="sm"
+                variant="secondary"
+                loading={uploading}
+                leadingIcon={<Upload size={14} aria-hidden="true" />}
+                onClick={() => fontInputRef.current?.click()}
+              >
+                Importer
+              </AdminButton>
+            }
+          >
+            <input
+              ref={fontInputRef}
+              type="file"
+              accept=".woff,.woff2,.ttf,.otf"
+              className={styles.hiddenInput}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFontUpload(f);
+                e.target.value = '';
+              }}
+            />
+            {(local.fonts || []).length === 0 ? (
+              <AdminNotice>
+                Aucune police importée. Les titres utilisent la police système.
+              </AdminNotice>
+            ) : (
+              <ul className={styles.fontList}>
+                {(local.fonts || []).map((f, i) => (
+                  <li key={`${f.name}-${i}`} className={styles.fontItem}>
+                    <span className={styles.fontSample} style={{ fontFamily: `'${f.name}'` }}>
+                      {f.name}
+                    </span>
+                    <AdminButton
+                      size="sm"
+                      variant="dangerGhost"
+                      iconOnly
+                      aria-label={`Retirer la police ${f.name}`}
+                      onClick={() => removeFont(i)}
+                    >
+                      <Trash2 size={14} aria-hidden="true" />
+                    </AdminButton>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </AdminSection>
 
-          <div style={{ borderTop: '1px solid #eee', paddingTop: 12 }}>
-            <h4>Titre 1</h4>
-            <div className={styles.typographyRow}>
-              <select value={h1Family} onChange={(e) => updateTypography('h1', { family: e.target.value })}>
-                <option value="">(hérité)</option>
-                <option value={'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'}>System</option>
-                {fontOptions.map((fo: any) => <option key={fo.value} value={fo.value} style={{ fontFamily: fo.value }}>{fo.label}</option>)}
-              </select>
-              <input type="text" value={h1Size} placeholder="32px" onChange={(e) => updateTypography('h1', { size: e.target.value })} />
-              <input type="number" value={h1Weight} onChange={(e) => updateTypography('h1', { weight: String(e.target.value) })} />
-            </div>
-
-            <h4>Titre 2</h4>
-            <div className={styles.typographyRow}>
-              <select value={h2Family} onChange={(e) => updateTypography('h2', { family: e.target.value })}>
-                <option value="">(hérité)</option>
-                <option value={'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'}>System</option>
-                {fontOptions.map((fo: any) => <option key={fo.value} value={fo.value} style={{ fontFamily: fo.value }}>{fo.label}</option>)}
-              </select>
-              <input type="text" value={h2Size} placeholder="28px" onChange={(e) => updateTypography('h2', { size: e.target.value })} />
-              <input type="number" value={h2Weight} onChange={(e) => updateTypography('h2', { weight: String(e.target.value) })} />
-            </div>
-
-            <h4>Titre 3</h4>
-            <div className={styles.typographyRow}>
-              <select value={h3Family} onChange={(e) => updateTypography('h3', { family: e.target.value })}>
-                <option value="">(hérité)</option>
-                <option value={'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'}>System</option>
-                {fontOptions.map((fo: any) => <option key={fo.value} value={fo.value} style={{ fontFamily: fo.value }}>{fo.label}</option>)}
-              </select>
-              <input type="text" value={h3Size} placeholder="22px" onChange={(e) => updateTypography('h3', { size: e.target.value })} />
-              <input type="number" value={h3Weight} onChange={(e) => updateTypography('h3', { weight: String(e.target.value) })} />
-            </div>
-
-            <h4>Titre 4</h4>
-            <div className={styles.typographyRow}>
-              <select value={h4Family} onChange={(e) => updateTypography('h4', { family: e.target.value })}>
-                <option value="">(hérité)</option>
-                <option value={'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'}>System</option>
-                {fontOptions.map((fo: any) => <option key={fo.value} value={fo.value} style={{ fontFamily: fo.value }}>{fo.label}</option>)}
-              </select>
-              <input type="text" value={h4Size} placeholder="18px" onChange={(e) => updateTypography('h4', { size: e.target.value })} />
-              <input type="number" value={h4Weight} onChange={(e) => updateTypography('h4', { weight: String(e.target.value) })} />
-            </div>
-
-            <h4>Titre 5</h4>
-            <div className={styles.typographyRow}>
-              <select value={h5Family} onChange={(e) => updateTypography('h5', { family: e.target.value })}>
-                <option value="">(hérité)</option>
-                <option value={'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'}>System</option>
-                {fontOptions.map((fo: any) => <option key={fo.value} value={fo.value} style={{ fontFamily: fo.value }}>{fo.label}</option>)}
-              </select>
-              <input type="text" value={h5Size} placeholder="16px" onChange={(e) => updateTypography('h5', { size: e.target.value })} />
-              <input type="number" value={h5Weight} onChange={(e) => updateTypography('h5', { weight: String(e.target.value) })} />
-            </div>
-
-            <h4>Paragraphe</h4>
-            <div className={styles.typographyRow}>
-              <select value={pFamily} onChange={(e) => updateTypography('p', { family: e.target.value })}>
-                <option value="">(hérité)</option>
-                <option value={'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial'}>System</option>
-                {fontOptions.map((fo: any) => <option key={fo.value} value={fo.value} style={{ fontFamily: fo.value }}>{fo.label}</option>)}
-              </select>
-              <input type="text" value={pSize} placeholder="16px" onChange={(e) => updateTypography('p', { size: e.target.value })} />
-              <input type="number" value={pWeight} onChange={(e) => updateTypography('p', { weight: String(e.target.value) })} />
-            </div>
-          </div>
-        </div>
+          {TYPO_ROWS.map((row) => (
+            <AdminSection key={row.key} title={row.label} columns={3}>
+              <SelectField
+                label="Police"
+                value={local.typography?.[row.key]?.family || ''}
+                onChange={(v) => updateTypography(row.key, { family: v })}
+                options={fontOptions}
+              />
+              <TextField
+                label="Taille"
+                value={local.typography?.[row.key]?.size || ''}
+                onChange={(v) => updateTypography(row.key, { size: v })}
+                placeholder={row.placeholder}
+                hint="px, rem ou clamp()"
+              />
+              <TextField
+                label="Graisse"
+                value={String(local.typography?.[row.key]?.weight ?? row.defaultWeight)}
+                onChange={(v) => updateTypography(row.key, { weight: v })}
+                placeholder={String(row.defaultWeight)}
+              />
+            </AdminSection>
+          ))}
+        </>
       )}
 
-      {tab === 'background' && (() => {
-        const bgStyle = (local.background?.style || 'none') as BackgroundStyle;
-        const bgOpacity = local.background?.opacity != null ? local.background.opacity : 0.08;
-        const bgImageUrl = local.background?.imageUrl || '';
-        const bgImageMode = local.background?.imageMode || 'repeat';
+      {/* ── Fond ─────────────────────────────────────────────────────── */}
+      {tab === 'background' && (
+        <>
+          <AdminNotice>
+            L’effet se superpose aux couleurs de blocs, comme une texture visible sur
+            toute la page.
+          </AdminNotice>
 
-        const presets: { value: BackgroundStyle; label: string; desc: string }[] = [
-          { value: 'none', label: 'Aucun', desc: 'Fond uni sans effet' },
-          { value: 'grain', label: 'Grain', desc: 'Texture granuleuse subtile, effet argentique' },
-          { value: 'dots', label: 'Points', desc: 'Grille de micro-points, style minimaliste' },
-          { value: 'lines', label: 'Lignes', desc: 'Hachures diagonales discrètes, style graphique' },
-          { value: 'custom', label: 'Image personnalisée', desc: 'Importez votre propre texture ou motif' },
-        ];
-
-        return (
-          <div className={styles.panel}>
-            <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>
-              L'effet de fond s'applique par-dessus les couleurs de blocs, comme une texture visible sur toute la page.
-            </p>
-
-            {/* Style selector */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 20 }}>
-              {presets.map((p) => (
-                <button
-                  key={p.value}
-                  type="button"
-                  onClick={() => updateBackground({ style: p.value })}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    border: `2px solid ${bgStyle === p.value ? 'var(--fg, #111)' : '#e6e6e6'}`,
-                    background: bgStyle === p.value ? 'var(--fg, #111)' : '#fff',
-                    color: bgStyle === p.value ? '#fff' : 'inherit',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontSize: 13,
-                  }}
-                >
-                  <div style={{ fontWeight: 600, marginBottom: 2 }}>{p.label}</div>
-                  <div style={{ fontSize: 11, opacity: 0.7 }}>{p.desc}</div>
-                </button>
-              ))}
+          <AdminSection title="Texture">
+            <div className={styles.presetGrid}>
+              {BACKGROUND_PRESETS.map((p) => {
+                const active = (local.background?.style || 'none') === p.value;
+                return (
+                  <button
+                    key={p.value}
+                    type="button"
+                    className={`${styles.preset} ${active ? styles.presetActive : ''}`}
+                    onClick={() => updateBackground({ style: p.value })}
+                    aria-pressed={active}
+                  >
+                    <span className={styles.presetLabel}>{p.label}</span>
+                    <span className={styles.presetDesc}>{p.desc}</span>
+                  </button>
+                );
+              })}
             </div>
+          </AdminSection>
 
-            {/* Opacity slider */}
-            {bgStyle !== 'none' && (
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--muted)', marginBottom: 6 }}>
-                  <span>Opacité de l'effet</span>
-                  <span style={{ fontWeight: 600, color: 'inherit' }}>{Math.round(bgOpacity * 100)}%</span>
-                </label>
-                <input
-                  type="range" min={0} max={0.4} step={0.01}
-                  value={bgOpacity}
-                  onChange={(e) => updateBackground({ opacity: Number(e.target.value) })}
-                  style={{ width: '100%', accentColor: 'var(--fg, #111)' }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
-                  <span>Invisible</span><span>Très visible</span>
-                </div>
-              </div>
-            )}
+          {(local.background?.style || 'none') !== 'none' ? (
+            <AdminSection title="Intensité">
+              <SliderField
+                label="Opacité de l’effet"
+                value={Math.round((local.background?.opacity ?? 0.08) * 100)}
+                onChange={(v) => updateBackground({ opacity: v / 100 })}
+                min={0}
+                max={40}
+                unit="%"
+              />
+            </AdminSection>
+          ) : null}
 
-            {/* Custom image options */}
-            {bgStyle === 'custom' && (
-              <div style={{ borderTop: '1px solid #eee', paddingTop: 14, marginTop: 4 }}>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontSize: 13, color: 'var(--muted)', marginBottom: 6 }}>Importer une image de fond</label>
-                  <input type="file" accept="image/*" onChange={handleBgImageUpload} disabled={uploadingBg} />
-                  {uploadingBg && <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 8 }}>Upload…</span>}
-                  {bgImageUrl && (
-                    <div style={{ marginTop: 8 }}>
-                      <img src={bgImageUrl} alt="" style={{ maxWidth: 160, maxHeight: 80, borderRadius: 6, objectFit: 'cover', border: '1px solid #eee' }} />
-                      <button type="button" style={{ display: 'block', marginTop: 4, fontSize: 12, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={() => updateBackground({ imageUrl: '' })}>Supprimer l'image</button>
-                    </div>
-                  )}
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: 'block', fontSize: 13, color: 'var(--muted)', marginBottom: 6 }}>Mode d'affichage</label>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    {([{ value: 'repeat', label: 'Motif répété' }, { value: 'fixed', label: 'Image fixe (site défile)' }] as const).map(opt => (
-                      <button key={opt.value} type="button" onClick={() => updateBackground({ imageMode: opt.value })}
-                        style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13, cursor: 'pointer', background: bgImageMode === opt.value ? '#111' : '#fff', color: bgImageMode === opt.value ? '#fff' : 'inherit' }}>
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+          {local.background?.style === 'custom' ? (
+            <AdminSection
+              title="Image personnalisée"
+              actions={
+                <AdminButton
+                  size="sm"
+                  variant="secondary"
+                  loading={uploadingBg}
+                  leadingIcon={<Upload size={14} aria-hidden="true" />}
+                  onClick={() => bgInputRef.current?.click()}
+                >
+                  Importer
+                </AdminButton>
+              }
+            >
+              <input
+                ref={bgInputRef}
+                type="file"
+                accept="image/*"
+                className={styles.hiddenInput}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleBgUpload(f);
+                  e.target.value = '';
+                }}
+              />
+              {local.background?.imageUrl ? (
+                <AdminCard
+                  actions={
+                    <AdminButton
+                      size="sm"
+                      variant="dangerGhost"
+                      leadingIcon={<Trash2 size={14} aria-hidden="true" />}
+                      onClick={() => updateBackground({ imageUrl: '' })}
+                    >
+                      Retirer
+                    </AdminButton>
+                  }
+                >
+                  <img
+                    src={local.background.imageUrl}
+                    alt=""
+                    className={styles.bgPreview}
+                  />
+                </AdminCard>
+              ) : (
+                <AdminNotice tone="warning">
+                  Aucune image importée — la texture personnalisée ne s’affichera pas.
+                </AdminNotice>
+              )}
 
-            {message && <div style={{ fontSize: 13, marginTop: 8, color: message.includes('mportée') ? 'green' : '#dc2626' }}>{message}</div>}
-          </div>
-        );
-      })()}
-    </Modal>
+              <SegmentedField
+                label="Mode d’affichage"
+                value={local.background?.imageMode || 'repeat'}
+                onChange={(v) => updateBackground({ imageMode: v })}
+                options={[
+                  { value: 'repeat', label: 'Motif répété' },
+                  { value: 'fixed', label: 'Image fixe' },
+                ]}
+              />
+            </AdminSection>
+          ) : null}
+        </>
+      )}
+
+      {/* ── Interface admin ──────────────────────────────────────────── */}
+      {tab === 'admin' && (
+        <>
+          <AdminNotice>
+            L’espace d’administration reprend par défaut la couleur du bouton principal
+            du site. Vous pouvez la découpler ici sans toucher au site public.
+          </AdminNotice>
+
+          <AdminSection title="Accent">
+            <ToggleField
+              label="Suivre la couleur des boutons du site"
+              checked={local.admin?.followSiteAccent !== false}
+              onChange={(v) => updateAdmin({ followSiteAccent: v })}
+              hint="Décoché, l’admin utilise sa propre couleur d’accent."
+            />
+            {local.admin?.followSiteAccent === false ? (
+              <ColorField
+                label="Accent de l’interface admin"
+                value={local.admin?.accent}
+                onChange={(v) => updateAdmin({ accent: v })}
+                fallback="#213431"
+                contrastAgainst={local.admin?.accentInk || '#ffffff'}
+              />
+            ) : null}
+            {local.admin?.followSiteAccent === false ? (
+              <ColorField
+                label="Texte sur l’accent"
+                value={local.admin?.accentInk}
+                onChange={(v) => updateAdmin({ accentInk: v })}
+                fallback="#ffffff"
+                contrastAgainst={local.admin?.accent || '#213431'}
+              />
+            ) : null}
+          </AdminSection>
+
+          <AdminSection title="Densité">
+            <SegmentedField
+              label="Taille des contrôles"
+              value={local.admin?.density || 'comfortable'}
+              onChange={(v) => updateAdmin({ density: v as AdminUiSettings['density'] })}
+              options={[
+                { value: 'comfortable', label: 'Confort' },
+                { value: 'compact', label: 'Compact' },
+              ]}
+              hint="Compact réduit la hauteur des champs et des boutons d’environ 15 %."
+            />
+          </AdminSection>
+        </>
+      )}
+    </AdminModal>
   );
 }

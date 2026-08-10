@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import PageHeader from '../../components/PageHeader/PageHeader';
 import AdminLogin from '../../components/AdminLogin/AdminLogin';
 import AdminTitleBlock from '../../components/AdminTitleBlock/AdminTitleBlock';
-import AdminNav from '../../components/AdminNav/AdminNav';
+import AdminDashboard from '../../components/admin/Dashboard/AdminDashboard';
+import AdminGate from '../../components/admin/Dashboard/AdminGate';
 import { getPageSeo, buildMetadataFromSeo } from '../../lib/pageSeo';
 import JsonLdScript from '../../components/SeoCommandCenter/JsonLdScript';
 import { supabaseAdmin } from '../../lib/supabaseAdmin';
@@ -15,39 +15,59 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const TITLE_STYLE_KEYS = ['h1', 'h2', 'h3', 'h4', 'h5', 'p'] as const;
-type AdminTitleStyle = typeof TITLE_STYLE_KEYS[number];
+type AdminTitleStyle = (typeof TITLE_STYLE_KEYS)[number];
 
 export default async function AdminPage() {
   let adminTitle = 'Administration';
   let adminTitleStyle: AdminTitleStyle = 'h1';
   let adminTitleFontSize: number | null = null;
+
   try {
     if (supabaseAdmin) {
-      const { data: titleRow } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'admin_page_title').maybeSingle();
-      if (titleRow?.value && typeof titleRow.value === 'string') adminTitle = titleRow.value;
-      const { data: styleRow } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'admin_page_title_style').maybeSingle();
-      if (styleRow?.value && typeof styleRow.value === 'string' && TITLE_STYLE_KEYS.includes(styleRow.value as AdminTitleStyle)) {
-        adminTitleStyle = styleRow.value as AdminTitleStyle;
+      // Une seule requête pour les trois clés — l'ancienne version en faisait
+      // trois en série avant le premier rendu.
+      const { data } = await supabaseAdmin
+        .from('site_settings')
+        .select('key,value')
+        .in('key', [
+          'admin_page_title',
+          'admin_page_title_style',
+          'admin_page_title_font_size',
+        ] as any);
+
+      const map: Record<string, string> = {};
+      (data || []).forEach((r: any) => {
+        if (r && typeof r.key === 'string') map[r.key] = String(r.value ?? '');
+      });
+
+      if (map.admin_page_title) adminTitle = map.admin_page_title;
+      if (TITLE_STYLE_KEYS.includes(map.admin_page_title_style as AdminTitleStyle)) {
+        adminTitleStyle = map.admin_page_title_style as AdminTitleStyle;
       }
-      const { data: fsRow } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'admin_page_title_font_size').maybeSingle();
-      if (fsRow?.value != null) {
-        const n = Number(fsRow.value);
-        if (!isNaN(n) && n >= 8 && n <= 72) adminTitleFontSize = n;
-      }
+      const n = Number(map.admin_page_title_font_size);
+      if (!Number.isNaN(n) && n >= 8 && n <= 72) adminTitleFontSize = n;
     }
-  } catch (_) {}
+  } catch (_) {
+    // Réglages indisponibles : on retombe sur les valeurs par défaut
+  }
 
   return (
-    <section>
+    <>
       <JsonLdScript slug="admin" />
-      <PageHeader page="admin" title="Admin" subtitle="Panneau d'administration" bgImage="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1600&q=80" />
-      <div style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' as const }}>
-        <div className="container" style={{ padding: '1.5rem 0' }}>
-          <AdminTitleBlock initialTitle={adminTitle} initialTitleStyle={adminTitleStyle} initialTitleFontSize={adminTitleFontSize} />
-          <AdminLogin />
-          <AdminNav />
-        </div>
-      </div>
-    </section>
+      {/* Connecté : tableau de bord. Sinon : formulaire de connexion. */}
+      <AdminGate
+        signedIn={<AdminDashboard title={adminTitle} />}
+        signedOut={
+          <>
+            <AdminTitleBlock
+              initialTitle={adminTitle}
+              initialTitleStyle={adminTitleStyle}
+              initialTitleFontSize={adminTitleFontSize}
+            />
+            <AdminLogin />
+          </>
+        }
+      />
+    </>
   );
 }

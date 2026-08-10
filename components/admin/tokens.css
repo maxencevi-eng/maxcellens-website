@@ -1,0 +1,132 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Design tokens de l'espace d'administration.
+
+   SOURCE UNIQUE. Toute couleur, tout rayon, tout espacement et tout z-index
+   de l'admin vient d'ici. Ne jamais écrire de valeur en dur dans un composant
+   admin — ajouter un token.
+
+   Thème : clair, calé sur l'identité du site (blanc cassé chaud + vert sombre).
+   L'accent est DÉRIVÉ du centre de style : changer la couleur des boutons du
+   site dans « Style du site » recolore l'admin.
+
+   Compatibilité : pas de color-mix() — la browserslist du projet descend à
+   Chrome 87 / Safari 14 / Firefox 78. Les nuances sont donc explicites.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Surfaces ─────────────────────────────────────────────────────────── */
+  /** Fond des zones admin larges (coque, tableau de bord) */
+  --adm-canvas: #f3f1ec;
+  /** Fond des panneaux, modales, cartes */
+  --adm-surface: #ffffff;
+  /** Fond légèrement en retrait : entêtes de section, lignes alternées */
+  --adm-surface-sunken: #f7f6f2;
+  /** Fond des éléments interactifs au repos (champs, boutons secondaires) */
+  --adm-surface-field: #ffffff;
+  /** Survol d'une surface interactive */
+  --adm-surface-hover: #f0eee8;
+  /** Élément sélectionné / actif */
+  --adm-surface-active: #e8e5dd;
+
+  /* ── Texte ────────────────────────────────────────────────────────────── */
+  --adm-ink: #1e2b28;
+  --adm-ink-soft: #4a5a56;
+  --adm-ink-muted: #7b8783;
+  --adm-ink-inverse: #ffffff;
+
+  /* ── Bordures ─────────────────────────────────────────────────────────── */
+  --adm-border: #e2ded4;
+  --adm-border-strong: #cfc9bb;
+  /** Bordure d'un champ au focus */
+  --adm-border-focus: var(--adm-accent);
+
+  /* ── Accent — dérivé du centre de style du site ───────────────────────── */
+  /** Reprend la couleur des boutons principaux du site (Style du site > Boutons) */
+  --adm-accent: var(--button-1-bg, #213431);
+  --adm-accent-ink: var(--button-1-color, #ffffff);
+  /** Teinte translucide de l'accent, pour les fonds d'état actif */
+  --adm-accent-wash: rgba(33, 52, 49, 0.08);
+  --adm-accent-ring: rgba(33, 52, 49, 0.22);
+
+  /* ── États sémantiques ────────────────────────────────────────────────── */
+  --adm-danger: #b4342a;
+  --adm-danger-wash: rgba(180, 52, 42, 0.09);
+  --adm-danger-ink: #ffffff;
+  --adm-success: #2f6b45;
+  --adm-success-wash: rgba(47, 107, 69, 0.1);
+  --adm-warning: #9a6314;
+  --adm-warning-wash: rgba(154, 99, 20, 0.1);
+
+  /* ── Géométrie ────────────────────────────────────────────────────────── */
+  --adm-radius-xs: 6px;
+  --adm-radius-sm: 9px;
+  --adm-radius: 13px;
+  --adm-radius-lg: 20px;
+  --adm-radius-xl: 26px;
+  --adm-radius-pill: 999px;
+
+  /* ── Espacement — échelle unique ──────────────────────────────────────── */
+  --adm-space-1: 4px;
+  --adm-space-2: 8px;
+  --adm-space-3: 12px;
+  --adm-space-4: 16px;
+  --adm-space-5: 24px;
+  --adm-space-6: 32px;
+  --adm-space-7: 48px;
+
+  /* ── Typographie ──────────────────────────────────────────────────────── */
+  --adm-font: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --adm-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --adm-text-xs: 11px;
+  --adm-text-sm: 12.5px;
+  --adm-text-base: 14px;
+  --adm-text-md: 15px;
+  --adm-text-lg: 17px;
+  --adm-text-xl: 21px;
+  --adm-text-2xl: 26px;
+
+  /* ── Élévation ────────────────────────────────────────────────────────── */
+  --adm-shadow-sm: 0 1px 2px rgba(30, 43, 40, 0.06);
+  --adm-shadow: 0 4px 14px rgba(30, 43, 40, 0.08);
+  --adm-shadow-lg: 0 12px 32px rgba(30, 43, 40, 0.12);
+  --adm-shadow-panel: 0 24px 60px rgba(30, 43, 40, 0.18);
+  --adm-shadow-focus: 0 0 0 3px var(--adm-accent-ring);
+
+  /* ── Empilement — remplace les 13 valeurs historiques ─────────────────── */
+  --adm-z-toolbar: 4000;
+  --adm-z-sidebar: 5000;
+  --adm-z-overlay: 6000;
+  --adm-z-modal: 6001;
+  --adm-z-popover: 6500;
+  --adm-z-toast: 7000;
+
+  /* ── Mouvement ────────────────────────────────────────────────────────── */
+  --adm-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --adm-duration-fast: 120ms;
+  --adm-duration: 200ms;
+  --adm-duration-slow: 320ms;
+
+  /* ── Densité — pilotée par « Style du site > Interface admin » ────────── */
+  /** 1 = confort, 0.85 = compact. Multiplie les paddings des contrôles. */
+  --adm-density: 1;
+  --adm-control-height: calc(38px * var(--adm-density));
+  --adm-control-padding-x: calc(12px * var(--adm-density));
+
+  /* ── Coque admin ──────────────────────────────────────────────────────── */
+  --adm-sidebar-width: 320px;
+}
+
+/* Densité compacte */
+:root[data-adm-density='compact'] {
+  --adm-density: 0.85;
+}
+
+/* Respect des préférences d'accessibilité */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --adm-duration-fast: 1ms;
+    --adm-duration: 1ms;
+    --adm-duration-slow: 1ms;
+  }
+}

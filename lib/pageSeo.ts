@@ -4,6 +4,7 @@
  */
 
 import type { Metadata } from 'next';
+import { SITE_URL, canonicalForSlug } from './siteUrl';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 
@@ -37,7 +38,11 @@ function toPublicSeoImageUrl(path: string | null | undefined): string | undefine
 
 /**
  * Récupère les paramètres SEO d'une page via fetch direct PostgREST (côté serveur uniquement).
- * Utilise cache: 'no-store' pour toujours lire les données fraîches depuis Supabase.
+ *
+ * Le cache était en 'no-store', ce qui sortait chaque page de la génération
+ * statique : toutes les routes devenaient rendues à la demande, avec deux
+ * appels Supabase par visite de robot. On revalide toutes les 5 minutes —
+ * un changement SEO se propage vite, sans pénaliser l'exploration.
  */
 export async function getPageSeo(slug: string): Promise<PageSeoRow | null> {
   if (!slug || !SUPABASE_URL) return null;
@@ -52,7 +57,7 @@ export async function getPageSeo(slug: string): Promise<PageSeoRow | null> {
         apikey: apiKey,
         Authorization: `Bearer ${apiKey}`,
       },
-      cache: 'no-store',
+      next: { revalidate: 300 },
     });
     if (!resp.ok) return null;
     const data = await resp.json();
@@ -71,10 +76,13 @@ export function buildMetadataFromSeo(
   baseUrl?: string
 ): Metadata | null {
   if (!seo) return null;
-  const base = baseUrl ?? process.env.NEXT_PUBLIC_SITE_URL ?? '';
+  // Toujours une canonique : `baseUrl` n'est plus qu'une surcharge de test,
+  // le repli est l'URL publique du site (voir lib/siteUrl.ts).
   const canonical = seo.canonical_url
     ? seo.canonical_url
-    : base ? `${base.replace(/\/$/, '')}/${seo.page_slug === 'home' ? '' : seo.page_slug}` : undefined;
+    : baseUrl
+      ? `${baseUrl.replace(/\/+$/, '')}/${seo.page_slug === 'home' ? '' : seo.page_slug}`.replace(/\/+$/, '')
+      : canonicalForSlug(seo.page_slug);
   const ogImage = toPublicSeoImageUrl(seo.og_image_path);
   const twitterImage = toPublicSeoImageUrl(seo.twitter_image_path);
 
@@ -111,6 +119,51 @@ export function buildMetadataFromSeo(
   };
 
   return metadata;
+}
+
+/**
+ * Métadonnées complètes d'une page du site.
+ *
+ * À utiliser dans `generateMetadata` à la place du couple
+ * `getPageSeo` + `buildMetadataFromSeo`. La différence tient à ce qui se passe
+ * quand aucune ligne SEO n'existe : l'ancien code retombait sur un simple
+ * `{ title }`, donc sans description NI URL canonique. Une page sans canonique
+ * laisse Google en choisir une — c'est exactement ce que signalait la Search
+ * Console.
+ *
+ * Ici, la canonique et les directives d'indexation sont toujours présentes ;
+ * les réglages du SEO Command Center viennent enrichir par-dessus.
+ */
+export async function buildPageMetadata(
+  slug: PageSeoSlug | string,
+  fallback: { title: string; description?: string }
+): Promise<Metadata> {
+  const seo = await getPageSeo(slug);
+  const built = buildMetadataFromSeo(seo);
+  const canonical = canonicalForSlug(slug);
+
+  if (built) {
+    return {
+      ...built,
+      // Une ligne SEO sans `canonical_url` ni base valide ne doit pas pouvoir
+      // produire une page sans canonique.
+      alternates: built.alternates?.canonical ? built.alternates : { canonical },
+    };
+  }
+
+  return {
+    title: fallback.title,
+    description: fallback.description,
+    alternates: { canonical },
+    robots: { index: true, follow: true },
+    openGraph: {
+      title: fallback.title,
+      description: fallback.description,
+      url: canonical,
+      type: 'website',
+      siteName: 'Maxcellens',
+    },
+  };
 }
 
 /** Slugs des pages éditables dans le SEO Command Center. */

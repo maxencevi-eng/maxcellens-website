@@ -1,28 +1,20 @@
 "use client";
-import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type TransitionSettings = {
-  enabled: boolean;
-  overlayColor: string;
-  duration: number; // seconds (0.3 – 1.2)
-  mode: 'standard' | 'seamless';
-  maxWait: number;  // seconds — délai max avant ouverture forcée (0.5 – 5)
-};
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  DEFAULT_TRANSITION_SETTINGS,
+  normalizeTransitionSettings,
+  type TransitionSettings,
+} from './transitionSettings';
 
-const defaultSettings: TransitionSettings = {
-  enabled: true,
-  overlayColor: '#172622',
-  duration: 0.6,
-  mode: 'standard',
-  maxWait: 2,
-};
+export type { TransitionSettings };
 
 const TransitionContext = createContext<{
   settings: TransitionSettings;
   setSettings: (s: TransitionSettings) => void;
   saveSettings: (s?: TransitionSettings) => Promise<void>;
 }>({
-  settings: defaultSettings,
+  settings: DEFAULT_TRANSITION_SETTINGS,
   setSettings: () => {},
   saveSettings: async () => {},
 });
@@ -32,34 +24,33 @@ export function useTransitionSettings() {
 }
 
 export default function TransitionProvider({ children }: { children: React.ReactNode }) {
-  const [settings, _setSettings] = useState<TransitionSettings>(defaultSettings);
+  const [settings, setSettings] = useState<TransitionSettings>(DEFAULT_TRANSITION_SETTINGS);
 
   useEffect(() => {
     let mounted = true;
-    async function load() {
+
+    (async () => {
       try {
         const resp = await fetch('/api/admin/site-settings?keys=page_transitions');
         if (!resp.ok) return;
         const json = await resp.json();
         const raw = json?.settings?.page_transitions;
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (mounted) _setSettings({ ...defaultSettings, ...parsed });
+        if (raw && mounted) {
+          setSettings(normalizeTransitionSettings(JSON.parse(raw)));
         }
       } catch (e) {
         console.warn('Failed to load page_transitions', e);
       }
-    }
-    load();
+    })();
 
-    // Listen for admin updates
+    // Mise à jour depuis l'éditeur admin, sans rechargement
     function onUpdate(e: Event) {
       const detail = (e as CustomEvent).detail;
-      if (detail?.key === 'page_transitions' && detail?.value) {
-        try {
-          const parsed = JSON.parse(detail.value);
-          _setSettings({ ...defaultSettings, ...parsed });
-        } catch {}
+      if (detail?.key !== 'page_transitions' || !detail?.value) return;
+      try {
+        setSettings(normalizeTransitionSettings(JSON.parse(detail.value)));
+      } catch {
+        // valeur illisible : on conserve les réglages courants
       }
     }
     window.addEventListener('site-settings-updated', onUpdate);
@@ -69,26 +60,32 @@ export default function TransitionProvider({ children }: { children: React.React
     };
   }, []);
 
-  async function saveSettings(s?: TransitionSettings) {
-    const toSave = s || settings;
-    try {
-      await fetch('/api/admin/site-settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'page_transitions', value: JSON.stringify(toSave) }),
-      });
-      // Notify other components
-      window.dispatchEvent(new CustomEvent('site-settings-updated', {
-        detail: { key: 'page_transitions', value: JSON.stringify(toSave) },
-      }));
-    } catch (e) {
-      console.warn('saveSettings (transitions) failed', e);
-    }
-  }
-
-  return (
-    <TransitionContext.Provider value={{ settings, setSettings: _setSettings, saveSettings }}>
-      {children}
-    </TransitionContext.Provider>
+  const saveSettings = useCallback(
+    async (s?: TransitionSettings) => {
+      const toSave = s || settings;
+      const payload = JSON.stringify(toSave);
+      try {
+        await fetch('/api/admin/site-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'page_transitions', value: payload }),
+        });
+        window.dispatchEvent(
+          new CustomEvent('site-settings-updated', {
+            detail: { key: 'page_transitions', value: payload },
+          })
+        );
+      } catch (e) {
+        console.warn('saveSettings (transitions) failed', e);
+      }
+    },
+    [settings]
   );
+
+  const value = useMemo(
+    () => ({ settings, setSettings, saveSettings }),
+    [settings, saveSettings]
+  );
+
+  return <TransitionContext.Provider value={value}>{children}</TransitionContext.Provider>;
 }

@@ -1,0 +1,132 @@
+.toolbar {
+  position: absolute;
+  top: var(--adm-space-3);
+  right: var(--adm-space-3);
+  z-index: var(--adm-z-toolbar);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  box-shadow: var(--adm-shadow);
+  font-family: var(--adm-font);
+  /* Discrète tant que le bloc n'est pas survolé, pour ne pas polluer l'aperçu */
+  opacity: 0.4;
+  transition: opacity var(--adm-duration) var(--adm-ease);
+}
+
+.toolbar:hover,
+.toolbar:focus-within,
+:global(.adm-block):hover > .toolbar {
+  opacity: 1;
+}
+
+/* Ancrages alternatifs */
+.topLeft { right: auto; left: var(--adm-space-3); }
+.bottomRight { top: auto; bottom: var(--adm-space-3); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 30px;
+  min-width: 30px;
+  padding: 0 var(--adm-space-2);
+  border: none;
+  border-radius: var(--adm-radius-xs);
+  background: transparent;
+  color: var(--adm-ink-soft);
+  font-family: inherit;
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--adm-duration) var(--adm-ease),
+              color var(--adm-duration) var(--adm-ease);
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--adm-surface-hover);
+  color: var(--adm-ink);
+}
+
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn:focus-visible { outline: none; box-shadow: var(--adm-shadow-focus); }
+
+.btnPrimary {
+  background: var(--adm-accent);
+  color: var(--adm-accent-ink);
+}
+.btnPrimary:hover:not(:disabled) {
+  background: var(--adm-accent);
+  color: var(--adm-accent-ink);
+  filter: brightness(1.12);
+}
+
+.btnDanger { color: var(--adm-danger); }
+.btnDanger:hover:not(:disabled) { background: var(--adm-danger-wash); color: var(--adm-danger); }
+
+.btnActive { background: var(--adm-accent-wash); color: var(--adm-ink); }
+
+.divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 3px 2px;
+  background: var(--adm-border);
+}
+
+/* Étiquette du bloc, à gauche des actions */
+.tag {
+  padding: 0 var(--adm-space-2);
+  font-size: var(--adm-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--adm-ink-muted);
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Bloc masqué : signalé visuellement à l'admin, invisible pour les visiteurs */
+:global(.adm-block-hidden) {
+  position: relative;
+  opacity: 0.45;
+  outline: 2px dashed var(--adm-border-strong);
+  outline-offset: -2px;
+}
+
+/* ── Mobile : repli en menu ───────────────────────────────────────────── */
+.menuWrap { position: relative; }
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 190px;
+  padding: var(--adm-space-1);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-border);
+  box-shadow: var(--adm-shadow-lg);
+  z-index: var(--adm-z-popover);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu .btn {
+  width: 100%;
+  justify-content: flex-start;
+  height: 36px;
+  padding: 0 var(--adm-space-3);
+}
+
+@media (max-width: 768px) {
+  .toolbar { opacity: 1; top: var(--adm-space-2); right: var(--adm-space-2); }
+  .tag { display: none; }
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import BuiltinPageBlocks from '../PageBuilder/BuiltinPageBlocks';
 import React, { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useSplashReady } from "../AnimateInView/AnimateInView";
 import { useScrollReveal, revealInitialStyle, revealVisibleStyle } from "../../hooks/useScrollReveal";
@@ -1107,7 +1108,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   const noRevealBlocks = new Set(['home_stats', 'clients', 'home_banner']);
 
   return (
-    <div style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))' }}>
+    <div className="page-blocks" style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))' }}>
       {blockOrderHome.map((blockId) =>
         sections[blockId] ? (
           noRevealBlocks.has(blockId)
@@ -1115,6 +1116,8 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
             : <RevealSection key={blockId}>{sections[blockId]}</RevealSection>
         ) : null
       )}
+      {/* Blocs ajoutés depuis l’administration, après les blocs intégrés */}
+      <BuiltinPageBlocks pageKey="home" />
       {editBlock && (
         <HomeBlockModal
           blockKey={editBlock}

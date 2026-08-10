@@ -1,0 +1,79 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--adm-space-2);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--adm-space-3);
+  padding: var(--adm-space-2) var(--adm-space-3);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface-sunken);
+  transition: opacity var(--adm-duration) var(--adm-ease),
+              border-color var(--adm-duration) var(--adm-ease);
+}
+
+/* Une entrée masquée reste lisible mais visiblement en retrait */
+.itemHidden {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.icon {
+  flex: 0 0 auto;
+  color: var(--adm-ink-muted);
+}
+
+.text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: var(--adm-text-base);
+  font-weight: 600;
+  color: var(--adm-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.href {
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-text-xs);
+  color: var(--adm-ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: var(--adm-radius-pill);
+  background: var(--adm-accent-wash);
+  color: var(--adm-ink-soft);
+  font-size: var(--adm-text-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+@media (max-width: 560px) {
+  .badge { display: none; }
+  .href { display: none; }
+}

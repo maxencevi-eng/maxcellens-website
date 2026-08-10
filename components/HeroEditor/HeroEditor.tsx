@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from '../admin';
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useRouter } from 'next/navigation';
@@ -202,10 +203,15 @@ export default function HeroEditor({ page, onClose }: Props) {
   }
 
   if (typeof document === 'undefined') return null;
-  return ReactDOM.createPortal(
-    <div className="modal-overlay-mobile" style={{ position:'fixed', inset:0, display:'flex', alignItems:'flex-start', justifyContent:'center', background:'rgba(0,0,0,0.5)', zIndex:50001, padding:'70px 16px 16px', overflowY:'auto' }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background:'#fff', width:760, maxWidth:'98%', padding:20, borderRadius:8, alignSelf:'flex-start' }}>
-        <h3 style={{ marginTop:0 }}>Modifier Hero — {page}</h3>
+  // AdminModal se portalise lui-même : plus besoin de createPortal ici.
+  return (
+    <AdminModal
+      title={`En-tête — ${page}`}
+      subtitle="Image, vidéo ou diaporama affiché en haut de la page."
+      size="lg"
+      onClose={onClose}
+      footer={null}
+    >
         <div style={{ display:'flex', gap:12 }}>
           <label style={{ display:'flex', gap:8, alignItems:'center' }}><input type="radio" checked={mode==='image'} onChange={() => setMode('image')} /> Image</label>
           <label style={{ display:'flex', gap:8, alignItems:'center' }}><input type="radio" checked={mode==='video'} onChange={() => setMode('video')} /> Vidéo</label>
@@ -313,8 +319,6 @@ export default function HeroEditor({ page, onClose }: Props) {
         </div>
         {error ? <div style={{ color:'crimson', marginTop:8 }}>{error}</div> : null}
         {success ? <div style={{ color:'green', marginTop:8 }}>{success}</div> : null}
-      </div>
-    </div>,
-    document.body
+    </AdminModal>
   );
 }

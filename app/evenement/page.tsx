@@ -1,14 +1,15 @@
 import type { Metadata } from 'next';
-import { getPageSeo, buildMetadataFromSeo } from '../../lib/pageSeo';
+import { buildPageMetadata } from '../../lib/pageSeo';
 import JsonLdScript from '../../components/SeoCommandCenter/JsonLdScript';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import EvenementPageClient from '../../components/EvenementPageClient/EvenementPageClient';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const seo = await getPageSeo('evenement');
-  const built = buildMetadataFromSeo(seo);
-  if (built) return built;
-  return { title: 'Évènement' };
+  return buildPageMetadata('evenement', {
+    title: 'Évènement',
+    description:
+      'Couverture photo et vidéo d’événements : séminaires, conférences, soirées d’entreprise.',
+  });
 }
 
 export default function Evenement() {

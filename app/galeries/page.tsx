@@ -1,14 +1,11 @@
 import type { Metadata } from 'next';
-import { getPageSeo, buildMetadataFromSeo } from '../../lib/pageSeo';
+import { buildPageMetadata } from '../../lib/pageSeo';
 import JsonLdScript from '../../components/SeoCommandCenter/JsonLdScript';
 import PageHeader from '../../components/PageHeader/PageHeader';
 import GaleriesPageClient from '../../components/GaleriesPageClient/GaleriesPageClient';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const seo = await getPageSeo('galeries');
-  const built = buildMetadataFromSeo(seo);
-  if (built) return built;
-  return { title: 'Galeries', description: 'Galeries — Maxcellens' };
+  return buildPageMetadata('galeries', { title: 'Galeries', description: 'Galeries photo et vidéo — Maxcellens' });
 }
 
 export default function GaleriesPage() {

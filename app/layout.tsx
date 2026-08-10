@@ -1,5 +1,10 @@
 // app/layout.tsx
 import '../styles/globals.css';
+// Tokens du design system admin — importés après globals.css pour que les
+// variables --adm-* puissent référencer celles du centre de style du site.
+import '../components/admin/tokens.css';
+// Normalise les corps de modales pas encore réécrits avec les primitives.
+import '../components/admin/legacy.css';
 import Header from '../components/Header/Header';
 import Container from '../components/Container/Container';
 import Footer from '../components/Footer/Footer';

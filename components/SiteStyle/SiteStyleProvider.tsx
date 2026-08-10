@@ -22,9 +22,20 @@ type ColorSettings = {
 
 type FontMeta = { name: string; url: string; style?: string; weight?: string };
 
-type TypographySettings = Record<
-  string,
-  { family?: string; size?: string; weight?: string }
+/** Niveaux de texte pilotables depuis le centre de style. */
+export type TypographyKey = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'p';
+
+/** Réglages propres à l'interface d'administration. */
+export type AdminUiSettings = {
+  /** true (défaut) : l'accent admin suit --button-1-bg du site. */
+  followSiteAccent?: boolean;
+  accent?: string;
+  accentInk?: string;
+  density?: 'comfortable' | 'compact';
+};
+
+type TypographySettings = Partial<
+  Record<TypographyKey, { family?: string; size?: string; weight?: string }>
 >;
 
 export type BackgroundStyle = 'none' | 'grain' | 'dots' | 'lines' | 'custom';
@@ -45,6 +56,8 @@ export type SiteStyle = {
   typography?: TypographySettings;
   fonts?: FontMeta[];
   background?: BackgroundSettings;
+  /** Apparence de l'espace d'administration (onglet « Interface admin »). */
+  admin?: AdminUiSettings;
 };
 
 const defaultState: SiteStyle = {};
@@ -134,36 +147,40 @@ export default function SiteStyleProvider({ children }: { children: React.ReactN
           return s;
         }
 
-        if (t.h1) {
-          if (t.h1.family) root.style.setProperty('--font-h1-family', quoteFamily(t.h1.family));
-          if (t.h1.size) root.style.setProperty('--font-h1-size', normSize(t.h1.size));
-          if (t.h1.weight) root.style.setProperty('--font-h1-weight', t.h1.weight);
+        // Une boucle plutôt que six blocs recopiés : ajouter un niveau de
+        // titre ne demande plus qu'une entrée dans TYPO_VARS.
+        const TYPO_VARS: Record<TypographyKey, string> = {
+          h1: 'h1', h2: 'h2', h3: 'h3', h4: 'h4', h5: 'h5', p: 'body',
+        };
+        (Object.keys(TYPO_VARS) as TypographyKey[]).forEach((key) => {
+          const conf = t[key];
+          if (!conf) return;
+          const varName = TYPO_VARS[key];
+          if (conf.family) {
+            root.style.setProperty(`--font-${varName}-family`, quoteFamily(conf.family));
+          }
+          if (conf.size) {
+            root.style.setProperty(`--font-${varName}-size`, normSize(conf.size) as string);
+          }
+          if (conf.weight) {
+            root.style.setProperty(`--font-${varName}-weight`, conf.weight);
+          }
+        });
+
+        // ── Interface admin ─────────────────────────────────────────────
+        // Par défaut l'accent admin dérive du bouton principal du site via
+        // var(--button-1-bg) déclaré dans tokens.css : on ne surcharge que si
+        // l'utilisateur a explicitement découplé les deux.
+        const admin = s.admin || {};
+        if (admin.followSiteAccent === false) {
+          if (admin.accent) root.style.setProperty('--adm-accent', admin.accent);
+          if (admin.accentInk) root.style.setProperty('--adm-accent-ink', admin.accentInk);
+        } else {
+          root.style.removeProperty('--adm-accent');
+          root.style.removeProperty('--adm-accent-ink');
         }
-        if (t.h2) {
-          if (t.h2.family) root.style.setProperty('--font-h2-family', quoteFamily(t.h2.family));
-          if (t.h2.size) root.style.setProperty('--font-h2-size', normSize(t.h2.size));
-          if (t.h2.weight) root.style.setProperty('--font-h2-weight', t.h2.weight);
-        }
-        if (t.h3) {
-          if (t.h3.family) root.style.setProperty('--font-h3-family', quoteFamily(t.h3.family));
-          if (t.h3.size) root.style.setProperty('--font-h3-size', normSize(t.h3.size));
-          if (t.h3.weight) root.style.setProperty('--font-h3-weight', t.h3.weight);
-        }
-        if (t.h4) {
-          if (t.h4.family) root.style.setProperty('--font-h4-family', quoteFamily(t.h4.family));
-          if (t.h4.size) root.style.setProperty('--font-h4-size', normSize(t.h4.size));
-          if (t.h4.weight) root.style.setProperty('--font-h4-weight', t.h4.weight);
-        }
-        if (t.h5) {
-          if (t.h5.family) root.style.setProperty('--font-h5-family', quoteFamily(t.h5.family));
-          if (t.h5.size) root.style.setProperty('--font-h5-size', normSize(t.h5.size));
-          if (t.h5.weight) root.style.setProperty('--font-h5-weight', t.h5.weight);
-        }
-        if (t.p) {
-          if (t.p.family) root.style.setProperty('--font-body-family', quoteFamily(t.p.family));
-          if (t.p.size) root.style.setProperty('--font-body-size', normSize(t.p.size));
-          if (t.p.weight) root.style.setProperty('--font-body-weight', t.p.weight);
-        }
+        if (admin.density === 'compact') root.setAttribute('data-adm-density', 'compact');
+        else root.removeAttribute('data-adm-density');
 
         // background overlay effect
         const bg = s.background || {};

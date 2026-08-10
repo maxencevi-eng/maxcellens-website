@@ -1,4 +1,12 @@
 "use client";
+import { AdminModal, AdminSection } from '../admin';
+import MenuItemsField from '../MenuEditModal/MenuItemsField';
+import {
+  applyMenuOrder,
+  buildMenuItems,
+  isItemVisible,
+  parseMenuOrder,
+} from '../MenuEditModal/menuItems';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AnimationImageRatio } from '../HomeBlocks/homeDefaults';
@@ -65,6 +73,56 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  /* ── Navigation du pied de page ──────────────────────────────────────────
+     Les entrées viennent du même module que les menus du site, de sorte
+     qu'une page créée depuis l'administration apparaisse aussi ici. */
+  const [footerPages, setFooterPages] = useState<{ slug: string; title: string }[]>([]);
+  const [footerOrder, setFooterOrder] = useState<string[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { supabase } = await import('../../lib/supabase');
+        const { data } = await supabase.auth.getSession();
+        const token = data?.session?.access_token;
+        const resp = await fetch('/api/pages', {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        const json = await resp.json();
+        if (mounted) {
+          setFooterPages((json?.pages || []).map((p: any) => ({ slug: p.slug, title: p.title })));
+        }
+      } catch (_) {}
+      try {
+        const r = await fetch('/api/admin/site-settings?keys=footerMenuOrder');
+        const s = r.ok ? (await r.json())?.settings || {} : {};
+        if (mounted) setFooterOrder(parseMenuOrder(s.footerMenuOrder));
+      } catch (_) {}
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const footerItems = applyMenuOrder(buildMenuItems(footerPages), footerOrder);
+
+  const footerVisibleMap: Record<string, boolean> = {};
+  for (const item of footerItems) {
+    footerVisibleMap[item.id] = isItemVisible(item, menuVisible as Record<string, boolean>);
+  }
+
+  function toggleFooterItem(id: string, next: boolean) {
+    setMenuVisible((prev) => ({ ...(prev as any), [id]: next }));
+  }
+
+  function moveFooterItem(id: string, direction: 'up' | 'down') {
+    const ids = footerItems.map((i) => i.id);
+    const i = ids.indexOf(id);
+    const j = direction === 'up' ? i - 1 : i + 1;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    setFooterOrder(ids);
+  }
 
   const [openEditor, setOpenEditor] = useState<null | 'col1' | 'bottom'>(null);
   const [banner, setBanner] = useState<{ url?: string; path?: string } | null>(null);
@@ -200,6 +258,8 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerColumn1', value: payloadCol1 }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBottomText', value: payloadBottom }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerMenuVisible', value: JSON.stringify(payloadMenu) }) }),
+        // Ordre des liens du pied de page, aligné sur celui affiché dans l'éditeur
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerMenuOrder', value: JSON.stringify(footerItems.map((i) => i.id)) }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBanner', value: JSON.stringify(banner || '') }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBannerFocal', value: JSON.stringify(bannerFocal || '') }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ key: 'footerBannerHeight', value: bannerHeight || '' }) }),
@@ -308,9 +368,13 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
   const clampHeight = (v: number) => Math.max(MIN_BANNER_HEIGHT, Math.min(MAX_BANNER_HEIGHT, v));
 
   return (
-    <div className={`${styles.overlay} modal-overlay-mobile`} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={styles.modal}>
-        <h3 style={{ marginTop: 0 }}>Modifier le footer</h3>
+    <AdminModal
+      title="Pied de page"
+      subtitle="Colonnes, bannière, navigation et style du footer."
+      size="lg"
+      onClose={onClose}
+      footer={null}
+    >
         <ModalTabs
           tabs={[
             { id: 'contenu', label: 'Contenu' },
@@ -463,19 +527,19 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
             </div>
           </>)}
 
-          {tab === 'navigation' && (<>
-            <div className={styles.visiblePanel}>
-              <div className={styles.visiblePanelTitle}>Éléments visibles</div>
-              <div className={styles.visiblePanelGrid}>
-                {(['realisation','evenement','corporate','portrait','animation','galleries','contact','admin','mentionsLegales','politiqueConfidentialite'] as (keyof MenuVisible)[]).map((k) => (
-                  <label key={k} className={styles.visiblePanelLabel}>
-                    <input type="checkbox" checked={!!menuVisible?.[k]} onChange={() => toggleKey(k)} />
-                    <span>{k}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </>)}
+          {tab === 'navigation' && (
+            <AdminSection
+              title="Liens du pied de page"
+              description="Mêmes entrées que le menu du site, y compris les pages créées depuis l’administration. Les flèches règlent l’ordre."
+            >
+              <MenuItemsField
+                items={footerItems}
+                visible={footerVisibleMap}
+                onToggle={toggleFooterItem}
+                onMove={moveFooterItem}
+              />
+            </AdminSection>
+          )}
 
           {tab === 'style' && (<>
             <div style={{ marginTop: 16, padding: '12px 14px', border: '1px solid #e0e0e3', borderRadius: 8, background: '#fafafa' }}>
@@ -526,7 +590,6 @@ export default function FooterEditModal({ onClose, onSaved }: { onClose: () => v
           </React.Suspense>
         ) : null}
 
-      </div>
-    </div>
+    </AdminModal>
   );
 }

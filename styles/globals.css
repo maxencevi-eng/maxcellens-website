@@ -67,7 +67,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Empêcher l'enregistrement / glisser-déposer des images (protection des photos du site) */
 img {
   -webkit-user-drag: none;
-  user-drag: none;
+  user-select: none;
   pointer-events: auto;
 }
 
@@ -125,7 +125,12 @@ img {
   margin-left: auto;
   margin-right: auto;
   width: 100%;
-  padding: 0;
+  /* Marge verticale : réglable dans Page > Dimensions & mise en page.
+     Était stockée en base sans jamais être appliquée (champ marginVertical). */
+  padding-top: var(--container-margin-y-desktop, 0px);
+  padding-bottom: var(--container-margin-y-desktop, 0px);
+  padding-left: 0;
+  padding-right: 0;
   background: var(--block-bg);
   box-sizing: border-box;
 }
@@ -134,7 +139,48 @@ img {
   .content-inner {
     max-width: min(var(--content-inner-max-width-mobile, 1200px), 100%);
     min-height: var(--content-inner-min-height-mobile, 0);
+    padding-top: var(--container-margin-y-mobile, 0px);
+    padding-bottom: var(--container-margin-y-mobile, 0px);
   }
+}
+
+/* Espace entre les sections d'une page : réglable dans Page > Dimensions.
+   Les variables --section-gap-* étaient écrites sur :root par
+   PageLayoutProvider mais consommées nulle part — le réglage n'avait aucun
+   effet. On applique une marge aux frères adjacents plutôt qu'un `gap` flex,
+   pour ne pas changer le mode de mise en page des blocs existants. */
+.page-blocks > * + * {
+  margin-top: var(--section-gap-desktop, 0px);
+}
+
+@media (max-width: 767px) {
+  .page-blocks > * + * {
+    margin-top: var(--section-gap-mobile, 0px);
+  }
+}
+
+/* Fond pleine largeur du conteneur de blocs.
+   Les blocs de contenu débordent en 100vw (width:100vw + marge négative)
+   alors que leur conteneur reste limité par .container : dès qu'un écart
+   sépare deux blocs, le fond du body apparaissait en bandes sur les côtés.
+   Ce pseudo-élément étend le fond des blocs à toute la largeur de la fenêtre.
+   Les conteneurs .page-blocks ont déjà un z-index propre, donc z-index:-1
+   peint derrière les blocs sans sortir de leur contexte d'empilement. */
+.page-blocks {
+  position: relative;
+}
+
+.page-blocks::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  background: var(--block-bg, var(--bg));
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* ── Effet "contenu qui recouvre le header" (desktop uniquement) ──
@@ -183,174 +229,44 @@ img {
   margin-bottom: 1rem;
 }
 
-/* Admin sidebar layout when connected */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Décalage du site quand la coque admin est ouverte.
+
+   La largeur vient de --adm-sidebar-width, écrite par AdminShell et
+   redimensionnable. Les anciennes règles codaient 340px en dur à quatre
+   endroits, et deux blocs #admin-sidebar complets se recouvraient : tout le
+   style de la barre vit désormais dans AdminShell.module.css.
+   ───────────────────────────────────────────────────────────────────────── */
 :root {
-  --admin-sidebar-width: 0px;
-  --admin-sidebar-open-width: 340px;
+  --admin-sidebar-open-width: 320px;
 }
 
-body.has-admin-sidebar {
-  --admin-sidebar-width: 340px;
-}
-
-/* Desktop: body padding shifts all content naturally (header, main, footer) */
 @media (min-width: 769px) {
   body.has-admin-sidebar {
-    padding-left: 340px;
+    padding-left: var(--adm-sidebar-width, 320px);
     box-sizing: border-box;
-    transition: padding-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    /* height: auto lets body grow with content so html handles the single page scrollbar */
+    transition: padding-left var(--adm-duration-slow, 320ms) var(--adm-ease, ease);
+    /* height auto : le body grandit avec le contenu, html garde la scrollbar */
     height: auto;
   }
-  /* Header fixed : décaler left pour laisser place à la sidebar admin */
+
+  /* Header fixe : décalé pour laisser la place à la coque admin */
   body.has-admin-sidebar #site-header {
-    left: 340px;
+    left: var(--adm-sidebar-width, 320px);
     right: 0;
     width: auto;
     margin-left: 0;
-    transition: left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: left var(--adm-duration-slow, 320ms) var(--adm-ease, ease);
   }
 }
 
-/* sidebar base styles */
-#admin-sidebar {
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 340px;
-  background: rgb(8, 16, 24);
-  color: #fff;
-  box-shadow: none;
-  padding: 24px 24px 24px 24px;
-  display: flex;
-  flex-direction: column;
-  z-index: 9999;
-  box-sizing: border-box;
-  overflow-x: hidden;
-  overflow-y: hidden; /* nav handles its own internal scroll */
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+/* Mobile : la coque recouvre, elle ne pousse pas */
+@media (max-width: 768px) {
+  body.has-admin-sidebar { padding-left: 0; }
 }
 
-#admin-sidebar .admin-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 14px;
-  letter-spacing: 0.03em;
-  color: #fff;
-  text-decoration: none;
-}
-
-#admin-sidebar nav {
-  flex: 1 1 auto;
-  overflow: auto;
-}
-
-#admin-sidebar ul {
-  list-style: none;
-  padding: 0 6px 0 0; /* small right padding to avoid touching edge */
-  margin: 0;
-}
-
-/* submenu area inside sidebar (horizontal) */
-.submenu {
-  margin-top: 6px;
-  padding: 6px 6px;
-  border-radius: 8px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));
-  font-size: 0.94rem;
-}
-.submenu-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* make file input and preview fit and more compact */
-.submenu input[type="file"] { color: #fff; font-size: 0.9rem; }
-.submenu img { display: block; max-height: 48px; width: auto; border-radius: 6px; }
-
-/* submenu list item placed between menu items */
-.submenu-li {
-  list-style: none;
-  padding: 6px 6px 8px 6px;
-}
-
-/* make submenu visually separated and full width */
-.submenu-li .submenu {
-  box-shadow: 0 6px 14px rgba(2,6,23,0.14);
-  border-radius: 8px;
-  padding: 8px;
-}
-
-/* Scoped admin sidebar submenu overrides - use site background and
-   align submenu buttons with main menu buttons for consistency */
-#admin-sidebar .submenu {
-  background: rgb(22, 38, 58);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #eff6ff; /* Light text */
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); 
-  margin-bottom: 8px;
-}
-
-#admin-sidebar .submenu-row {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-#admin-sidebar .submenu input[type="file"] { color: #eff6ff; font-size: 0.88rem; opacity: 0.9; }
-#admin-sidebar .submenu input[type="range"] { accent-color: var(--color-primary, #3b82f6); cursor: pointer; }
-#admin-sidebar .submenu .menu-item {
-    font-size: 0.9rem;
-    padding: 8px 12px;
-    background: rgba(255,255,255,0.05); /* Slight fill for submenu actions */
-}
-#admin-sidebar .submenu img { display: block; max-height: 56px; width: auto; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
-
-/* Make submenu buttons match main menu buttons */
-#admin-sidebar .submenu .menu-item,
-#admin-sidebar .submenu button.menu-item {
-  /* Match main menu buttons' look */
-  background: linear-gradient(180deg, rgba(2,8,12,0.36), rgba(4,10,14,0.44));
-  box-shadow: 0 8px 22px rgba(0,0,0,0.25), inset 0 -1px 0 rgba(255,255,255,0.02);
-  color: #fff;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: none;
-  font-size: 14px;
-  white-space: normal; /* allow wrapping */
-  width: 100%;
-}
-
-/* Ensure import buttons beside preview fit the text and don't overflow */
-#admin-sidebar .submenu .upload-controls .menu-item {
-  max-width: none;
-  width: auto;
-  font-size: 13px;
-  padding: 8px 12px;
-}
-
-#admin-sidebar .submenu .upload-preview img { display:block; max-width:140px; max-height:80px; }
-
-#admin-sidebar .submenu .btn-primary { background: var(--color-primary); color: #fff; }
-
-/* Compact upload layout: preview + controls side-by-side */
-#admin-sidebar .submenu .upload-row { display:flex; gap:12px; align-items:center; }
-#admin-sidebar .submenu .upload-preview { flex:0 0 auto; }
-#admin-sidebar .submenu .upload-controls { flex:1 1 auto; display:flex; gap:8px; align-items:center; }
-#admin-sidebar .submenu .upload-controls input[type="file"] { flex:0 0 auto; }
-#admin-sidebar .submenu .upload-controls .menu-item { flex:0 0 auto; }
-@media (max-width:640px) {
-  #admin-sidebar .submenu .upload-row { flex-direction:column; align-items:stretch; }
-}
-
-/* Ensure the submenu block does not leak styles to global .submenu usage elsewhere */
-@media (min-width: 0px) {
-  /* no-op block to keep specificity contained; actual rules are above */
-}
+#site-header { z-index: 10; }
 
 /* TipTap editor content styling: normalize spacing so list items match paragraph spacing */
 .tiptap-editor p,
@@ -386,116 +302,6 @@ body.has-admin-sidebar {
   min-height: 1em;
 }
 
-
-#admin-sidebar li {
-  margin: 6px 0;
-}
-
-#admin-sidebar button.menu-item {
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.85); /* Slightly muted white for elegance */
-  border: 1px solid transparent;
-  padding: 12px 16px;
-  border-radius: 12px; /* Softer rounding */
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  box-sizing: border-box;
-  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  margin-bottom: 2px;
-}
-
-/* Hover state: Modern Glass highlight */
-#admin-sidebar button.menu-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  transform: translateX(4px);
-  border-color: rgba(255,255,255,0.05);
-}
-
-/* Active/Focus state */
-#admin-sidebar button.menu-item:active {
-  transform: scale(0.98) translateX(4px);
-  background: rgba(255, 255, 255, 0.12);
-}
-
-/* Remove old pseudo-elements (dots) */
-#admin-sidebar button.menu-item::before {
-  display: none !important;
-}
-
-/* Remove the leading dot/pulse for buttons inside submenu panels */
-#admin-sidebar .submenu button.menu-item::before,
-#admin-sidebar .submenu .menu-item::before {
-  display: none;
-  content: none;
-}
-
-/* Removed overlapping hover/active states */
-
-#admin-sidebar .signout {
-  margin-top: auto;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255,255,255,0.08);
-}
-
-#admin-sidebar button.signout-btn {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid rgba(220, 38, 38, 0.4);
-  background: rgba(220, 38, 38, 0.1);
-  color: #fca5a5;
-  border-radius: 12px;
-  cursor: pointer;
-  box-shadow: none;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-#admin-sidebar button.signout-btn:hover {
-  background: rgba(220, 38, 38, 0.9);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 4px 16px rgba(220,38,38,0.4);
-}
-
-/* smooth transitions */
-#admin-sidebar, #admin-sidebar button.menu-item, #admin-sidebar button.signout-btn { transition: all 180ms ease; }
-
-/* Mobile: sidebar overlays, no push */
-@media (max-width: 768px) {
-  body.has-admin-sidebar {
-    padding-left: 0;
-  }
-}
-
-/* toggle button shown when sidebar is hidden */
-.admin-toggle-btn {
-  position: fixed;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 9999;
-  width: 32px;
-  height: 168px;
-  border-radius: 0 8px 8px 0;
-  background: rgb(8, 16, 24);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-left: none;
-  box-shadow: none;
-  color: #fff;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
 /* Global button primitives used in admin modals */
 .btn-primary {
   padding: 10px 14px;
@@ -523,11 +329,6 @@ body.has-admin-sidebar {
   color: #111;
   border: 1px solid rgba(0,0,0,0.06);
   cursor: pointer;
-}
-
-@media (max-width: 768px) {
-  /* mobile: toggle button stays centered vertically, no change needed */
-  .admin-toggle-btn { left: 0; border-radius: 0 8px 8px 0; }
 }
 
 /* Quill inside modal: ensure toolbar and editor are visible and accessible */

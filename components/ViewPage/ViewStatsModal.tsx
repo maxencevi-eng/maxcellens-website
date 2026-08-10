@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from '../admin';
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import styles from './ViewStatsModal.module.css';
@@ -132,22 +133,13 @@ export default function ViewStatsModal({ onClose }: Props) {
   const maxSource = stats?.bySource.reduce((m, s) => Math.max(m, s.count), 1) ?? 1;
 
   return (
-    <div className={styles.overlay} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={styles.modal}>
-
-        {/* Header */}
-        <div className={styles.header}>
-          <div className={styles.titleGroup}>
-            <h2 className={styles.title}>Statistiques</h2>
-            <p className={styles.subtitle}>/view · page vitrine</p>
-          </div>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Fermer">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={16} height={16}>
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-
+    <AdminModal
+      title="Statistiques"
+      subtitle="/view · page vitrine"
+      size="xl"
+      onClose={onClose}
+      footer={null}
+    >
         {/* View toggle + Period tabs */}
         <div className={styles.topControls}>
           <div className={styles.viewToggle}>
@@ -285,7 +277,6 @@ export default function ViewStatsModal({ onClose }: Props) {
             </div>
           )
         ) : null}
-      </div>
-    </div>
+    </AdminModal>
   );
 }

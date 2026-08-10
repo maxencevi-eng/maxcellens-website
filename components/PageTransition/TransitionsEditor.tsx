@@ -1,223 +1,243 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import Modal from '../Modal/Modal';
-import { useTransitionSettings, type TransitionSettings } from './TransitionProvider';
 
+import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Play } from 'lucide-react';
+import {
+  AdminButton,
+  AdminModal,
+  AdminNotice,
+  AdminSection,
+  ColorField,
+  SegmentedField,
+  SliderField,
+  ToggleField,
+} from '../admin';
+import { useTransitionSettings } from './TransitionProvider';
+import {
+  EASE_COVER,
+  EASE_REVEAL,
+  phaseDurations,
+  type TransitionSettings,
+  type TransitionStyle,
+} from './transitionSettings';
+import { getFrames } from './PageTransitionOverlay';
+import styles from './TransitionsEditor.module.css';
+
+const STYLE_OPTIONS: { value: TransitionStyle; label: string; title: string }[] = [
+  { value: 'curtain', label: 'Rideau', title: 'Un voile monte, couvre, puis remonte pour révéler' },
+  { value: 'fade', label: 'Fondu', title: 'Fondu simple — le plus discret' },
+  { value: 'slide', label: 'Glissement', title: 'Le voile traverse l’écran latéralement' },
+  { value: 'mask', label: 'Iris', title: 'Révélation par un cercle qui s’ouvre' },
+];
+
+/**
+ * Transitions & effets.
+ *
+ * Nouveauté : l'aperçu rejoue la transition dans la modale, sans naviguer.
+ * Régler une durée à l'aveugle demandait auparavant de fermer, cliquer un
+ * lien, revenir — pour chaque essai.
+ */
 export default function TransitionsEditor({ onClose }: { onClose: () => void }) {
   const { settings, setSettings, saveSettings } = useTransitionSettings();
   const [local, setLocal] = useState<TransitionSettings>(settings);
+  const [baseline, setBaseline] = useState<string>(() => JSON.stringify(settings));
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  /** Passe à true à la première modification de l'utilisateur. */
+  const touched = useRef(false);
 
-  useEffect(() => setLocal(settings), [settings]);
-
-  // Live preview
+  /**
+   * Le provider charge les réglages de façon asynchrone. Tant que
+   * l'utilisateur n'a rien saisi, on suit ses valeurs — et on recale la
+   * référence de comparaison avec. Sans cela, `dirty` restait vrai en
+   * permanence et le garde-fou de fermeture se déclenchait à tort.
+   */
   useEffect(() => {
-    setSettings(local);
-  }, [local]);
+    if (touched.current) return;
+    setLocal(settings);
+    setBaseline(JSON.stringify(settings));
+  }, [settings]);
 
-  function update(next: Partial<TransitionSettings>) {
-    setLocal((s) => ({ ...s, ...next }));
+  function update(patch: Partial<TransitionSettings>) {
+    touched.current = true;
+    setSaved(false);
+    setLocal((s) => ({ ...s, ...patch }));
   }
 
-  async function handleSave() {
+  const dirty = JSON.stringify(local) !== baseline;
+
+  async function save() {
     setSaving(true);
-    setMessage(null);
-    try {
-      await saveSettings(local);
-      setMessage('Enregistr\u00e9 !');
-      setTimeout(() => setMessage(null), 2000);
-    } catch {
-      setMessage('Erreur lors de la sauvegarde');
-    } finally {
-      setSaving(false);
+    setSettings(local);
+    await saveSettings(local);
+    setBaseline(JSON.stringify(local));
+    setSaving(false);
+    setSaved(true);
+  }
+
+  function handleClose() {
+    // L'aperçu ne modifie que l'état local : rien à restaurer côté site.
+    onClose();
+  }
+
+  return (
+    <AdminModal
+      title="Transitions & effets"
+      subtitle="Animation jouée lors d’un changement de page."
+      size="lg"
+      onClose={handleClose}
+      dirty={dirty}
+      saving={saving}
+      saved={saved}
+      onSave={save}
+    >
+      <TransitionPreview settings={local} />
+
+      <AdminSection title="Activation">
+        <ToggleField
+          label="Activer les transitions de page"
+          checked={local.enabled}
+          onChange={(v) => update({ enabled: v })}
+          hint="Désactivé, les liens naviguent sans animation."
+        />
+      </AdminSection>
+
+      <AdminSection title="Style" columns={1}>
+        <SegmentedField<TransitionStyle>
+          value={local.style}
+          onChange={(v) => update({ style: v })}
+          options={STYLE_OPTIONS}
+          hint="Le style est remplacé par un fondu court si le visiteur a demandé de réduire les animations."
+        />
+        <ColorField
+          label="Couleur du voile"
+          value={local.overlayColor}
+          onChange={(v) => update({ overlayColor: v })}
+          fallback="#172622"
+        />
+      </AdminSection>
+
+      <AdminSection title="Rythme" columns={2}>
+        <SliderField
+          label="Durée totale"
+          value={Math.round(local.duration * 100)}
+          onChange={(v) => update({ duration: v / 100 })}
+          min={20}
+          max={160}
+          unit="cs"
+          hint={`${local.duration.toFixed(2)} s — répartie entre recouvrement et révélation.`}
+        />
+        <SliderField
+          label="Recouvrement minimal"
+          value={Math.round(local.minCover * 100)}
+          onChange={(v) => update({ minCover: v / 100 })}
+          min={0}
+          max={80}
+          unit="cs"
+          hint="Empêche le clignotement quand la page est déjà en cache."
+        />
+        <SliderField
+          label="Attente maximale"
+          value={Math.round(local.maxWait * 10)}
+          onChange={(v) => update({ maxWait: v / 10 })}
+          min={5}
+          max={50}
+          unit="ds"
+          hint={`${local.maxWait.toFixed(1)} s — au-delà, la page s’ouvre même si elle n’est pas prête.`}
+        />
+      </AdminSection>
+
+      <AdminSection title="Confort de navigation">
+        <ToggleField
+          label="Précharger les pages au survol"
+          checked={local.prefetch}
+          onChange={(v) => update({ prefetch: v })}
+          hint="Charge la page destination dès que le curseur passe sur un lien. C’est le réglage qui supprime le temps mort avant l’ouverture."
+        />
+        <ToggleField
+          label="Afficher un indicateur si l’attente dépasse 0,4 s"
+          checked={local.showProgress}
+          onChange={(v) => update({ showProgress: v })}
+          hint="Sur une page lente, évite un écran parfaitement immobile."
+        />
+      </AdminSection>
+
+      {!local.prefetch ? (
+        <AdminNotice tone="warning">
+          Sans préchargement, le chargement de la page ne démarre qu’au clic :
+          l’attente derrière le voile sera plus longue.
+        </AdminNotice>
+      ) : null}
+    </AdminModal>
+  );
+}
+
+/** Rejoue la transition en boucle dans un cadre, avec les réglages courants. */
+function TransitionPreview({ settings }: { settings: TransitionSettings }) {
+  const [phase, setPhase] = useState<'idle' | 'covering' | 'covered' | 'revealing'>('idle');
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => () => { timers.current.forEach(clearTimeout); }, []);
+
+  function play() {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+    setPhase('covering');
+  }
+
+  const { cover, reveal } = phaseDurations(settings.duration);
+  const frames = getFrames(settings.style);
+  const revealing = phase === 'revealing';
+
+  function onComplete() {
+    if (phase === 'covering') {
+      setPhase('covered');
+      // Simule une attente réseau courte, pour montrer l'enchaînement réel
+      timers.current.push(setTimeout(() => setPhase('revealing'), Math.max(120, settings.minCover * 1000)));
+    } else if (phase === 'revealing') {
+      setPhase('idle');
     }
   }
 
-  const labelStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 10,
-    fontSize: 13, fontWeight: 600, color: '#444',
-  };
-  const rowStyle: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: 14,
-    padding: '14px 0', borderBottom: '1px solid #f0f0ee',
-  };
-  const helpStyle: React.CSSProperties = {
-    fontSize: 11, color: '#999', marginTop: 2,
-  };
-
   return (
-    <Modal title="Transitions & Effets" onClose={onClose}>
-      <div style={{ padding: '8px 0', display: 'flex', flexDirection: 'column', gap: 0 }}>
+    <div className={styles.preview}>
+      <div className={styles.stage}>
+        <div className={styles.fakePage}>
+          <span className={styles.fakeBar} />
+          <span className={styles.fakeBlock} />
+          <span className={styles.fakeBlock} style={{ width: '62%' }} />
+        </div>
 
-        {/* Toggle */}
-        <div style={rowStyle}>
-          <label style={{ ...labelStyle, flex: 1 }}>
-            Transitions fluides
-            <div style={helpStyle}>Effet de balayage lors de la navigation entre les pages</div>
-          </label>
-          <button
-            onClick={() => update({ enabled: !local.enabled })}
-            style={{
-              padding: '6px 18px', borderRadius: 20, border: 'none', cursor: 'pointer',
-              fontSize: 13, fontWeight: 600,
-              background: local.enabled ? '#172622' : '#e5e5e5',
-              color: local.enabled ? '#fff' : '#888',
-              transition: 'all 200ms',
+        {phase !== 'idle' ? (
+          <motion.div
+            className={styles.veil}
+            style={{ background: settings.overlayColor }}
+            initial={frames.initial}
+            animate={revealing ? frames.reveal : frames.cover}
+            transition={{
+              duration: revealing ? reveal : cover,
+              ease: revealing ? EASE_REVEAL : EASE_COVER,
             }}
-          >
-            {local.enabled ? 'Activ\u00e9' : 'D\u00e9sactiv\u00e9'}
-          </button>
-        </div>
-
-        {/* Overlay color */}
-        <div style={rowStyle}>
-          <label style={{ ...labelStyle, flex: 1 }}>Couleur de l'overlay</label>
-          <input
-            type="color"
-            value={local.overlayColor}
-            onChange={(e) => update({ overlayColor: e.target.value })}
-            style={{ width: 40, height: 32, border: '1px solid #ddd', borderRadius: 4, cursor: 'pointer', padding: 2 }}
+            onAnimationComplete={onComplete}
           />
-          <span style={{ fontSize: 12, color: '#888', fontFamily: 'monospace' }}>{local.overlayColor}</span>
-        </div>
-
-        {/* Duration slider */}
-        <div style={{ ...rowStyle, flexDirection: 'column', alignItems: 'stretch', gap: 8, borderBottom: 'none' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <label style={labelStyle}>Vitesse de transition</label>
-            <span style={{ fontSize: 13, fontFamily: 'monospace', color: '#666', fontWeight: 600 }}>
-              {local.duration.toFixed(2)}s
-            </span>
-          </div>
-          <input
-            type="range"
-            min={0.3}
-            max={1.2}
-            step={0.05}
-            value={local.duration}
-            onChange={(e) => update({ duration: parseFloat(e.target.value) })}
-            style={{ width: '100%', cursor: 'pointer', accentColor: '#172622' }}
-          />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#aaa' }}>
-            <span>Rapide (0.3s)</span>
-            <span>Lent (1.2s)</span>
-          </div>
-        </div>
-
-        {/* Max wait */}
-        <div style={{ ...rowStyle, flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <label style={labelStyle}>Attente max avant ouverture</label>
-              <div style={helpStyle}>Si la page destination tarde à charger, l'overlay s'ouvre au bout de ce délai</div>
-            </div>
-            <span style={{ fontSize: 13, fontFamily: 'monospace', color: '#666', fontWeight: 600 }}>
-              {(local.maxWait ?? 2).toFixed(1)}s
-            </span>
-          </div>
-          <input
-            type="range"
-            min={0.5}
-            max={5}
-            step={0.5}
-            value={local.maxWait ?? 2}
-            onChange={(e) => update({ maxWait: parseFloat(e.target.value) })}
-            style={{ width: '100%', cursor: 'pointer', accentColor: '#172622' }}
-          />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#aaa' }}>
-            <span>Réactif (0.5s)</span>
-            <span>Patient (5s)</span>
-          </div>
-        </div>
-
-        {/* Mode */}
-        <div style={rowStyle}>
-          <div style={{ flex: 1 }}>
-            <label style={labelStyle}>Mode de transition</label>
-            <div style={helpStyle}>
-              <strong>Standard</strong> : l'overlay couvre d'abord, puis la page charge.<br />
-              <strong>Seamless</strong> : la page charge pendant que l'overlay monte — enchaînement fluide sans pause.
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {(['standard', 'seamless'] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => update({ mode: m })}
-                style={{
-                  padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
-                  fontSize: 12, fontWeight: 600,
-                  background: local.mode === m ? '#172622' : '#e5e5e5',
-                  color: local.mode === m ? '#fff' : '#888',
-                  transition: 'all 200ms',
-                  textTransform: 'capitalize',
-                }}
-              >
-                {m === 'standard' ? 'Standard' : 'Seamless'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Info */}
-        <div style={{ padding: '16px 0 8px', fontSize: 12, color: '#999', lineHeight: 1.6 }}>
-          <strong style={{ color: '#666' }}>Comportement :</strong><br />
-          La transition &laquo; Wipe &raquo; s'applique lors de la navigation entre pages internes.<br />
-          Le chargement initial conserve l'animation existante (splash).
-        </div>
-
-        {/* Preview button */}
-        <div style={{ padding: '8px 0 16px' }}>
-          <button
-            onClick={() => {
-              // Trigger a visual preview of the wipe effect
-              const preview = document.getElementById('transition-preview-overlay');
-              if (preview) {
-                preview.style.transition = `transform ${local.duration / 2}s cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
-                preview.style.transform = 'translateY(0%)';
-                setTimeout(() => {
-                  preview.style.transform = 'translateY(-100%)';
-                }, local.duration * 500 + 200);
-                setTimeout(() => {
-                  preview.style.transform = 'translateY(100%)';
-                  preview.style.transition = 'none';
-                }, local.duration * 1000 + 400);
-              }
-            }}
-            style={{
-              width: '100%', padding: '10px', background: '#f4f4f4',
-              border: '1px dashed #bbb', borderRadius: 7, cursor: 'pointer',
-              fontSize: 13, color: '#555',
-            }}
-          >
-            Pr\u00e9visualiser la transition
-          </button>
-          <div
-            id="transition-preview-overlay"
-            style={{
-              position: 'fixed', inset: 0, zIndex: 999998,
-              background: local.overlayColor, pointerEvents: 'none',
-              transform: 'translateY(100%)',
-            }}
-          />
-        </div>
-
-        {/* Save */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          {message && <span style={{ fontSize: 13, color: message.startsWith('Err') ? 'red' : '#2a7' , alignSelf: 'center' }}>{message}</span>}
-          <button onClick={onClose} style={{ padding: '8px 16px', border: '1px solid #ddd', borderRadius: 6, background: '#fff', cursor: 'pointer', fontSize: 14 }}>
-            Fermer
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{ padding: '8px 20px', background: '#111', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14 }}
-          >
-            {saving ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
-        </div>
+        ) : null}
       </div>
-    </Modal>
+
+      <div className={styles.previewBar}>
+        <AdminButton
+          size="sm"
+          variant="secondary"
+          leadingIcon={<Play size={14} aria-hidden="true" />}
+          onClick={play}
+          disabled={phase !== 'idle'}
+        >
+          Rejouer l’aperçu
+        </AdminButton>
+        <span className={styles.previewMeta}>
+          recouvrement {Math.round(cover * 1000)} ms · révélation {Math.round(reveal * 1000)} ms
+        </span>
+      </div>
+    </div>
   );
 }

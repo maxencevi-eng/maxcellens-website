@@ -1,0 +1,215 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Normalisation des écrans admin non encore réécrits.
+
+   Les modales migrées composent des primitives (`TextField`, `AdminButton`…)
+   et n'ont pas besoin de ces règles. Celles dont le corps n'a pas encore été
+   repris contiennent des `<input>`, `<select>` et `<button>` bruts : sans ces
+   règles ils garderaient l'apparence par défaut du navigateur au milieu d'une
+   modale au thème admin.
+
+   Portée : `[data-admin-ui]`, l'attribut posé par AdminModal et AdminToolbar.
+   Les styles inline présents dans le code historique restent prioritaires —
+   c'est voulu : on normalise sans écraser une intention explicite.
+   ───────────────────────────────────────────────────────────────────────── */
+
+[data-admin-ui] {
+  font-family: var(--adm-font);
+}
+
+/* ── Contrôles de saisie ──────────────────────────────────────────────── */
+[data-admin-ui] input[type='text'],
+[data-admin-ui] input[type='email'],
+[data-admin-ui] input[type='url'],
+[data-admin-ui] input[type='search'],
+[data-admin-ui] input[type='password'],
+[data-admin-ui] input[type='number'],
+[data-admin-ui] input[type='date'],
+[data-admin-ui] select,
+[data-admin-ui] textarea {
+  min-height: var(--adm-control-height);
+  padding: var(--adm-space-2) var(--adm-control-padding-x);
+  border: 1px solid var(--adm-border-strong);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface-field);
+  color: var(--adm-ink);
+  font-family: var(--adm-font);
+  font-size: var(--adm-text-base);
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+
+[data-admin-ui] textarea { line-height: 1.5; resize: vertical; }
+
+[data-admin-ui] input:focus,
+[data-admin-ui] select:focus,
+[data-admin-ui] textarea:focus {
+  outline: none;
+  border-color: var(--adm-border-focus);
+  box-shadow: var(--adm-shadow-focus);
+}
+
+[data-admin-ui] input::placeholder,
+[data-admin-ui] textarea::placeholder {
+  color: var(--adm-ink-muted);
+}
+
+[data-admin-ui] input[type='range'] {
+  accent-color: var(--adm-accent);
+  cursor: pointer;
+}
+
+[data-admin-ui] input[type='checkbox'],
+[data-admin-ui] input[type='radio'] {
+  accent-color: var(--adm-accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+[data-admin-ui] input[type='color'] {
+  min-height: var(--adm-control-height);
+  padding: 3px;
+  border: 1px solid var(--adm-border-strong);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface-field);
+  cursor: pointer;
+}
+
+[data-admin-ui] input[type='file'] {
+  font-size: var(--adm-text-sm);
+  color: var(--adm-ink-soft);
+  max-width: 100%;
+}
+
+[data-admin-ui] input[type='file']::file-selector-button {
+  margin-right: var(--adm-space-3);
+  padding: var(--adm-space-2) var(--adm-space-3);
+  border: 1px solid var(--adm-border-strong);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface-field);
+  color: var(--adm-ink);
+  font-family: var(--adm-font);
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+[data-admin-ui] input:disabled,
+[data-admin-ui] select:disabled,
+[data-admin-ui] textarea:disabled {
+  background: var(--adm-surface-sunken);
+  color: var(--adm-ink-muted);
+  cursor: not-allowed;
+}
+
+/* ── Boutons bruts ────────────────────────────────────────────────────── */
+/* `:not()` cible uniquement les boutons sans classe connue : les primitives du
+   design system et les barres d'outils d'éditeur ne doivent pas être touchées. */
+[data-admin-ui] button:not([class]) {
+  min-height: var(--adm-control-height);
+  padding: 0 calc(var(--adm-control-padding-x) * 1.25);
+  border: 1px solid var(--adm-border-strong);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface-field);
+  color: var(--adm-ink);
+  font-family: var(--adm-font);
+  font-size: var(--adm-text-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+[data-admin-ui] button:not([class]):hover:not(:disabled) {
+  background: var(--adm-surface-hover);
+}
+
+[data-admin-ui] button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Primitives historiques encore utilisées par les corps non migrés */
+[data-admin-ui] .btn-primary {
+  min-height: var(--adm-control-height);
+  padding: 0 calc(var(--adm-control-padding-x) * 1.25);
+  border: none;
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-accent);
+  color: var(--adm-accent-ink);
+  font-family: var(--adm-font);
+  font-size: var(--adm-text-base);
+  font-weight: 600;
+  box-shadow: var(--adm-shadow-sm);
+  cursor: pointer;
+}
+
+[data-admin-ui] .btn-secondary,
+[data-admin-ui] .btn-ghost {
+  min-height: var(--adm-control-height);
+  padding: 0 calc(var(--adm-control-padding-x) * 1.25);
+  border: 1px solid var(--adm-border-strong);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface-field);
+  color: var(--adm-ink);
+  font-family: var(--adm-font);
+  font-size: var(--adm-text-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+[data-admin-ui] .btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--adm-ink-soft);
+}
+
+[data-admin-ui] .btn-ghost:hover { background: var(--adm-surface-hover); }
+
+/* ── Texte ────────────────────────────────────────────────────────────── */
+[data-admin-ui] label {
+  font-size: var(--adm-text-sm);
+  font-weight: 600;
+  color: var(--adm-ink-soft);
+}
+
+[data-admin-ui] h3,
+[data-admin-ui] h4,
+[data-admin-ui] h5 {
+  color: var(--adm-ink);
+  font-family: var(--adm-font);
+}
+
+[data-admin-ui] h4 {
+  font-size: var(--adm-text-md);
+  font-weight: 700;
+}
+
+[data-admin-ui] hr {
+  border: none;
+  border-top: 1px solid var(--adm-border);
+  margin: var(--adm-space-4) 0;
+}
+
+[data-admin-ui] table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--adm-text-sm);
+}
+
+[data-admin-ui] th,
+[data-admin-ui] td {
+  padding: var(--adm-space-2) var(--adm-space-3);
+  border-bottom: 1px solid var(--adm-border);
+  text-align: left;
+}
+
+[data-admin-ui] th {
+  font-weight: 700;
+  color: var(--adm-ink-muted);
+  font-size: var(--adm-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Un tableau large doit défiler dans son propre conteneur, jamais faire
+   déborder la modale horizontalement. */
+[data-admin-ui] .adm-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

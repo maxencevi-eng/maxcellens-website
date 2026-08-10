@@ -1,0 +1,120 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--adm-space-4);
+}
+
+.section + .section {
+  margin-top: var(--adm-space-6);
+  padding-top: var(--adm-space-6);
+  border-top: 1px solid var(--adm-border);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--adm-space-3);
+}
+
+.headText { min-width: 0; }
+
+.title {
+  margin: 0;
+  font-size: var(--adm-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--adm-ink-muted);
+}
+
+.description {
+  margin: var(--adm-space-1) 0 0;
+  font-size: var(--adm-text-sm);
+  color: var(--adm-ink-muted);
+  line-height: 1.45;
+}
+
+.actions { flex: 0 0 auto; display: flex; gap: var(--adm-space-2); }
+
+.body {
+  display: grid;
+  gap: var(--adm-space-4);
+}
+
+.cols1 { grid-template-columns: minmax(0, 1fr); }
+.cols2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cols3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.colsAuto { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+/* Un champ peut réclamer toute la largeur de la grille */
+.span { grid-column: 1 / -1; }
+
+@media (max-width: 640px) {
+  .cols2, .cols3, .colsAuto { grid-template-columns: minmax(0, 1fr); }
+  .section + .section {
+    margin-top: var(--adm-space-5);
+    padding-top: var(--adm-space-5);
+  }
+}
+
+/* ── Carte : regroupe visuellement un sous-ensemble (élément de liste) ─── */
+.card {
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius);
+  background: var(--adm-surface-sunken);
+  padding: var(--adm-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--adm-space-3);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--adm-space-3);
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: var(--adm-text-base);
+  font-weight: 700;
+  color: var(--adm-ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Bandeau d'information ────────────────────────────────────────────── */
+.notice {
+  display: flex;
+  gap: var(--adm-space-3);
+  padding: var(--adm-space-3) var(--adm-space-4);
+  border-radius: var(--adm-radius-sm);
+  font-size: var(--adm-text-sm);
+  line-height: 1.45;
+  align-items: flex-start;
+}
+
+.noticeInfo { background: var(--adm-surface-sunken); color: var(--adm-ink-soft); }
+.noticeSuccess { background: var(--adm-success-wash); color: var(--adm-success); }
+.noticeWarning { background: var(--adm-warning-wash); color: var(--adm-warning); }
+.noticeDanger { background: var(--adm-danger-wash); color: var(--adm-danger); }
+
+.noticeIcon { flex: 0 0 auto; margin-top: 1px; }
+
+/* ── État vide ────────────────────────────────────────────────────────── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--adm-space-3);
+  padding: var(--adm-space-7) var(--adm-space-4);
+  border: 1px dashed var(--adm-border-strong);
+  border-radius: var(--adm-radius);
+  color: var(--adm-ink-muted);
+  text-align: center;
+  font-size: var(--adm-text-sm);
+}

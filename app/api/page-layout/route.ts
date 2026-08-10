@@ -1,54 +1,36 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin, supabaseUrl, serviceKey } from '../../../lib/supabaseAdmin';
+import {
+  DEFAULT_LAYOUT,
+  normalizeLayout,
+} from '../../../components/PageLayoutModal/pageLayout';
 
 export const dynamic = 'force-dynamic';
 
-/** GET : retourne les réglages de mise en page (public, pour appliquer les variables CSS). */
+/** GET : réglages de mise en page (public, pour appliquer les variables CSS). */
 export async function GET() {
   try {
     if (!supabaseAdmin || !supabaseUrl || !serviceKey) {
-      return NextResponse.json({ desktop: {}, mobile: {} });
+      return NextResponse.json(DEFAULT_LAYOUT);
     }
-    const { data } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'page_layout').single();
+    // maybeSingle : `single()` renvoyait une erreur quand la clé n'existait pas
+    // encore, ce qui faisait tomber la route dans son catch générique.
+    const { data } = await supabaseAdmin
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'page_layout')
+      .maybeSingle();
+
     const raw = (data as any)?.value;
-    if (!raw || typeof raw !== 'string') {
-      return NextResponse.json({ desktop: defaultDesktop(), mobile: defaultMobile() });
-    }
+    if (!raw || typeof raw !== 'string') return NextResponse.json(DEFAULT_LAYOUT);
+
     try {
-      const parsed = JSON.parse(raw);
-      return NextResponse.json({
-        desktop: { ...defaultDesktop(), ...parsed.desktop },
-        mobile: { ...defaultMobile(), ...parsed.mobile },
-      });
+      return NextResponse.json(normalizeLayout(JSON.parse(raw)));
     } catch {
-      return NextResponse.json({ desktop: defaultDesktop(), mobile: defaultMobile() });
+      return NextResponse.json(DEFAULT_LAYOUT);
     }
   } catch (e) {
     console.error('page-layout GET error', e);
-    return NextResponse.json({ desktop: defaultDesktop(), mobile: defaultMobile() });
+    return NextResponse.json(DEFAULT_LAYOUT);
   }
-}
-
-function defaultDesktop() {
-  return {
-    containerMaxWidth: 1200,
-    contentInnerMaxWidth: 2000,
-    contentInnerMinHeight: 0,
-    blockInnerPadding: 24,
-    marginHorizontal: 24,
-    marginVertical: 0,
-    sectionGap: 48,
-  };
-}
-
-function defaultMobile() {
-  return {
-    containerMaxWidth: 1000,
-    contentInnerMaxWidth: 1200,
-    contentInnerMinHeight: 0,
-    blockInnerPadding: 16,
-    marginHorizontal: 16,
-    marginVertical: 0,
-    sectionGap: 32,
-  };
 }

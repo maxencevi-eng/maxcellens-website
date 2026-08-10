@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { AdminModal } from '../admin';
 import { supabase } from '../../lib/supabase';
 import styles from './StatisticsModal.module.css';
 
@@ -174,42 +175,13 @@ export default function MaintenanceModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div
-      className={styles.overlay}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 50000,
-      }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+    <AdminModal
+      title="Maintenance"
+      subtitle="Purge des données analytics et diagnostics."
+      size="md"
+      onClose={onClose}
+      footer={null}
     >
-      <div
-        className={styles.modalBox}
-        style={{
-          background: '#fff',
-          borderRadius: 12,
-          maxWidth: 520,
-          width: '100%',
-          boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid #e5e7eb' }}>
-          <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 700, color: '#111827' }}>Maintenance</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer', color: '#475569' }}
-            aria-label="Fermer"
-          >
-            ✕
-          </button>
-        </div>
-        <div className={styles.contentPadding} style={{ padding: '1.25rem 1.25rem' }}>
           <p style={{ fontSize: 14, color: '#475569', marginBottom: 16, lineHeight: 1.5 }}>
             Supprimer les sessions et événements analytics pour libérer de l&apos;espace. Les événements sont supprimés en CASCADE avec les sessions.
           </p>
@@ -375,8 +347,6 @@ DELETE FROM public.analytics_sessions;`}
               </pre>
             </details>
           </div>
-        </div>
-      </div>
-    </div>
+    </AdminModal>
   );
 }

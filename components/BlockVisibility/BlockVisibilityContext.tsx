@@ -1,15 +1,39 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import {
+  BLOCK_ORDER_PAGES,
+  DEFAULT_BLOCK_ORDERS,
+  mergeBlockOrder,
+  orderSettingKey,
+  type BlockOrderPage,
+  type BlockWidthMode,
+} from './blockOrders';
 
-export type BlockWidthMode = 'full' | 'max1600';
+export type { BlockOrderPage, BlockWidthMode };
 
-export type BlockOrderPage = 'home' | 'contact' | 'animation' | 'realisation' | 'evenement' | 'corporate' | 'portrait' | 'galeries';
+type Orders = Record<BlockOrderPage, string[]>;
 
 type ContextValue = {
   hiddenBlocks: string[];
   blockWidthModes: Record<string, BlockWidthMode>;
+  /** Ordres de toutes les pages, indexés par page. */
+  orders: Orders;
+  /** Ordre d'une page — remplace les huit champs `blockOrderXxx`. */
+  getOrder: (page: BlockOrderPage) => string[];
+  isAdmin: boolean;
+  isLoading: boolean;
+  toggleBlock: (blockId: string) => Promise<void>;
+  setBlockWidthMode: (blockId: string, mode: BlockWidthMode) => Promise<void>;
+  moveBlock: (page: BlockOrderPage, blockId: string, direction: 'up' | 'down') => Promise<void>;
+  /** Remplace l'ordre complet d'une page (glisser-déposer, ajout, suppression). */
+  setOrder: (page: BlockOrderPage, next: string[]) => Promise<void>;
+
+  /* ── Compatibilité ascendante ───────────────────────────────────────────
+     Les *PageClient existants lisent encore ces champs. Ils sont dérivés de
+     `orders` et disparaîtront quand toutes les pages seront passées au
+     système dynamique. */
   blockOrderHome: string[];
   blockOrderContact: string[];
   blockOrderAnimation: string[];
@@ -18,66 +42,49 @@ type ContextValue = {
   blockOrderCorporate: string[];
   blockOrderPortrait: string[];
   blockOrderGaleries: string[];
-  isAdmin: boolean;
-  toggleBlock: (blockId: string) => Promise<void>;
-  setBlockWidthMode: (blockId: string, mode: BlockWidthMode) => Promise<void>;
-  moveBlock: (page: BlockOrderPage, blockId: string, direction: 'up' | 'down') => Promise<void>;
-  isLoading: boolean;
 };
+
+const defaultOrders: Orders = { ...DEFAULT_BLOCK_ORDERS };
 
 const BlockVisibilityContext = createContext<ContextValue>({
   hiddenBlocks: [],
   blockWidthModes: {},
-  blockOrderHome: [],
-  blockOrderContact: [],
-  blockOrderAnimation: [],
-  blockOrderRealisation: [],
-  blockOrderEvenement: [],
-  blockOrderCorporate: [],
-  blockOrderPortrait: [],
-  blockOrderGaleries: [],
+  orders: defaultOrders,
+  getOrder: (page) => defaultOrders[page] || [],
   isAdmin: false,
+  isLoading: true,
   toggleBlock: async () => {},
   setBlockWidthMode: async () => {},
   moveBlock: async () => {},
-  isLoading: true,
+  setOrder: async () => {},
+  blockOrderHome: defaultOrders.home,
+  blockOrderContact: defaultOrders.contact,
+  blockOrderAnimation: defaultOrders.animation,
+  blockOrderRealisation: defaultOrders.realisation,
+  blockOrderEvenement: defaultOrders.evenement,
+  blockOrderCorporate: defaultOrders.corporate,
+  blockOrderPortrait: defaultOrders.portrait,
+  blockOrderGaleries: defaultOrders.galeries,
 });
 
-const DEFAULT_ORDER_HOME = ['home_intro', 'home_banner', 'home_services', 'home_animation', 'home_portrait', 'home_cadreur', 'home_stats', 'clients', 'home_quote', 'home_cta'];
-
-/** Insère les blocs manquants dans un ordre sauvegardé (migration douce). */
-function mergeKnownBlocks(saved: string[], defaults: string[]): string[] {
-  const result = [...saved];
-  for (const id of defaults) {
-    if (!result.includes(id)) {
-      const defaultIdx = defaults.indexOf(id);
-      const predecessor = defaultIdx > 0 ? defaults[defaultIdx - 1] : null;
-      const insertAfter = predecessor ? result.indexOf(predecessor) : -1;
-      if (insertAfter >= 0) result.splice(insertAfter + 1, 0, id);
-      else result.push(id);
-    }
+/** Écrit une clé de `site_settings`. Renvoie false en cas d'échec. */
+async function persist(key: string, value: unknown): Promise<boolean> {
+  try {
+    const resp = await fetch('/api/admin/site-settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, value: JSON.stringify(value) }),
+    });
+    return resp.ok;
+  } catch {
+    return false;
   }
-  return result;
 }
-const DEFAULT_ORDER_CONTACT = ['contact_intro', 'contact_zones', 'contact_gallery', 'contact_faq'];
-const DEFAULT_ORDER_ANIMATION = ['animation_s1', 'animation_s2', 'animation_s3', 'animation_cta'];
-const DEFAULT_ORDER_REALISATION = ['production_intro', 'production_videos'];
-const DEFAULT_ORDER_EVENEMENT = ['evenement_intro', 'evenement_videos'];
-const DEFAULT_ORDER_CORPORATE = ['corporate_intro', 'corporate_videos'];
-const DEFAULT_ORDER_PORTRAIT = ['portrait_intro', 'portrait_gallery'];
-const DEFAULT_ORDER_GALERIES = ['galeries_menu'];
 
 export function BlockVisibilityProvider({ children }: { children: React.ReactNode }) {
   const [hiddenBlocks, setHiddenBlocks] = useState<string[]>([]);
   const [blockWidthModes, setBlockWidthModesState] = useState<Record<string, BlockWidthMode>>({});
-  const [blockOrderHome, setBlockOrderHome] = useState<string[]>(DEFAULT_ORDER_HOME);
-  const [blockOrderContact, setBlockOrderContact] = useState<string[]>(DEFAULT_ORDER_CONTACT);
-  const [blockOrderAnimation, setBlockOrderAnimation] = useState<string[]>(DEFAULT_ORDER_ANIMATION);
-  const [blockOrderRealisation, setBlockOrderRealisation] = useState<string[]>(DEFAULT_ORDER_REALISATION);
-  const [blockOrderEvenement, setBlockOrderEvenement] = useState<string[]>(DEFAULT_ORDER_EVENEMENT);
-  const [blockOrderCorporate, setBlockOrderCorporate] = useState<string[]>(DEFAULT_ORDER_CORPORATE);
-  const [blockOrderPortrait, setBlockOrderPortrait] = useState<string[]>(DEFAULT_ORDER_PORTRAIT);
-  const [blockOrderGaleries, setBlockOrderGaleries] = useState<string[]>(DEFAULT_ORDER_GALERIES);
+  const [orders, setOrders] = useState<Orders>(defaultOrders);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -104,110 +111,118 @@ export function BlockVisibilityProvider({ children }: { children: React.ReactNod
         if (!mounted) return;
         setHiddenBlocks(Array.isArray(data?.hiddenBlocks) ? data.hiddenBlocks : []);
         const modes = data?.blockWidthModes;
-        setBlockWidthModesState(modes && typeof modes === 'object' && !Array.isArray(modes) ? modes : {});
-        setBlockOrderHome(Array.isArray(data?.blockOrderHome) ? mergeKnownBlocks(data.blockOrderHome, DEFAULT_ORDER_HOME) : DEFAULT_ORDER_HOME);
-        setBlockOrderContact(Array.isArray(data?.blockOrderContact) ? mergeKnownBlocks(data.blockOrderContact, DEFAULT_ORDER_CONTACT) : DEFAULT_ORDER_CONTACT);
-        setBlockOrderAnimation(Array.isArray(data?.blockOrderAnimation) ? data.blockOrderAnimation : DEFAULT_ORDER_ANIMATION);
-        setBlockOrderRealisation(Array.isArray(data?.blockOrderRealisation) ? data.blockOrderRealisation : DEFAULT_ORDER_REALISATION);
-        setBlockOrderEvenement(Array.isArray(data?.blockOrderEvenement) ? data.blockOrderEvenement : DEFAULT_ORDER_EVENEMENT);
-        setBlockOrderCorporate(Array.isArray(data?.blockOrderCorporate) ? data.blockOrderCorporate : DEFAULT_ORDER_CORPORATE);
-        setBlockOrderPortrait(Array.isArray(data?.blockOrderPortrait) ? data.blockOrderPortrait : DEFAULT_ORDER_PORTRAIT);
-        setBlockOrderGaleries(Array.isArray(data?.blockOrderGaleries) ? data.blockOrderGaleries : DEFAULT_ORDER_GALERIES);
+        setBlockWidthModesState(
+          modes && typeof modes === 'object' && !Array.isArray(modes) ? modes : {}
+        );
+
+        // L'API renvoie `orders` (nouveau format). On retombe sur les champs
+        // plats si une version antérieure de la route est encore déployée.
+        const next = {} as Orders;
+        for (const page of BLOCK_ORDER_PAGES) {
+          const fromRecord = data?.orders?.[page];
+          const legacyKey = `blockOrder${page.charAt(0).toUpperCase()}${page.slice(1)}`;
+          const raw = fromRecord ?? data?.[legacyKey];
+          next[page] = mergeBlockOrder(raw, DEFAULT_BLOCK_ORDERS[page]);
+        }
+        setOrders(next);
       })
       .catch(() => {})
       .finally(() => { if (mounted) setIsLoading(false); });
     return () => { mounted = false; };
   }, []);
 
-  async function toggleBlock(blockId: string) {
-    const next = hiddenBlocks.includes(blockId)
-      ? hiddenBlocks.filter((id) => id !== blockId)
-      : [...hiddenBlocks, blockId];
-    setHiddenBlocks(next);
-    try {
-      await fetch('/api/admin/site-settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'block_visibility', value: JSON.stringify(next) }),
-      });
-    } catch {
-      setHiddenBlocks(hiddenBlocks);
-    }
-  }
+  const toggleBlock = useCallback(async (blockId: string) => {
+    let previous: string[] = [];
+    let next: string[] = [];
+    setHiddenBlocks((current) => {
+      previous = current;
+      next = current.includes(blockId)
+        ? current.filter((id) => id !== blockId)
+        : [...current, blockId];
+      return next;
+    });
+    const ok = await persist('block_visibility', next);
+    if (!ok) setHiddenBlocks(previous);
+  }, []);
 
-  async function setBlockWidthMode(blockId: string, mode: BlockWidthMode) {
-    const next = { ...blockWidthModes, [blockId]: mode };
-    setBlockWidthModesState(next);
-    try {
-      await fetch('/api/admin/site-settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'block_width_mode', value: JSON.stringify(next) }),
-      });
-    } catch {
-      setBlockWidthModesState(blockWidthModes);
-    }
-  }
+  const setBlockWidthMode = useCallback(async (blockId: string, mode: BlockWidthMode) => {
+    let previous: Record<string, BlockWidthMode> = {};
+    let next: Record<string, BlockWidthMode> = {};
+    setBlockWidthModesState((current) => {
+      previous = current;
+      next = { ...current, [blockId]: mode };
+      return next;
+    });
+    const ok = await persist('block_width_mode', next);
+    if (!ok) setBlockWidthModesState(previous);
+  }, []);
 
-  async function moveBlock(page: BlockOrderPage, blockId: string, direction: 'up' | 'down') {
-    const getOrder = () => {
-      switch (page) {
-        case 'home': return blockOrderHome;
-        case 'contact': return blockOrderContact;
-        case 'animation': return blockOrderAnimation;
-        case 'realisation': return blockOrderRealisation;
-        case 'evenement': return blockOrderEvenement;
-        case 'corporate': return blockOrderCorporate;
-        case 'portrait': return blockOrderPortrait;
-        case 'galeries': return blockOrderGaleries;
-        default: return blockOrderHome;
-      }
-    };
-    const setOrder = (next: string[]) => {
-      switch (page) {
-        case 'home': setBlockOrderHome(next); break;
-        case 'contact': setBlockOrderContact(next); break;
-        case 'animation': setBlockOrderAnimation(next); break;
-        case 'realisation': setBlockOrderRealisation(next); break;
-        case 'evenement': setBlockOrderEvenement(next); break;
-        case 'corporate': setBlockOrderCorporate(next); break;
-        case 'portrait': setBlockOrderPortrait(next); break;
-        case 'galeries': setBlockOrderGaleries(next); break;
-        default: setBlockOrderHome(next);
-      }
-    };
-    const keyMap: Record<BlockOrderPage, string> = {
-      home: 'block_order_home',
-      contact: 'block_order_contact',
-      animation: 'block_order_animation',
-      realisation: 'block_order_realisation',
-      evenement: 'block_order_evenement',
-      corporate: 'block_order_corporate',
-      portrait: 'block_order_portrait',
-      galeries: 'block_order_galeries',
-    };
-    const key = keyMap[page];
-    const order = getOrder();
-    const i = order.indexOf(blockId);
-    if (i < 0) return;
-    const j = direction === 'up' ? i - 1 : i + 1;
-    if (j < 0 || j >= order.length) return;
-    const next = [...order];
-    [next[i], next[j]] = [next[j], next[i]];
-    setOrder(next);
-    try {
-      await fetch('/api/admin/site-settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, value: JSON.stringify(next) }),
-      });
-    } catch {
-      setOrder(order);
-    }
-  }
+  const setOrder = useCallback(async (page: BlockOrderPage, nextOrder: string[]) => {
+    let previous: string[] = [];
+    setOrders((current) => {
+      previous = current[page];
+      return { ...current, [page]: nextOrder };
+    });
+    const ok = await persist(orderSettingKey(page), nextOrder);
+    if (!ok) setOrders((current) => ({ ...current, [page]: previous }));
+  }, []);
+
+  const moveBlock = useCallback(
+    async (page: BlockOrderPage, blockId: string, direction: 'up' | 'down') => {
+      const order = orders[page] || [];
+      const i = order.indexOf(blockId);
+      if (i < 0) return;
+      const j = direction === 'up' ? i - 1 : i + 1;
+      if (j < 0 || j >= order.length) return;
+      const next = [...order];
+      [next[i], next[j]] = [next[j], next[i]];
+      await setOrder(page, next);
+    },
+    [orders, setOrder]
+  );
+
+  const getOrder = useCallback(
+    (page: BlockOrderPage) => orders[page] || DEFAULT_BLOCK_ORDERS[page] || [],
+    [orders]
+  );
+
+  const value = useMemo<ContextValue>(
+    () => ({
+      hiddenBlocks,
+      blockWidthModes,
+      orders,
+      getOrder,
+      isAdmin,
+      isLoading,
+      toggleBlock,
+      setBlockWidthMode,
+      moveBlock,
+      setOrder,
+      blockOrderHome: orders.home,
+      blockOrderContact: orders.contact,
+      blockOrderAnimation: orders.animation,
+      blockOrderRealisation: orders.realisation,
+      blockOrderEvenement: orders.evenement,
+      blockOrderCorporate: orders.corporate,
+      blockOrderPortrait: orders.portrait,
+      blockOrderGaleries: orders.galeries,
+    }),
+    [
+      hiddenBlocks,
+      blockWidthModes,
+      orders,
+      getOrder,
+      isAdmin,
+      isLoading,
+      toggleBlock,
+      setBlockWidthMode,
+      moveBlock,
+      setOrder,
+    ]
+  );
 
   return (
-    <BlockVisibilityContext.Provider value={{ hiddenBlocks, blockWidthModes, blockOrderHome, blockOrderContact, blockOrderAnimation, blockOrderRealisation, blockOrderEvenement, blockOrderCorporate, blockOrderPortrait, blockOrderGaleries, isAdmin, toggleBlock, setBlockWidthMode, moveBlock, isLoading }}>
+    <BlockVisibilityContext.Provider value={value}>
       {children}
     </BlockVisibilityContext.Provider>
   );

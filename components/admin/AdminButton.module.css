@@ -1,0 +1,118 @@
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--adm-space-2);
+  min-height: var(--adm-control-height);
+  padding: 0 calc(var(--adm-control-padding-x) * 1.25);
+  border-radius: var(--adm-radius-sm);
+  border: 1px solid transparent;
+  font-family: var(--adm-font);
+  font-size: var(--adm-text-base);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background var(--adm-duration) var(--adm-ease),
+              border-color var(--adm-duration) var(--adm-ease),
+              color var(--adm-duration) var(--adm-ease),
+              box-shadow var(--adm-duration) var(--adm-ease),
+              transform var(--adm-duration-fast) var(--adm-ease);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--adm-shadow-focus);
+}
+
+.btn:active:not(:disabled) { transform: translateY(1px); }
+
+.btn:disabled,
+.btn[aria-busy='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Variantes ────────────────────────────────────────────────────────── */
+.primary {
+  background: var(--adm-accent);
+  color: var(--adm-accent-ink);
+  box-shadow: var(--adm-shadow-sm);
+}
+.primary:hover:not(:disabled) { box-shadow: var(--adm-shadow); }
+
+.secondary {
+  background: var(--adm-surface-field);
+  color: var(--adm-ink);
+  border-color: var(--adm-border-strong);
+}
+.secondary:hover:not(:disabled) { background: var(--adm-surface-hover); }
+
+.ghost {
+  background: transparent;
+  color: var(--adm-ink-soft);
+  border-color: transparent;
+}
+.ghost:hover:not(:disabled) {
+  background: var(--adm-surface-hover);
+  color: var(--adm-ink);
+}
+
+.danger {
+  background: var(--adm-danger);
+  color: var(--adm-danger-ink);
+}
+.danger:hover:not(:disabled) { box-shadow: var(--adm-shadow); }
+
+.dangerGhost {
+  background: transparent;
+  color: var(--adm-danger);
+  border-color: transparent;
+}
+.dangerGhost:hover:not(:disabled) { background: var(--adm-danger-wash); }
+
+/* ── Tailles ──────────────────────────────────────────────────────────── */
+.sm {
+  min-height: calc(30px * var(--adm-density));
+  padding: 0 var(--adm-control-padding-x);
+  font-size: var(--adm-text-sm);
+}
+
+.lg {
+  min-height: calc(46px * var(--adm-density));
+  padding: 0 calc(var(--adm-control-padding-x) * 1.75);
+  font-size: var(--adm-text-md);
+}
+
+/* Bouton icône carré */
+.icon {
+  padding: 0;
+  width: var(--adm-control-height);
+  min-height: var(--adm-control-height);
+}
+.icon.sm { width: calc(30px * var(--adm-density)); }
+.icon.lg { width: calc(46px * var(--adm-density)); }
+
+.block { width: 100%; }
+
+/* ── Indicateur de chargement ─────────────────────────────────────────── */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: admSpin 620ms linear infinite;
+  flex: 0 0 auto;
+}
+
+@keyframes admSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 2s; }
+}

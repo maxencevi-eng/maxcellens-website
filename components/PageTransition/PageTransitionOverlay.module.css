@@ -1,0 +1,52 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Indices de composition : l'overlay est promu sur sa propre couche GPU,
+     et son contenu n'influence pas la mise en page du document. */
+  will-change: transform, opacity, clip-path;
+  transform: translateZ(0);
+  contain: strict;
+}
+
+/* ── Indicateur d'attente ─────────────────────────────────────────────────
+   N'apparaît qu'au-delà de ~400 ms : sur une page en cache il ne se montre
+   jamais. Sans lui, une attente longue affichait un aplat parfaitement
+   immobile, sans aucun signe de vie. */
+.progress {
+  display: block;
+  width: 120px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+  animation: admProgressIn 260ms ease-out both;
+}
+
+.progressBar {
+  display: block;
+  width: 40%;
+  height: 100%;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.85);
+  animation: admProgressSlide 1.1s ease-in-out infinite;
+}
+
+@keyframes admProgressIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes admProgressSlide {
+  0%   { transform: translateX(-110%); }
+  100% { transform: translateX(360%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay { will-change: opacity; }
+  .progressBar { animation: none; width: 100%; opacity: 0.6; }
+}

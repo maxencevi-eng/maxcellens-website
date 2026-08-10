@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from '../admin';
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -223,19 +224,14 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
 
       <VideoGallery videos={hasFetched ? videos : []} className={undefined} gallerySettings={gallerySettings} />
 
-      {editing && typeof document !== 'undefined' ? createPortal(
-        <div className={`modal-overlay-mobile ${styles.modalOverlay}`} style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', zIndex: 50000, padding: '70px 16px 16px', overflowY: 'auto' }} onMouseDown={(e) => { if (e.target === e.currentTarget) setEditing(false); }}>
-          <div className={styles.modalBox} style={{ background: '#fff', padding: 20, width: 820, maxWidth: '98%', borderRadius: 12, boxShadow: '0 20px 50px rgba(0,0,0,0.35)', border: '1px solid rgba(0,0,0,0.06)', alignSelf: 'flex-start' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: 20 }}>Modifier la galerie — {keyName}</h3>
-                <div style={{ marginTop: 6, color: 'var(--muted)', fontSize: 13 }}>Une URL YouTube par élément. Coller une URL puis cliquer Ajouter.</div>
-              </div>
-              <div>
-                <button onClick={() => setEditing(false)} style={{ background: 'transparent', border: 'none', fontSize: 20, cursor: 'pointer', color: '#666' }} aria-label="Fermer">✕</button>
-              </div>
-            </div>
-
+      {editing ? (
+        <AdminModal
+          title={`Galerie vidéo — ${keyName}`}
+          subtitle="Une URL YouTube par élément. Collez une adresse puis cliquez sur Ajouter."
+          size="lg"
+          onClose={() => setEditing(false)}
+          footer={null}
+        >
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <input
                 value={singleUrl}
@@ -650,9 +646,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
               <button className="btn-secondary" onClick={() => setEditing(false)} disabled={saving}>Annuler</button>
               <button className="btn-primary" onClick={save} disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
             </div>
-          </div>
-        </div>,
-        document.body
+        </AdminModal>
       ) : null}
     </div>
   );

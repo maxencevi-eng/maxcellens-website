@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from '../admin';
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import type { StoredSection } from '../LegalPage/LegalPageClient';
@@ -84,12 +85,12 @@ export default function LegalEditModal({ pageKey, title, initialSections, initia
   }
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 50000, paddingTop: 'calc(var(--header-height, 93px) + 8px)', paddingLeft: '16px', paddingRight: '16px', paddingBottom: '32px', overflowY: 'auto' }}
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    <AdminModal
+      title={`Modifier — ${title}`}
+      size="lg"
+      onClose={onClose}
+      footer={null}
     >
-      <div style={{ background: '#fff', color: '#111', padding: 24, width: 760, maxWidth: '98%', borderRadius: 10, position: 'relative', alignSelf: 'flex-start' }}>
-        <h3 style={{ margin: '0 0 4px', fontSize: '1.1rem' }}>Modifier — {title}</h3>
         <p style={{ margin: '0 0 20px', fontSize: 13, color: '#888' }}>Cliquez sur "Modifier" à côté d'une section pour éditer son contenu.</p>
 
         {/* Background color */}
@@ -146,7 +147,6 @@ export default function LegalEditModal({ pageKey, title, initialSections, initia
             {saving ? 'Enregistrement...' : 'Enregistrer'}
           </button>
         </div>
-      </div>
-    </div>
+    </AdminModal>
   );
 }

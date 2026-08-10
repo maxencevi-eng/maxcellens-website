@@ -1,119 +1,99 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin, supabaseUrl, serviceKey } from '../../../lib/supabaseAdmin';
+import {
+  BLOCK_ORDER_PAGES,
+  DEFAULT_BLOCK_ORDERS,
+  orderSettingKey,
+  parseBlockOrder,
+  type BlockOrderPage,
+} from '../../../components/BlockVisibility/blockOrders';
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_ORDER_HOME = ['home_intro', 'home_banner', 'home_services', 'home_animation', 'home_portrait', 'home_cadreur', 'home_stats', 'clients', 'home_quote', 'home_cta'];
-const DEFAULT_ORDER_CONTACT = ['contact_intro', 'contact_zones', 'contact_kit', 'contact_faq'];
-const DEFAULT_ORDER_ANIMATION = ['animation_s1', 'animation_s2', 'animation_s3', 'animation_cta'];
-const DEFAULT_ORDER_REALISATION = ['production_intro', 'production_videos'];
-const DEFAULT_ORDER_EVENEMENT = ['evenement_intro', 'evenement_videos'];
-const DEFAULT_ORDER_CORPORATE = ['corporate_intro', 'corporate_videos'];
-const DEFAULT_ORDER_PORTRAIT = ['portrait_intro', 'portrait_gallery'];
-const DEFAULT_ORDER_GALERIES = ['galeries_menu'];
+type Orders = Record<BlockOrderPage, string[]>;
 
-function parseOrder(val: unknown, defaultOrder: string[]): string[] {
-  if (!val || typeof val !== 'string') return defaultOrder;
-  try {
-    const parsed = JSON.parse(val);
-    if (!Array.isArray(parsed)) return defaultOrder;
-    const ids = parsed.filter((id: unknown) => typeof id === 'string');
-    if (!ids.length) return defaultOrder;
-    // Réinjecter les blocs du défaut absents du sauvegardé (ex. home_animation ajouté après)
-    const result = ids.slice();
-    for (const id of defaultOrder) {
-      if (!result.includes(id)) result.splice(defaultOrder.indexOf(id), 0, id);
-    }
-    return result;
-  } catch {
-    return defaultOrder;
-  }
+function defaultOrders(): Orders {
+  const out = {} as Orders;
+  for (const page of BLOCK_ORDER_PAGES) out[page] = [...DEFAULT_BLOCK_ORDERS[page]];
+  return out;
 }
 
-/** GET : retourne blocs masqués + modes de largeur + ordre des blocs par page (public). */
+/**
+ * Réponse renvoyée au client.
+ *
+ * `orders` est le format courant. Les champs `blockOrderXxx` sont conservés
+ * pour les clients déjà servis avant un déploiement — ils seront retirés une
+ * fois toutes les pages migrées.
+ */
+function buildPayload(
+  hiddenBlocks: string[],
+  blockWidthModes: Record<string, 'full' | 'max1600'>,
+  orders: Orders
+) {
+  const legacy: Record<string, string[]> = {};
+  for (const page of BLOCK_ORDER_PAGES) {
+    legacy[`blockOrder${page.charAt(0).toUpperCase()}${page.slice(1)}`] = orders[page];
+  }
+  return { hiddenBlocks, blockWidthModes, orders, ...legacy };
+}
+
+/** GET : blocs masqués + modes de largeur + ordre des blocs par page (public). */
 export async function GET() {
   try {
     if (!supabaseAdmin || !supabaseUrl || !serviceKey) {
-      return NextResponse.json({
-        hiddenBlocks: [],
-        blockWidthModes: {},
-        blockOrderHome: DEFAULT_ORDER_HOME,
-        blockOrderContact: DEFAULT_ORDER_CONTACT,
-        blockOrderAnimation: DEFAULT_ORDER_ANIMATION,
-        blockOrderRealisation: DEFAULT_ORDER_REALISATION,
-        blockOrderEvenement: DEFAULT_ORDER_EVENEMENT,
-        blockOrderCorporate: DEFAULT_ORDER_CORPORATE,
-        blockOrderPortrait: DEFAULT_ORDER_PORTRAIT,
-        blockOrderGaleries: DEFAULT_ORDER_GALERIES,
-      });
+      return NextResponse.json(buildPayload([], {}, defaultOrders()));
     }
-    const { data: visData } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'block_visibility').maybeSingle();
-    const { data: widthData } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'block_width_mode').maybeSingle();
-    const { data: orderHomeData } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'block_order_home').maybeSingle();
-    const { data: orderContactData } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'block_order_contact').maybeSingle();
-    const { data: orderAnimationData } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'block_order_animation').maybeSingle();
-    const { data: orderRealisationData } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'block_order_realisation').maybeSingle();
-    const { data: orderEvenementData } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'block_order_evenement').maybeSingle();
-    const { data: orderCorporateData } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'block_order_corporate').maybeSingle();
-    const { data: orderPortraitData } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'block_order_portrait').maybeSingle();
-    const { data: orderGaleriesData } = await supabaseAdmin.from('site_settings').select('value').eq('key', 'block_order_galeries').maybeSingle();
 
-    const raw = (visData as any)?.value;
+    // Une seule requête pour toutes les clés : l'ancienne version en émettait
+    // dix en série, ce qui allongeait d'autant le premier rendu.
+    const keys = [
+      'block_visibility',
+      'block_width_mode',
+      ...BLOCK_ORDER_PAGES.map(orderSettingKey),
+    ];
+    const { data } = await supabaseAdmin
+      .from('site_settings')
+      .select('key,value')
+      .in('key', keys as any);
+
+    const map: Record<string, string> = {};
+    (data || []).forEach((r: any) => {
+      if (r && typeof r.key === 'string') map[r.key] = String(r.value ?? '');
+    });
+
     let hiddenBlocks: string[] = [];
-    if (raw && typeof raw === 'string') {
+    const rawHidden = map['block_visibility'];
+    if (rawHidden) {
       try {
-        const parsed = JSON.parse(raw);
-        hiddenBlocks = Array.isArray(parsed) ? parsed : (parsed.hiddenBlocks && Array.isArray(parsed.hiddenBlocks) ? parsed.hiddenBlocks : []);
+        const parsed = JSON.parse(rawHidden);
+        if (Array.isArray(parsed)) hiddenBlocks = parsed.filter((v) => typeof v === 'string');
+        else if (Array.isArray(parsed?.hiddenBlocks)) hiddenBlocks = parsed.hiddenBlocks;
       } catch {
-        // keep []
+        // valeur illisible → aucun bloc masqué
       }
     }
-    const widthRaw = (widthData as any)?.value;
+
     let blockWidthModes: Record<string, 'full' | 'max1600'> = {};
-    if (widthRaw && typeof widthRaw === 'string') {
+    const rawWidth = map['block_width_mode'];
+    if (rawWidth) {
       try {
-        const parsed = JSON.parse(widthRaw);
+        const parsed = JSON.parse(rawWidth);
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
           blockWidthModes = parsed;
         }
       } catch {
-        // keep {}
+        // valeur illisible → tous les blocs en pleine largeur
       }
     }
-    const blockOrderHome = parseOrder((orderHomeData as any)?.value, DEFAULT_ORDER_HOME);
-    const blockOrderContact = parseOrder((orderContactData as any)?.value, DEFAULT_ORDER_CONTACT);
-    const blockOrderAnimation = parseOrder((orderAnimationData as any)?.value, DEFAULT_ORDER_ANIMATION);
-    const blockOrderRealisation = parseOrder((orderRealisationData as any)?.value, DEFAULT_ORDER_REALISATION);
-    const blockOrderEvenement = parseOrder((orderEvenementData as any)?.value, DEFAULT_ORDER_EVENEMENT);
-    const blockOrderCorporate = parseOrder((orderCorporateData as any)?.value, DEFAULT_ORDER_CORPORATE);
-    const blockOrderPortrait = parseOrder((orderPortraitData as any)?.value, DEFAULT_ORDER_PORTRAIT);
-    const blockOrderGaleries = parseOrder((orderGaleriesData as any)?.value, DEFAULT_ORDER_GALERIES);
 
-    return NextResponse.json({
-      hiddenBlocks,
-      blockWidthModes,
-      blockOrderHome,
-      blockOrderContact,
-      blockOrderAnimation,
-      blockOrderRealisation,
-      blockOrderEvenement,
-      blockOrderCorporate,
-      blockOrderPortrait,
-      blockOrderGaleries,
-    });
+    const orders = {} as Orders;
+    for (const page of BLOCK_ORDER_PAGES) {
+      orders[page] = parseBlockOrder(map[orderSettingKey(page)], DEFAULT_BLOCK_ORDERS[page]);
+    }
+
+    return NextResponse.json(buildPayload(hiddenBlocks, blockWidthModes, orders));
   } catch (e) {
     console.error('block-visibility GET error', e);
-    return NextResponse.json({
-      hiddenBlocks: [],
-      blockWidthModes: {},
-      blockOrderHome: DEFAULT_ORDER_HOME,
-      blockOrderContact: DEFAULT_ORDER_CONTACT,
-      blockOrderAnimation: DEFAULT_ORDER_ANIMATION,
-      blockOrderRealisation: DEFAULT_ORDER_REALISATION,
-      blockOrderEvenement: DEFAULT_ORDER_EVENEMENT,
-      blockOrderCorporate: DEFAULT_ORDER_CORPORATE,
-      blockOrderPortrait: DEFAULT_ORDER_PORTRAIT,
-      blockOrderGaleries: DEFAULT_ORDER_GALERIES,
-    });
+    return NextResponse.json(buildPayload([], {}, defaultOrders()));
   }
 }

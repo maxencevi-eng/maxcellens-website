@@ -1,86 +1,104 @@
-.tabs{display:flex;gap:8px;margin-bottom:12px}
-.tabs button{background:transparent;border:1px solid #eee;padding:8px 12px;border-radius:6px;cursor:pointer}
-.tabs button.active{background:#f5f5f5;border-color:#ddd;font-weight:700}
-.panel{display:flex;flex-direction:column;gap:8px}
-.panel label{font-size:13px;color:var(--muted)}
-.panel input[type="color"]{width:48px;height:32px;padding:0;border:none;border-radius:6px;cursor:pointer}
-.panel h4{margin:12px 0 6px;font-size:14px}
-.panel { border-top: 1px solid var(--border); padding-top: 12px }
+.hiddenInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
 
-.colorsGrid {
+/* ── Aperçu des boutons du site ───────────────────────────────────────── */
+.buttonPreview {
+  display: flex;
+  gap: var(--adm-space-3);
+  flex-wrap: wrap;
+  padding: var(--adm-space-5);
+  border-radius: var(--adm-radius);
+  border: 1px solid var(--adm-border);
+  background: var(--block-bg, var(--adm-surface-sunken));
+}
+
+.buttonPreview button {
+  padding: 10px 18px;
+  font-family: var(--adm-font);
+  font-size: var(--adm-text-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ── Polices importées ────────────────────────────────────────────────── */
+.fontList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--adm-space-2);
+}
+
+.fontItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--adm-space-3);
+  padding: var(--adm-space-2) var(--adm-space-3);
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface-sunken);
+}
+
+.fontSample {
+  min-width: 0;
+  font-size: var(--adm-text-lg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Textures de fond ─────────────────────────────────────────────────── */
+.presetGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--adm-space-2);
 }
 
-/* Ligne couleur : label + input alignés (mobile) */
-.colorRow {
+.preset {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-.colorRow label { margin: 0; flex: 1; min-width: 0; }
-.colorRow input[type="color"] { flex-shrink: 0; }
-
-@media (max-width: 768px) {
-  .colorsGrid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  .tabs {
-    gap: 6px;
-    margin-bottom: 16px;
-  }
-  .tabs button {
-    flex: 1;
-    padding: 12px 14px;
-    font-size: 15px;
-    min-height: 44px;
-  }
-  .panel {
-    gap: 4px;
-  }
-  .panel h4 {
-    margin: 16px 0 10px;
-    font-size: 15px;
-  }
-  .panel input[type="color"] {
-    width: 56px;
-    min-width: 56px;
-    height: 40px;
-    min-height: 40px;
-  }
-  .colorRow {
-    margin-bottom: 14px;
-    gap: 14px;
-  }
-  .colorRow label {
-    font-size: 14px;
-  }
-  .panel p {
-    margin-bottom: 14px;
-    font-size: 14px;
-    line-height: 1.4;
-  }
-}
-@media (max-width: 560px) {
-  .colorsGrid { grid-template-columns: 1fr; }
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--adm-space-3);
+  border: 1px solid var(--adm-border-strong);
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface-field);
+  color: var(--adm-ink);
+  font-family: var(--adm-font);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--adm-duration) var(--adm-ease),
+              background var(--adm-duration) var(--adm-ease);
 }
 
-/* Typographie : lignes qui wrap sur mobile */
-.typographyRow {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+.preset:hover { border-color: var(--adm-accent); }
+.preset:focus-visible { outline: none; box-shadow: var(--adm-shadow-focus); }
+
+.presetActive {
+  border-color: var(--adm-accent);
+  background: var(--adm-accent-wash);
 }
-@media (max-width: 768px) {
-  .typographyRow {
-    flex-wrap: wrap;
-  }
-  .typographyRow select,
-  .typographyRow input {
-    min-width: 0;
-  }
+
+.presetLabel {
+  font-size: var(--adm-text-base);
+  font-weight: 700;
+}
+
+.presetDesc {
+  font-size: var(--adm-text-xs);
+  color: var(--adm-ink-muted);
+}
+
+.bgPreview {
+  display: block;
+  max-width: 100%;
+  max-height: 140px;
+  border-radius: var(--adm-radius-sm);
+  object-fit: cover;
 }

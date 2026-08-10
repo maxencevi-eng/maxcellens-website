@@ -1,5 +1,6 @@
 "use client";
 
+import BuiltinPageBlocks from '../PageBuilder/BuiltinPageBlocks';
 import React, { Fragment, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
@@ -412,10 +413,12 @@ export default function AnimationPageClient() {
   };
 
   return (
-    <div style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' }}>
+    <div className="page-blocks" style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' }}>
       {blockOrderAnimation.map((blockId) => (
         <Fragment key={blockId}>{sections[blockId] ?? null}</Fragment>
       ))}
+      {/* Blocs ajoutés depuis l’administration, après les blocs intégrés */}
+      <BuiltinPageBlocks pageKey="animation" />
       {editBlock && (
         <AnimationBlockModal
           blockKey={editBlock}

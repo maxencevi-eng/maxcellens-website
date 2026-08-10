@@ -1,5 +1,6 @@
 "use no memo";
 "use client";
+import { AdminModal } from '../admin';
 
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
@@ -137,10 +138,12 @@ export default function ContactZonesEditModal({
   }
 
   if (loading) {
+    // Même coque que l'état chargé : la modale ne « saute » pas à l'arrivée
+    // des données.
     return (
-      <div className="modal-overlay-mobile" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 50000, padding: "70px 16px 16px", overflowY: "auto" }}>
-        <div style={{ background: "#fff", padding: 24, borderRadius: 8 }}>Chargement…</div>
-      </div>
+      <AdminModal title="Zones d’intervention" size="md" onClose={onClose} footer={null}>
+        Chargement…
+      </AdminModal>
     );
   }
 
@@ -161,12 +164,13 @@ export default function ContactZonesEditModal({
   const backgroundColor = zones.backgroundColor ?? "";
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 50000, padding: "70px 16px 16px", overflowY: "auto" }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: "#fff", color: "#000", padding: 20, width: 560, maxWidth: "98%", borderRadius: 10, alignSelf: "flex-start" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ margin: 0 }}>Modifier les zones</h3>
-          <button type="button" onClick={onClose} aria-label="Fermer" style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}>✕</button>
-        </div>
+    <AdminModal
+      title="Zones d’intervention"
+      subtitle="Secteurs géographiques affichés sur la page Contact."
+      size="md"
+      onClose={onClose}
+      footer={null}
+    >
 
         <ModalTabs
           tabs={[
@@ -279,8 +283,8 @@ export default function ContactZonesEditModal({
           <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>Annuler</button>
           <button type="button" className="btn-primary" onClick={save} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</button>
         </div>
-      </div>
 
+      {/* Éditeurs de texte riche : AdminModal les empile au-dessus de celui-ci. */}
       {editingZone === "qg" && (
         <RichTextModal title="Éditer zone QG" initial={zones.qg?.text ?? ""} onClose={() => setEditingZone(null)} onSave={(h) => { setZones((z) => ({ ...z, qg: { ...z.qg, text: h } })); setEditingZone(null); }} />
       )}
@@ -290,6 +294,6 @@ export default function ContactZonesEditModal({
       {editingZone === "france" && (
         <RichTextModal title="Éditer zone France & Monde" initial={zones.france?.text ?? ""} onClose={() => setEditingZone(null)} onSave={(h) => { setZones((z) => ({ ...z, france: { ...z.france, text: h } })); setEditingZone(null); }} />
       )}
-    </div>
+    </AdminModal>
   );
 }

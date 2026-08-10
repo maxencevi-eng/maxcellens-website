@@ -1,4 +1,5 @@
 "use client";
+import useFooterMenuItems from './useFooterMenuItems';
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -75,6 +76,8 @@ export default function Footer() {
   const [footerColumn1, setFooterColumn1] = useState<string | null>(null);
   const [footerBottomText, setFooterBottomText] = useState<string | null>(null);
   const [footerMenuVisible, setFooterMenuVisible] = useState<any | null>(null);
+  /** Entrées du pied de page, résolues comme celles du menu du site. */
+  const { items: footerItems } = useFooterMenuItems(footerMenuVisible);
   const [sanitizedCol1, setSanitizedCol1] = useState<string | null>(null);
   const [sanitizedBottom, setSanitizedBottom] = useState<string | null>(null);
   const [imgError, setImgError] = useState(false);
@@ -380,31 +383,41 @@ export default function Footer() {
     </div>
   );
 
+  /* Les liens sont répartis en deux colonnes à partir de la même liste
+     d'entrées que les menus du site : les pages créées depuis l'administration
+     y figurent donc aussi, dans l'ordre réglé dans « Pied de page →
+     Navigation ». `SERVICE_HREFS` détermine la colonne d'accueil. */
+  const SERVICE_HREFS = new Set([
+    '/realisation',
+    '/evenement',
+    '/corporate',
+    '/portrait',
+    '/animation',
+    '/galeries',
+  ]);
+
+  const serviceItems = footerItems.filter((i) => SERVICE_HREFS.has(i.href));
+  const infoItems = footerItems.filter((i) => !SERVICE_HREFS.has(i.href));
+
+  const renderLink = (item: { id: string; href: string; label: string }) => (
+    <li key={item.id}>
+      <Link href={item.href} data-analytics-id={`Footer|${item.label}`}>
+        {item.label}
+      </Link>
+    </li>
+  );
+
   const colServices = (
     <div className={`${styles.col} ${styles.colServices}`} key="colServices">
       <h4>Services</h4>
-      <ul className={styles.list}>
-        {(!footerMenuVisible || footerMenuVisible.realisation) && <li><Link href="/realisation" data-analytics-id="Footer|Réalisation">Réalisation</Link></li>}
-        {(!footerMenuVisible || footerMenuVisible.evenement) && <li><Link href="/evenement" data-analytics-id="Footer|Évènement">Évènement</Link></li>}
-        {(!footerMenuVisible || footerMenuVisible.corporate) && <li><Link href="/corporate" data-analytics-id="Footer|Corporate">Corporate</Link></li>}
-        {(!footerMenuVisible || footerMenuVisible.portrait) && <li><Link href="/portrait" data-analytics-id="Footer|Portrait">Portrait</Link></li>}
-        {(!footerMenuVisible || footerMenuVisible.animation) && <li><Link href="/animation" data-analytics-id="Footer|Animation">Animation</Link></li>}
-        {(!footerMenuVisible || footerMenuVisible.galleries) && <li><Link href="/galeries" data-analytics-id="Footer|Galeries">Galeries</Link></li>}
-      </ul>
+      <ul className={styles.list}>{serviceItems.map(renderLink)}</ul>
     </div>
   );
-
-  
 
   const colInfo = (
     <div className={`${styles.col} ${styles.colInfo}`} key="colInfo">
       <h4>Information</h4>
-      <ul className={styles.list}>
-        {(!footerMenuVisible || footerMenuVisible.contact) && <li><Link href="/contact" data-analytics-id="Footer|Contact">Contact</Link></li>}
-        {(!footerMenuVisible || (footerMenuVisible as any).mentionsLegales !== false) && <li><Link href="/mentions-legales" data-analytics-id="Footer|Mentions">Mentions légales</Link></li>}
-        {(!footerMenuVisible || (footerMenuVisible as any).politiqueConfidentialite !== false) && <li><Link href="/politique-de-confidentialite" data-analytics-id="Footer|Confidentialite">Confidentialité</Link></li>}
-        {footerMenuVisible?.admin === true && <li><Link href="/admin" data-analytics-id="Footer|Admin">Admin</Link></li>}
-      </ul>
+      <ul className={styles.list}>{infoItems.map(renderLink)}</ul>
     </div>
   );
 

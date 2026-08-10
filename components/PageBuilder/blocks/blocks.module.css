@@ -1,0 +1,252 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Blocs du page builder.
+
+   Toutes les couleurs sont celles du centre de style du site (--fg, --bg,
+   --block-bg, --button-1-*), jamais des valeurs en dur : un bloc doit suivre
+   le thème comme n'importe quelle section historique.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.block {
+  position: relative;
+  box-sizing: border-box;
+}
+
+.inner {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: var(--content-inner-max-width-desktop, 1200px);
+  padding-left: var(--block-inner-padding-desktop, 24px);
+  padding-right: var(--block-inner-padding-desktop, 24px);
+  box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  .inner {
+    max-width: var(--content-inner-max-width-mobile, 100%);
+    padding-left: var(--block-inner-padding-mobile, 16px);
+    padding-right: var(--block-inner-padding-mobile, 16px);
+  }
+}
+
+/* ── Séparateur ───────────────────────────────────────────────────────── */
+.separator {
+  border: none;
+  margin: 0 auto;
+  background: none;
+}
+
+.separatorSolid {
+  border-top-width: var(--sep-thickness, 1px);
+  border-top-style: solid;
+  border-top-color: var(--sep-color, currentColor);
+}
+
+.separatorDashed {
+  border-top-width: var(--sep-thickness, 1px);
+  border-top-style: dashed;
+  border-top-color: var(--sep-color, currentColor);
+}
+
+.separatorDotted {
+  border-top-width: var(--sep-thickness, 2px);
+  border-top-style: dotted;
+  border-top-color: var(--sep-color, currentColor);
+}
+
+.separatorGradient {
+  height: var(--sep-thickness, 1px);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--sep-color, currentColor),
+    transparent
+  );
+}
+
+/* Ornement : un losange centré sur un filet */
+.separatorOrnament {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--sep-color, currentColor);
+}
+
+.separatorOrnament::before,
+.separatorOrnament::after {
+  content: '';
+  flex: 1 1 auto;
+  height: var(--sep-thickness, 1px);
+  background: currentColor;
+  opacity: 0.5;
+}
+
+.ornamentMark {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  background: currentColor;
+}
+
+/* ── Espace ───────────────────────────────────────────────────────────── */
+.spacer {
+  display: block;
+  width: 100%;
+  height: var(--spacer-height-desktop, 48px);
+}
+
+@media (max-width: 767px) {
+  .spacer { height: var(--spacer-height-mobile, 32px); }
+}
+
+/* ── Bouton ───────────────────────────────────────────────────────────── */
+.buttonRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.alignLeft { justify-content: flex-start; }
+.alignCenter { justify-content: center; }
+.alignRight { justify-content: flex-end; }
+
+.buttonLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.btnSizeSm { padding: 9px 16px; font-size: 0.85rem; }
+.btnSizeMd { padding: 12px 22px; font-size: 0.95rem; }
+.btnSizeLg { padding: 16px 30px; font-size: 1.05rem; }
+
+@media (max-width: 767px) {
+  .buttonFullMobile { width: 100%; }
+  .buttonFullMobile .buttonLink { width: 100%; }
+}
+
+/* ── Texte riche ──────────────────────────────────────────────────────── */
+.richText {
+  color: var(--color-text, var(--fg));
+  line-height: 1.6;
+}
+
+.richText :first-child { margin-top: 0; }
+.richText :last-child { margin-bottom: 0; }
+
+.richText a {
+  color: var(--color-link, var(--color-primary));
+  text-decoration: underline;
+}
+.richText a:hover { color: var(--color-link-hover, var(--color-primary)); }
+
+.richText img { max-width: 100%; height: auto; }
+
+/* ── Image ────────────────────────────────────────────────────────────── */
+.imageFigure { margin: 0; }
+
+.imageEl {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.imageCaption {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--muted, #6b7280);
+  text-align: center;
+}
+
+/* ── Titre ────────────────────────────────────────────────────────────── */
+.headingEl {
+  margin: 0;
+  color: var(--color-text, var(--fg));
+  overflow-wrap: break-word;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+/* ── Colonnes ─────────────────────────────────────────────────────────── */
+.columns {
+  display: grid;
+  gap: var(--columns-gap, 24px);
+  align-items: var(--columns-align, start);
+}
+
+.columnsCount2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.columnsCount3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.columnsCount4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* Colonnes asymétriques */
+.columnsRatioWideLeft { grid-template-columns: 2fr 1fr; }
+.columnsRatioWideRight { grid-template-columns: 1fr 2fr; }
+
+@media (max-width: 900px) {
+  .columnsCount3, .columnsCount4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .columns,
+  .columnsCount2, .columnsCount3, .columnsCount4,
+  .columnsRatioWideLeft, .columnsRatioWideRight {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Intégration externe ──────────────────────────────────────────────── */
+.embed { width: 100%; }
+
+.embed iframe {
+  display: block;
+  width: 100%;
+  border: none;
+}
+
+.embedRatio {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: var(--embed-ratio, 56.25%);
+}
+
+.embedRatio iframe,
+.embedRatio > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── État admin ───────────────────────────────────────────────────────── */
+.placeholder {
+  padding: 32px 20px;
+  border: 1px dashed var(--adm-border-strong, #cfc9bb);
+  border-radius: var(--adm-radius, 13px);
+  text-align: center;
+  color: var(--muted, #6b7280);
+  font-size: 0.9rem;
+}

@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from '../admin';
 
 import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -154,16 +155,14 @@ export default function EditablePortraitGallery({ items: initialItems, settingsK
         )}
       </div>
 
-      {open && createPortal(
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 60000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '70px 16px 32px', overflowY: 'auto' }} onMouseDown={(e) => { if (e.target === e.currentTarget) closeEditor(); }}>
-          <div style={{ width: '95%', maxWidth: 900, background: '#fff', borderRadius: 8, padding: 16, alignSelf: 'flex-start', flexShrink: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h3 style={{ margin: 0 }}>Modifier la galerie{galleryLabel ? ` ${galleryLabel}` : ''}</h3>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={closeEditor} className="btn-ghost">Annuler</button>
-                <button onClick={save} className="btn-primary">Enregistrer</button>
-              </div>
-            </div>
+      {open ? (
+        <AdminModal
+          title={`Galerie photo${galleryLabel ? ` — ${galleryLabel}` : ''}`}
+          subtitle="Ajoutez, réorganisez ou remplacez les photos."
+          size="xl"
+          onClose={closeEditor}
+          onSave={save}
+        >
 
             <div style={{ marginBottom: 12, borderBottom: '1px solid #eee', paddingBottom: 12 }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, alignItems: 'start' }}>
@@ -244,10 +243,8 @@ export default function EditablePortraitGallery({ items: initialItems, settingsK
                 ))}
               </div>
             </div>
-
-          </div>
-        </div>
-      , document.body)}
+        </AdminModal>
+      ) : null}
     </div>
   );
 }

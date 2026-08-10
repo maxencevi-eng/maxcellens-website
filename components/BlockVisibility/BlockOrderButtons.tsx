@@ -1,80 +1,47 @@
 "use client";
 
-import React from "react";
-import { useBlockVisibility, type BlockOrderPage } from "./BlockVisibilityContext";
+import React from 'react';
+import { ArrowDown, ArrowUp } from 'lucide-react';
+import { AdminToolbarButton } from '../admin/AdminToolbar';
+import { useBlockVisibility } from './BlockVisibilityContext';
+import type { BlockOrderPage } from './blockOrders';
 
-const arrowUpSvg = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 19V5" />
-    <path d="M5 12l7-7 7 7" />
-  </svg>
-);
-
-const arrowDownSvg = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 5v14" />
-    <path d="M19 12l-7 7-7-7" />
-  </svg>
-);
-
-const btnStyle: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  width: 36,
-  height: 36,
-  padding: 0,
-  border: "none",
-  borderRadius: 6,
-  background: "#111",
-  color: "#fff",
-  cursor: "pointer",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-};
-
-type Props = {
+/**
+ * Flèches de déplacement d'un bloc historique.
+ *
+ * L'ordre lu est celui de la page entière — blocs intégrés ET blocs ajoutés
+ * depuis l'administration (identifiants `dyn:…`). Un bloc d'origine peut donc
+ * être déplacé au-dessus ou en dessous d'un bloc ajouté, et réciproquement.
+ */
+export default function BlockOrderButtons({
+  page,
+  blockId,
+}: {
   page: BlockOrderPage;
   blockId: string;
-  style?: React.CSSProperties;
-};
-
-export default function BlockOrderButtons({ page, blockId, style }: Props) {
-  const { blockOrderHome, blockOrderContact, blockOrderAnimation, blockOrderRealisation, blockOrderEvenement, blockOrderCorporate, blockOrderPortrait, blockOrderGaleries, isAdmin, moveBlock } = useBlockVisibility();
+}) {
+  const { getOrder, isAdmin, moveBlock } = useBlockVisibility();
   if (!isAdmin) return null;
-  const order =
-    page === "home" ? blockOrderHome
-    : page === "contact" ? blockOrderContact
-    : page === "animation" ? blockOrderAnimation
-    : page === "realisation" ? blockOrderRealisation
-    : page === "evenement" ? blockOrderEvenement
-    : page === "corporate" ? blockOrderCorporate
-    : page === "portrait" ? blockOrderPortrait
-    : blockOrderGaleries;
+
+  const order = getOrder(page);
   const index = order.indexOf(blockId);
   const canMoveUp = index > 0;
   const canMoveDown = index >= 0 && index < order.length - 1;
+
   return (
     <>
-      <button
-        type="button"
-        onClick={() => moveBlock(page, blockId, "up")}
+      <AdminToolbarButton
+        icon={<ArrowUp size={14} aria-hidden="true" />}
+        label="Monter le bloc"
         disabled={!canMoveUp}
-        title="Déplacer le bloc vers le haut"
-        aria-label="Déplacer le bloc vers le haut"
-        style={{ ...btnStyle, ...style, opacity: canMoveUp ? 1 : 0.4, cursor: canMoveUp ? "pointer" : "default" }}
-      >
-        {arrowUpSvg}
-      </button>
-      <button
-        type="button"
-        onClick={() => moveBlock(page, blockId, "down")}
+        onClick={() => moveBlock(page, blockId, 'up')}
+      />
+      <AdminToolbarButton
+        icon={<ArrowDown size={14} aria-hidden="true" />}
+        label="Descendre le bloc"
         disabled={!canMoveDown}
-        title="Déplacer le bloc vers le bas"
-        aria-label="Déplacer le bloc vers le bas"
-        style={{ ...btnStyle, ...style, opacity: canMoveDown ? 1 : 0.4, cursor: canMoveDown ? "pointer" : "default" }}
-      >
-        {arrowDownSvg}
-      </button>
+        onClick={() => moveBlock(page, blockId, 'down')}
+      />
     </>
   );
 }

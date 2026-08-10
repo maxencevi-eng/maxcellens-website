@@ -1,4 +1,5 @@
 "use client";
+import { AdminModal } from '../admin';
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -249,44 +250,13 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
   };
 
   if (typeof document === 'undefined') return null;
-  return createPortal(
-    <div
-      className="modal-overlay-mobile"
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.45)",
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
-        zIndex: 50000,
-        padding: "70px 16px 16px",
-        overflowY: "auto",
-      }}
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+  return (
+    <AdminModal
+      title={blockTitles[blockKey]}
+      size="lg"
+      onClose={onClose}
+      footer={null}
     >
-      <div
-        style={{
-          background: "#fff",
-          color: "#000",
-          padding: 20,
-          width: 720,
-          maxWidth: "98%",
-          borderRadius: 10,
-          alignSelf: "flex-start",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0 }}>{blockTitles[blockKey]}</h3>
-          <button
-            onClick={onClose}
-            aria-label="Fermer"
-            style={{ background: "transparent", border: "none", fontSize: 20, cursor: "pointer" }}
-          >
-            ✕
-          </button>
-        </div>
-
         {!isCta && (
           <ModalTabs
             tabs={[
@@ -636,8 +606,6 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
             }}
           />
         )}
-      </div>
-    </div>,
-    document.body
+    </AdminModal>
   );
 }

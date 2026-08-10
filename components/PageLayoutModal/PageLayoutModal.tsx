@@ -1,44 +1,51 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { Monitor, Smartphone } from 'lucide-react';
+import {
+  AdminModal,
+  AdminNotice,
+  AdminSection,
+  NumberField,
+  SliderField,
+} from '../admin';
+import {
+  applyLayoutVars,
+  DEFAULT_LAYOUT,
+  normalizeLayout,
+  PAGE_LAYOUT_UPDATED,
+  type LayoutSection,
+  type PageLayout,
+} from './pageLayout';
+import styles from './PageLayoutModal.module.css';
 
-type LayoutSection = {
-  containerMaxWidth: number;
-  /** Largeur max. de la zone contenu (texte / blocs) à l’intérieur du corps. */
-  contentInnerMaxWidth: number;
-  /** Hauteur min. de la zone contenu (px) — 0 = pas de minimum. */
-  contentInnerMinHeight: number;
-  blockInnerPadding: number;
-  marginHorizontal: number;
-  marginVertical: number;
-  sectionGap: number;
-};
+type Device = 'desktop' | 'mobile';
 
-const defaultDesktop: LayoutSection = {
-  containerMaxWidth: 1200,
-  contentInnerMaxWidth: 2000,
-  contentInnerMinHeight: 0,
-  blockInnerPadding: 24,
-  marginHorizontal: 24,
-  marginVertical: 0,
-  sectionGap: 48,
-};
-
-const defaultMobile: LayoutSection = {
-  containerMaxWidth: 1000,
-  contentInnerMaxWidth: 1200,
-  contentInnerMinHeight: 0,
-  blockInnerPadding: 16,
-  marginHorizontal: 16,
-  marginVertical: 0,
-  sectionGap: 32,
-};
-
-export default function PageLayoutModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
-  const [desktop, setDesktop] = useState<LayoutSection>(defaultDesktop);
-  const [mobile, setMobile] = useState<LayoutSection>(defaultMobile);
+/**
+ * Dimensions & mise en page.
+ *
+ * Corrections apportées à la version précédente :
+ *  · « Espace entre sections » n'avait aucun effet (variables CSS écrites mais
+ *    jamais consommées) — désormais câblé sur `.page-blocks`.
+ *  · « Marge verticale » était enregistrée en base sans champ ni variable —
+ *    désormais exposée et appliquée à `.content-inner`.
+ *  · Les réglages ne s'appliquaient qu'à l'enregistrement — l'aperçu est
+ *    maintenant instantané, avec retour à l'état initial si on annule.
+ */
+export default function PageLayoutModal({
+  onClose,
+  onSaved,
+}: {
+  onClose: () => void;
+  onSaved?: () => void;
+}) {
+  const [device, setDevice] = useState<Device>('desktop');
+  const [layout, setLayout] = useState<PageLayout>(DEFAULT_LAYOUT);
+  const [baseline, setBaseline] = useState<string>(JSON.stringify(DEFAULT_LAYOUT));
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -46,149 +53,211 @@ export default function PageLayoutModal({ onClose, onSaved }: { onClose: () => v
       .then((r) => r.json())
       .then((data) => {
         if (!mounted) return;
-        setDesktop({ ...defaultDesktop, ...data.desktop });
-        setMobile({ ...defaultMobile, ...data.mobile });
+        const next = normalizeLayout(data);
+        setLayout(next);
+        setBaseline(JSON.stringify(next));
       })
-      .catch(() => {});
+      .catch(() => { if (mounted) setError('Chargement impossible'); })
+      .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, []);
 
-  function updateDesktop(k: keyof LayoutSection, v: number) {
-    setDesktop((s) => ({ ...s, [k]: v }));
-  }
-  function updateMobile(k: keyof LayoutSection, v: number) {
-    setMobile((s) => ({ ...s, [k]: v }));
+  /** Aperçu en direct : on écrit les variables sans persister. */
+  function update(key: keyof LayoutSection, value: number) {
+    setSaved(false);
+    setLayout((prev) => {
+      const next = { ...prev, [device]: { ...prev[device], [key]: value } };
+      applyLayoutVars(next);
+      return next;
+    });
   }
 
-  const parse = (v: string, def: number) => Number(v) || def;
+  const dirty = JSON.stringify(layout) !== baseline;
+
+  /** Annuler doit rendre la page à son état d'avant l'ouverture. */
+  function handleClose() {
+    if (dirty) {
+      try { applyLayoutVars(JSON.parse(baseline)); } catch (_) {}
+    }
+    onClose();
+  }
 
   async function save() {
     setSaving(true);
-    setMessage(null);
+    setError(null);
     try {
-      const value = JSON.stringify({ desktop, mobile });
       const resp = await fetch('/api/admin/site-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'page_layout', value }),
+        body: JSON.stringify({ key: 'page_layout', value: JSON.stringify(layout) }),
       });
       if (!resp.ok) {
         const j = await resp.json().catch(() => ({}));
-        throw new Error((j as any).error || 'Erreur sauvegarde');
+        throw new Error((j as any)?.error || 'Échec de l’enregistrement');
       }
-      applyVars(desktop, mobile);
+      applyLayoutVars(layout);
+      setBaseline(JSON.stringify(layout));
+      setSaved(true);
       try {
-        window.dispatchEvent(new CustomEvent('page-layout-updated', { detail: { desktop, mobile } }));
+        window.dispatchEvent(new CustomEvent(PAGE_LAYOUT_UPDATED, { detail: layout }));
       } catch (_) {}
-      setMessage('Enregistré');
       onSaved?.();
-      setTimeout(() => onClose(), 800);
     } catch (e: any) {
-      setMessage(e?.message || 'Erreur');
+      setError(e?.message || 'Échec de l’enregistrement');
     } finally {
       setSaving(false);
     }
   }
 
+  const s = layout[device];
+  const isDesktop = device === 'desktop';
+
   return (
-    <div className="modal-overlay-mobile" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50000 }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: '#fff', color: '#000', padding: 24, width: 560, maxWidth: 'calc(100% - 24px)', maxHeight: 'calc(100vh - 24px)', overflowY: 'auto', borderRadius: 12, boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }} onMouseDown={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h3 style={{ margin: 0, fontSize: 20 }}>Dimensions & mise en page</h3>
-          <button type="button" aria-label="Fermer" onClick={onClose} style={{ background: 'transparent', border: 'none', fontSize: 22, cursor: 'pointer', color: '#666' }}>✕</button>
-        </div>
+    <AdminModal
+      title="Dimensions & mise en page"
+      subtitle="Largeurs, marges et espacements du site. L’aperçu est instantané."
+      size="lg"
+      onClose={handleClose}
+      tabs={[
+        { id: 'desktop', label: 'Bureau', icon: <Monitor size={14} aria-hidden="true" /> },
+        { id: 'mobile', label: 'Mobile', icon: <Smartphone size={14} aria-hidden="true" /> },
+      ]}
+      activeTab={device}
+      onTabChange={(id) => setDevice(id as Device)}
+      dirty={dirty}
+      saving={saving}
+      saved={saved}
+      error={error}
+      onSave={save}
+    >
+      {loading ? (
+        <AdminNotice>Chargement des réglages…</AdminNotice>
+      ) : (
+        <>
+          <LayoutPreview section={s} device={device} />
 
-        <section style={{ marginBottom: 24 }}>
-          <h4 style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bureau</h4>
-          <div style={{ display: 'grid', gap: 12 }}>
-            <div>
-              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Largeur max. du corps de la page (px)</label>
-              <input type="number" min={800} max={2000} value={desktop.containerMaxWidth} onChange={(e) => updateDesktop('containerMaxWidth', parse(e.target.value, 1200))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Largeur max. de la zone contenu / texte (px)</label>
-              <input type="number" min={560} max={2400} value={desktop.contentInnerMaxWidth} onChange={(e) => updateDesktop('contentInnerMaxWidth', parse(e.target.value, 2000))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Hauteur min. de la zone contenu (px, 0 = pas de min)</label>
-              <input type="number" min={0} max={2000} value={desktop.contentInnerMinHeight} onChange={(e) => updateDesktop('contentInnerMinHeight', Math.max(0, parse(e.target.value, 0)))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Marge intérieure des blocs (px)</label>
-              <input type="number" min={0} max={120} value={desktop.blockInnerPadding} onChange={(e) => updateDesktop('blockInnerPadding', Math.max(0, parse(e.target.value, 0)))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Marge horizontale (px)</label>
-              <input type="number" min={0} max={80} value={desktop.marginHorizontal} onChange={(e) => updateDesktop('marginHorizontal', parse(e.target.value, 0))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Espace entre sections (px)</label>
-              <input type="number" min={0} max={120} value={desktop.sectionGap} onChange={(e) => updateDesktop('sectionGap', parse(e.target.value, 0))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-            </div>
-          </div>
-        </section>
+          <AdminSection
+            title="Largeurs"
+            description="Le corps contient toute la page ; la zone contenu contient les blocs et le texte."
+            columns={2}
+          >
+            <NumberField
+              label="Largeur max. du corps de la page"
+              value={s.containerMaxWidth}
+              onChange={(v) => update('containerMaxWidth', v)}
+              min={isDesktop ? 800 : 280}
+              max={isDesktop ? 2000 : 1200}
+              unit="px"
+            />
+            <NumberField
+              label="Largeur max. de la zone contenu"
+              value={s.contentInnerMaxWidth}
+              onChange={(v) => update('contentInnerMaxWidth', v)}
+              min={isDesktop ? 560 : 280}
+              max={isDesktop ? 2400 : 1400}
+              unit="px"
+            />
+          </AdminSection>
 
-        <section style={{ marginBottom: 24 }}>
-          <h4 style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mobile</h4>
-          <div style={{ display: 'grid', gap: 12 }}>
-            <div>
-              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Largeur max. du corps de la page (px)</label>
-              <input type="number" min={280} max={1200} value={mobile.containerMaxWidth} onChange={(e) => updateMobile('containerMaxWidth', parse(e.target.value, 1000))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Largeur max. de la zone contenu / texte (px)</label>
-              <input type="number" min={280} max={1400} value={mobile.contentInnerMaxWidth} onChange={(e) => updateMobile('contentInnerMaxWidth', parse(e.target.value, 1200))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Hauteur min. de la zone contenu (px, 0 = pas de min)</label>
-              <input type="number" min={0} max={1200} value={mobile.contentInnerMinHeight} onChange={(e) => updateMobile('contentInnerMinHeight', Math.max(0, parse(e.target.value, 0)))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Marge intérieure des blocs (px)</label>
-              <input type="number" min={0} max={80} value={mobile.blockInnerPadding} onChange={(e) => updateMobile('blockInnerPadding', Math.max(0, parse(e.target.value, 0)))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Marge horizontale (px)</label>
-              <input type="number" min={0} max={48} value={mobile.marginHorizontal} onChange={(e) => updateMobile('marginHorizontal', parse(e.target.value, 0))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Espace entre sections (px)</label>
-              <input type="number" min={0} max={80} value={mobile.sectionGap} onChange={(e) => updateMobile('sectionGap', parse(e.target.value, 0))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5e7eb' }} />
-            </div>
-          </div>
-        </section>
+          <AdminSection
+            title="Marges"
+            description="Marges extérieures du corps de page et marge intérieure appliquée à chaque bloc."
+            columns={2}
+          >
+            <SliderField
+              label="Marge horizontale"
+              value={s.marginHorizontal}
+              onChange={(v) => update('marginHorizontal', v)}
+              min={0}
+              max={isDesktop ? 80 : 48}
+            />
+            <SliderField
+              label="Marge verticale"
+              value={s.marginVertical}
+              onChange={(v) => update('marginVertical', v)}
+              min={0}
+              max={isDesktop ? 120 : 80}
+              hint="Espace au-dessus et en dessous de la zone contenu."
+            />
+            <SliderField
+              label="Marge intérieure des blocs"
+              value={s.blockInnerPadding}
+              onChange={(v) => update('blockInnerPadding', v)}
+              min={0}
+              max={isDesktop ? 120 : 80}
+            />
+            <SliderField
+              label="Espace entre sections"
+              value={s.sectionGap}
+              onChange={(v) => update('sectionGap', v)}
+              min={0}
+              max={isDesktop ? 120 : 80}
+              hint="Écart vertical ajouté entre deux blocs successifs."
+            />
+          </AdminSection>
 
-        {message && <div style={{ marginBottom: 12, fontSize: 13, color: message === 'Enregistré' ? '#166534' : '#b91c1c' }}>{message}</div>}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button type="button" onClick={onClose} className="btn-ghost" disabled={saving}>Annuler</button>
-          <button type="button" onClick={save} className="btn-primary" disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
-        </div>
-      </div>
-    </div>
+          <AdminSection title="Hauteur" columns={2}>
+            <NumberField
+              label="Hauteur min. de la zone contenu"
+              value={s.contentInnerMinHeight}
+              onChange={(v) => update('contentInnerMinHeight', v)}
+              min={0}
+              max={isDesktop ? 2000 : 1200}
+              unit="px"
+              hint="0 = aucune hauteur minimale."
+            />
+          </AdminSection>
+        </>
+      )}
+    </AdminModal>
   );
 }
 
-function applyVars(desktop: LayoutSection, mobile: LayoutSection): void {
-  const root = typeof document !== 'undefined' ? document.documentElement : null;
-  if (!root) return;
+/** Schéma proportionnel des réglages en cours — repère visuel, pas une maquette. */
+function LayoutPreview({ section, device }: { section: LayoutSection; device: Device }) {
+  const outerWidth = device === 'desktop' ? 1200 : 420;
+  const scale = 100 / outerWidth;
+  const bodyPct = Math.min(100, (section.containerMaxWidth * scale));
+  const contentPct = Math.min(
+    bodyPct,
+    (Math.min(section.contentInnerMaxWidth, section.containerMaxWidth) * scale)
+  );
 
-  const dMinHeight = desktop.contentInnerMinHeight ?? 0;
-  const dPadding = desktop.blockInnerPadding ?? 24;
-  const mMinHeight = mobile.contentInnerMinHeight ?? 0;
-  const mPadding = mobile.blockInnerPadding ?? 16;
-
-  root.style.setProperty('--container-max-width-desktop', `${desktop.containerMaxWidth}px`);
-  root.style.setProperty('--content-inner-max-width-desktop', `${desktop.contentInnerMaxWidth}px`);
-  root.style.setProperty('--content-inner-min-height-desktop', `${dMinHeight}px`);
-  root.style.setProperty('--block-inner-padding-desktop', `${dPadding}px`);
-  root.style.setProperty('--container-margin-x-desktop', `${desktop.marginHorizontal}px`);
-  root.style.setProperty('--section-gap-desktop', `${desktop.sectionGap}px`);
-  root.style.setProperty('--container-max-width-mobile', `${mobile.containerMaxWidth}px`);
-  root.style.setProperty('--content-inner-max-width-mobile', `${mobile.contentInnerMaxWidth}px`);
-  root.style.setProperty('--content-inner-min-height-mobile', `${mMinHeight}px`);
-  root.style.setProperty('--block-inner-padding-mobile', `${mPadding}px`);
-  root.style.setProperty('--container-margin-x-mobile', `${mobile.marginHorizontal}px`);
-  root.style.setProperty('--section-gap-mobile', `${mobile.sectionGap}px`);
+  return (
+    <div className={styles.preview} aria-hidden="true">
+      <div className={styles.previewViewport}>
+        <div className={styles.previewBody} style={{ width: `${bodyPct}%` }}>
+          <div
+            className={styles.previewContent}
+            style={{
+              width: `${(contentPct / bodyPct) * 100}%`,
+              paddingTop: Math.min(28, section.marginVertical / 2),
+              paddingBottom: Math.min(28, section.marginVertical / 2),
+            }}
+          >
+            <span
+              className={styles.previewBlock}
+              style={{ padding: Math.min(20, section.blockInnerPadding / 1.5) }}
+            >
+              Bloc
+            </span>
+            <span
+              className={styles.previewBlock}
+              style={{
+                padding: Math.min(20, section.blockInnerPadding / 1.5),
+                marginTop: Math.min(40, section.sectionGap),
+              }}
+            >
+              Bloc
+            </span>
+          </div>
+        </div>
+      </div>
+      <p className={styles.previewLegend}>
+        Corps {section.containerMaxWidth}px · contenu {section.contentInnerMaxWidth}px ·
+        marges {section.marginHorizontal}/{section.marginVertical}px ·
+        écart {section.sectionGap}px
+      </p>
+    </div>
+  );
 }
-
-export { applyVars };

@@ -1,0 +1,89 @@
+.tabs {
+  display: flex;
+  align-items: stretch;
+  gap: var(--adm-space-1);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  /* Le trait actif doit affleurer la bordure basse de la barre d'onglets */
+  margin-bottom: -1px;
+}
+
+.tabs::-webkit-scrollbar { height: 3px; }
+.tabs::-webkit-scrollbar-thumb {
+  background: var(--adm-border-strong);
+  border-radius: var(--adm-radius-pill);
+}
+
+.tab {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--adm-space-2);
+  padding: var(--adm-space-3) var(--adm-space-4);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--adm-ink-muted);
+  font-family: var(--adm-font);
+  font-size: var(--adm-text-base);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--adm-duration) var(--adm-ease),
+              border-color var(--adm-duration) var(--adm-ease);
+}
+
+.tab:hover { color: var(--adm-ink); }
+
+.tab:focus-visible {
+  outline: none;
+  border-radius: var(--adm-radius-xs) var(--adm-radius-xs) 0 0;
+  box-shadow: var(--adm-shadow-focus);
+}
+
+.active {
+  color: var(--adm-ink);
+  border-bottom-color: var(--adm-accent);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--adm-radius-pill);
+  background: var(--adm-surface-active);
+  color: var(--adm-ink-soft);
+  font-size: var(--adm-text-xs);
+  font-weight: 700;
+}
+
+.active .badge {
+  background: var(--adm-accent);
+  color: var(--adm-accent-ink);
+}
+
+/* Variante « pilules » — pour les groupes d'options dans un corps de modale */
+.pills { margin-bottom: 0; }
+
+.pills .tab {
+  border-bottom: none;
+  border-radius: var(--adm-radius-pill);
+  border: 1px solid var(--adm-border);
+  background: var(--adm-surface-field);
+  padding: var(--adm-space-2) var(--adm-space-4);
+  font-size: var(--adm-text-sm);
+}
+
+.pills .active {
+  background: var(--adm-accent);
+  border-color: var(--adm-accent);
+  color: var(--adm-accent-ink);
+}
+
+@media (max-width: 768px) {
+  .tab { padding: var(--adm-space-3); font-size: var(--adm-text-sm); }
+}
