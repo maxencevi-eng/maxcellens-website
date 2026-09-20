@@ -96,7 +96,8 @@ export default function DynamicPageClient({
               className={[
                 styles.block,
                 'adm-block',
-                isAdmin ? styles.blockAdmin : '',
+                  isAdmin ? styles.blockAdmin : '',
+                  isAdmin && (block.type === 'separator' || block.type === 'spacer') ? styles.blockAdminThin : '',
                 isAdmin && !block.visible ? styles.blockHidden : '',
                 block.widthMode === 'max1600' ? 'block-width-1600' : '',
               ]

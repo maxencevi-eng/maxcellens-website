@@ -8,6 +8,14 @@
   position: relative;
 }
 
+/* Reserve room for the absolute toolbar on otherwise near-zero-height blocks.
+   Applied only in admin mode: the public separator keeps its configured size. */
+.blockAdminThin {
+  min-height: 72px;
+  display: flow-root;
+  box-sizing: border-box;
+}
+
 /* Liseré au survol : repère le bloc sous la barre d'actions, sans déplacer
    quoi que ce soit (outline n'occupe pas de place dans le flux). */
 .blockAdmin:hover {
