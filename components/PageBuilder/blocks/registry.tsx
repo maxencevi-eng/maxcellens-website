@@ -1,6 +1,9 @@
 "use client";
 
 import React from 'react';
+import { DEFAULT_PROJECT_CARDS, DEFAULT_SERVICE_CARDS, normalizeImageCards } from './imageCardsDefs';
+import { ImageCardsBlock, ServiceImageCardsBlock } from './ImageCardsBlock';
+import { ImageCardsEditor, ServiceImageCardsEditor } from './ImageCardsEditor';
 import {
   Code2,
   Columns2,
@@ -85,6 +88,24 @@ function withDefaults<T>(defaults: T) {
 }
 
 export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
+  project_cards: {
+    type: 'project_cards', label: 'Sélection de réalisations',
+    description: 'Images avec titres superposés et en-tête au-dessus',
+    icon: ImageIcon, category: 'media', defaults: DEFAULT_PROJECT_CARDS,
+    Render: ImageCardsBlock, Editor: ImageCardsEditor,
+    migrate: raw => normalizeImageCards(raw, DEFAULT_PROJECT_CARDS),
+    storagePaths: data => data.cards?.map((card: any) => card.image?.path).filter(Boolean) || [],
+    nestable: false,
+  },
+  service_cards: {
+    type: 'service_cards', label: 'Prestations en images',
+    description: 'Vignettes avec titre à gauche ou à droite',
+    icon: Columns2, category: 'media', defaults: DEFAULT_SERVICE_CARDS,
+    Render: ServiceImageCardsBlock, Editor: ServiceImageCardsEditor,
+    migrate: raw => normalizeImageCards(raw, DEFAULT_SERVICE_CARDS),
+    storagePaths: data => data.cards?.map((card: any) => card.image?.path).filter(Boolean) || [],
+    nestable: false,
+  },
   heading: {
     type: 'heading',
     label: 'Titre',

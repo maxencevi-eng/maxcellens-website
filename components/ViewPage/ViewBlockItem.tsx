@@ -65,7 +65,7 @@ export default function ViewBlockItem({ block, isAdmin, onUpdate, onDelete, onOp
     <>
       <div
         ref={setNodeRef}
-        style={style}
+        style={{ ...style, ...(block.type === 'video' ? { borderRadius: 0 } : {}) }}
         className={`${styles.block} ${sizeClass} ${isDragging ? styles.dragging : ''}`}
       >
         <BlockContent block={block} onOpenLightbox={onOpenLightbox ? () => onOpenLightbox(block.id) : undefined} />

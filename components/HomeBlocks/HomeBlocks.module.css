@@ -1729,6 +1729,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  margin-top: auto;
 }
 
 .quoteAuthor {
@@ -1793,7 +1794,7 @@
     min-width: 0;
     max-width: 290px;
     padding: 1rem 1.25rem;
-    scroll-snap-align: center;
+    scroll-snap-align: start;
   }
   .quoteText {
     font-size: clamp(0.85rem, 3.5vw, 0.95rem);
@@ -2007,3 +2008,76 @@
     border-radius: 20px;
   }
 }
+
+/* Editorial homepage sections: restrained typography and continuous surfaces. */
+.stats, .animationBlock, .quote { margin-top: 0; border-radius: 0; }
+.stats { background: #f3f1ed; color: #202a2b; padding: 44px 0; }
+.stats > :global(.container),
+.quote > :global(.container) {
+  padding-inline: max(clamp(24px, 5vw, 80px), var(--container-margin-x-desktop, 0px));
+}
+.statsGrid { gap: 0; text-align: left; }
+.statsGrid > * { padding: 0 clamp(16px, 3vw, 44px); min-width: 0; border-left: 1px solid #d4d4d0; }
+.statsGrid > *:first-child { padding-left: 0; border-left: 0; }
+.statValue { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; font-size: clamp(27px, 3vw, 42px); letter-spacing: -.035em; color: inherit; }
+.statLabel { margin-top: 10px; font-size: 13px; line-height: 1.6; color: inherit; }
+.animationBlock { background: #192425; padding: 0; color: #f5f3ef; }
+.animationBlockCard { display: grid; grid-template-columns: 44% minmax(0, 1fr); border: 0; border-radius: 0; box-shadow: none; background: transparent; overflow: hidden; }
+.animationBlockCard:not(:has(.animationBlockBannerWrap)) { grid-template-columns: 1fr; }
+.animationBlockBannerWrap { position: relative; height: 100%; min-height: 300px; aspect-ratio: auto !important; border-radius: 0; background: transparent; }
+.animationBlockBannerWrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 45%, var(--animation-fade-color, #192425) 100%);
+}
+.animationBlockBanner { width: 100%; height: 100%; object-fit: cover; }
+.animationBlockContent { padding: clamp(28px, 4vw, 56px); text-align: left; background: transparent; align-items: flex-start; }
+.animationBlockTitle { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(28px, 3vw, 40px); font-weight: 400; line-height: 1.15; letter-spacing: -.025em; color: inherit; margin: 0 0 16px; }
+.animationBlockSubtitle, .animationBlockRichText { font-size: 14px; line-height: 1.7; color: inherit; max-width: 540px; }
+.animationBlockSubtitle { margin-bottom: 0; }
+.animationBlockRichText { margin: 16px 0 0; }
+.animationBlockRichText > :last-child { margin-bottom: 0; }
+.animationBlockButtons { justify-content: flex-start; margin-top: 24px; }
+.animationPremiumCta { display: inline-flex; gap: 24px; align-items: center; border: 1px solid #ffffff9c; border-radius: 999px; padding: 12px 20px; color: inherit; font-size: 13px; text-decoration: none; transition: background .2s; }
+.animationPremiumCta:hover { background: #ffffff15; }
+.animationPremiumCta:focus-visible { outline: 2px solid currentColor; outline-offset: 5px; }
+.animationBlockGlow { display: none; }
+.quote { background: #192425; color: #f5f3ef; padding: 44px 0; }
+.quoteLayout { display: grid; grid-template-columns: minmax(160px, 23%) minmax(0, 1fr); gap: 40px; align-items: start; }
+.quoteLayout > * { min-width: 0; }
+.quoteBlockTitle { font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: inherit; text-align: left; margin: 0 0 16px; }
+.quoteBlockSubtitle { font: 400 clamp(26px, 2.8vw, 38px)/1.15 Georgia, serif; letter-spacing: -.025em; text-align: left; color: inherit; margin: 0; }
+.quoteMarqueeWrap { mask-image: none; -webkit-mask-image: none; }
+.quoteMarqueeGroup { gap: 24px; padding-right: 24px; }
+.quoteCard { position: relative; min-width: 240px; max-width: 290px; padding: 20px 18px 16px 38px; border-radius: 0; border: 0; border-top: 1px solid var(--quote-card-border, transparent); box-shadow: none; background: var(--quote-card-bg, transparent); color: var(--quote-card-text, #f5f3ef); }
+.quoteCard::before { content: '“'; position: absolute; left: 8px; top: 8px; font: 36px Georgia, serif; }
+.quoteText { order: -1; font-size: 13px; line-height: 1.65; opacity: 1; margin: 0 0 22px; }
+.quoteAuthor, .quoteRole { color: inherit; opacity: 1; font-size: 12px; }
+.quoteMarqueeWrap:focus-within .quoteMarqueeInner { animation-play-state: paused; }
+@media (max-width: 767px) {
+  .stats > :global(.container), .quote > :global(.container) {
+    padding-inline: max(24px, var(--container-margin-x-mobile, 0px));
+  }
+  .statsGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; row-gap: 28px; }
+  .statsGrid > * { padding: 0 16px; }
+  .statsGrid > *:nth-child(odd) { padding-left: 0; border-left: 0; }
+  .animationBlockCard { grid-template-columns: 1fr; }
+  .animationBlockBannerWrap { min-height: 0; height: 250px; }
+  .animationBlockBannerWrap::after { background: linear-gradient(180deg, transparent 45%, var(--animation-fade-color, #192425) 100%); }
+  .animationBlockContent { padding: 28px 24px 36px; }
+  .quoteLayout { grid-template-columns: 1fr; gap: 24px; }
+  .quoteCard { min-width: 260px; }
+}
+@media (prefers-reduced-motion: reduce) { .quoteMarqueeInner { animation: none; } .quoteMarqueeWrap { overflow-x: auto; } .quoteMarqueeGroup[aria-hidden] { display: none; } }
+.animationBlockTitle::after { display: none; }
+.animationBlockCard:hover .animationBlockBanner { transform: none; }
+.quoteNavigation { display: flex; gap: 10px; margin-top: 20px; }
+.quoteNavigation button { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 1px solid #ffffff85; border-radius: 50%; background: transparent; color: inherit; font-size: 20px; cursor: pointer; transition: background .2s; }
+.quoteNavigation button:hover { background: #ffffff18; }
+.quoteNavigation button:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+
+.introImgCard, .serviceCard, .portrait3DGlow,
+.portrait3DCardFront, .portrait3DCardBack, .portraitMedia,
+.bannerBlockCard, .bannerTextImgFrame, .cadreurMedia { border-radius: 0; }

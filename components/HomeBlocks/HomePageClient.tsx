@@ -1,5 +1,9 @@
 "use client";
 
+import { hasRichTextContent } from "../../lib/hasRichTextContent";
+
+import { editorialPresentation } from "./editorialPresentation";
+
 import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
 import { Pencil } from 'lucide-react';
 import useBuiltinPageBlocks from '../PageBuilder/useBuiltinPageBlocks';
@@ -139,7 +143,7 @@ function getFanCardStyle(offset: number): React.CSSProperties {
     aspectRatio: '3/4',
     left: '50%',
     bottom: 0,
-    borderRadius: '18px',
+    borderRadius: 0,
     overflow: 'hidden',
     zIndex: zi,
     cursor: offset !== 0 ? 'pointer' : 'default',
@@ -169,11 +173,11 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   const [intro, setIntro] = useState<HomeIntroData>(() => parse(initialSettings?.home_intro, DEFAULT_INTRO));
   const [services, setServices] = useState<HomeServicesData>(() => parse(initialSettings?.home_services, DEFAULT_SERVICES));
   const [banner, setBanner] = useState<HomeBannerData>(() => parse(initialSettings?.home_banner, DEFAULT_BANNER));
-  const [stats, setStats] = useState<HomeStatsData>(() => parse(initialSettings?.home_stats, DEFAULT_STATS));
+  const [stats, setStats] = useState<HomeStatsData>(() => editorialPresentation("home_stats", parse(initialSettings?.home_stats, DEFAULT_STATS)));
   const [portraitBlock, setPortraitBlock] = useState<HomePortraitBlockData>(() => parse(initialSettings?.home_portrait, DEFAULT_PORTRAIT));
   const [cadreurBlock, setCadreurBlock] = useState<HomeCadreurBlockData>(() => parse(initialSettings?.home_cadreur, DEFAULT_CADREUR));
-  const [animationBlock, setAnimationBlock] = useState<HomeAnimationBlockData>(() => parse(initialSettings?.home_animation, DEFAULT_ANIMATION));
-  const [quote, setQuote] = useState<HomeQuoteData>(() => parse(initialSettings?.home_quote, DEFAULT_QUOTE));
+  const [animationBlock, setAnimationBlock] = useState<HomeAnimationBlockData>(() => editorialPresentation("home_animation", parse(initialSettings?.home_animation, DEFAULT_ANIMATION)));
+  const [quote, setQuote] = useState<HomeQuoteData>(() => editorialPresentation("home_quote", parse(initialSettings?.home_quote, DEFAULT_QUOTE)));
   const [cta, setCta] = useState<HomeCtaData>(() => parse(initialSettings?.home_cta, DEFAULT_CTA));
   const [currentPortraitSlide, setCurrentPortraitSlide] = useState(0);
   const [portraitSlideDirection, setPortraitSlideDirection] = useState<"next" | "prev">("next");
@@ -182,6 +186,8 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   // Tracks the outgoing active card to keep it at higher z-index during transition (prevents visual "cut")
   const [outgoingPortraitIdx, setOutgoingPortraitIdx] = useState<number | null>(null);
   const prevPortraitIdxRef = useRef(0);
+  const quoteViewportRef = useRef<HTMLDivElement>(null);
+  const [quotesPaused, setQuotesPaused] = useState(false);
   const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0); // kept for possible dots; marquee uses continuous scroll
 
   /* ---- Cadreur video lightbox state ---- */
@@ -235,11 +241,11 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
         setIntro(parse(s.home_intro, DEFAULT_INTRO));
         setServices(parse(s.home_services, DEFAULT_SERVICES));
         setBanner(parse(s.home_banner, DEFAULT_BANNER));
-        setStats(parse(s.home_stats, DEFAULT_STATS));
+        setStats(editorialPresentation("home_stats", parse(s.home_stats, DEFAULT_STATS)));
         setPortraitBlock(parse(s.home_portrait, DEFAULT_PORTRAIT));
         setCadreurBlock(parse(s.home_cadreur, DEFAULT_CADREUR));
-        setAnimationBlock(parse(s.home_animation, DEFAULT_ANIMATION));
-        setQuote(parse(s.home_quote, DEFAULT_QUOTE));
+        setAnimationBlock(editorialPresentation("home_animation", parse(s.home_animation, DEFAULT_ANIMATION)));
+        setQuote(editorialPresentation("home_quote", parse(s.home_quote, DEFAULT_QUOTE)));
         setCta(parse(s.home_cta, DEFAULT_CTA));
       } catch (_) {
         // keep defaults
@@ -344,7 +350,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   }
 
   const serviceItems = services.items && services.items.length ? services.items : DEFAULT_SERVICES.items;
-  const statItems = stats.items && stats.items.length ? stats.items : DEFAULT_STATS.items;
+  const statItems = Array.isArray(stats.items) ? stats.items : DEFAULT_STATS.items;
 
   const activePortraitSlide = portraitSlides[portraitIndex] || portraitSlides[0];
   // Keep ?tab= intact so PageTransitionOverlay can store it in sessionStorage for PortraitPageClient
@@ -353,6 +359,36 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   const safeQuoteIndex = Math.max(0, Math.min(currentQuoteIndex, quoteList.length - 1));
   const visibleQuoteIndices = [0, 1, 2].map((i) => (safeQuoteIndex + i) % quoteList.length);
   const quoteScrollDuration = Math.max(5, Math.min(120, Math.round((quoteData.carouselSpeed ?? 5000) / 1000))); // valeur en secondes = durée d'un cycle (ex. 5 = rapide, 30 = lent)
+
+  const navigateQuotes = (direction: -1 | 1) => {
+    const viewport = quoteViewportRef.current;
+    const track = viewport?.firstElementChild as HTMLElement | null;
+    const group = track?.firstElementChild as HTMLElement | null;
+    if (!viewport || !track || !group) return;
+    const cards = Array.from(group.children) as HTMLElement[];
+    if (!cards.length) return;
+    const animation = track.getAnimations().find(a => a instanceof CSSAnimation && a.animationName === getComputedStyle(track).animationName);
+    if (animation) {
+      const duration = Number(animation.effect?.getTiming().duration);
+      const width = group.getBoundingClientRect().width;
+      if (!duration || !width) return;
+      const elapsed = Number(animation.currentTime ?? 0);
+      const position = ((elapsed % duration) / duration) * width;
+      const offsets = cards.map(card => card.offsetLeft - cards[0].offsetLeft);
+      const target = direction === 1
+        ? offsets.find(offset => offset > position + 1) ?? 0
+        : offsets.slice().reverse().find(offset => offset < position - 1) ?? offsets[offsets.length - 1];
+      animation.currentTime = (target / width) * duration;
+    } else {
+      const max = viewport.scrollWidth - viewport.clientWidth;
+      const positions = [...new Set(cards.map(card => Math.min(max, card.offsetLeft - cards[0].offsetLeft)))];
+      const target = direction === 1
+        ? positions.find(offset => offset > viewport.scrollLeft + 1) ?? 0
+        : positions.slice().reverse().find(offset => offset < viewport.scrollLeft - 1) ?? max;
+      viewport.scrollTo({ left: target, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+    }
+  };
+
 
   const introSection = hide("home_intro") ? null : (() => {
     const iv = intro as any;
@@ -801,7 +837,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
 
   const cadreurSection = hide("home_cadreur") ? null : (() => {
     const vs = (cadreurBlock as any).videoSettings || {};
-    const vBorderRadius = vs.borderRadius ?? 12;
+    const vBorderRadius = 0;
     const vShadow = SHADOW_MAP[vs.shadow || 'medium'] || 'none';
     const vGlossy = vs.glossy ?? false;
     return (
@@ -917,6 +953,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
           const bg = (animationBlock as any).backgroundColor?.trim();
           const validHex = bg && /^#?[0-9A-Fa-f]{3}$|^#?[0-9A-Fa-f]{6}$/.test(bg);
           if (validHex) s.background = bg.startsWith("#") ? bg : `#${bg}`;
+          (s as React.CSSProperties & Record<string, string>)["--animation-fade-color"] = animationBlock.contentBgColor || (validHex ? s.background as string : "#192425");
           const rt = (animationBlock as any).borderRadiusTop;
           const rb = (animationBlock as any).borderRadiusBottom;
           if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; }
@@ -964,26 +1001,11 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
                   const align = (animationBlock as any).blockSubtitleAlign;
                   return <Tag className={`${styles.animationBlockSubtitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{(animationBlock as any).blockSubtitle}</Tag>;
                 })() : null}
-                {(animationBlock as any).html ? (
+                {hasRichTextContent(animationBlock.html) ? (
                   <div className={styles.animationBlockRichText} dangerouslySetInnerHTML={{ __html: (animationBlock as any).html }} />
                 ) : null}
                 <div className={styles.animationBlockButtons}>
-                  {ANIMATION_SECTIONS.map(({ label, hash }) => (
-                    <Link
-                      key={hash}
-                      href="/animation"
-                      className={`${styles.ctaButton} btn-site-${(animationBlock as any).ctaButtonStyle || "1"}`}
-                      data-analytics-id={`Accueil|Animation - ${label}`}
-                      onMouseDown={() => {
-                        try { sessionStorage.setItem("animScrollTarget", hash); } catch (_) {}
-                      }}
-                      onTouchStart={() => {
-                        try { sessionStorage.setItem("animScrollTarget", hash); } catch (_) {}
-                      }}
-                    >
-                      {label}
-                    </Link>
-                  ))}
+                  <Link href="/animation" className={styles.animationPremiumCta}>Découvrir le bureau à la carte <span aria-hidden="true">→</span></Link>
                 </div>
               </div>
               <div className={styles.animationBlockGlow} aria-hidden />
@@ -995,7 +1017,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   );
 
   const statsSection = hide("home_stats") ? null : (
-      <section className={styles.stats} style={(() => { const s: React.CSSProperties = {}; if ((stats as any).backgroundColor) s.backgroundColor = (stats as any).backgroundColor; const rt = (stats as any).borderRadiusTop; const rb = (stats as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (stats as any).paddingTop; const pb = (stats as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
+      <section className={styles.stats} style={(() => { const s: React.CSSProperties = { color: stats.textColor || "#202a2b" }; if ((stats as any).backgroundColor) s.backgroundColor = (stats as any).backgroundColor; const rt = (stats as any).borderRadiusTop; const rb = (stats as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (stats as any).paddingTop; const pb = (stats as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
         <div className={`container ${blockWidthClass("home_stats")}`.trim()}>
           <div className={styles.editWrap}>
             {isAdmin && (
@@ -1012,7 +1034,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
                 <BlockOrderButtons page="home" blockId="home_stats" />
               </AdminToolbarShell>
             )}
-            <AnimateInView variant="stagger" className={styles.statsGrid}>
+            <AnimateInView variant="stagger" className={styles.statsGrid} style={{ gridTemplateColumns: `repeat(${Math.max(1, statItems.length)}, minmax(0, 1fr))` }}>
               {statItems.map((item, i) => (
                 <AnimateStaggerItem key={i}>
                   <div>
@@ -1027,7 +1049,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
       </section>
   );
 
-  const clientsSection = hide("clients") ? null : <Clients />;
+  const clientsSection = hide("clients") ? null : <Clients premium />;
 
   const quoteSection = hide("home_quote") ? null : (
       <section className={styles.quote} style={(() => { const s: React.CSSProperties = {}; if ((quote as any).backgroundColor) s.backgroundColor = (quote as any).backgroundColor; const rt = (quote as any).borderRadiusTop; const rb = (quote as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (quote as any).paddingTop; const pb = (quote as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; if ((quote as any).cardBackground) (s as any)['--quote-card-bg'] = (quote as any).cardBackground; if ((quote as any).cardBorderColor) (s as any)['--quote-card-border'] = (quote as any).cardBorderColor; if ((quote as any).cardTextColor) (s as any)['--quote-card-text'] = (quote as any).cardTextColor; return Object.keys(s).length ? s : undefined; })()}>
@@ -1047,6 +1069,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
                 <BlockOrderButtons page="home" blockId="home_quote" />
               </AdminToolbarShell>
             )}
+            <div className={styles.quoteLayout}>
             <AnimateInView variant="fadeUp">
               {(() => {
                 const blockTitleText = (quote as any).blockTitle ?? "Témoignages";
@@ -1063,12 +1086,21 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
                 const subAlign = (quote as any).blockSubtitleAlign;
                 return <SubTag className={`${styles.quoteBlockSubtitle} style-${SubTag}`} style={{ ...(subFs != null ? { fontSize: responsiveFontSize(subFs) } : {}), ...(subColor ? { color: subColor } : {}), ...(subAlign ? { textAlign: subAlign, width: '100%', display: 'block' } : {}) }}>{(quote as any).blockSubtitle}</SubTag>;
               })() : null}
+              <div className={styles.quoteNavigation}>
+                <button type="button" aria-label="Témoignage précédent" onClick={() => navigateQuotes(-1)}><span aria-hidden="true">&#8592;</span></button>
+                <button type="button" aria-label={quotesPaused ? "Reprendre le défilement" : "Mettre le défilement en pause"} aria-pressed={quotesPaused} onClick={() => setQuotesPaused(paused => !paused)}>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                    {quotesPaused ? <path d="M4 2 14 8 4 14Z" /> : <path d="M3 2h3v12H3zM10 2h3v12h-3z" />}
+                  </svg>
+                </button>
+                <button type="button" aria-label="Témoignage suivant" onClick={() => navigateQuotes(1)}><span aria-hidden="true">&#8594;</span></button>
+              </div>
             </AnimateInView>
             <AnimateInView variant="fade">
-            <div className={styles.quoteMarqueeWrap} aria-label="Citations défilantes">
-              <div className={styles.quoteMarqueeInner} style={{ animationDuration: `${quoteScrollDuration}s` }}>
-                {[0, 1, 2, 3].map((copy) => (
-                  <div key={copy} className={styles.quoteMarqueeGroup}>
+            <div ref={quoteViewportRef} className={styles.quoteMarqueeWrap} aria-label="Citations défilantes">
+              <div className={styles.quoteMarqueeInner} style={{ animationDuration: `${quoteScrollDuration}s`, animationPlayState: quotesPaused ? "paused" : undefined }}>
+                {[0, 1].map((copy) => (
+                  <div key={copy} aria-hidden={copy > 0 ? true : undefined} className={styles.quoteMarqueeGroup}>
                     {quoteList.map((q, i) => (
                       <div key={`${copy}-${i}`} className={styles.quoteCard}>
                         <div className={styles.quoteCardHeader}>
@@ -1083,6 +1115,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
               </div>
             </div>
             </AnimateInView>
+            </div>
           </div>
         </div>
       </section>

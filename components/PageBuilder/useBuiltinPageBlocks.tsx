@@ -134,7 +134,7 @@ function buildApi({
       if (!def) return null;
       const Render = def.Render;
       return (
-        <Render key={key} data={normalizeBlockData(type, data)} renderNested={renderNested} />
+        <Render key={key} data={normalizeBlockData(type, data)} renderNested={renderNested} squareImages={pageKey === 'home'} />
       );
     },
     []
@@ -202,6 +202,7 @@ function buildApi({
           <Render
             data={normalizeBlockData(block.type, block.data)}
             renderNested={renderNested}
+            squareImages={pageKey === 'home'}
           />
         ) : isAdmin ? (
           <AdminNotice tone="warning">Type de bloc inconnu : « {block.type} ».</AdminNotice>

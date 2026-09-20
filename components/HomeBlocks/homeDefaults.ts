@@ -76,6 +76,8 @@ export type HomeServicesData = {
 
 export type HomeStatItem = { value: string; label: string };
 export type HomeStatsData = {
+  presentationVersion?: number;
+  textColor?: string;
   items: HomeStatItem[];
   backgroundColor?: string;
   borderRadiusTop?: number;
@@ -158,6 +160,7 @@ export type HomeCadreurBlockData = {
 
 export type HomeQuoteItem = { text: string; author: string; role?: string; authorStyle?: TitleStyleKey; roleStyle?: TitleStyleKey };
 export type HomeQuoteData = {
+  presentationVersion?: number;
   blockTitle?: string;
   blockSubtitle?: string;
   blockTitleStyle?: TitleStyleKey;
@@ -202,6 +205,7 @@ export type HomeCtaData = {
 };
 
 export type HomeAnimationBlockData = {
+  presentationVersion?: number;
   blockTitle?: string;
   blockSubtitle?: string;
   blockTitleStyle?: TitleStyleKey;

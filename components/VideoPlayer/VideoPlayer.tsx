@@ -16,7 +16,7 @@ export default function VideoPlayer({ src, poster, controls = true }: Props) {
         poster={poster}
         controls={controls}
         preload="metadata"
-        className="w-full rounded bg-black"
+        className="w-full bg-black"
         playsInline
       />
     </div>

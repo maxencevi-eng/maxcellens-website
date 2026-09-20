@@ -171,7 +171,7 @@ export function RichTextBlock({ data }: { data: RichTextData }) {
 }
 
 /* ── Image ────────────────────────────────────────────────────────────── */
-export function ImageBlock({ data }: { data: ImageBlockData }) {
+export function ImageBlock({ data, squareImages = false }: { data: ImageBlockData; squareImages?: boolean }) {
   if (!data.image?.url) {
     return (
       <div className={styles.inner}>
@@ -192,7 +192,7 @@ export function ImageBlock({ data }: { data: ImageBlockData }) {
           loading="lazy"
           style={{
             aspectRatio: data.ratio !== 'auto' ? RATIO_VALUES[data.ratio] : undefined,
-            borderRadius: data.radius,
+            borderRadius: squareImages ? 0 : data.radius,
           }}
         />
         {data.caption ? (

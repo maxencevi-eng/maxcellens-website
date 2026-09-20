@@ -1,10 +1,12 @@
 "use client";
+import { editorialClients } from "../HomeBlocks/editorialPresentation";
 
 import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
 import { Pencil } from 'lucide-react';
 import styles from './Clients.module.css';
 
 type Props = {
+  premium?: boolean;
   logos?: string[];
   title?: string;
 };
@@ -36,7 +38,7 @@ import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrder
 import AnimateInView, { AnimateStaggerItem } from '../AnimateInView/AnimateInView';
 import type { TitleStyleKey } from '../HomeBlocks/homeDefaults';
 
-export default function Clients({ logos, title }: Props) {
+export default function Clients({ logos, title, premium = false }: Props) {
   const [items, setItems] = useState<string[]>(logos && logos.length ? logos : defaultLogos);
   const [hdr, setHdr] = useState<string | undefined>(title || 'CLIENTS ET PARTENAIRES PROFESSIONNELS');
   const [titleStyle, setTitleStyle] = useState<TitleStyleKey>('h2');
@@ -83,10 +85,10 @@ export default function Clients({ logos, title }: Props) {
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom,clients_logo_filter');
+        const resp = await fetch('/api/admin/site-settings?keys=clients_presentation_version,clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom,clients_logo_filter');
         if (!resp.ok) return;
         const j = await resp.json();
-        const s = j?.settings || {};
+        const s = premium ? editorialClients(j?.settings || {}) : j?.settings || {};
         if (!mounted) return;
         if (s.clients_title) setHdr(String(s.clients_title));
         if (s.clients_title_style && ['p','h1','h2','h3','h4','h5'].includes(s.clients_title_style)) setTitleStyle(s.clients_title_style as TitleStyleKey);
@@ -180,11 +182,11 @@ export default function Clients({ logos, title }: Props) {
 
   return (
     <section
-      className={`${styles.section}${logoFilter === 'white' ? ` ${styles.logoFilterWhite}` : ''}`}
+      className={`${styles.section}${premium ? ` ${styles.premium}` : ""}${logoFilter === 'normal' ? ` ${styles.logoFilterNormal}` : ''}${logoFilter === 'white' ? ` ${styles.logoFilterWhite}` : ''}`}
       style={{
         width: '100vw',
         marginLeft: 'calc(50% - 50vw)',
-        marginTop: '-28px',
+        marginTop: premium ? '0' : '-28px',
         marginBottom: '0',
         overflow: 'hidden',
         position: 'relative',
@@ -193,7 +195,7 @@ export default function Clients({ logos, title }: Props) {
         ['--clients-item-width' as string]: `${gridSettings.itemWidth}px`,
         ['--clients-row-gap' as string]: `${gridSettings.rowGap}px`,
         ['--clients-col-gap' as string]: `${gridSettings.colGap}px`,
-        ['--clients-item-height' as string]: `${Math.max(36, Math.round(gridSettings.itemWidth * (gridSettings.heightRatio || 0.5)))}px`,
+        ['--clients-item-height' as string]: `${Math.max(1, Math.round(gridSettings.itemWidth * (gridSettings.heightRatio || 0.5)))}px`,
         ...(bgColor ? { background: bgColor } : {}),
         ...(radiusTop != null ? { borderTopLeftRadius: `${radiusTop}px`, borderTopRightRadius: `${radiusTop}px` } : {}),
         ...(radiusBottom != null ? { borderBottomLeftRadius: `${radiusBottom}px`, borderBottomRightRadius: `${radiusBottom}px` } : {}),
@@ -204,7 +206,7 @@ export default function Clients({ logos, title }: Props) {
       <div className={`container ${blockWidthClass}`.trim()}>
         <div className={styles.inner}>
           <AnimateInView variant="fadeUp" viewportSoon>
-            <div style={{ position: 'relative', display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', marginBottom: 28 }}>
+            <div style={{ position: 'relative', display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center', marginBottom: premium ? 18 : 28 }}>
               {(() => {
                 const tagName = titleStyle || 'h2';
                 const Tag = tagName as React.ElementType;
@@ -322,7 +324,7 @@ export default function Clients({ logos, title }: Props) {
         </div>
       </div>
 
-      {editing ? <ClientsEditModal onClose={() => setEditing(false)} onSaved={() => setEditing(false)} /> : null}
+      {editing ? <ClientsEditModal premium={premium} onClose={() => setEditing(false)} onSaved={() => setEditing(false)} /> : null}
     </section>
   );
 }

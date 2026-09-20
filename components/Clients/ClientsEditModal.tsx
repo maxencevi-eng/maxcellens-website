@@ -1,6 +1,7 @@
 "use no memo";
 "use client";
-import { AdminModal } from '../admin';
+import { editorialClients } from "../HomeBlocks/editorialPresentation";
+import { AdminModal, NumberField } from '../admin';
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -60,7 +61,7 @@ function AlignmentButtons({ value, onChange }: { value: string; onChange: (v: st
   );
 }
 
-export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
+export default function ClientsEditModal({ onClose, onSaved, premium = false }: { premium?: boolean; onClose: () => void; onSaved?: () => void }) {
   const [title, setTitle] = useState('');
   const [titleStyle, setTitleStyle] = useState<TitleStyleKey>('h2');
   const [titleFontSize, setTitleFontSize] = useState<number | ''>('');
@@ -96,10 +97,10 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_logo_filter,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom');
+        const resp = await fetch('/api/admin/site-settings?keys=clients_presentation_version,clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_logo_filter,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom');
         if (!resp.ok) return;
         const j = await resp.json();
-        const s = j?.settings || {};
+        const s = premium ? editorialClients(j?.settings || {}) : j?.settings || {};
         if (!mounted) return;
         if (s.clients_title) setTitle(String(s.clients_title)); else try { const v = localStorage.getItem('clients_title'); if (v) setTitle(v); } catch(_){}
         if (s.clients_title_style && ['p','h1','h2','h3','h4','h5'].includes(s.clients_title_style)) setTitleStyle(s.clients_title_style as TitleStyleKey);
@@ -235,6 +236,10 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
           throw new Error(j?.error || 'Erreur lors de la sauvegarde');
         }
       }
+      if (premium) {
+        const versionResponse = await fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_presentation_version', value: '1' }) });
+        if (!versionResponse.ok) throw new Error('Erreur lors de la sauvegarde du style');
+      }
       try { localStorage.setItem('clients_title', String(title || '')); } catch(_){}
       try { localStorage.setItem('clients_logos', JSON.stringify(logos)); } catch(_){}
       try { localStorage.setItem('clients_grid', JSON.stringify(grid)); } catch(_){ }
@@ -338,8 +343,7 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
                 <input type="number" min={1} max={8} value={grid.columns} onChange={(e) => setGrid(g => ({ ...g, columns: Math.max(1, Number(e.target.value || 1)) }))} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <label style={{ fontSize: 12, color: 'var(--muted)' }}>Largeur image (px)</label>
-                <input type="number" min={60} max={300} value={grid.itemWidth} onChange={(e) => setGrid(g => ({ ...g, itemWidth: Math.max(60, Number(e.target.value || 60)) }))} />
+                <NumberField label="Largeur image (px)" min={1} max={300} value={grid.itemWidth} onChange={itemWidth => setGrid(g => ({ ...g, itemWidth }))} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 12, color: 'var(--muted)' }}>Espace lignes (px)</label>
@@ -437,17 +441,11 @@ export default function ClientsEditModal({ onClose, onSaved }: { onClose: () => 
           <div>
             <label style={{ fontSize: 13, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>Style des logos</label>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <button
-                type="button"
-                onClick={() => setLogoFilter(logoFilter === 'white' ? '' : 'white')}
-                style={{ padding: '6px 14px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13, cursor: 'pointer', background: logoFilter === 'white' ? '#111' : '#fff', color: logoFilter === 'white' ? '#fff' : '#111', display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: '50%', background: logoFilter === 'white' ? '#fff' : '#ccc', border: '1px solid #999' }} />
-                Logos blancs (fond sombre)
-              </button>
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>
-                {logoFilter === 'white' ? 'Filtre actif : logos convertis en blanc' : 'Couleur originale des logos'}
-              </span>
+              <select aria-label="Style des logos" value={logoFilter || 'grayscale'} onChange={e => setLogoFilter(e.target.value)} style={inputStyle}>
+                <option value="grayscale">Gris, couleurs au survol</option>
+                <option value="white">Blanc, couleurs au survol</option>
+                <option value="normal">Couleurs originales (sans filtre)</option>
+              </select>
             </div>
           </div>
 

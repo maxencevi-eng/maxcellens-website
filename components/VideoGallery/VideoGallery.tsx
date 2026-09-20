@@ -171,7 +171,7 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
   // Settings
   const displayMode = gs.displayMode ?? 'grid';
   const gap = gs.gap ?? 12;
-  const borderRadius = gs.borderRadius ?? 12;
+  const borderRadius = 0;
   const shadowVal = SHADOW_PRESETS[gs.shadow || 'medium'] || SHADOW_PRESETS.medium;
   const glossy = gs.glossy ?? false;
   const showTitle = gs.showTitle ?? false;
@@ -233,7 +233,7 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
         {glassBorder && (
           <span
             className={styles.glassBorderOverlay}
-            style={{ borderRadius: borderRadius > 0 ? borderRadius : undefined }}
+            style={{ borderRadius }}
             aria-hidden
           />
         )}
@@ -246,7 +246,7 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
   }
 
   const glassCardStyle = (extra?: React.CSSProperties): React.CSSProperties => ({
-    borderRadius: borderRadius > 0 ? borderRadius : undefined,
+    borderRadius,
     boxShadow: shadowVal !== 'none' ? shadowVal : undefined,
     background: `rgba(255,255,255,${glassOpacity})`,
     backdropFilter: `blur(${glassBlur}px)`,
