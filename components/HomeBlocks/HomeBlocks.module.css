@@ -427,7 +427,7 @@
 
 @media (min-width: 900px) {
   .portraitSlideTransition {
-    grid-template-columns: 55% 45%;
+    grid-template-columns: minmax(0, 55fr) minmax(0, 45fr);
     gap: 2rem;
     align-items: center;
   }
@@ -493,7 +493,7 @@
 .portrait3DStage {
   position: relative;
   width: 100%;
-  height: 500px;
+  height: clamp(520px, 40vw, 720px);
   perspective: 1000px;
   perspective-origin: 50% 55%;
   transform-style: preserve-3d;
@@ -2082,3 +2082,40 @@
 .portrait3DCardFront, .portrait3DCardBack, .portraitMedia,
 .bannerBlockCard, .bannerTextImgFrame, .cadreurMedia { border-radius: 0; }
 .managedHomeBlock > section { width: 100%; margin-left: 0; margin-top: 0; }
+
+/* Backgrounds span the viewport; only their contents share the page limit. */
+.homePageBlocks {
+  --home-content-width: var(--content-inner-max-width-desktop, 2000px);
+  width: 100vw;
+  max-width: none;
+  margin-left: calc(50% - 50vw);
+}
+.homePageBlocks :global(.adm-block.block-width-1600) {
+  max-width: none !important;
+}
+.homePageBlocks :global(.container),
+.homePageBlocks .introInner {
+  width: 100%;
+  max-width: var(--home-content-width) !important;
+}
+.homePageBlocks .animationBlockCard {
+  max-width: var(--home-content-width);
+  margin-inline: auto;
+}
+.portraitCarouselContent .portraitBlockTitle { text-align: left; margin-bottom: 32px; }
+.portraitSlideTransition > * { min-width: 0; }
+@media (max-width: 899px) {
+  .portrait3DStage { height: clamp(300px, 85vw, 480px); }
+  .portraitCarouselContent { padding-left: 0; }
+}
+@media (max-width: 767px) {
+  .homePageBlocks { --home-content-width: var(--content-inner-max-width-mobile, 1200px); }
+  .stats { padding-block: 28px !important; }
+  .statsGrid { grid-template-columns: minmax(0, 1fr) !important; gap: 0; }
+  .statsGrid > * { padding: 18px 0; border-left: 0; border-top: 1px solid #d4d4d0; }
+  .statsGrid > *:first-child { padding-top: 0; border-top: 0; }
+  .statsGrid > *:last-child { padding-bottom: 0; }
+  .statsGrid > * > div { display: grid; grid-template-columns: minmax(90px, 32%) minmax(0, 1fr); align-items: center; gap: 20px; }
+  .statValue { font-size: clamp(28px, 8vw, 36px); overflow-wrap: anywhere; }
+  .statLabel { margin: 0; }
+}

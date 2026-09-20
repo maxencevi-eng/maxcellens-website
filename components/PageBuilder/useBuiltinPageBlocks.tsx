@@ -227,7 +227,7 @@ function buildApi({
               active={!block.visible}
               onClick={() => updateBlock(block.id, { visible: !block.visible })}
             />
-            <AdminToolbar.Action
+            {pageKey !== 'home' && <AdminToolbar.Action
               icon={<span aria-hidden="true">⇔</span>}
               label={block.widthMode === 'full' ? 'Limiter à 1600px' : 'Pleine largeur'}
               onClick={() =>
@@ -235,7 +235,7 @@ function buildApi({
                   widthMode: block.widthMode === 'full' ? 'max1600' : 'full',
                 })
               }
-            />
+            />}
             <AdminToolbar.Duplicate onClick={() => duplicateBlock(block.id)} />
             <AdminToolbar.Delete name={def?.label} onClick={() => handleDelete(block)} />
           </AdminToolbar>

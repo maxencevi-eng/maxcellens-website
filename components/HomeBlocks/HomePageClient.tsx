@@ -699,16 +699,6 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
                 <BlockOrderButtons page="home" blockId="home_portrait" />
               </AdminToolbarShell>
             )}
-            <AnimateInView variant="fadeUp">
-              {(() => {
-                const blockTitleText = (portraitBlock as any).blockTitle ?? (portraitBlock as any).title ?? "Portrait";
-                const Tag = (portraitBlock as any).blockTitleStyle || "h2";
-                const fs = (portraitBlock as any).blockTitleFontSize;
-                const color = (portraitBlock as any).blockTitleColor;
-                const align = (portraitBlock as any).blockTitleAlign;
-                return <Tag className={`${styles.portraitBlockTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{blockTitleText}</Tag>;
-              })()}
-            </AnimateInView>
             <AnimateInView variant="slideUp">
             <div
               className={styles.portraitCarousel}
@@ -767,7 +757,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
                             width={500}
                             height={667}
                             quality={100}
-                            sizes="(max-width: 768px) 60vw, 340px"
+                            sizes="(max-width: 899px) 70vw, (max-width: 1400px) 38vw, 540px"
                             style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover', ...focusStyle }}
                           />
                         ) : (
@@ -779,6 +769,17 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
                 </div>
               </div>
               <div key={portraitIndex} className={`${styles.portraitCarouselContent} ${styles.portraitContentFade}`}>
+            <AnimateInView variant="fadeUp">
+              {(() => {
+                const blockTitleText = (portraitBlock as any).blockTitle ?? (portraitBlock as any).title ?? "Portrait";
+                const Tag = (portraitBlock as any).blockTitleStyle || "h2";
+                const fs = (portraitBlock as any).blockTitleFontSize;
+                const color = (portraitBlock as any).blockTitleColor;
+                const align = (portraitBlock as any).blockTitleAlign;
+                return <Tag className={`${styles.portraitBlockTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{blockTitleText}</Tag>;
+              })()}
+            </AnimateInView>
+
                 {activePortraitSlide?.title ? (() => { const Tag = (activePortraitSlide as any).titleStyle || "h3"; const fs = (activePortraitSlide as any).titleFontSize; return <Tag className={`${styles.portraitSlideTitle} style-${Tag}`} style={fs != null ? { fontSize: responsiveFontSize(fs) } : undefined}>{activePortraitSlide.title}</Tag>; })() : null}
                 {activePortraitSlide?.text ? <div className={styles.portraitSlideText} dangerouslySetInnerHTML={{ __html: activePortraitSlide.text }} /> : null}
                 <Link
@@ -1181,7 +1182,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
   const noRevealBlocks = new Set(['home_stats', 'clients', 'home_banner']);
 
   return (
-    <div className="page-blocks" style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))' }}>
+    <div className={`page-blocks ${styles.homePageBlocks}`} style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))' }}>
       {blockOrderHome.map((blockId) =>
         sections[blockId] ? (
           // Les blocs ajoutés depuis l'admin portent leur barre d'outils en
