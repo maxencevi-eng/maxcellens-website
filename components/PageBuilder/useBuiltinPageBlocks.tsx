@@ -1,5 +1,6 @@
 "use client";
 
+import { MANAGED_HOME_BLOCKS, legacyOrderId } from "../HomeBlocks/managedHomeDefs";
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { AdminNotice, AdminToolbar } from '../admin';
@@ -39,7 +40,7 @@ export function isDynamicId(id: string) {
 }
 
 export function dynamicId(blockId: string) {
-  return `${DYN_PREFIX}${blockId}`;
+  return blockId.startsWith("legacy:") ? legacyOrderId(blockId.slice(7)) : `${DYN_PREFIX}${blockId}`;
 }
 
 export function blockIdOf(orderId: string) {
@@ -55,7 +56,7 @@ export type BuiltinBlocksApi = {
   modals: React.ReactNode;
 };
 
-export function useBuiltinPageBlocks(pageKey: BuiltinPageKey): BuiltinBlocksApi {
+export function useBuiltinPageBlocks(pageKey: BuiltinPageKey, enabled = true): BuiltinBlocksApi {
   const { isAdmin, getOrder, setOrder } = useBlockVisibility();
   const orderPage = pageKey as BlockOrderPage;
 
@@ -63,6 +64,7 @@ export function useBuiltinPageBlocks(pageKey: BuiltinPageKey): BuiltinBlocksApi 
   const [initial, setInitial] = useState<PageBlock[] | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     let mounted = true;
     (async () => {
       try {
@@ -76,13 +78,13 @@ export function useBuiltinPageBlocks(pageKey: BuiltinPageKey): BuiltinBlocksApi 
         const json = await resp.json();
         if (!mounted) return;
         setPageId(json?.pageId ?? null);
-        setInitial(Array.isArray(json?.blocks) ? json.blocks : []);
+        setInitial(pageKey === "home" && !json.managedHome ? null : Array.isArray(json?.blocks) ? json.blocks : []);
       } catch (_) {
-        if (mounted) setInitial([]);
+        if (mounted) setInitial(pageKey === "home" ? null : []);
       }
     })();
     return () => { mounted = false; };
-  }, [pageKey, isAdmin]);
+  }, [pageKey, isAdmin, enabled]);
 
   // Appel de fonction, PAS de JSX : les hooks de `buildApi` se composent avec
   // ceux ci-dessus et sont donc appelés dans le même ordre à chaque rendu.
@@ -174,12 +176,15 @@ function buildApi({
   }
 
   async function handleDelete(block: PageBlock) {
-    await deleteBlock(block.id);
+    if (!await deleteBlock(block.id)) return;
     const order = getOrder(orderPage).filter((id) => id !== dynamicId(block.id));
     await setOrder(orderPage, order);
   }
 
   const sections: Record<string, React.ReactNode> = {};
+  if (pageKey === "home" && initial !== null) {
+    for (const [type] of MANAGED_HOME_BLOCKS) sections[legacyOrderId(type)] = null;
+  }
   for (const block of blocks) {
     if (!isAdmin && !block.visible) continue;
     const def = getBlockDefinition(block.type);

@@ -61,7 +61,7 @@ function AlignmentButtons({ value, onChange }: { value: string; onChange: (v: st
   );
 }
 
-export default function ClientsEditModal({ onClose, onSaved, premium = false }: { premium?: boolean; onClose: () => void; onSaved?: () => void }) {
+export default function ClientsEditModal({ onClose, onSaved, premium = false, settingsData, onSaveData }: { settingsData?: Record<string, string>; onSaveData?: (data: Record<string, string>) => Promise<boolean> | boolean; premium?: boolean; onClose: () => void; onSaved?: () => void }) {
   const [title, setTitle] = useState('');
   const [titleStyle, setTitleStyle] = useState<TitleStyleKey>('h2');
   const [titleFontSize, setTitleFontSize] = useState<number | ''>('');
@@ -97,12 +97,10 @@ export default function ClientsEditModal({ onClose, onSaved, premium = false }: 
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=clients_presentation_version,clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_logo_filter,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom');
-        if (!resp.ok) return;
-        const j = await resp.json();
+        const j = settingsData ? { settings: settingsData } : await (await fetch('/api/admin/site-settings?keys=clients_presentation_version,clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_logo_filter,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom')).json();
         const s = premium ? editorialClients(j?.settings || {}) : j?.settings || {};
         if (!mounted) return;
-        if (s.clients_title) setTitle(String(s.clients_title)); else try { const v = localStorage.getItem('clients_title'); if (v) setTitle(v); } catch(_){}
+        if (s.clients_title) setTitle(String(s.clients_title)); else if (!settingsData) try { const v = localStorage.getItem('clients_title'); if (v) setTitle(v); } catch(_){}
         if (s.clients_title_style && ['p','h1','h2','h3','h4','h5'].includes(s.clients_title_style)) setTitleStyle(s.clients_title_style as TitleStyleKey);
         if (s.clients_title_font_size != null && s.clients_title_font_size !== '') setTitleFontSize(Number(s.clients_title_font_size));
         if (s.clients_title_color) setTitleColor(String(s.clients_title_color));
@@ -183,7 +181,7 @@ export default function ClientsEditModal({ onClose, onSaved, premium = false }: 
     const item = logos[idx];
     setError(null);
     if (!item) return;
-    if (item.path) {
+    if (item.path && !onSaveData) {
       setDeletingIndex(idx);
       try {
         const resp = await fetch('/api/admin/delete-storage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: item.path }) });
@@ -214,6 +212,18 @@ export default function ClientsEditModal({ onClose, onSaved, premium = false }: 
     setError(null);
     setSuccess(null);
     try {
+      if (onSaveData) {
+        const data = {
+          clients_presentation_version: '1', clients_title: title, clients_title_style: titleStyle,
+          clients_title_font_size: String(titleFontSize), clients_title_color: titleColor, clients_title_align: titleAlign,
+          clients_logos: JSON.stringify(logos), clients_grid: JSON.stringify(grid), clients_bg: bgColor,
+          clients_logo_filter: logoFilter, clients_radius_top: String(radiusTop), clients_radius_bottom: String(radiusBottom),
+          clients_padding_top: String(paddingTop), clients_padding_bottom: String(paddingBottom),
+        };
+        if (!await onSaveData(data)) throw new Error('Enregistrement impossible');
+        onClose();
+        return;
+      }
       const tasks = [
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_title', value: title }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_title_style', value: titleStyle }) }),

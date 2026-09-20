@@ -15,7 +15,7 @@ function load(file) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, esModuleInterop: true },
   }).outputText;
   vm.runInNewContext(source, {
-    module, exports: module.exports,
+    module, exports: module.exports, URL,
     require: id => {
       if (id.endsWith('.css')) return { __esModule: true, default: new Proxy({}, { get: (_, name) => String(name) }) };
       if (!id.startsWith('.')) return require(id);
@@ -26,7 +26,7 @@ function load(file) {
   cache.set(filename, module.exports);
   return module.exports;
 }
-const { DEFAULT_PROJECT_CARDS: projects, DEFAULT_SERVICE_CARDS: services, normalizeImageCards, safeCardHref } = load('components/PageBuilder/blocks/imageCardsDefs.ts');
+const { DEFAULT_PROJECT_CARDS: projects, DEFAULT_SERVICE_CARDS: services, normalizeImageCards, safeCardHref, youtubeCardId, playableCardVideo } = load('components/PageBuilder/blocks/imageCardsDefs.ts');
 const { ImageCardsBlock, ServiceImageCardsBlock } = load('components/PageBuilder/blocks/ImageCardsBlock.tsx');
 
 test('new block instances have independent editable cards', () => {
@@ -43,9 +43,9 @@ test('saved edits and removal of every card survive normalization', () => {
   assert.equal(result.title, 'Custom title');
   assert.equal(result.paddingX, 24);
 });
-test('project cards render real links, alternative text and user colors', () => {
+test('service cards render real links, alternative text and user colors', () => {
   const data = normalizeImageCards({ cards: [{ title: 'Film', subtitle: 'Corporate', image: { url: '/test.webp' }, alt: 'Film still', href: '/realisation', newTab: true }], cardColor: { source: 'custom', value: '#abcdef' } }, projects);
-  const html = renderToStaticMarkup(React.createElement(ImageCardsBlock, { data }));
+  const html = renderToStaticMarkup(React.createElement(ServiceImageCardsBlock, { data }));
   assert.match(html, /href="\/realisation"/);
   assert.match(html, /alt="Film still"/);
   assert.match(html, /noopener noreferrer/);
@@ -66,4 +66,27 @@ test('empty links stay noninteractive; unsafe protocols cannot become links', ()
   const data = normalizeImageCards({ cards: [{ title: 'No link', href: 'javascript:alert(1)' }] }, projects);
   const html = renderToStaticMarkup(React.createElement(ImageCardsBlock, { data }));
   assert.doesNotMatch(html, /href=|javascript:/);
+});
+
+test('YouTube watch, shortened and shorts URLs use the same cover', () => {
+  for (const url of ['https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'https://youtu.be/dQw4w9WgXcQ?t=12', 'https://www.youtube.com/shorts/dQw4w9WgXcQ']) {
+    assert.equal(youtubeCardId(url), 'dQw4w9WgXcQ');
+  }
+  assert.equal(youtubeCardId('https://evil.example/watch?v=dQw4w9WgXcQ'), undefined);
+});
+test('project cards open videos and keep a custom cover instead of a link', () => {
+  const live = playableCardVideo({ video: { kind: 'youtube', url: 'https://www.youtube.com/live/dQw4w9WgXcQ' } });
+  assert.equal(live.embedUrl, 'https://www.youtube.com/embed/dQw4w9WgXcQ');
+  const data = normalizeImageCards({ cards: [{ title: 'Film', image: { url: '/cover.webp' }, video: { kind: 'youtube', url: 'https://youtu.be/dQw4w9WgXcQ' } }] }, projects);
+  const html = renderToStaticMarkup(React.createElement(ImageCardsBlock, { data }));
+  assert.match(html, /<button/);
+  assert.match(html, /aria-label="Lire Film"/);
+  assert.match(html, /src="\/cover.webp"/);
+  assert.doesNotMatch(html, /href=/);
+});
+test('imported files are played natively; invalid sources stay inactive', () => {
+  assert.equal(playableCardVideo({ href: '', video: { kind: 'file', url: '/uploads/film.mp4' } }).kind, 'file');
+  assert.equal(playableCardVideo({ href: '', video: { kind: 'file', url: 'javascript:alert(1)' } }), null);
+  const data = normalizeImageCards({ cards: [{ title: 'Film', video: { kind: 'file', url: '/uploads/film.mp4' } }] }, projects);
+  assert.match(renderToStaticMarkup(React.createElement(ImageCardsBlock, { data })), /<video/);
 });

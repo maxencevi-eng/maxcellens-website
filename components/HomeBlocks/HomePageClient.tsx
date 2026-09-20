@@ -157,7 +157,7 @@ function getFanCardStyle(offset: number): React.CSSProperties {
   };
 }
 
-export default function HomePageClient({ initialSettings }: { initialSettings?: Record<string, string> }) {
+export default function HomePageClient({ initialSettings, renderOnly }: { initialSettings?: Record<string, string>; renderOnly?: string }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loaded, setLoaded] = useState(() => initialSettings !== undefined);
   const [editBlock, setEditBlock] = useState<HomeBlockKey | null>(null);
@@ -166,9 +166,13 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   /* Blocs ajoutés depuis l'administration : leurs sections sont fusionnées
      dans la table ci-dessous et leurs identifiants figurent dans le même
      ordre que les blocs intégrés. */
-  const dynamicBlocks = useBuiltinPageBlocks("home");
-  const hide = (id: string) => !isAdminFromContext && hiddenBlocks.includes(id);
-  const blockWidthClass = (id: string) => (blockWidthModes[id] === "max1600" ? "block-width-1600" : "");
+  const dynamicBlocks = useBuiltinPageBlocks("home", !renderOnly);
+  const hide = (id: string) => {
+    if (renderOnly) return id !== renderOnly;
+    const state = parse(initialSettings?.[`managed_${id === "clients" ? "home_clients" : id}`], { deleted: false, visible: undefined as boolean | undefined });
+    return state.deleted || (!isAdminFromContext && (state.visible === false || (state.visible === undefined && hiddenBlocks.includes(id))));
+  };
+  const blockWidthClass = (id: string) => renderOnly ? "" : (blockWidthModes[id] === "max1600" ? "block-width-1600" : "");
 
   const [intro, setIntro] = useState<HomeIntroData>(() => parse(initialSettings?.home_intro, DEFAULT_INTRO));
   const [services, setServices] = useState<HomeServicesData>(() => parse(initialSettings?.home_services, DEFAULT_SERVICES));
@@ -214,6 +218,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   };
 
   useEffect(() => {
+    if (renderOnly) return;
     let mounted = true;
     supabase.auth.getUser().then(({ data }) => {
       if (!mounted) return;
@@ -231,6 +236,7 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
   }, []);
 
   useEffect(() => {
+    if (renderOnly) return;
     let mounted = true;
     async function load() {
       try {
@@ -322,12 +328,13 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
     }, portraitCarouselSpeed);
   }, [portraitSlides.length, portraitCarouselSpeed]);
   useEffect(() => {
+    if (renderOnly && renderOnly !== "home_portrait") return;
     resetPortraitInterval();
     return () => {
       if (portraitIntervalRef.current) clearInterval(portraitIntervalRef.current);
       portraitIntervalRef.current = null;
     };
-  }, [resetPortraitInterval]);
+  }, [resetPortraitInterval, renderOnly]);
 
   // Keep outgoing portrait card at higher z-index during slide transition (prevents visual "cut")
   const portraitIndex = Math.max(0, Math.min(currentPortraitSlide, portraitSlides.length - 1));
@@ -1162,6 +1169,8 @@ export default function HomePageClient({ initialSettings }: { initialSettings?: 
     home_quote: quoteSection,
     home_cta: ctaSection,
   };
+
+  if (renderOnly) return <div className={styles.managedHomeBlock}>{sections[renderOnly]}</div>;
 
   // Les blocs dynamiques s'ajoutent à la table de rendu, indexés par
   // leur identifiant d'ordre (« dyn:<uuid> »).

@@ -119,6 +119,7 @@ type BlockData =
 type Props = {
   blockKey: HomeBlockKey;
   initialData: BlockData;
+  onSaveData?: (data: any) => Promise<boolean> | boolean;
   onClose: () => void;
   onSaved: (key: string, value: string) => void;
 };
@@ -144,7 +145,7 @@ const inputStyle: React.CSSProperties = {
   boxSizing: "border-box",
 };
 
-export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved }: Props) {
+export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved, onSaveData }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   function defaultTab(key: string) {
@@ -642,7 +643,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     if (!item) return;
     const ok = await confirmDialog({
       title: 'Supprimer ce service ?',
-      message: 'L’image associée sera également supprimée du stockage.',
+      message: onSaveData ? 'Ce service sera retiré du bloc après enregistrement.' : 'L’image associée sera également supprimée du stockage.',
       confirmLabel: 'Supprimer',
       tone: 'danger',
     });
@@ -650,7 +651,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     setDeletingServiceIndex(index);
     setError(null);
     try {
-      if (item.image?.path) {
+      if (item.image?.path && !onSaveData) {
         const resp = await fetch("/api/admin/delete-hero-media", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -871,6 +872,11 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         return;
     }
     try {
+      if (onSaveData) {
+        if (!await onSaveData(payload)) throw new Error("Enregistrement impossible");
+        onClose();
+        return;
+      }
       const resp = await fetch("/api/admin/site-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

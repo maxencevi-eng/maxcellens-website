@@ -1,6 +1,7 @@
 import type { BlockAlign, HeadingLevel, ThemeColor } from './blockDefs';
 
 export type ImageCard = {
+  video?: { url: string; path?: string; kind: 'youtube' | 'file' } | null;
   image: { url: string; path?: string } | null;
   alt: string;
   title: string;
@@ -73,4 +74,21 @@ export function normalizeImageCards(raw: Partial<ImageCardsData> | null, default
 export function safeCardHref(href: string): string | undefined {
   const value = (href || '').trim();
   return /^(https?:\/\/|mailto:|tel:|\/(?!\/)|#)/i.test(value) ? value : undefined;
+}
+
+export function youtubeCardId(value: string): string | undefined {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.replace(/^www\./, '');
+    const id = host === 'youtu.be' ? url.pathname.slice(1) : ['youtube.com', 'm.youtube.com', 'youtube-nocookie.com'].includes(host) ? url.searchParams.get('v') || url.pathname.match(/^\/(?:shorts|embed|live)\/([^/]+)/)?.[1] : '';
+    return id && /^[\w-]{11}$/.test(id) ? id : undefined;
+  } catch { return undefined; }
+}
+
+export function playableCardVideo(card: ImageCard) {
+  const url = card.video?.url || card.href;
+  const youtubeId = youtubeCardId(url);
+  if (youtubeId) return { url, youtubeId, embedUrl: `https://www.youtube.com/embed/${youtubeId}`, kind: 'youtube' as const };
+  if (card.video?.kind === 'file' && /^(https?:\/\/|\/(?!\/))/i.test(url)) return { url, kind: 'file' as const };
+  return null;
 }

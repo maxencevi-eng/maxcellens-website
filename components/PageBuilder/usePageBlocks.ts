@@ -193,9 +193,11 @@ export function usePageBlocks(pageId: string, initial: PageBlock[]) {
           );
         }
         setError(null);
+        return true;
       } catch (e: any) {
         setBlocks(previous);
         setError(e?.message || 'Suppression impossible');
+        return false;
       }
     },
     [blocks, authHeaders]

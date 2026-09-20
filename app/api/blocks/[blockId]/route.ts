@@ -1,3 +1,5 @@
+import { BUILTIN_PAGES, BUILTIN_PREFIX } from "../../../../components/PageBuilder/builtinPages";
+import { mutateManagedHomeBlock } from "../../../../lib/managedHomeBlocks";
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
@@ -19,6 +21,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
   try {
     const body = await req.json();
+    if (blockId.startsWith("legacy:")) {
+      await mutateManagedHomeBlock(blockId, body);
+      revalidatePath("/");
+      return NextResponse.json({ ok: true });
+    }
     const patch: Record<string, unknown> = {};
 
     if ('data' in body) {
@@ -73,6 +80,11 @@ export async function DELETE(req: Request, ctx: Ctx) {
 
   const { blockId } = await ctx.params;
 
+  if (blockId.startsWith("legacy:")) {
+    try { await mutateManagedHomeBlock(blockId, {}, true); revalidatePath("/"); return NextResponse.json({ ok: true }); }
+    catch (e: any) { return NextResponse.json({ error: e.message }, { status: 500 }); }
+  }
+
   const { data: block } = await supabaseAdmin
     .from('page_blocks')
     .select('page_id')
@@ -111,6 +123,6 @@ async function revalidateForBlock(pageId?: string) {
       .eq('id', pageId)
       .maybeSingle();
     const slug = (data as any)?.slug;
-    if (slug) revalidatePath(`/${slug}`);
+    if (slug) revalidatePath(slug.startsWith(BUILTIN_PREFIX) ? BUILTIN_PAGES.find(page => page.key === slug.slice(BUILTIN_PREFIX.length))?.path || "/" : `/${slug}`);
   } catch (_) {}
 }

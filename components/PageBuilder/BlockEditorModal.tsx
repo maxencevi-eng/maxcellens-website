@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from 'react';
+import { isManagedHomeType } from '../HomeBlocks/managedHomeDefs';
+import ManagedHomeEditorModal from '../HomeBlocks/ManagedHomeEditorModal';
 import { Plus, Trash2 } from 'lucide-react';
 import {
   AdminButton,
@@ -22,7 +24,13 @@ import type { PageBlock } from './pageTypes';
  * connaît aucun type de bloc en particulier. Le cas `columns` est le seul à
  * demander un traitement propre, puisqu'il contient d'autres blocs.
  */
-export default function BlockEditorModal({
+export default function BlockEditorModal(props: React.ComponentProps<typeof GenericBlockEditorModal>) {
+  return isManagedHomeType(props.block.type)
+    ? <ManagedHomeEditorModal {...props} />
+    : <GenericBlockEditorModal {...props} />;
+}
+
+function GenericBlockEditorModal({
   block,
   pageOptions,
   onSave,

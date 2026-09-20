@@ -18,7 +18,7 @@ async function getHomeInitialSettings(): Promise<Record<string, string> | undefi
     const { data, error } = await supabaseAdmin
       .from('site_settings')
       .select('key, value')
-      .in('key', HOME_SETTINGS_KEYS);
+      .in('key', [...HOME_SETTINGS_KEYS, ...[...HOME_SETTINGS_KEYS, 'home_clients'].map(key => `managed_${key}`)]);
     if (error || !data) return undefined;
     const map: Record<string, string> = {};
     (data as { key: string; value: string }[]).forEach(r => { map[r.key] = r.value; });

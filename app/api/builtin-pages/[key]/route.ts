@@ -1,3 +1,4 @@
+import { readManagedHomeBlocks } from "../../../../lib/managedHomeBlocks";
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 import { getAuthUser } from '../../../../lib/adminAuth';
@@ -62,7 +63,7 @@ export async function GET(req: Request, ctx: Ctx) {
 
     const pageId = String((page as any).id);
     const blocks = await getBlocksForPage(pageId, { includeDrafts: Boolean(admin) });
-    return NextResponse.json({ pageId, blocks });
+    return NextResponse.json({ pageId, managedHome: key === "home", blocks: key === "home" ? [...await readManagedHomeBlocks(pageId, Boolean(admin)), ...blocks] : blocks });
   } catch (e: any) {
     console.error('builtin-pages GET', e);
     return NextResponse.json({ pageId: null, blocks: [] });

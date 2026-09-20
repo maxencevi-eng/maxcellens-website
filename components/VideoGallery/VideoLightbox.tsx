@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-export type VideoLightboxItem = { url: string; embedUrl?: string; isShort?: boolean };
+export type VideoLightboxItem = { url: string; embedUrl?: string; isShort?: boolean; kind?: 'youtube' | 'file'; poster?: string };
 
 type Props = {
   videos: VideoLightboxItem[];
@@ -170,6 +170,7 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
       <div style={columnStyle} onClick={(e) => e.stopPropagation()}>
         <div style={videoScrollStyle}>
           <div style={videoWrapStyle}>
+          {item.kind === "file" ? <video key={item.url} src={item.url} poster={item.poster} controls autoPlay={canAutoplay} playsInline style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }} /> : (
           <iframe
             src={embedSrc}
             title={'Vidéo ' + (safeIndex + 1)}
@@ -177,6 +178,7 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />
+          )}
           </div>
         </div>
 

@@ -1,3 +1,4 @@
+import { BUILTIN_PAGES, BUILTIN_PREFIX } from "../../../../../components/PageBuilder/builtinPages";
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { supabaseAdmin } from '../../../../../lib/supabaseAdmin';
@@ -130,7 +131,7 @@ async function revalidateForPage(pageId: string) {
       .eq('id', pageId)
       .maybeSingle();
     const slug = (data as any)?.slug;
-    if (slug) revalidatePath(`/${slug}`);
+    if (slug) revalidatePath(slug.startsWith(BUILTIN_PREFIX) ? BUILTIN_PAGES.find(page => page.key === slug.slice(BUILTIN_PREFIX.length))?.path || "/" : `/${slug}`);
     revalidatePath('/admin');
   } catch (_) {}
 }

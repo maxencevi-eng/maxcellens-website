@@ -4,11 +4,12 @@
   /* Reserve minimum space to reduce CLS during hydration */
   min-height: 180px;
   /* Carte flottante arrondie sur les 4 coins — style fixaplan */
-  border-radius: 24px;
+  border-radius: 0;
   overflow: hidden;
-  margin-left: 16px;
-  margin-right: 16px;
-  margin-bottom: 16px;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 0;
 }
 
 /* ── Scroll reveal : la carte footer émerge depuis le bas ── */

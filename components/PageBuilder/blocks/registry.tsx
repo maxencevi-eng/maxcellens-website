@@ -1,6 +1,8 @@
 "use client";
 
 import React from 'react';
+import ManagedHomeBlock from '../../HomeBlocks/ManagedHomeBlock';
+import { MANAGED_HOME_BLOCKS, homeBlockDefaults } from '../../HomeBlocks/managedHomeDefs';
 import { DEFAULT_PROJECT_CARDS, DEFAULT_SERVICE_CARDS, normalizeImageCards } from './imageCardsDefs';
 import { ImageCardsBlock, ServiceImageCardsBlock } from './ImageCardsBlock';
 import { ImageCardsEditor, ServiceImageCardsEditor } from './ImageCardsEditor';
@@ -88,9 +90,17 @@ function withDefaults<T>(defaults: T) {
 }
 
 export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
+  ...Object.fromEntries(MANAGED_HOME_BLOCKS.map(([type, label]) => [type, {
+    type, label, description: `Bloc ${label.toLowerCase()} avec ses réglages complets`,
+    icon: Columns2, category: 'contenu' as const, defaults: homeBlockDefaults(type),
+    Render: (props: { data: Record<string, any> }) => <ManagedHomeBlock type={type} {...props} />,
+    Editor: () => null,
+    migrate: (raw: any) => ({ ...homeBlockDefaults(type), ...(raw || {}) }),
+    nestable: false,
+  }])),
   project_cards: {
     type: 'project_cards', label: 'Sélection de réalisations',
-    description: 'Images avec titres superposés et en-tête au-dessus',
+    description: 'Vidéos YouTube ou importées avec couverture et titres superposés',
     icon: ImageIcon, category: 'media', defaults: DEFAULT_PROJECT_CARDS,
     Render: ImageCardsBlock, Editor: ImageCardsEditor,
     migrate: raw => normalizeImageCards(raw, DEFAULT_PROJECT_CARDS),

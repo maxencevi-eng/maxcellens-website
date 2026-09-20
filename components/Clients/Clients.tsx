@@ -6,6 +6,7 @@ import { Pencil } from 'lucide-react';
 import styles from './Clients.module.css';
 
 type Props = {
+  settingsData?: Record<string, string>;
   premium?: boolean;
   logos?: string[];
   title?: string;
@@ -38,8 +39,8 @@ import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrder
 import AnimateInView, { AnimateStaggerItem } from '../AnimateInView/AnimateInView';
 import type { TitleStyleKey } from '../HomeBlocks/homeDefaults';
 
-export default function Clients({ logos, title, premium = false }: Props) {
-  const [items, setItems] = useState<string[]>(logos && logos.length ? logos : defaultLogos);
+export default function Clients({ logos, title, premium = false, settingsData }: Props) {
+  const [items, setItems] = useState<string[]>(settingsData ? [] : logos && logos.length ? logos : defaultLogos);
   const [hdr, setHdr] = useState<string | undefined>(title || 'CLIENTS ET PARTENAIRES PROFESSIONNELS');
   const [titleStyle, setTitleStyle] = useState<TitleStyleKey>('h2');
   const [titleFontSize, setTitleFontSize] = useState<number | null>(null);
@@ -49,8 +50,8 @@ export default function Clients({ logos, title, premium = false }: Props) {
   const [editing, setEditing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const { hiddenBlocks, blockWidthModes, isAdmin: isAdminCtx } = useBlockVisibility();
-  const hide = !isAdminCtx && hiddenBlocks.includes('clients');
-  const blockWidthClass = blockWidthModes['clients'] === 'max1600' ? 'block-width-1600' : '';
+  const hide = !settingsData && !isAdminCtx && hiddenBlocks.includes('clients');
+  const blockWidthClass = settingsData ? '' : blockWidthModes['clients'] === 'max1600' ? 'block-width-1600' : '';
   const [bgColor, setBgColor] = useState('');
   const [paddingTop, setPaddingTop] = useState<number | null>(null);
   const [paddingBottom, setPaddingBottom] = useState<number | null>(null);
@@ -85,9 +86,7 @@ export default function Clients({ logos, title, premium = false }: Props) {
     let mounted = true;
     async function load() {
       try {
-        const resp = await fetch('/api/admin/site-settings?keys=clients_presentation_version,clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom,clients_logo_filter');
-        if (!resp.ok) return;
-        const j = await resp.json();
+        const j = settingsData ? { settings: settingsData } : await (await fetch('/api/admin/site-settings?keys=clients_presentation_version,clients_title,clients_title_style,clients_title_font_size,clients_title_color,clients_title_align,clients_logos,clients_grid,clients_bg,clients_radius_top,clients_radius_bottom,clients_padding_top,clients_padding_bottom,clients_logo_filter')).json();
         const s = premium ? editorialClients(j?.settings || {}) : j?.settings || {};
         if (!mounted) return;
         if (s.clients_title) setHdr(String(s.clients_title));
@@ -104,11 +103,11 @@ export default function Clients({ logos, title, premium = false }: Props) {
         if (s.clients_logos) {
           try {
             const parsed = JSON.parse(String(s.clients_logos));
-            if (Array.isArray(parsed) && parsed.length) {
+            if (Array.isArray(parsed)) {
               // support both array of strings or array of objects {url,path}
               const objs = parsed.map((it: any) => (typeof it === 'string' ? { url: String(it) } : { url: String(it?.url || ''), path: String(it?.path || '') }));
               const urls = objs.map(o => o.url || '').filter(Boolean);
-              if (urls.length) {
+              if (urls.length || settingsData) {
                 setItems(urls);
                 setItemsObjects(objs);
               }
@@ -150,6 +149,7 @@ export default function Clients({ logos, title, premium = false }: Props) {
 
   useEffect(() => {
     let mounted = true;
+    if (settingsData) return;
     supabase.auth.getUser().then(({ data }) => { if (!mounted) return; setIsAdmin(Boolean((data as any).user)); });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { setIsAdmin(Boolean(session?.user)); });
     return () => { mounted = false; try { (listener as any)?.subscription?.unsubscribe?.(); } catch (_) {} };
@@ -184,8 +184,8 @@ export default function Clients({ logos, title, premium = false }: Props) {
     <section
       className={`${styles.section}${premium ? ` ${styles.premium}` : ""}${logoFilter === 'normal' ? ` ${styles.logoFilterNormal}` : ''}${logoFilter === 'white' ? ` ${styles.logoFilterWhite}` : ''}`}
       style={{
-        width: '100vw',
-        marginLeft: 'calc(50% - 50vw)',
+        width: settingsData ? '100%' : '100vw',
+        marginLeft: settingsData ? '0' : 'calc(50% - 50vw)',
         marginTop: premium ? '0' : '-28px',
         marginBottom: '0',
         overflow: 'hidden',

@@ -95,6 +95,15 @@ export async function sanitizeBlockData(
 ): Promise<any> {
   if (!data || typeof data !== 'object') return data;
 
+  if (type.startsWith('home_')) {
+    const cleaned = { ...data };
+    for (const key of ['html', 'titleHtml', 'servicesHtml']) {
+      if (typeof cleaned[key] === 'string') cleaned[key] = await run(cleaned[key], RICH_TEXT_OPTIONS);
+    }
+    if (Array.isArray(cleaned.slides)) cleaned.slides = await Promise.all(cleaned.slides.map(async (slide: any) => ({ ...slide, text: await run(slide.text, RICH_TEXT_OPTIONS) })));
+    return cleaned;
+  }
+
   if (type === 'richtext') {
     return { ...data, html: await run(data.html, RICH_TEXT_OPTIONS) };
   }
