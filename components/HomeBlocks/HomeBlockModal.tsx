@@ -25,7 +25,7 @@ import type {
   CadreurVideoSettings,
   AnimationImageRatio,
 } from "./homeDefaults";
-import { TITLE_FONT_SIZE_MIN, TITLE_FONT_SIZE_MAX } from "./homeDefaults";
+import { DEFAULT_CADREUR_FEATURES, type CadreurFeature, TITLE_FONT_SIZE_MIN, TITLE_FONT_SIZE_MAX } from "./homeDefaults";
 
 /** Pages du site pour le lien interne (path + libellé) - Copié depuis LexicalEditor */
 const SITE_PAGES: { path: string; label: string; group?: string }[] = [
@@ -270,6 +270,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [cadreurTitleFontSize, setCadreurTitleFontSize] = useState<number | "">(28);
   const [cadreurTitleColor, setCadreurTitleColor] = useState("");
   const [cadreurTitleAlign, setCadreurTitleAlign] = useState<'left' | 'center' | 'right' | ''>('');
+  const [cadreurFeatures, setCadreurFeatures] = useState<CadreurFeature[]>([]);
   const [cadreurHtml, setCadreurHtml] = useState("");
   const [cadreurImage, setCadreurImage] = useState<{ url: string; path?: string; focus?: { x: number; y: number } } | null>(null);
   const [cadreurImageRatio, setCadreurImageRatio] = useState<AnimationImageRatio>("4:3" as any); // Using "4:3" or undefined as default if not set, but AnimationImageRatio doesn't obey "4:3". Let's check AnimationImageRatio values.
@@ -496,6 +497,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setCadreurTitleColor(d.titleColor ?? "");
       setCadreurTitleAlign(d.titleAlign ?? '');
       setCadreurHtml(d.html ?? "");
+      setCadreurFeatures((d.features ?? DEFAULT_CADREUR_FEATURES).map((feature: CadreurFeature) => ({ ...feature })));
       setCadreurImage(d.image ? { ...d.image, focus: (d.image as any).focus ?? { x: 50, y: 50 } } : null);
       setCadreurImageRatio(d.imageRatio ?? "4:3");
       setCadreurBackgroundColor(d.backgroundColor ?? "");
@@ -851,7 +853,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         payload = { blockTitle: portraitBlockTitle, blockTitleStyle: portraitBlockTitleStyle, blockTitleFontSize: portraitBlockTitleFontSize !== "" ? clampTitleFontSize(portraitBlockTitleFontSize as number) : undefined, blockTitleColor: portraitBlockTitleColor?.trim() || undefined, blockTitleAlign: portraitBlockTitleAlign || undefined, ctaLabel: portraitCtaLabel, ctaHref: portraitCtaHref, ctaButtonStyle: portraitCtaButtonStyle, carouselSpeed: portraitCarouselSpeed, slides: portraitSlides.map((s) => ({ ...s, titleFontSize: s.titleFontSize != null && s.titleFontSize >= TITLE_FONT_SIZE_MIN && s.titleFontSize <= TITLE_FONT_SIZE_MAX ? s.titleFontSize : undefined })), backgroundColor: portraitBackgroundColor?.trim() || undefined, borderRadiusTop: portraitRadiusTop !== "" ? Number(portraitRadiusTop) : undefined, borderRadiusBottom: portraitRadiusBottom !== "" ? Number(portraitRadiusBottom) : undefined, paddingTop: portraitPaddingTop !== "" ? Number(portraitPaddingTop) : undefined, paddingBottom: portraitPaddingBottom !== "" ? Number(portraitPaddingBottom) : undefined };
         break;
       case "home_cadreur":
-        payload = { title: cadreurTitle, titleStyle: cadreurTitleStyle, titleFontSize: cadreurTitleFontSize !== "" ? clampTitleFontSize(cadreurTitleFontSize as number) : undefined, titleColor: cadreurTitleColor?.trim() || undefined, titleAlign: cadreurTitleAlign || undefined, html: cadreurHtml, image: cadreurImage, imageRatio: cadreurImageRatio, backgroundColor: cadreurBackgroundColor?.trim() || undefined, videos: cadreurVideos, videoSettings: cadreurVideoSettings, videosSectionTitle: cadreurVideosSectionTitle.trim() || undefined, videosSectionTitleAlign: cadreurVideosSectionTitleAlign, borderRadiusTop: cadreurRadiusTop !== "" ? Number(cadreurRadiusTop) : undefined, borderRadiusBottom: cadreurRadiusBottom !== "" ? Number(cadreurRadiusBottom) : undefined, paddingTop: cadreurPaddingTop !== "" ? Number(cadreurPaddingTop) : undefined, paddingBottom: cadreurPaddingBottom !== "" ? Number(cadreurPaddingBottom) : undefined };
+        payload = { features: cadreurFeatures, title: cadreurTitle, titleStyle: cadreurTitleStyle, titleFontSize: cadreurTitleFontSize !== "" ? clampTitleFontSize(cadreurTitleFontSize as number) : undefined, titleColor: cadreurTitleColor?.trim() || undefined, titleAlign: cadreurTitleAlign || undefined, html: cadreurHtml, image: cadreurImage, imageRatio: cadreurImageRatio, backgroundColor: cadreurBackgroundColor?.trim() || undefined, videos: cadreurVideos, videoSettings: cadreurVideoSettings, videosSectionTitle: cadreurVideosSectionTitle.trim() || undefined, videosSectionTitleAlign: cadreurVideosSectionTitleAlign, borderRadiusTop: cadreurRadiusTop !== "" ? Number(cadreurRadiusTop) : undefined, borderRadiusBottom: cadreurRadiusBottom !== "" ? Number(cadreurRadiusBottom) : undefined, paddingTop: cadreurPaddingTop !== "" ? Number(cadreurPaddingTop) : undefined, paddingBottom: cadreurPaddingBottom !== "" ? Number(cadreurPaddingBottom) : undefined };
         break;
       case "home_animation": {
         const rawBg = animationBackgroundColor?.trim() || "";
@@ -1016,7 +1018,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
             <ModalTabs tabs={[{ id: 'bloc', label: 'Bloc' }, { id: 'diaporama', label: 'Diaporama' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
           )}
           {blockKey === "home_cadreur" && (
-            <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'image', label: 'Image' }, { id: 'videos', label: 'Vidéos' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
+            <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'points', label: 'Points forts' }, { id: 'image', label: 'Image' }, { id: 'videos', label: 'Vidéos' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
           )}
           {blockKey === "home_animation" && (
             <ModalTabs tabs={[{ id: 'contenu', label: 'Contenu' }, { id: 'image', label: 'Image' }, { id: 'style', label: 'Style' }]} active={tab} onChange={setTab} />
@@ -1669,6 +1671,26 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </div>
               
               </>)}
+
+              {tab === 'points' && <>
+                <p style={{ fontSize: 13, color: 'var(--muted)' }}>Points forts affich?s en colonnes sous l?introduction.</p>
+                {cadreurFeatures.map((feature, index) => <fieldset key={index} style={{ border: '1px solid #ddd', padding: 16, marginBottom: 16 }}>
+                  <legend>Point fort {index + 1}</legend>
+                  <label style={{ display: 'block', marginBottom: 10 }}>Ic?ne
+                    <select value={feature.icon} onChange={e => setCadreurFeatures(items => items.map((item, i) => i === index ? { ...item, icon: e.target.value as CadreurFeature['icon'] } : item))} style={inputStyle}>
+                      <option value="film">Film / captation</option><option value="team">?quipe</option><option value="camera">Cam?ra / mat?riel</option>
+                    </select>
+                  </label>
+                  <label style={{ display: 'block', marginBottom: 10 }}>Titre
+                    <input value={feature.title} onChange={e => setCadreurFeatures(items => items.map((item, i) => i === index ? { ...item, title: e.target.value } : item))} style={{ ...inputStyle, width: '100%' }} />
+                  </label>
+                  <label style={{ display: 'block', marginBottom: 10 }}>Description
+                    <textarea value={feature.text} onChange={e => setCadreurFeatures(items => items.map((item, i) => i === index ? { ...item, text: e.target.value } : item))} rows={3} style={{ ...inputStyle, width: '100%' }} />
+                  </label>
+                  <button type="button" className="btn-ghost" onClick={() => setCadreurFeatures(items => items.filter((_, i) => i !== index))}>Retirer ce point fort</button>
+                </fieldset>)}
+                <button type="button" className="btn-ghost" onClick={() => setCadreurFeatures(items => [...items, { icon: 'film', title: '', text: '' }])}>+ Ajouter un point fort</button>
+              </>}
 
               {tab === 'image' && (<>
               <div style={{ marginBottom: 12 }}>

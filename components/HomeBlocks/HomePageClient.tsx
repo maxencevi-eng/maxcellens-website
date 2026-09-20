@@ -5,7 +5,8 @@ import { hasRichTextContent } from "../../lib/hasRichTextContent";
 import { editorialPresentation } from "./editorialPresentation";
 
 import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
-import { Pencil } from 'lucide-react';
+import { Pencil, Film, Users, Camera } from 'lucide-react';
+import { DEFAULT_CADREUR_FEATURES } from './homeDefaults';
 import useBuiltinPageBlocks from '../PageBuilder/useBuiltinPageBlocks';
 import React, { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useSplashReady } from "../AnimateInView/AnimateInView";
@@ -681,6 +682,19 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
       </section>
   );
 
+  const portraitHeading = (
+<AnimateInView variant="fadeUp">
+              {(() => {
+                const blockTitleText = (portraitBlock as any).blockTitle ?? (portraitBlock as any).title ?? "Portrait";
+                const Tag = (portraitBlock as any).blockTitleStyle || "h2";
+                const fs = (portraitBlock as any).blockTitleFontSize;
+                const color = (portraitBlock as any).blockTitleColor;
+                const align = (portraitBlock as any).blockTitleAlign;
+                return <Tag className={`${styles.portraitBlockTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{blockTitleText}</Tag>;
+              })()}
+            </AnimateInView>
+  );
+
   const portraitSection = hide("home_portrait") ? null : (
       <section className={styles.portraitBlock} style={(() => { const s: React.CSSProperties = {}; if ((portraitBlock as any).backgroundColor) s.backgroundColor = (portraitBlock as any).backgroundColor; const rt = (portraitBlock as any).borderRadiusTop; const rb = (portraitBlock as any).borderRadiusBottom; if (rt != null) { s.borderTopLeftRadius = `${rt}px`; s.borderTopRightRadius = `${rt}px`; } if (rb != null) { s.borderBottomLeftRadius = `${rb}px`; s.borderBottomRightRadius = `${rb}px`; } const pt = (portraitBlock as any).paddingTop; const pb = (portraitBlock as any).paddingBottom; if (pt != null) s.paddingTop = `${pt}px`; if (pb != null) s.paddingBottom = `${pb}px`; return Object.keys(s).length ? s : undefined; })()}>
         <div className={`container ${blockWidthClass("home_portrait")}`.trim()}>
@@ -723,6 +737,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
               }}
             >
               <div className={styles.portraitSlideTransition}>
+              <div className={styles.portraitMobileHeading}>{portraitHeading}</div>
               {/* ── Fan Carousel — zone images ── */}
               <div className={styles.portraitCarouselImageWrap}>
                 <div className={styles.portrait3DStage}>
@@ -769,17 +784,8 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
                 </div>
               </div>
               <div key={portraitIndex} className={`${styles.portraitCarouselContent} ${styles.portraitContentFade}`}>
-            <AnimateInView variant="fadeUp">
-              {(() => {
-                const blockTitleText = (portraitBlock as any).blockTitle ?? (portraitBlock as any).title ?? "Portrait";
-                const Tag = (portraitBlock as any).blockTitleStyle || "h2";
-                const fs = (portraitBlock as any).blockTitleFontSize;
-                const color = (portraitBlock as any).blockTitleColor;
-                const align = (portraitBlock as any).blockTitleAlign;
-                return <Tag className={`${styles.portraitBlockTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{blockTitleText}</Tag>;
-              })()}
-            </AnimateInView>
-
+                <div className={styles.portraitDesktopHeading}>{portraitHeading}</div>
+                <div className={styles.portraitSlideBody}>
                 {activePortraitSlide?.title ? (() => { const Tag = (activePortraitSlide as any).titleStyle || "h3"; const fs = (activePortraitSlide as any).titleFontSize; return <Tag className={`${styles.portraitSlideTitle} style-${Tag}`} style={fs != null ? { fontSize: responsiveFontSize(fs) } : undefined}>{activePortraitSlide.title}</Tag>; })() : null}
                 {activePortraitSlide?.text ? <div className={styles.portraitSlideText} dangerouslySetInnerHTML={{ __html: activePortraitSlide.text }} /> : null}
                 <Link
@@ -837,6 +843,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
                 </div>
               </div>
             </div>
+            </div>
             </AnimateInView>
           </div>
         </div>
@@ -870,6 +877,16 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
               <AnimateInView variant="slideFromLeft" className={styles.cadreurContent}>
                 {cadreurBlock.title ? (() => { const Tag = (cadreurBlock as any).titleStyle || "h2"; const fs = (cadreurBlock as any).titleFontSize; const color = (cadreurBlock as any).titleColor; const align = (cadreurBlock as any).titleAlign; return <Tag className={`${styles.cadreurTitle} style-${Tag}`} style={{ ...(fs != null ? { fontSize: responsiveFontSize(fs) } : {}), ...(color ? { color } : {}), ...(align ? { textAlign: align, width: '100%', display: 'block' } : {}) }}>{cadreurBlock.title}</Tag>; })() : null}
                 {cadreurBlock.html ? <div className={styles.cadreurText} dangerouslySetInnerHTML={{ __html: cadreurBlock.html }} /> : null}
+                <div className={styles.cadreurFeatures}>
+                  {(cadreurBlock.features ?? DEFAULT_CADREUR_FEATURES).map((feature, index) => {
+                    const Icon = feature.icon === 'team' ? Users : feature.icon === 'camera' ? Camera : Film;
+                    return <div key={index} className={styles.cadreurFeature}>
+                      <span className={styles.cadreurFeatureIcon}><Icon size={22} strokeWidth={1.5} aria-hidden="true" /></span>
+                      {feature.title && <h3>{feature.title}</h3>}
+                      {feature.text && <p>{feature.text}</p>}
+                    </div>;
+                  })}
+                </div>
               </AnimateInView>
               <AnimateInView variant="slideFromRight" className={styles.cadreurMedia} style={cadreurBlock.imageRatio && IMAGE_RATIO_MAP[cadreurBlock.imageRatio] ? { aspectRatio: IMAGE_RATIO_MAP[cadreurBlock.imageRatio] } : undefined}>
                 {cadreurBlock.image?.url ? (

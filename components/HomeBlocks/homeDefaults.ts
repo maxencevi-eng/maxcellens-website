@@ -134,7 +134,15 @@ export type CadreurVideoSettings = {
   glossy?: boolean;
 };
 
+export type CadreurFeature = { icon: 'film' | 'team' | 'camera'; title: string; text: string };
+export const DEFAULT_CADREUR_FEATURES: CadreurFeature[] = [
+  { icon: 'film', title: 'Captation vidéo', text: 'Prise de vue de haute qualité pour vos projets. Rushs livrés rapidement.' },
+  { icon: 'team', title: 'Travail en équipe', text: 'Intégration rapide et fluide au sein de vos équipes de tournage.' },
+  { icon: 'camera', title: 'Matériel complet', text: 'Caméras, micros, éclairages, pieds, prompteur…' },
+];
+
 export type HomeCadreurBlockData = {
+  features?: CadreurFeature[];
   title?: string;
   titleStyle?: TitleStyleKey;
   titleFontSize?: number;
