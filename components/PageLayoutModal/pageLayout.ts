@@ -35,7 +35,7 @@ export type PageLayout = {
    * était alors stocké mais jamais appliqué : sa valeur (48 px par défaut) ne
    * correspond à aucune intention de l'utilisateur. L'appliquer telle quelle
    * écarterait brutalement toutes les sections, et comme les blocs de contenu
-   * débordent en pleine largeur (`100vw`) alors que leur conteneur ne le fait
+   * débordent en pleine largeur (`100cqw`) alors que leur conteneur ne le fait
    * pas, l'écart laisse apparaître le fond de page en bandes sur les côtés.
    * On la ramène donc à 0 à la première lecture.
    */

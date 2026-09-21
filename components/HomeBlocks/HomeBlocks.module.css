@@ -21,8 +21,8 @@
 .animationBlock,
 .stats,
 .quote {
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
+  width: 100cqw;
+  margin-left: calc(50% - 50cqw);
   margin-top: -28px;
   margin-bottom: 0;
   overflow: hidden;
@@ -496,7 +496,14 @@
   height: clamp(520px, 40vw, 720px);
   perspective: 1000px;
   perspective-origin: 50% 55%;
-  transform-style: preserve-3d;
+  /* `flat` (et non `preserve-3d`) : les cartes latérales sont tournées en
+     rotateY, donc leur bord intérieur remonte en Z au-dessus du plan de la
+     carte active (z=0). En contexte 3D partagé, les plans s'intersectent et
+     ce bord traversait l'image mise en avant — un liseré vertical en plein
+     milieu du portrait. Aplaties, les cartes sont peintes selon leur
+     z-index : l'image active reste entièrement opaque.
+     La perspective, elle, reste appliquée aux enfants. */
+  transform-style: flat;
   overflow: visible;
 }
 
@@ -1850,8 +1857,8 @@
   padding: 5rem 1rem 3.5rem;
   position: relative;
   overflow: visible;
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
+  width: 100cqw;
+  margin-left: calc(50% - 50cqw);
 }
 
 .ctaTitle {
@@ -2090,6 +2097,10 @@
 @media (prefers-reduced-motion: reduce) { .quoteMarqueeInner { animation: none; } .quoteMarqueeWrap { overflow-x: auto; } .quoteMarqueeGroup[aria-hidden] { display: none; } }
 .animationBlockTitle::after { display: none; }
 .animationBlockCard:hover .animationBlockBanner { transform: none; }
+/* Dans ce design la carte est bord à bord et sans ombre : la soulever au
+   survol (translateY(-4px)) découvrait une bande du fond de section sous
+   l'image. Pas de décollement ici. */
+.animationBlockCard:hover { transform: none; box-shadow: none; }
 .quoteNavigation { display: flex; gap: 10px; margin-top: 20px; }
 .quoteNavigation button { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 1px solid #ffffff85; border-radius: 50%; background: transparent; color: inherit; font-size: 20px; cursor: pointer; transition: background .2s; }
 .quoteNavigation button:hover { background: #ffffff18; }
@@ -2103,9 +2114,9 @@
 /* Backgrounds span the viewport; only their contents share the page limit. */
 .homePageBlocks {
   --home-content-width: var(--content-inner-max-width-desktop, 2000px);
-  width: 100vw;
+  width: 100cqw;
   max-width: none;
-  margin-left: calc(50% - 50vw);
+  margin-left: calc(50% - 50cqw);
 }
 .homePageBlocks :global(.adm-block.block-width-1600) {
   max-width: none !important;

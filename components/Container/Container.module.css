@@ -1,4 +1,7 @@
 .container {
+  /* The main element owns the outer gutter. Do not apply it again inside. */
+  --container-margin-x-desktop: 0px;
+  --container-margin-x-mobile: 0px;
   width: 100%;
   max-width: var(--container-max-width-desktop, 1600px);
   margin-left: auto;

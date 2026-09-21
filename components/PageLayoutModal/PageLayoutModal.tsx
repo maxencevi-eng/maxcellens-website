@@ -65,11 +65,9 @@ export default function PageLayoutModal({
   /** Aperçu en direct : on écrit les variables sans persister. */
   function update(key: keyof LayoutSection, value: number) {
     setSaved(false);
-    setLayout((prev) => {
-      const next = { ...prev, [device]: { ...prev[device], [key]: value } };
-      applyLayoutVars(next);
-      return next;
-    });
+    const next = { ...layout, [device]: { ...layout[device], [key]: value } };
+    applyLayoutVars(next);
+    setLayout(next);
   }
 
   const dirty = JSON.stringify(layout) !== baseline;
@@ -217,7 +215,8 @@ export default function PageLayoutModal({
 function LayoutPreview({ section, device }: { section: LayoutSection; device: Device }) {
   const outerWidth = device === 'desktop' ? 1200 : 420;
   const scale = 100 / outerWidth;
-  const bodyPct = Math.min(100, (section.containerMaxWidth * scale));
+  const availableWidth = Math.max(0, outerWidth - 2 * section.marginHorizontal);
+  const bodyPct = Math.min(100, Math.min(section.containerMaxWidth, availableWidth) * scale);
   const contentPct = Math.min(
     bodyPct,
     (Math.min(section.contentInnerMaxWidth, section.containerMaxWidth) * scale)

@@ -42,7 +42,7 @@ export default function GaleriesPageClient() {
   Object.assign(sections, dynamicBlocks.sections);
 
   return (
-    <section className="page-blocks" style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' as const }}>
+    <section className="page-blocks" style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100cqw', marginLeft: 'calc(50% - 50cqw)', boxSizing: 'border-box' as const }}>
       {blockOrderGaleries.map((blockId) => (
         <React.Fragment key={blockId}>{sections[blockId] ?? null}</React.Fragment>
       ))}

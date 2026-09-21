@@ -8,7 +8,7 @@ import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
 import { Pencil, Film, Users, Camera } from 'lucide-react';
 import { DEFAULT_CADREUR_FEATURES } from './homeDefaults';
 import useBuiltinPageBlocks from '../PageBuilder/useBuiltinPageBlocks';
-import React, { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useSplashReady } from "../AnimateInView/AnimateInView";
 import { useScrollReveal, revealInitialStyle, revealVisibleStyle } from "../../hooks/useScrollReveal";
 
@@ -149,7 +149,10 @@ function getFanCardStyle(offset: number): React.CSSProperties {
     zIndex: zi,
     cursor: offset !== 0 ? 'pointer' : 'default',
     opacity: op,
-    transition: 'transform 520ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 520ms ease, height 520ms ease',
+    /* L'opacité rattrape plus vite que la position : la carte qui prend la
+       place active devient pleinement opaque à mi-course au lieu de laisser
+       voir ses voisines pendant tout le déplacement. */
+    transition: 'transform 520ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 240ms ease, height 520ms ease',
     willChange: 'transform, opacity',
     transform: `translateX(calc(-50% + ${tx}px)) rotateY(${ry}deg) translateZ(${tz}px) scale(${sc})`,
     boxShadow: abs === 0
@@ -188,9 +191,6 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
   const [portraitSlideDirection, setPortraitSlideDirection] = useState<"next" | "prev">("next");
   const portraitTouchStartX = useRef<number | null>(null);
   const portraitIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Tracks the outgoing active card to keep it at higher z-index during transition (prevents visual "cut")
-  const [outgoingPortraitIdx, setOutgoingPortraitIdx] = useState<number | null>(null);
-  const prevPortraitIdxRef = useRef(0);
   const quoteViewportRef = useRef<HTMLDivElement>(null);
   const [quotesPaused, setQuotesPaused] = useState(false);
   const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0); // kept for possible dots; marquee uses continuous scroll
@@ -337,17 +337,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
     };
   }, [resetPortraitInterval, renderOnly]);
 
-  // Keep outgoing portrait card at higher z-index during slide transition (prevents visual "cut")
   const portraitIndex = Math.max(0, Math.min(currentPortraitSlide, portraitSlides.length - 1));
-  useLayoutEffect(() => {
-    const prev = prevPortraitIdxRef.current;
-    if (prev !== portraitIndex) {
-      prevPortraitIdxRef.current = portraitIndex;
-      setOutgoingPortraitIdx(prev);
-      const t = setTimeout(() => setOutgoingPortraitIdx(null), 560);
-      return () => clearTimeout(t);
-    }
-  }, [portraitIndex]);
 
   if (!loaded) {
     return (
@@ -751,14 +741,17 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
                     const focusStyle = (slide.image as any)?.focus?.x != null
                       ? { objectPosition: `${(slide.image as any).focus.x}% ${(slide.image as any).focus.y}%` }
                       : {};
+                    /* La carte sortante était maintenue à z-index 5 pendant
+                       520 ms pour masquer l'intersection 3D des plans. La scène
+                       est désormais aplatie (portrait3DStage), donc ce maintien
+                       ne servait plus qu'à retenir l'ancienne image devant la
+                       nouvelle, qui ne passait au premier plan qu'en fin de
+                       transition — d'où la latence. Les z-index du fan suffisent. */
                     const cardStyle = getFanCardStyle(offset);
-                    const effectiveStyle = slideIdx === outgoingPortraitIdx
-                      ? { ...cardStyle, zIndex: 5 }
-                      : cardStyle;
                     return (
                       <div
                         key={slideIdx}
-                        style={effectiveStyle}
+                        style={cardStyle}
                         onClick={offset !== 0 ? () => {
                           setPortraitSlideDirection(offset > 0 ? "next" : "prev");
                           setCurrentPortraitSlide(slideIdx);
@@ -1004,7 +997,11 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
                 <BlockOrderButtons page="home" blockId="home_animation" />
               </AdminToolbarShell>
             )}
-            <AnimateInView variant="scaleIn">
+            {/* `fade` et non `scaleIn` : la carte occupe toute la largeur du
+                bloc. Un scale(0.98) la rétrécit de 2 % et découvre le fond de
+                la section de chaque côté — visible en permanence tant que
+                l'animation d'entrée ne s'est pas déclenchée. */}
+            <AnimateInView variant="fade">
             <div className={styles.animationBlockCard}>
               {(animationBlock as any).image?.url ? (
                 <div className={styles.animationBlockBannerWrap} style={(animationBlock as any).imageRatio && IMAGE_RATIO_MAP[(animationBlock as any).imageRatio] ? { aspectRatio: IMAGE_RATIO_MAP[(animationBlock as any).imageRatio] } : undefined}>

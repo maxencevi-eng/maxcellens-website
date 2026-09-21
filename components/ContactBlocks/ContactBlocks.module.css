@@ -15,9 +15,23 @@
 
 /* Fond du bloc en pleine largeur (contenu reste centré) */
 .blockFullWidthBg {
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  width: 100cqw;
+  margin-left: calc(50% - 50cqw);
+  margin-right: calc(50% - 50cqw);
+}
+
+/* Le padding horizontal recentre le contenu sur « largeur de la zone
+   contenu » : sans lui, les blocs de contact sortaient du .container et leur
+   contenu s'étalait sur toute la largeur, en ignorant le réglage.
+   Plancher : la marge intérieure des blocs.
+   Exclu quand le bloc est passé en « max 1600 » : `.block-width-1600` annule
+   le débordement (width: 100%), le calcul en 100cqw surestimerait alors le
+   retrait et écraserait le contenu. Ce mode borne déjà sa propre largeur. */
+.blockFullWidthBg:not(:global(.block-width-1600)) {
+  padding-inline: max(
+    var(--block-inner-padding, 24px),
+    calc((100cqw - var(--page-content-width, 1600px)) / 2)
+  );
 }
 .introGrid {
   display: grid;
@@ -98,17 +112,130 @@
   color: var(--color-primary, #2d6b5f);
   text-decoration: underline;
 }
-.mapContainer {
-  margin-top: 1rem;
-  height: 360px;
-  border-radius: 2px;
-  overflow: hidden;
-  box-shadow: 0 5px 12px rgba(0,0,0,0.25);
+/* ── Bloc « Localisation » ────────────────────────────────────────────
+   Sur-titre seul (pas de gros titre), trois cartes, carte géographique,
+   puis une ligne de mentions séparées par des filets. */
+.locEyebrow {
+  margin: 0 0 1.75rem;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6b7670;
 }
-.mapIframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
+
+.locCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  align-items: stretch;
+}
+
+/* AnimateStaggerItem insère un div entre la grille et la carte : sans cette
+   règle la carte ne remplit pas la hauteur de la rangée. */
+.locCards > * {
+  display: flex;
+  min-width: 0;
+}
+
+.locCard {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+  padding: 1.5rem;
+  border-radius: 18px;
+  background: #fbfbfa;
+  box-shadow: 0 1px 2px rgba(20, 30, 25, 0.05), 0 8px 24px rgba(20, 30, 25, 0.04);
+}
+
+.locCardIcon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #e6ebe4;
+  color: #26382f;
+}
+
+.locCardBody {
+  min-width: 0;
+}
+
+.locCardKicker {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #7c857f;
+}
+
+.locCardTitle {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #1c2a24;
+}
+
+.locCardText {
+  font-size: 14px;
+  line-height: 1.55;
+  color: #55605a;
+}
+
+.locCardText p { margin: 0 0 0.4rem; }
+.locCardText p:last-child { margin-bottom: 0; }
+.locCardText a { color: var(--color-primary, #2d6b5f); text-decoration: underline; }
+
+.locCardPhone {
+  display: inline-block;
+  margin-top: 0.6rem;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1c2a24;
+  text-decoration: none;
+}
+
+.locCardPhone:hover { color: var(--color-primary, #2d6b5f); }
+
+.locMap {
+  margin-bottom: 1.5rem;
+}
+
+.locNotes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0.5rem 0 0;
+  list-style: none;
+}
+
+.locNote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1.25rem;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #55605a;
+  border-left: 1px solid #dfe3dd;
+  text-align: left;
+}
+
+.locNote:first-child { border-left: 0; }
+
+.locNoteIcon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: #26382f;
 }
 
 
@@ -331,4 +458,21 @@
   .faqBlock { padding: 3rem 1rem 4rem; }
   .galleryItem { width: 130px; }
   .galleryImgWrap { width: 130px; height: 130px; }
+
+  .locCards { grid-template-columns: 1fr; gap: 1rem; }
+  .locNotes { grid-template-columns: 1fr; }
+  /* En colonne, les filets passent au-dessus de chaque mention. */
+  .locNote {
+    justify-content: flex-start;
+    padding: 0.7rem 0;
+    border-left: 0;
+    border-top: 1px solid #dfe3dd;
+  }
+  .locNote:first-child { border-top: 0; }
+}
+
+@media (max-width: 767px) {
+  .locEyebrow { margin-bottom: 1.25rem; }
+  .locCard { padding: 1.15rem; gap: 0.85rem; border-radius: 16px; }
+  .locCardIcon { width: 40px; height: 40px; }
 }

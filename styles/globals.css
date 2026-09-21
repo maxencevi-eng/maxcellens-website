@@ -82,6 +82,47 @@ img {
   pointer-events: auto;
 }
 
+/* Full-width page surfaces use this available area, not the viewport.
+   Updating the margin variable therefore moves every page immediately. */
+#site-content > main {
+  container-type: inline-size;
+  margin-inline: var(--container-margin-x-desktop, 24px);
+
+  /* Alias non suffixés des réglages, pour que les feuilles de style des blocs
+     n'aient pas à dupliquer chaque règle dans une media query.
+
+     --page-content-width : largeur utile du contenu d'un bloc, même quand le
+     fond de ce bloc s'étend en pleine largeur. On prend le plus petit des deux
+     réglages, sans quoi une « zone contenu » plus large que le corps de page
+     élargirait les blocs au lieu de les contraindre. */
+  --content-inner-max-width: var(--content-inner-max-width-desktop, 2000px);
+  --page-content-width: min(
+    var(--content-inner-max-width),
+    var(--container-max-width-desktop, 1600px)
+  );
+  --block-inner-padding: var(--block-inner-padding-desktop, 24px);
+}
+@media (max-width: 767px) {
+  #site-content > main {
+    margin-inline: var(--container-margin-x-mobile, 16px);
+    --content-inner-max-width: var(--content-inner-max-width-mobile, 1200px);
+    --page-content-width: min(
+      var(--content-inner-max-width),
+      var(--container-max-width-mobile, 1000px)
+    );
+    --block-inner-padding: var(--block-inner-padding-mobile, 16px);
+  }
+}
+
+/* Le contenu des blocs suit « largeur de la zone contenu », même si le bloc
+   étend son fond sur toute la largeur. Seule la page d'accueil appliquait ce
+   réglage (via .homePageBlocks) ; contact, portrait, galeries… restaient
+   calés sur la largeur du corps de page. */
+.page-blocks .container {
+  width: 100%;
+  max-width: var(--page-content-width, 1600px);
+}
+
 /* Largeur du corps de page : réglable dans Page > Dimensions & mise en page */
 .container {
   margin-left: auto;
@@ -119,9 +160,12 @@ img {
   margin-left: auto;
   margin-right: auto;
 }
-/* !important pour primer sur .blockFullWidthBg (100vw) et garantir le centrage */
+/* !important pour primer sur .blockFullWidthBg (100cqw) et garantir le centrage.
+   La borne reste 1600px, mais ne peut pas dépasser « largeur de la zone
+   contenu » : sans ce min, un bloc passé en mode 1600 ignorait le réglage
+   (comportement inchangé par défaut, la zone contenu valant 2000px). */
 .block-width-1600 {
-  max-width: 1600px !important;
+  max-width: min(1600px, var(--content-inner-max-width, 2000px)) !important;
   width: 100% !important;
   margin-left: auto !important;
   margin-right: auto !important;
@@ -171,7 +215,7 @@ img {
 }
 
 /* Fond pleine largeur du conteneur de blocs.
-   Les blocs de contenu débordent en 100vw (width:100vw + marge négative)
+   Les blocs de contenu débordent en 100cqw (width:100cqw + marge négative)
    alors que leur conteneur reste limité par .container : dès qu'un écart
    sépare deux blocs, le fond du body apparaissait en bandes sur les côtés.
    Ce pseudo-élément étend le fond des blocs à toute la largeur de la fenêtre.
@@ -187,7 +231,7 @@ img {
   top: 0;
   bottom: 0;
   left: 50%;
-  width: 100vw;
+  width: 100cqw;
   transform: translateX(-50%);
   background: var(--block-bg, var(--bg));
   z-index: -1;
@@ -204,7 +248,7 @@ img {
     top: 0;
     left: 0;
     right: 0;
-    width: auto;    /* override width:100vw de Header.module.css */
+    width: auto;    /* override width:100cqw de Header.module.css */
     margin-left: 0; /* override margin-left négatif de Header.module.css */
     z-index: 10;
   }

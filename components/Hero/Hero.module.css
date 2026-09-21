@@ -1,7 +1,7 @@
 .hero {
   padding: 0.5rem 0 1.25rem 0; /* reduce top gap so hero sits closer under nav */
-  width: 100vw;
-  margin-left: calc((100% - 100vw) / 2);
+  width: 100cqw;
+  margin-left: calc((100% - 100cqw) / 2);
 }
 .inner {
   position: relative;

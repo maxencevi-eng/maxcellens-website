@@ -64,8 +64,8 @@
   background-repeat: no-repeat;
   display: flex;
   align-items: center;
-  width: 100vw;
-  margin-left: calc((100% - 100vw) / 2);
+  width: 100cqw;
+  margin-left: calc((100% - 100cqw) / 2);
 }
 
 .imageWrap {

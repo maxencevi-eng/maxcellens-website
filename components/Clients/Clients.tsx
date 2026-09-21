@@ -184,8 +184,8 @@ export default function Clients({ logos, title, premium = false, settingsData }:
     <section
       className={`${styles.section}${premium ? ` ${styles.premium}` : ""}${logoFilter === 'normal' ? ` ${styles.logoFilterNormal}` : ''}${logoFilter === 'white' ? ` ${styles.logoFilterWhite}` : ''}`}
       style={{
-        width: settingsData ? '100%' : '100vw',
-        marginLeft: settingsData ? '0' : 'calc(50% - 50vw)',
+        width: settingsData ? '100%' : '100cqw',
+        marginLeft: settingsData ? '0' : 'calc(50% - 50cqw)',
         marginTop: premium ? '0' : '-28px',
         marginBottom: '0',
         overflow: 'hidden',

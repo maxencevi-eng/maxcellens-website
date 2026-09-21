@@ -2,13 +2,15 @@
 "use client";
 
 import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
-import { Pencil } from 'lucide-react';
+import { Pencil, MapPin, TrainFront, Plane, Car, Compass, Globe, CalendarDays } from 'lucide-react';
 import useBuiltinPageBlocks from '../PageBuilder/useBuiltinPageBlocks';
 import React, { Fragment, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { supabase } from '../../lib/supabase';
 import styles from './ContactBlocks.module.css';
-import type { ContactZonesData } from './ContactZonesEditModal';
+import type { ContactZonesData, ContactZoneCard, ZoneIconKey } from './ContactZonesEditModal';
+import { DEFAULT_ZONES, DEFAULT_MAP_TILE_URL, DEFAULT_MAP_ATTRIBUTION } from './ContactZonesEditModal';
+import LocationMap from './LocationMap';
 import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrderButtons } from '../BlockVisibility';
 import AnimateInView, { AnimateStaggerItem, useSplashReady } from '../AnimateInView/AnimateInView';
 
@@ -19,6 +21,21 @@ const ContactGalleryEditModal = dynamic(() => import('./ContactGalleryEditModal'
 import type { AboutRow } from './ContactEditModal';
 import type { ContactFaqData } from './ContactFaqEditModal';
 import type { ContactGalleryData, ContactGalleryItem } from './ContactGalleryEditModal';
+
+const ZONE_ICONS: Record<ZoneIconKey, React.ComponentType<{ size?: number; strokeWidth?: number }>> = {
+  pin: MapPin,
+  train: TrainFront,
+  plane: Plane,
+  car: Car,
+  compass: Compass,
+  globe: Globe,
+  calendar: CalendarDays,
+};
+
+function ZoneIcon({ name, size = 22 }: { name?: ZoneIconKey; size?: number }) {
+  const Icon = ZONE_ICONS[name ?? 'pin'] ?? MapPin;
+  return <Icon size={size} strokeWidth={1.8} />;
+}
 
 function GalleryRow({ items, speed }: { items: ContactGalleryItem[]; speed: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -311,14 +328,62 @@ export default function ContactBlocks() {
       </div>
   );
 
-  const qgText = zones?.qg?.text ?? '<p>Basé à Clamart (92). Point de départ de mes missions en Île-de-France.</p>';
-  const qgPhone = zones?.qg?.phone ?? '06 74 96 64 58';
-  const parisText = zones?.paris?.text ?? '<p>Priorité aux transports en commun. Voiture possible pour la banlieue proche — frais kilométriques.</p>';
-  const franceText = zones?.france?.text ?? '<p>Déplacements réguliers en train pour des missions partout en France et parfois à l\'étranger — frais de déplacement.</p>';
   const mapQueryVal = zones?.mapQuery?.trim() || '92140 Clamart';
+  const zonesEyebrow = zones?.eyebrow ?? DEFAULT_ZONES.eyebrow;
+  const mapCfg = { ...DEFAULT_ZONES.map, ...zones?.map };
+  const mapPoints = zones?.map?.points ?? DEFAULT_ZONES.map?.points ?? [];
+  const zonesFootnotes = zones?.footnotes ?? DEFAULT_ZONES.footnotes ?? [];
+
+  /** Les trois cartes du bloc : mêmes champs, même rendu. */
+  const zoneCards: { key: 'qg' | 'paris' | 'france'; data?: ContactZoneCard; fallback: ContactZoneCard }[] = [
+    { key: 'qg', data: zones?.qg, fallback: DEFAULT_ZONES.qg! },
+    { key: 'paris', data: zones?.paris, fallback: DEFAULT_ZONES.paris! },
+    { key: 'france', data: zones?.france, fallback: DEFAULT_ZONES.france! },
+  ];
+
+  /* Typographie du sur-titre. Les familles/graisses viennent des variables de
+     « Style du site », comme les titres des blocs de l'accueil, mais sont
+     posées en style inline plutôt que par la classe `style-*` : la classe
+     entrerait en concurrence de spécificité avec `.locEyebrow`, alors que
+     l'inline l'emporte toujours. */
+  const eyebrowStyle: React.CSSProperties = {};
+  if (zones?.eyebrowStyle) {
+    const v = zones.eyebrowStyle === 'p' ? 'body' : zones.eyebrowStyle;
+    eyebrowStyle.fontFamily = `var(--font-${v}-family)`;
+    eyebrowStyle.fontWeight = `var(--font-${v}-weight)`;
+    eyebrowStyle.fontSize = `var(--font-${v}-size)`;
+  }
+  if (zones?.eyebrowFontSize != null) eyebrowStyle.fontSize = `${zones.eyebrowFontSize}px`;
+  if (zones?.eyebrowColor) eyebrowStyle.color = zones.eyebrowColor;
+  if (zones?.eyebrowAlign) eyebrowStyle.textAlign = zones.eyebrowAlign;
+  if (zones?.eyebrowUppercase === false) {
+    eyebrowStyle.textTransform = 'none';
+    eyebrowStyle.letterSpacing = 'normal';
+  }
+
+  /** Onglet Style de la modale : mêmes réglages que les blocs de l'accueil. */
+  const zonesStyle: React.CSSProperties = {};
+  if (zones?.backgroundColor) zonesStyle.backgroundColor = zones.backgroundColor;
+  if (zones?.borderRadiusTop != null) {
+    zonesStyle.borderTopLeftRadius = `${zones.borderRadiusTop}px`;
+    zonesStyle.borderTopRightRadius = `${zones.borderRadiusTop}px`;
+  }
+  if (zones?.borderRadiusBottom != null) {
+    zonesStyle.borderBottomLeftRadius = `${zones.borderRadiusBottom}px`;
+    zonesStyle.borderBottomRightRadius = `${zones.borderRadiusBottom}px`;
+  }
+  if (zones?.paddingTop != null) zonesStyle.paddingTop = `${zones.paddingTop}px`;
+  if (zones?.paddingBottom != null) zonesStyle.paddingBottom = `${zones.paddingBottom}px`;
+  if (zones?.paddingX != null) {
+    // Plancher conservé : le contenu reste dans « largeur de la zone contenu »
+    // même si la marge choisie est plus petite.
+    const px = `max(${zones.paddingX}px, calc((100cqw - var(--page-content-width, 1600px)) / 2))`;
+    zonesStyle.paddingLeft = px;
+    zonesStyle.paddingRight = px;
+  }
 
   const zonesSection = hide('contact_zones') ? null : (
-      <div className={`${styles.blockInner} ${styles.blockFullWidthBg} ${blockWidthClass('contact_zones')}`.trim()} style={{ position: 'relative', marginTop: '2rem', ...(zones?.backgroundColor ? { backgroundColor: zones.backgroundColor } : {}) }}>
+      <div className={`${styles.blockInner} ${styles.blockFullWidthBg} ${blockWidthClass('contact_zones')}`.trim()} style={{ position: 'relative', marginTop: '2rem', ...zonesStyle }}>
         {isAdmin && (
           <AdminToolbarShell>
             <BlockVisibilityToggle blockId="contact_zones" />
@@ -334,53 +399,64 @@ export default function ContactBlocks() {
             <BlockOrderButtons page="contact" blockId="contact_zones" />
           </AdminToolbarShell>
         )}
-        <AnimateInView variant="stagger" className={styles.threeCols}>
-          <AnimateStaggerItem>
-            <div>
-              {(() => {
-                const tag = (zones?.qg?.titleStyle && ['p', 'h1', 'h2', 'h3', 'h4', 'h5'].includes(zones.qg.titleStyle)) ? zones.qg.titleStyle : 'h3';
-                const Tag = tag as keyof React.JSX.IntrinsicElements;
-                const fs = zones?.qg?.titleFontSize != null && zones.qg.titleFontSize >= 8 && zones.qg.titleFontSize <= 72 ? zones.qg.titleFontSize : undefined;
-                return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.qg?.title ?? 'QG'}</Tag>;
-              })()}
-              <div className={`${styles.colBody} richtext-content`} dangerouslySetInnerHTML={{ __html: qgText }} />
-              {qgPhone && (
-                <div style={{ marginTop: '0.5rem' }}>📞 {qgPhone}</div>
-              )}
-            </div>
-          </AnimateStaggerItem>
-          <AnimateStaggerItem>
-            <div>
-              {(() => {
-                const tag = (zones?.paris?.titleStyle && ['p', 'h1', 'h2', 'h3', 'h4', 'h5'].includes(zones.paris.titleStyle)) ? zones.paris.titleStyle : 'h3';
-                const Tag = tag as keyof React.JSX.IntrinsicElements;
-                const fs = zones?.paris?.titleFontSize != null && zones.paris.titleFontSize >= 8 && zones.paris.titleFontSize <= 72 ? zones.paris.titleFontSize : undefined;
-                return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.paris?.title ?? 'Paris & Alentours'}</Tag>;
-              })()}
-              <div className={`${styles.colBody} richtext-content`} dangerouslySetInnerHTML={{ __html: parisText }} />
-            </div>
-          </AnimateStaggerItem>
-          <AnimateStaggerItem>
-            <div>
-              {(() => {
-                const tag = (zones?.france?.titleStyle && ['p', 'h1', 'h2', 'h3', 'h4', 'h5'].includes(zones.france.titleStyle)) ? zones.france.titleStyle : 'h3';
-                const Tag = tag as keyof React.JSX.IntrinsicElements;
-                const fs = zones?.france?.titleFontSize != null && zones.france.titleFontSize >= 8 && zones.france.titleFontSize <= 72 ? zones.france.titleFontSize : undefined;
-                return <Tag className={`${styles.colTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>{zones?.france?.title ?? 'France & Monde'}</Tag>;
-              })()}
-              <div className={`${styles.colBody} richtext-content`} dangerouslySetInnerHTML={{ __html: franceText }} />
-            </div>
-          </AnimateStaggerItem>
+        {zonesEyebrow ? (
+          <p className={styles.locEyebrow} style={Object.keys(eyebrowStyle).length ? eyebrowStyle : undefined}>
+            {zonesEyebrow}
+          </p>
+        ) : null}
+
+        <AnimateInView variant="stagger" className={styles.locCards}>
+          {zoneCards.map(({ key, data, fallback }) => {
+            const tag = (data?.titleStyle && ['p', 'h1', 'h2', 'h3', 'h4', 'h5'].includes(data.titleStyle)) ? data.titleStyle : 'h3';
+            const Tag = tag as keyof React.JSX.IntrinsicElements;
+            const fs = data?.titleFontSize != null && data.titleFontSize >= 8 && data.titleFontSize <= 72 ? data.titleFontSize : undefined;
+            const kicker = data?.kicker ?? fallback.kicker;
+            const text = data?.text ?? fallback.text ?? '';
+            const phone = key === 'qg' ? (data?.phone ?? fallback.phone) : undefined;
+            return (
+              <AnimateStaggerItem key={key}>
+                <article className={styles.locCard}>
+                  <span className={styles.locCardIcon} aria-hidden>
+                    <ZoneIcon name={data?.icon ?? fallback.icon} />
+                  </span>
+                  <div className={styles.locCardBody}>
+                    {kicker ? <span className={styles.locCardKicker}>{kicker}</span> : null}
+                    <Tag className={`${styles.locCardTitle} style-${tag}`} style={fs != null ? { fontSize: `${fs}px` } : undefined}>
+                      {data?.title ?? fallback.title}
+                    </Tag>
+                    <div className={`${styles.locCardText} richtext-content`} dangerouslySetInnerHTML={{ __html: text }} />
+                    {phone ? (
+                      <a className={styles.locCardPhone} href={`tel:${phone.replace(/[^+\d]/g, '')}`}>{phone}</a>
+                    ) : null}
+                  </div>
+                </article>
+              </AnimateStaggerItem>
+            );
+          })}
         </AnimateInView>
 
-        <div className={styles.mapContainer}>
-          <iframe
-            className={styles.mapIframe}
-            src={`https://www.google.com/maps?q=${encodeURIComponent(mapQueryVal)}&output=embed`}
-            title="Carte"
-            loading="lazy"
-          />
-        </div>
+        <LocationMap
+          className={styles.locMap}
+          lat={mapCfg.lat ?? 48.82}
+          lng={mapCfg.lng ?? 2.32}
+          zoom={mapCfg.zoom ?? 10}
+          points={mapPoints}
+          tileUrl={mapCfg.tileUrl || DEFAULT_MAP_TILE_URL}
+          attribution={mapCfg.attribution || DEFAULT_MAP_ATTRIBUTION}
+          desaturate={!mapCfg.plainTiles}
+          externalUrl={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQueryVal)}`}
+        />
+
+        {zonesFootnotes.length > 0 ? (
+          <ul className={styles.locNotes}>
+            {zonesFootnotes.map((f, i) => (
+              <li key={i} className={styles.locNote}>
+                <span className={styles.locNoteIcon} aria-hidden><ZoneIcon name={f.icon} size={19} /></span>
+                {f.text}
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
   );
 

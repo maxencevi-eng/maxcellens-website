@@ -162,7 +162,7 @@
   }
   /* Loop mode mobile: respect CSS vars, only cap at viewport width */
   .section .loopItem {
-    max-width: calc(100vw / 2.5);
+    max-width: calc(100cqw / 2.5);
   }
 }
 @media (max-width: 600px) {
@@ -179,7 +179,7 @@
   }
   /* Loop mode: still respect CSS vars */
   .section .loopItem {
-    max-width: calc(100vw / 2);
+    max-width: calc(100cqw / 2);
   }
 }
 @media (max-width: 380px) {
@@ -199,7 +199,7 @@
   }
   /* Loop mode: still respect CSS vars */
   .section .loopItem {
-    max-width: 90vw;
+    max-width: 90cqw;
   }
 }
 

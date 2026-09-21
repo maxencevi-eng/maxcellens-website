@@ -40,7 +40,7 @@ export default async function GallerySubPage({ params }: Params) {
         page={`galeries-${canonicalSlug}`}
         bgImageFocus={gallery.headerImageFocus}
       />
-      <div style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100vw', marginLeft: 'calc(50% - 50vw)', boxSizing: 'border-box' as const }}>
+      <div style={{ position: 'relative', zIndex: 20, background: 'var(--block-bg, var(--bg, #F2F0EB))', borderRadius: '28px 28px 0 0', marginTop: '-28px', width: '100cqw', marginLeft: 'calc(50% - 50cqw)', boxSizing: 'border-box' as const }}>
         <div className="container" style={{ padding: '1rem 0 0', paddingLeft: 0, paddingRight: 0 }}>
           <Link
             href="/galeries"
