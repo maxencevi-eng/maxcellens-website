@@ -88,6 +88,33 @@ const TITLE_STYLE_OPTIONS = SHARED_TITLE_STYLE_OPTIONS as { value: TitleStyleKey
 
 const RichTextModal = dynamic(() => import("../RichTextModal/RichTextModal"), { ssr: false });
 
+/** Sur-titres affichés par défaut par le design de l'accueil. */
+const EYEBROW_DEFAULTS: Partial<Record<string, string>> = {
+  home_services: "Services — 03 (numéro automatique)",
+  home_portrait: "Séances photo",
+  home_cadreur: "Tournage & production",
+  home_animation: "Activité d’équipe",
+  home_cta: "Disponible pour de nouveaux projets",
+};
+
+function EyebrowField({ value, onChange, hidden, onHiddenChange, placeholder }: {
+  value: string; onChange: (v: string) => void; hidden: boolean; onHiddenChange: (v: boolean) => void; placeholder: string;
+}) {
+  return (
+    <div style={{ marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid #eee" }}>
+      <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Sur-titre (petit texte au-dessus du titre)</label>
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} disabled={hidden} style={{ ...inputStyle, opacity: hidden ? 0.5 : 1 }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+        <span style={{ fontSize: 12, color: "var(--muted)" }}>Laissez vide pour le texte par défaut. Style : Titre 5 — sur-titre.</span>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+          <input type="checkbox" checked={hidden} onChange={(e) => onHiddenChange(e.target.checked)} />
+          Masquer le sur-titre
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export type HomeBlockKey =
   | "home_intro"
   | "home_services"
@@ -173,6 +200,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [introImage, setIntroImage] = useState<{ url: string; path?: string } | null>(null);
   const [introImageFocus, setIntroImageFocus] = useState<{ x: number; y: number } | null>(null);
   const [introImageTilted, setIntroImageTilted] = useState(false);
+  /** Sur-titre des blocs Services, Portrait, Cadreur, Bureau à la carte et Contact. */
+  const [eyebrowText, setEyebrowText] = useState("");
+  const [eyebrowHidden, setEyebrowHidden] = useState(false);
   const [introReel, setIntroReel] = useState<{ url: string; path?: string }[]>([]);
   const [introReelAuto, setIntroReelAuto] = useState(true);
   const [uploadingIntroReel, setUploadingIntroReel] = useState(false);
@@ -365,6 +395,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     const d = editorialPresentation(blockKey, initialData) as any;
     const isValidFontSize = (fs: any) => fs != null && fs >= TITLE_FONT_SIZE_MIN && fs <= TITLE_FONT_SIZE_MAX;
     const getFontSize = (fs: any) => isValidFontSize(fs) ? fs : "";
+
+    if (EYEBROW_DEFAULTS[blockKey]) setEyebrowText(typeof d.eyebrow === "string" ? d.eyebrow : "");
+    if (EYEBROW_DEFAULTS[blockKey] || blockKey === "home_quote") setEyebrowHidden(Boolean(d.eyebrowHidden));
 
     if (blockKey === "home_intro") {
       setIntroEyebrow(d.eyebrow ?? "");
@@ -915,6 +948,11 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     // Marque le bloc comme réglé pour le design Studio : ses couleurs, tailles
     // et alignements s'appliquent désormais (voir editorialPresentation).
     payload = { ...(payload as object), designVersion: HOME_DESIGN_VERSION } as BlockData;
+    if (EYEBROW_DEFAULTS[blockKey]) {
+      payload = { ...(payload as object), eyebrow: eyebrowText.trim() || undefined, eyebrowHidden: eyebrowHidden || undefined } as BlockData;
+    }
+    // Témoignages : le sur-titre est le « titre du bloc » historique.
+    if (blockKey === "home_quote") payload = { ...(payload as object), eyebrowHidden: eyebrowHidden || undefined } as BlockData;
     try {
       if (onSaveData) {
         if (!await onSaveData(payload)) throw new Error("Enregistrement impossible");
@@ -1207,6 +1245,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
           {blockKey === "home_services" && (
             <>
               {tab === 'contenu' && (<>
+              <EyebrowField value={eyebrowText} onChange={setEyebrowText} hidden={eyebrowHidden} onHiddenChange={setEyebrowHidden} placeholder={EYEBROW_DEFAULTS[blockKey] || ""} />
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre du bloc</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1505,6 +1544,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
           {blockKey === "home_portrait" && (
             <>
               {tab === 'bloc' && (<>
+              <EyebrowField value={eyebrowText} onChange={setEyebrowText} hidden={eyebrowHidden} onHiddenChange={setEyebrowHidden} placeholder={EYEBROW_DEFAULTS[blockKey] || ""} />
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre du bloc</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1712,6 +1752,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
           {blockKey === "home_cadreur" && (
             <>
               {tab === 'contenu' && (<>
+              <EyebrowField value={eyebrowText} onChange={setEyebrowText} hidden={eyebrowHidden} onHiddenChange={setEyebrowHidden} placeholder={EYEBROW_DEFAULTS[blockKey] || ""} />
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1932,6 +1973,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
           {blockKey === "home_animation" && (
             <>
               {tab === 'contenu' && (<>
+              <EyebrowField value={eyebrowText} onChange={setEyebrowText} hidden={eyebrowHidden} onHiddenChange={setEyebrowHidden} placeholder={EYEBROW_DEFAULTS[blockKey] || ""} />
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre du bloc</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -2090,19 +2132,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </>)}
 
               {tab === 'titre' && (<>
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre du bloc</label>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <input type="text" value={quoteBlockTitle} onChange={(e) => setQuoteBlockTitle(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 120 }} placeholder="Témoignages" />
-                  <select value={quoteBlockTitleStyle} onChange={(e) => setQuoteBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 120 }}>
-                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <FontSizeInput value={quoteBlockTitleFontSize} onChange={setQuoteBlockTitleFontSize} />
-                  <input type="color" value={quoteBlockTitleColor || "#1a1a18"} onChange={(e) => setQuoteBlockTitleColor(e.target.value)} style={{ width: 40, height: 32, padding: 0, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} title="Couleur du titre" />
-                  {quoteBlockTitleColor ? <button type="button" className="btn-ghost" style={{ fontSize: 12 }} onClick={() => setQuoteBlockTitleColor("")}>↺</button> : null}
-                  <AlignmentButtons value={quoteTitleAlign} onChange={(v) => setQuoteTitleAlign(v as any)} />
-                </div>
-              </div>
+              <EyebrowField value={quoteBlockTitle} onChange={setQuoteBlockTitle} hidden={eyebrowHidden} onHiddenChange={setEyebrowHidden} placeholder="Témoignages" />
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Sous-titre (optionnel)</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -2164,6 +2194,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
           {blockKey === "home_cta" && (
             <>
               {tab === 'contenu' && (<>
+              <EyebrowField value={eyebrowText} onChange={setEyebrowText} hidden={eyebrowHidden} onHiddenChange={setEyebrowHidden} placeholder={EYEBROW_DEFAULTS[blockKey] || ""} />
               <div style={{ marginBottom: 12 }}>
                 <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Titre</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>

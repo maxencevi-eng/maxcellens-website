@@ -440,6 +440,9 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
     style: panelStyle(data),
   });
 
+  /** Sur-titre d'un bloc : texte saisi dans l'admin, texte par défaut, ou rien s'il est masqué. */
+  const eyebrowOf = (data: any, fallback: string): string | null => (data?.eyebrowHidden ? null : (typeof data?.eyebrow === "string" && data.eyebrow.trim()) || fallback);
+
   /** Titre de bloc : révélé mot à mot quand il s'agit de texte brut. */
   const heading = (text: string | undefined, tag: string, className: string, st?: React.CSSProperties, active?: boolean, delay?: number) =>
     text ? <RevealWords text={text} as={tag} className={`${className} style-${tag}`} style={st} active={active} delay={delay} /> : null;
@@ -616,7 +619,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
         <div className={innerClass("home_services")}>
           <div className={styles.head}>
             <div>
-              <span className={`${styles.eyebrow} style-h5`}>Services — {pad2(serviceItems.length)}</span>
+              {eyebrowOf(sv, `Services — ${pad2(serviceItems.length)}`) ? <span className={`${styles.eyebrow} style-h5`}>{eyebrowOf(sv, `Services — ${pad2(serviceItems.length)}`)}</span> : null}
               {heading(sv.blockTitle, titleTag, styles.display, textStyle(sv.blockTitleFontSize, sv.blockTitleColor, sv.blockTitleAlign))}
             </div>
             {sv.blockSubtitle ? (
@@ -681,7 +684,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
             }}
           >
             <div className={styles.portraitHead}>
-              <span className={`${styles.eyebrow} style-h5`}>Séances photo</span>
+              {eyebrowOf(pb, "Séances photo") ? <span className={`${styles.eyebrow} style-h5`}>{eyebrowOf(pb, "Séances photo")}</span> : null}
               {titleEl}
             </div>
 
@@ -781,7 +784,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
         <div className={innerClass("home_cadreur")}>
           <div className={styles.cadreurHead}>
             <div className={styles.cadreurIntro}>
-              <span className={`${styles.eyebrow} style-h5`}>Tournage & production</span>
+              {eyebrowOf(cb, "Tournage & production") ? <span className={`${styles.eyebrow} style-h5`}>{eyebrowOf(cb, "Tournage & production")}</span> : null}
               {heading(cadreurBlock.title, titleTag, styles.display, textStyle(cb.titleFontSize, cb.titleColor, cb.titleAlign))}
               {cadreurBlock.html ? <div className={styles.cadreurLead} dangerouslySetInnerHTML={{ __html: cadreurBlock.html }} /> : null}
             </div>
@@ -809,9 +812,9 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
               })() : null}
               <AnimateInView variant="stagger" className={styles.showcase} style={{ ['--n' as string]: cadreurVisibleVideos.length } as React.CSSProperties}>
                 {cadreurVisibleVideos.map((vid, i) => {
-                  const thumb = getYouTubeThumb(getYouTubeId(vid.url)).replace('hqdefault', i === 0 ? 'maxresdefault' : 'hqdefault');
+                  const thumb = getYouTubeThumb(getYouTubeId(vid.url));
                   return (
-                    <AnimateStaggerItem key={i} className={`${styles.showcaseItem}${i === 0 ? ` ${styles.showcaseFeatured}` : ''}`}>
+                    <AnimateStaggerItem key={i} className={styles.showcaseItem}>
                       <button
                         type="button"
                         className={styles.showcaseCard}
@@ -819,21 +822,16 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
                         aria-label={vid.title || `Vidéo ${i + 1}`}
                         data-video-name={vid.title || `Vidéo ${i + 1}`}
                       >
-                        <img
-                          src={thumb}
-                          alt=""
-                          loading="lazy"
-                          onError={(e) => { const img = e.currentTarget; if (img.src.includes('maxresdefault')) img.src = img.src.replace('maxresdefault', 'hqdefault'); }}
-                          // YouTube renvoie une vignette grise de 120 px (sans erreur) quand la version HD n'existe pas.
-                          onLoad={(e) => { const img = e.currentTarget; if (img.src.includes('maxresdefault') && img.naturalWidth <= 120) img.src = img.src.replace('maxresdefault', 'hqdefault'); }}
-                        />
-                        {vGlossy && <span className={styles.videoGlossy} />}
-                        <span className={styles.showcaseShade} aria-hidden="true" />
-                        <span className={styles.showcaseTop} aria-hidden="true">
-                          <span className={styles.glassPill}>{pad2(i + 1)}</span>
-                        </span>
-                        <span className={styles.showcasePlay} aria-hidden="true">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,4 20,12 7,20" /></svg>
+                        <span className={styles.showcaseThumb}>
+                          <img src={thumb} alt="" loading="lazy" />
+                          {vGlossy && <span className={styles.videoGlossy} />}
+                          <span className={styles.showcaseShade} aria-hidden="true" />
+                          <span className={styles.showcaseTop} aria-hidden="true">
+                            <span className={styles.glassPill}>{pad2(i + 1)}</span>
+                          </span>
+                          <span className={styles.showcasePlay} aria-hidden="true">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,4 20,12 7,20" /></svg>
+                          </span>
                         </span>
                         <span className={styles.showcaseCaption}>
                           {vid.title && <span className={`${styles.showcaseTitle} style-h4`}>{vid.title}</span>}
@@ -883,7 +881,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
         ) : null}
         <div className={innerClass("home_animation")}>
           <div className={styles.animationContent} style={ab.contentBgColor ? { background: ab.contentBgColor, padding: 'clamp(24px, 3vw, 48px)', borderRadius: 'var(--h-radius-sm)' } : undefined}>
-            <span className={`${styles.eyebrow} style-h5`}>Activité d’équipe</span>
+            {eyebrowOf(ab, "Activité d’équipe") ? <span className={`${styles.eyebrow} style-h5`}>{eyebrowOf(ab, "Activité d’équipe")}</span> : null}
             {heading(ab.blockTitle, titleTag, styles.display, textStyle(ab.blockTitleFontSize, ab.blockTitleColor, ab.blockTitleAlign))}
             {ab.blockSubtitle ? React.createElement(subTag, { className: `${styles.lead} style-${subTag}`, style: textStyle(ab.blockSubtitleFontSize, ab.blockSubtitleColor, ab.blockSubtitleAlign) }, ab.blockSubtitle) : null}
             {hasRichTextContent(animationBlock.html) ? <div className={styles.rich} dangerouslySetInnerHTML={{ __html: ab.html }} /> : null}
@@ -927,7 +925,6 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
     if (q.cardBorderColor) vars['--quote-card-border'] = q.cardBorderColor;
     if (q.cardTextColor) vars['--quote-card-text'] = q.cardTextColor;
     const p = panel(q, "alt", styles.quote);
-    const TitleTag = (q.blockTitleStyle || "h5") as any;
     const subTag = q.blockSubtitleStyle || "h2";
     return (
       <section {...p} style={{ ...(p.style || {}), ...vars }}>
@@ -935,7 +932,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
         <div className={innerClass("home_quote")}>
           <div className={styles.head}>
             <div>
-              <TitleTag className={`${styles.eyebrow} style-${TitleTag}`} style={textStyle(q.blockTitleFontSize, q.blockTitleColor, q.blockTitleAlign)}>{q.blockTitle ?? "Témoignages"}</TitleTag>
+              {q.eyebrowHidden ? null : <span className={`${styles.eyebrow} style-h5`}>{(typeof q.blockTitle === "string" && q.blockTitle.trim()) || "Témoignages"}</span>}
               {heading(q.blockSubtitle || "Ils m'ont fait confiance", subTag, styles.display, textStyle(q.blockSubtitleFontSize, q.blockSubtitleColor, q.blockSubtitleAlign))}
             </div>
             <div className={styles.roundNav}>
@@ -987,7 +984,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
         {toolbar("home_cta")}
         <span className={styles.ctaGlow} aria-hidden="true" />
         <div className={innerClass("home_cta")}>
-          <span className={`${styles.pill} ${styles.ctaPill}`}><span className={styles.liveDot} aria-hidden="true" />Disponible pour de nouveaux projets</span>
+          {eyebrowOf(c, "Disponible pour de nouveaux projets") ? <span className={`${styles.pill} ${styles.ctaPill}`}><span className={styles.liveDot} aria-hidden="true" />{eyebrowOf(c, "Disponible pour de nouveaux projets")}</span> : null}
           {heading(cta.title, titleTag, styles.ctaTitle, textStyle(c.titleFontSize, c.titleColor, c.titleAlign))}
           <div className={styles.ctaActions}>
             <Link
