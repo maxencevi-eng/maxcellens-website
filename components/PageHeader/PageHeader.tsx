@@ -12,9 +12,11 @@ type Props = {
   page?: string;
   /** Point de focus pour l’image de fond (ex. header galerie) quand aucun hero n’est sauvegardé */
   bgImageFocus?: { x: number; y: number };
+  /** Balise du titre (masqué, pour le référencement). 'p' quand la page porte déjà son propre h1. */
+  seoTitleAs?: 'h1' | 'p';
 };
 
-export default async function PageHeader({ title, subtitle, bgImage, page, bgImageFocus }: Props) {
+export default async function PageHeader({ title, subtitle, bgImage, page, bgImageFocus, seoTitleAs = 'h1' }: Props) {
   let bgUrl: string | null = bgImage || null;
   let bgPos = 'center';
   let containerStyle: React.CSSProperties = {};
@@ -106,7 +108,7 @@ export default async function PageHeader({ title, subtitle, bgImage, page, bgIma
               } : undefined
             )} />
             <div className={`${styles.content} ${styles.contentSeoOnly}`}>
-              <h1 className={styles.logo}>{title}</h1>
+              {seoTitleAs === 'h1' ? <h1 className={styles.logo}>{title}</h1> : <p className={styles.logo}>{title}</p>}
               {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
             </div>
             {/* if video mode, render a player or YouTube embed */}

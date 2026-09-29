@@ -71,8 +71,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   let cssVars = '';
   let googleVerificationCode = '';
   let siteFontRules = '';
-  // Preload critical font/style resources if known
-  let fontLinks = '';
 
   try {
     if (supabaseAdmin) {
@@ -121,65 +119,58 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     // ignore server-side failure and fall back to CSS defaults
   }
 
-  let styleTag = cssVars ? `<style>:root{${cssVars}}</style>` : '';
-  const preloadLinks: string[] = [];
+  // ── Contenu de <head> ─────────────────────────────────────────────────
+  // Rendu en éléments React (et non en HTML brut via dangerouslySetInnerHTML
+  // sur <head>) : Next doit pouvoir y ajouter ses propres balises. Avec un
+  // <head> en HTML brut, la page 404 (qui ajoute un « noindex ») échouait et
+  // s'affichait sans aucune mise en page.
+  const fontPreloads: string[] = [];
   if (siteFontRules) {
-    styleTag += `<style id="site-fonts">${siteFontRules}</style>`;
     // Précharge uniquement les fichiers woff2 (les autres formats sont chargés à la demande).
     const urls = new Set<string>();
     siteFontRules.replace(/url\('([^']+\.woff2[^']*)'\)/gi, (_: string, u: string) => { urls.add(u); return ''; });
-    urls.forEach((u) => preloadLinks.push(`<link rel="preload" href="${u}" as="font" type="font/woff2" crossorigin>`));
+    urls.forEach((u) => fontPreloads.push(u));
   }
 
-  // If we have a site logo version, preload the versioned logo and expose it to client via a small script
-  try {
-    const match = cssVars.match(/--site-logo-version:\s*([^;]+);/);
-    if (match && match[1]) {
-      const ver = match[1];
-      const supa = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-      const logoUrl = `${supa}/storage/v1/object/public/site-assets/logos/site-logo.webp?t=${ver}`;
-      preloadLinks.push(`<link rel="preload" href="${logoUrl}" as="image">`);
-      styleTag += `<script>window.__siteLogoVersion = ${JSON.stringify(String(ver))};</script>`;
-    }
-  } catch (e) {}
+  // Logo versionné : préchargé, et sa version exposée au client.
+  let logoPreload = '';
+  let logoVersionScript = '';
+  const logoMatch = cssVars.match(/--site-logo-version:\s*([^;]+);/);
+  if (logoMatch && logoMatch[1]) {
+    const ver = logoMatch[1];
+    logoPreload = `${process.env.NEXT_PUBLIC_SUPABASE_URL || ''}/storage/v1/object/public/site-assets/logos/site-logo.webp?t=${ver}`;
+    logoVersionScript = `window.__siteLogoVersion = ${JSON.stringify(String(ver))};`;
+  }
 
-  // Append preload links into the head html
-  if (preloadLinks.length) styleTag = preloadLinks.join('\n') + '\n' + styleTag;
+  // Passe wf-loading → wf-loaded quand les polices sont prêtes, puis site-ready.
+  const fontLoaderScript = `(function(){try{var fontTimeout=1800;var delayAfterFonts=180;function setLoaded(){document.documentElement.classList.remove('wf-loading');document.documentElement.classList.add('wf-loaded');setTimeout(function(){document.documentElement.classList.add('site-ready');},delayAfterFonts);}function setFailed(){document.documentElement.classList.remove('wf-loading');document.documentElement.classList.add('wf-failed');setTimeout(function(){document.documentElement.classList.add('site-ready');},delayAfterFonts);}if(document.fonts&&document.fonts.ready){document.fonts.ready.then(function(){setTimeout(setLoaded,delayAfterFonts);});setTimeout(function(){if(document.documentElement.classList.contains('wf-loading')){setFailed();}},fontTimeout);}else{setTimeout(function(){setLoaded();},delayAfterFonts);}}catch(e){document.documentElement.classList.add('site-ready');} })()`;
 
-  // Swap wf-loading -> wf-loaded when fonts are ready; short delay after so first paint uses correct font; then site-ready for social/icons
-  const fontLoaderScript = `<script>(function(){try{var fontTimeout=1800;var delayAfterFonts=180;function setLoaded(){document.documentElement.classList.remove('wf-loading');document.documentElement.classList.add('wf-loaded');setTimeout(function(){document.documentElement.classList.add('site-ready');},delayAfterFonts);}function setFailed(){document.documentElement.classList.remove('wf-loading');document.documentElement.classList.add('wf-failed');setTimeout(function(){document.documentElement.classList.add('site-ready');},delayAfterFonts);}if(document.fonts&&document.fonts.ready){document.fonts.ready.then(function(){setTimeout(setLoaded,delayAfterFonts);});setTimeout(function(){if(document.documentElement.classList.contains('wf-loading')){setFailed();}},fontTimeout);}else{setTimeout(function(){setLoaded();},delayAfterFonts);}}catch(e){document.documentElement.classList.add('site-ready');} })()</script>`;
+  // Évite une erreur TrustedTypes « createHTML » chez certains hébergeurs.
+  const trustedTypesShim = `(function(){try{if(window&&window.trustedTypes&&window.trustedTypes.defaultPolicy&&typeof window.trustedTypes.defaultPolicy.createHTML!=='function'){try{Object.defineProperty(window.trustedTypes.defaultPolicy,'createHTML',{configurable:true,writable:true,value:function(s){return String(s);}});}catch(e){try{var p=window.trustedTypes.createPolicy('default-shim',{createHTML:function(s){return String(s)}});if(p&&typeof p.createHTML==='function'){try{window.trustedTypes.defaultPolicy=createProxy(p);}catch(_){/* ignore */}}}catch(_){}}}function createProxy(p){return {createHTML:function(s){return p.createHTML(s)},createScriptURL:p.createScriptURL?function(u){return p.createScriptURL(u)}:undefined};}}catch(e){} })()`;
 
-  // shim to avoid TrustedTypes 'createHTML' runtime error in some hosting environments
-  const trustedTypesShim = `<script>(function(){try{if(window&&window.trustedTypes&&window.trustedTypes.defaultPolicy&&typeof window.trustedTypes.defaultPolicy.createHTML!=='function'){try{Object.defineProperty(window.trustedTypes.defaultPolicy,'createHTML',{configurable:true,writable:true,value:function(s){return String(s);}});}catch(e){try{var p=window.trustedTypes.createPolicy('default-shim',{createHTML:function(s){return String(s)}});if(p&&typeof p.createHTML==='function'){try{window.trustedTypes.defaultPolicy=createProxy(p);}catch(_){/* ignore */}}}catch(_){}}}function createProxy(p){return {createHTML:function(s){return p.createHTML(s)},createScriptURL:p.createScriptURL?function(u){return p.createScriptURL(u)}:undefined};}}catch(e){} })()</script>`;
-
-  // inject font loader after previously generated styleTag so it runs early
-  if (styleTag) styleTag = styleTag + '\n' + fontLoaderScript + '\n' + trustedTypesShim; else styleTag = fontLoaderScript + '\n' + trustedTypesShim;
-
-  // Favicon: Supabase si dispo, sinon fallback local pour éviter erreur SEO (favicon manquant)
-  const faviconSupabase = supabaseUrl
-    ? `${supabaseUrl}/storage/v1/object/public/site-assets/favicons/favicon.webp`
-    : '';
-  const faviconLinks = faviconSupabase
-    ? `<link rel="icon" href="${faviconSupabase}" type="image/webp" sizes="32x32" />\n<link rel="shortcut icon" href="${faviconSupabase}" type="image/webp" />\n<link rel="icon" href="/favicon.svg" type="image/svg+xml" />`
-    : '<link rel="icon" href="/favicon.svg" type="image/svg+xml" />';
-
-  // Playfair Display : chargement non bloquant (évite render-blocking, améliore LCP mobile)
-  // Use dns-prefetch instead of preconnect to avoid Lighthouse "unused preconnect" warning
-  // when the font stylesheet loads asynchronously via media="print" trick
-  const fontNonBlocking = `<link rel="dns-prefetch" href="https://fonts.googleapis.com" /><link rel="dns-prefetch" href="https://fonts.gstatic.com" /><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" media="print" onload="this.media='all'" /><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" /></noscript>`;
-  // Google Search Console verification (dynamic from DB)
-  const googleVerifMeta = googleVerificationCode ? `<meta name="google-site-verification" content="${googleVerificationCode.replace(/"/g, '&quot;')}" />` : '';
-  // ensure a viewport meta is present so matchMedia reports expected widths on mobile devices
-  // Added preconnect for supabase
-  const preconnectSupabase = supabaseUrl ? `<link rel="preconnect" href="${supabaseUrl.replace(/^(https?:\/\/[^\/]+).*$/, '$1')}" crossorigin="anonymous" />` : '';
-  const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${preconnectSupabase}\n${googleVerifMeta}\n${faviconLinks}\n${fontNonBlocking}\n${styleTag}`;
+  const faviconSupabase = supabaseUrl ? `${supabaseUrl}/storage/v1/object/public/site-assets/favicons/favicon.webp` : '';
+  const supabaseOrigin = supabaseUrl ? supabaseUrl.replace(/^(https?:\/\/[^\/]+).*$/, '$1') : '';
 
   // Ordre et visibilité des blocs dès le rendu serveur (pas de réorganisation au chargement).
   const blockVisibility = await readBlockVisibility();
 
   return (
     <html lang="fr" className="wf-loading" suppressHydrationWarning>
-      <head suppressHydrationWarning dangerouslySetInnerHTML={{ __html: headContent }} />
+      <head suppressHydrationWarning>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {supabaseOrigin ? <link rel="preconnect" href={supabaseOrigin} crossOrigin="anonymous" /> : null}
+        {googleVerificationCode ? <meta name="google-site-verification" content={googleVerificationCode} /> : null}
+        {faviconSupabase ? <link rel="icon" href={faviconSupabase} type="image/webp" sizes="32x32" /> : null}
+        {faviconSupabase ? <link rel="shortcut icon" href={faviconSupabase} type="image/webp" /> : null}
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        {fontPreloads.map((u) => <link key={u} rel="preload" href={u} as="font" type="font/woff2" crossOrigin="anonymous" />)}
+        {logoPreload ? <link rel="preload" href={logoPreload} as="image" /> : null}
+        {cssVars ? <style dangerouslySetInnerHTML={{ __html: `:root{${cssVars}}` }} /> : null}
+        {siteFontRules ? <style id="site-fonts" dangerouslySetInnerHTML={{ __html: siteFontRules }} /> : null}
+        {logoVersionScript ? <script dangerouslySetInnerHTML={{ __html: logoVersionScript }} /> : null}
+        <script dangerouslySetInnerHTML={{ __html: fontLoaderScript }} />
+        <script dangerouslySetInnerHTML={{ __html: trustedTypesShim }} />
+      </head>
       <body>
         <InitialLoadSplash />
         <TransitionProvider>

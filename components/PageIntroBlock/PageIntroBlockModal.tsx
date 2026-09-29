@@ -459,7 +459,7 @@ export default function PageIntroBlockModal({ pageKey, settingsKey, initialData,
                 <TitleFields
                   label="Titre de la colonne"
                   value={f.title ?? ''} onValue={(v) => updateFeature(i, { title: v })}
-                  style={getValidStyle(f.titleStyle, 'p')} onStyle={(v) => updateFeature(i, { titleStyle: v })}
+                  style={getValidStyle(f.titleStyle, 'h4')} onStyle={(v) => updateFeature(i, { titleStyle: v })}
                   fontSize={f.titleFontSize ?? ''} onFontSize={(v) => updateFeature(i, { titleFontSize: v === '' ? undefined : v })}
                   color={f.titleColor ?? ''} onColor={(v) => updateFeature(i, { titleColor: v })}
                   align={f.titleAlign ?? ''} onAlign={(v) => updateFeature(i, { titleAlign: v })}

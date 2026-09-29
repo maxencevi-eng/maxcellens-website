@@ -66,6 +66,7 @@ export default async function HomePage() {
       <DefaultJsonLd />
       <JsonLdScript slug="home" />
       <PageHeader
+        seoTitleAs="p"
         page="home"
         title="Maxcellens"
         subtitle="Portfolio photo & vidéo"

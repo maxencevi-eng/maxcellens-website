@@ -46,11 +46,12 @@ function LucideIcon({ name, size = 22, color, strokeWidth = 1.5 }: { name?: stri
   return <Comp size={size} color={color || 'currentColor'} strokeWidth={strokeWidth} />;
 }
 
-function titleTag(style: string | undefined, children: React.ReactNode, props: React.HTMLAttributes<HTMLElement>): React.ReactNode {
-  const styleKey = style || 'h2';
+function titleTag(style: string | undefined, children: React.ReactNode, props: React.HTMLAttributes<HTMLElement>, fallback = 'h2'): React.ReactNode {
+  const styleKey = style || fallback;
   const merged = { ...props, className: `style-${styleKey}${props.className ? ` ${props.className}` : ''}` };
-  switch (style) {
-    case 'h1': return <h1 {...(merged as any)}>{children}</h1>;
+  // Le h1 de la page est porté par son en-tête : « Titre 1 » garde son
+  // apparence mais s'affiche en h2 (un seul titre principal par page).
+  switch (styleKey) {
     case 'h3': return <h3 {...(merged as any)}>{children}</h3>;
     case 'h4': return <h4 {...(merged as any)}>{children}</h4>;
     case 'h5': return <h5 {...(merged as any)}>{children}</h5>;
@@ -73,14 +74,14 @@ function FeatureColumn({ feature, index }: { feature: PageIntroFeature; index: n
         display: 'flex',
         flexDirection: 'column',
         gap: 12,
-        borderLeft: index > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none',
+        borderLeft: index > 0 ? '1px solid color-mix(in srgb, var(--color-text, #1b2522) 8%, transparent)' : 'none',
       }}
       className="page-intro-feature-col"
     >
       {hasIcon && (
-        <div style={{ marginBottom: 4, opacity: 0.75, color: feature.iconColor || 'var(--color-text, #fff)' }}>
+        <div style={{ marginBottom: 4, opacity: 0.75, color: feature.iconColor || 'var(--color-text, #1b2522)' }}>
           {feature.iconType === 'image' && feature.iconImage?.url ? (
-            <img src={feature.iconImage.url} alt="" style={{ width: 26, height: 26, objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.8 }} />
+            <img src={feature.iconImage.url} alt="" style={{ width: 26, height: 26, objectFit: 'contain', filter: 'brightness(0)', opacity: 0.75 }} />
           ) : (
             <LucideIcon name={feature.iconName} size={22} color={feature.iconColor || undefined} strokeWidth={1.5} />
           )}
@@ -94,18 +95,19 @@ function FeatureColumn({ feature, index }: { feature: PageIntroFeature; index: n
           style: {
             margin: 0,
             ...(titleFs ? { fontSize: titleFs } : {}),
-            color: feature.titleColor || 'var(--color-text, #fff)',
+            color: feature.titleColor || 'var(--color-text, #1b2522)',
             textAlign: (feature.titleAlign as any) || 'left',
-            lineHeight: 1.3,
           },
-        }
+        },
+        // Colonnes étroites : Titre 4 par défaut.
+        'h4'
       )}
 
       {feature.description && (
         <p style={{
           margin: 0,
           fontSize: descFs || '0.875rem',
-          color: feature.descriptionColor || 'var(--color-text-muted, rgba(255,255,255,0.65))',
+          color: feature.descriptionColor || 'var(--color-text-muted, color-mix(in srgb, var(--color-text, #1b2522) 65%, transparent))',
           lineHeight: 1.65,
           textAlign: (feature.titleAlign as any) || 'left',
         }}>
@@ -195,15 +197,15 @@ export default function PageIntroBlock({ pageKey, settingsKey, blockId, external
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             gap: 12, marginBottom: '1.25rem',
           }}>
-            <span style={{ flex: 1, maxWidth: 60, height: 1, background: data.eyebrowColor || 'rgba(255,255,255,0.25)' }} />
+            <span style={{ flex: 1, maxWidth: 60, height: 1, background: data.eyebrowColor || 'color-mix(in srgb, var(--color-text, #1b2522) 25%, transparent)' }} />
             <span style={{
               fontSize: data.eyebrowFontSize ? `${data.eyebrowFontSize}px` : '0.7rem',
               letterSpacing: '0.18em', fontWeight: 500,
-              color: data.eyebrowColor || 'rgba(255,255,255,0.55)', textTransform: 'uppercase',
+              color: data.eyebrowColor || 'color-mix(in srgb, var(--color-text, #1b2522) 55%, transparent)', textTransform: 'uppercase',
             }}>
               {data.eyebrow}
             </span>
-            <span style={{ flex: 1, maxWidth: 60, height: 1, background: data.eyebrowColor || 'rgba(255,255,255,0.25)' }} />
+            <span style={{ flex: 1, maxWidth: 60, height: 1, background: data.eyebrowColor || 'color-mix(in srgb, var(--color-text, #1b2522) 25%, transparent)' }} />
           </div>
         )}
 
@@ -215,9 +217,8 @@ export default function PageIntroBlock({ pageKey, settingsKey, blockId, external
             style: {
               margin: '0 0 1.25rem',
               ...(titleFs ? { fontSize: titleFs } : {}),
-              color: data.titleColor || 'var(--color-text, #fff)',
+              color: data.titleColor || 'var(--color-text, #1b2522)',
               textAlign: titleAlign,
-              lineHeight: 1.2,
             },
           }
         )}
@@ -226,7 +227,7 @@ export default function PageIntroBlock({ pageKey, settingsKey, blockId, external
         {data.html && (
           <div
             className="richtext-content"
-            style={{ fontSize: '1rem', lineHeight: 1.7, color: 'var(--color-text-muted, rgba(255,255,255,0.75))', maxWidth: 760, margin: '0 auto' }}
+            style={{ fontSize: '1rem', lineHeight: 1.7, color: 'var(--color-text-muted, color-mix(in srgb, var(--color-text, #1b2522) 75%, transparent))', maxWidth: 760, margin: '0 auto' }}
             dangerouslySetInnerHTML={{ __html: data.html }}
           />
         )}
@@ -235,7 +236,7 @@ export default function PageIntroBlock({ pageKey, settingsKey, blockId, external
       {/* Feature columns */}
       {features.length > 0 && (
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 1rem 1rem' }}>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginBottom: 0 }} />
+          <div style={{ borderTop: '1px solid color-mix(in srgb, var(--color-text, #1b2522) 8%, transparent)', marginBottom: 0 }} />
           <div style={{ display: 'flex', flexWrap: 'wrap' }} className="page-intro-features">
             {features.map((f, i) => (
               <FeatureColumn key={i} feature={f} index={i} />
@@ -255,9 +256,9 @@ export default function PageIntroBlock({ pageKey, settingsKey, blockId, external
             <span key={i} style={{
               padding: '5px 14px',
               borderRadius: 999,
-              border: `1px solid ${data.keywordsBorderColor || 'rgba(255,255,255,0.2)'}`,
+              border: `1px solid ${data.keywordsBorderColor || 'color-mix(in srgb, var(--color-text, #1b2522) 20%, transparent)'}`,
               fontSize: '0.8rem',
-              color: data.keywordsColor || 'rgba(255,255,255,0.65)',
+              color: data.keywordsColor || 'color-mix(in srgb, var(--color-text, #1b2522) 65%, transparent)',
               letterSpacing: '0.02em',
               background: data.keywordsBackground || 'transparent',
             }}>
@@ -284,7 +285,7 @@ export default function PageIntroBlock({ pageKey, settingsKey, blockId, external
           }
           .page-intro-feature-col {
             border-left: none !important;
-            border-top: 1px solid rgba(255,255,255,0.08) !important;
+            border-top: 1px solid color-mix(in srgb, var(--color-text, #1b2522) 8%, transparent) !important;
             padding: 1.5rem 1rem !important;
           }
           .page-intro-feature-col:first-child {

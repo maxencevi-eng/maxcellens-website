@@ -67,6 +67,7 @@ export default async function MentionsLegalesPage() {
   return (
     <section>
       <PageHeader
+        seoTitleAs="p"
         page="mentions-legales"
         title="Mentions légales"
         subtitle="Informations légales relatives à l'édition et à l'exploitation du site"

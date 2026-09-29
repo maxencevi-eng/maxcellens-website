@@ -80,6 +80,7 @@ export default async function PolitiqueConfidentialitePage() {
   return (
     <section>
       <PageHeader
+        seoTitleAs="p"
         page="politique-de-confidentialite"
         title="Politique de confidentialité"
         subtitle="Comment vos données personnelles sont collectées et protégées"

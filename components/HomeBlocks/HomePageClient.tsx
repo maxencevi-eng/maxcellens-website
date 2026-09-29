@@ -450,8 +450,10 @@ export default function HomePageClient({ initialSettings, renderOnly, initialBlo
   const eyebrowOf = (data: any, fallback: string): string | null => (data?.eyebrowHidden ? null : (typeof data?.eyebrow === "string" && data.eyebrow.trim()) || fallback);
 
   /** Titre de bloc : révélé mot à mot quand il s'agit de texte brut. */
+  // Le style (Titre 1…) reste celui choisi ; la balise h1 est réservée au
+  // titre de l'intro, pour un seul titre principal par page (référencement).
   const heading = (text: string | undefined, tag: string, className: string, st?: React.CSSProperties, active?: boolean, delay?: number) =>
-    text ? <RevealWords text={text} as={tag} className={`${className} style-${tag}`} style={st} active={active} delay={delay} /> : null;
+    text ? <RevealWords text={text} as={tag === "h1" ? "h2" : tag} className={`${className} style-${tag}`} style={st} active={active} delay={delay} /> : null;
 
   /* ═════════════ Intro ═════════════ */
   const introSection = hide("home_intro") ? null : (() => {
@@ -492,8 +494,8 @@ export default function HomePageClient({ initialSettings, renderOnly, initialBlo
               </motion.div>
             )}
             {iv.titleHtml
-              ? <motion.div {...reveal(0.1)}>{React.createElement(titleTag, { className: `${styles.introTitle} style-${titleTag}`, style: titleSt, dangerouslySetInnerHTML: { __html: iv.titleHtml } })}</motion.div>
-              : intro.title ? <RevealWords text={intro.title} as={titleTag} className={`${styles.introTitle} style-${titleTag}`} style={titleSt} active={splashReady} delay={0.1} accentLast /> : null}
+              ? <motion.div {...reveal(0.1)}>{React.createElement("h1", { className: `${styles.introTitle} style-${titleTag}`, style: titleSt, dangerouslySetInnerHTML: { __html: iv.titleHtml } })}</motion.div>
+              : intro.title ? <RevealWords text={intro.title} as="h1" className={`${styles.introTitle} style-${titleTag}`} style={titleSt} active={splashReady} delay={0.1} accentLast /> : null}
             {intro.html ? <motion.div className={styles.introText} {...reveal(0.35)} dangerouslySetInnerHTML={{ __html: intro.html }} /> : null}
             <motion.div className={styles.introActions} {...reveal(0.45)}>
               <Link href="/realisation" className={`${styles.btn} ${styles.btnAccent}`} data-analytics-id="Accueil|Intro réalisations">
