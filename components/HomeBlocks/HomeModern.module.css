@@ -961,6 +961,19 @@
   from { transform: translate(-54%, -50%) rotate(-4deg); }
   to { transform: translate(-46%, -52%) rotate(4deg); }
 }
+/* Fondu vers le pied de page, seulement quand l'appel à l'action est le
+   dernier bloc de l'accueil (aucune section après lui). */
+.root > :has(.cta):not(:has(~ * section)) .cta::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  height: clamp(120px, 16vw, 240px);
+  background: linear-gradient(180deg, transparent, var(--site-footer-bg, #1c1c1a));
+  pointer-events: none;
+}
 .ctaPill { margin-bottom: clamp(28px, 4vw, 48px); }
 .ctaTitle.ctaTitle {
   margin: 0;

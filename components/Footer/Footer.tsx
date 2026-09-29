@@ -83,6 +83,13 @@ export default function Footer() {
   const [bannerError, setBannerError] = useState(false);
   const [footerBgColor, setFooterBgColor] = useState<string>('#1C1C1A');
 
+  // Couleur du pied de page exposée au site : la dernière section de
+  // l'accueil peut s'y fondre (voir HomeModern.module.css).
+  useEffect(() => {
+    document.documentElement.style.setProperty('--site-footer-bg', footerBgColor);
+  }, [footerBgColor]);
+
+
   useEffect(() => {
     setBannerUrl(footerBanner?.url ?? '');
   }, [footerBanner?.url]);
