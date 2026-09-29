@@ -1,6 +1,7 @@
 "use no memo";
 "use client";
 
+import { TITLE_STYLE_OPTIONS as SHARED_TITLE_STYLE_OPTIONS } from '../../lib/typography';
 import { hasRichTextContent } from "../../lib/hasRichTextContent";
 
 import { editorialPresentation } from "./editorialPresentation";
@@ -83,14 +84,7 @@ function FontSizeInput({ value, onChange }: { value: number | ""; onChange: (v: 
 
 const DEFAULT_PORTRAIT_TITLES = ["Lifestyle", "Studio", "Entreprise", "Couple"];
 
-const TITLE_STYLE_OPTIONS: { value: TitleStyleKey; label: string }[] = [
-  { value: "p", label: "Paragraphe" },
-  { value: "h1", label: "Titre 1" },
-  { value: "h2", label: "Titre 2" },
-  { value: "h3", label: "Titre 3" },
-  { value: "h4", label: "Titre 4" },
-  { value: "h5", label: "Titre 5" },
-];
+const TITLE_STYLE_OPTIONS = SHARED_TITLE_STYLE_OPTIONS as { value: TitleStyleKey; label: string }[];
 
 const RichTextModal = dynamic(() => import("../RichTextModal/RichTextModal"), { ssr: false });
 
@@ -1342,7 +1336,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
                 <select value={bannerBlockTitleStyle} onChange={(e) => setBannerBlockTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 130 }}>
-                  {[{ value: "h1", label: "Titre 1" }, { value: "h2", label: "Titre 2" }, { value: "h3", label: "Titre 3" }, { value: "h4", label: "Titre 4" }, { value: "h5", label: "Titre 5" }, { value: "p", label: "Paragraphe" }].map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {SHARED_TITLE_STYLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 <FontSizeInput value={bannerBlockTitleFontSize} onChange={setBannerBlockTitleFontSize} />
                 <input type="color" value={bannerBlockTitleColor || "#1a1a18"} onChange={(e) => setBannerBlockTitleColor(e.target.value)} title="Couleur du titre" style={{ width: 40, height: 36, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} />

@@ -176,10 +176,8 @@
   color: #7c857f;
 }
 
-.locCardTitle {
+.locCardTitle.locCardTitle {
   margin: 0 0 0.5rem;
-  font-weight: 600;
-  line-height: 1.2;
   color: #1c2a24;
 }
 

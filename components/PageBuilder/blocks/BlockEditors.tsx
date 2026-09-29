@@ -1,5 +1,6 @@
 "use client";
 
+import { TITLE_STYLE_OPTIONS } from '../../../lib/typography';
 import React from 'react';
 import {
   AdminNotice,
@@ -239,14 +240,7 @@ export function HeadingEditor({ data, onChange }: EditorProps<HeadingData>) {
           label="Niveau"
           value={data.level}
           onChange={(v) => onChange({ ...data, level: v as HeadingData['level'] })}
-          options={[
-            { value: 'h1', label: 'Titre 1' },
-            { value: 'h2', label: 'Titre 2' },
-            { value: 'h3', label: 'Titre 3' },
-            { value: 'h4', label: 'Titre 4' },
-            { value: 'h5', label: 'Titre 5' },
-            { value: 'p', label: 'Paragraphe' },
-          ]}
+          options={TITLE_STYLE_OPTIONS}
           hint="La police vient du centre de style."
         />
         <SegmentedField

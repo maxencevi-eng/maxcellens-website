@@ -1,4 +1,5 @@
 "use client";
+import { TITLE_STYLE_OPTIONS as SHARED_TITLE_STYLE_OPTIONS } from '../../lib/typography';
 import { AdminModal } from '../admin';
 
 import React, { useEffect, useState } from "react";
@@ -283,7 +284,7 @@ export default function ContactGalleryEditModal({
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
                 <select value={titleStyle} onChange={(e) => setTitleStyle(e.target.value)} style={{ ...inputStyle, width: 120 }}>
-                  {[{ value: "h1", label: "Titre 1" }, { value: "h2", label: "Titre 2" }, { value: "h3", label: "Titre 3" }, { value: "h4", label: "Titre 4" }, { value: "h5", label: "Titre 5" }, { value: "p", label: "Paragraphe" }].map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {SHARED_TITLE_STYLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
                 <input type="number" min={10} max={100} value={titleFontSize} onChange={(e) => setTitleFontSize(e.target.value === "" ? "" : Number(e.target.value))} placeholder="px" style={{ width: 64, padding: "8px 12px", border: "1px solid #e6e6e6", borderRadius: 6, fontSize: 14, boxSizing: "border-box" as const }} />
                 <input type="color" value={titleColor || "#1a1a18"} onChange={(e) => setTitleColor(e.target.value)} title="Couleur du titre" style={{ width: 40, height: 36, padding: 2, border: "1px solid #e6e6e6", borderRadius: 6, cursor: "pointer" }} />

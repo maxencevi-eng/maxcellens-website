@@ -30,6 +30,11 @@ const RICH_TEXT_OPTIONS = {
       'font-size': [/^\d+(?:\.\d+)?(px|rem|em|%)$/],
       'font-weight': [/^(normal|bold|[1-9]00)$/],
       'font-style': [/^(normal|italic)$/],
+      // Police choisie dans l'éditeur : nom(s) de police ou police d'un style du site.
+      'font-family': [/^(var\(--font-[a-z0-9-]+\)|inherit|[\w\s"',.-]+)$/i],
+      'line-height': [/^\d+(?:\.\d+)?(px|rem|em|%)?$/],
+      'letter-spacing': [/^-?\d*\.?\d+(px|rem|em)$/],
+      'text-transform': [/^(none|uppercase|lowercase|capitalize)$/],
       'text-decoration': [/^.*$/],
       margin: [/^[\d\s.pxremt%-]+$/],
       padding: [/^[\d\s.pxremt%-]+$/],

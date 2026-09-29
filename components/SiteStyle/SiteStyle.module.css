@@ -102,3 +102,34 @@
   border-radius: var(--adm-radius-sm);
   object-fit: cover;
 }
+
+/* Polices importées : aperçu + famille / graisse / style */
+.fontItemRich {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 12px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius-sm);
+}
+.fontItemRich .fontSample { grid-column: 1; }
+.fontFields {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.8fr);
+  gap: 10px;
+}
+@media (max-width: 640px) { .fontFields { grid-template-columns: 1fr; } }
+
+/* Aperçu d'un style de texte */
+.typoPreview {
+  grid-column: 1 / -1;
+  padding: 14px 16px;
+  border-radius: var(--adm-radius-sm);
+  background: var(--adm-surface-sunken, #f6f6f4);
+  color: var(--adm-ink, #111);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

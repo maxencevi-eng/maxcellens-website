@@ -1,5 +1,8 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { fontFaceCss, typographyCssVars, TYPO_VAR, type FontMeta, type TypographyKey, type TypographySettings } from '../../lib/typography';
+
+export type { TypographyKey } from '../../lib/typography';
 
 type ButtonStyleSettings = { bg?: string; color?: string };
 
@@ -20,10 +23,6 @@ type ColorSettings = {
   button2?: ButtonStyleSettings;
 };
 
-type FontMeta = { name: string; url: string; style?: string; weight?: string };
-
-/** Niveaux de texte pilotables depuis le centre de style. */
-export type TypographyKey = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'p';
 
 /** Réglages propres à l'interface d'administration. */
 export type AdminUiSettings = {
@@ -34,9 +33,6 @@ export type AdminUiSettings = {
   density?: 'comfortable' | 'compact';
 };
 
-type TypographySettings = Partial<
-  Record<TypographyKey, { family?: string; size?: string; weight?: string }>
->;
 
 export type BackgroundStyle = 'none' | 'grain' | 'dots' | 'lines' | 'custom';
 
@@ -132,40 +128,12 @@ export default function SiteStyleProvider({ children }: { children: React.ReactN
         if (c.button2?.bg) root.style.setProperty('--button-2-bg', c.button2.bg);
         if (c.button2?.color) root.style.setProperty('--button-2-color', c.button2.color);
 
-        const t = s.typography || {};
-        function quoteFamily(f: string) {
-          if (!f) return f;
-          if (/^["'].*["']$/.test(f)) return f;
-          if (/[\s,]/.test(f)) return `'${f}'`;
-          return f;
-        }
-
-        function normSize(v?: string) {
-          if (!v) return v;
-          const s = String(v).trim();
-          if (/^\d+$/.test(s)) return `${s}px`;
-          return s;
-        }
-
-        // Une boucle plutôt que six blocs recopiés : ajouter un niveau de
-        // titre ne demande plus qu'une entrée dans TYPO_VARS.
-        const TYPO_VARS: Record<TypographyKey, string> = {
-          h1: 'h1', h2: 'h2', h3: 'h3', h4: 'h4', h5: 'h5', p: 'body',
-        };
-        (Object.keys(TYPO_VARS) as TypographyKey[]).forEach((key) => {
-          const conf = t[key];
-          if (!conf) return;
-          const varName = TYPO_VARS[key];
-          if (conf.family) {
-            root.style.setProperty(`--font-${varName}-family`, quoteFamily(conf.family));
-          }
-          if (conf.size) {
-            root.style.setProperty(`--font-${varName}-size`, normSize(conf.size) as string);
-          }
-          if (conf.weight) {
-            root.style.setProperty(`--font-${varName}-weight`, conf.weight);
-          }
+        // Variables typographiques : on retire d'abord celles d'un niveau
+        // vidé dans l'éditeur pour retomber sur les valeurs par défaut.
+        (Object.values(TYPO_VAR)).forEach((v) => {
+          ['family', 'size', 'weight', 'line', 'tracking', 'transform'].forEach((p) => root.style.removeProperty(`--font-${v}-${p}`));
         });
+        Object.entries(typographyCssVars(s.typography as TypographySettings)).forEach(([k, v]) => root.style.setProperty(k, v));
 
         // ── Interface admin ─────────────────────────────────────────────
         // Par défaut l'accent admin dérive du bouton principal du site via
@@ -250,8 +218,7 @@ export default function SiteStyleProvider({ children }: { children: React.ReactN
         }
         if (bgTag.innerHTML !== bgTagContent) bgTag.innerHTML = bgTagContent;
 
-        // fonts: generate @font-face rules
-        const fonts = s.fonts || [];
+        // Polices importées : règles @font-face (graisse et format réels)
         const styleTagId = 'site-fonts';
         let tag = document.getElementById(styleTagId) as HTMLStyleElement | null;
         if (!tag) {
@@ -259,13 +226,8 @@ export default function SiteStyleProvider({ children }: { children: React.ReactN
           tag.id = styleTagId;
           document.head.appendChild(tag);
         }
-        const rules = fonts.map((f, idx) => {
-          const fontFamily = f.name.replace(/"/g, '').trim();
-          const weight = f.weight || '400';
-          const styleVal = f.style || 'normal';
-          return `@font-face{font-family: "${fontFamily}"; src: url('${f.url}') format('woff2'); font-weight: ${weight}; font-style: ${styleVal}; font-display: swap;}`;
-        }).join('\n');
-        tag.innerHTML = rules;
+        const rules = fontFaceCss(s.fonts);
+        if (tag.innerHTML !== rules) tag.innerHTML = rules;
 
       } catch (e) {
         console.warn('applyCss failed', e);

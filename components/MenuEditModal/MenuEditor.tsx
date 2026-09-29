@@ -1,5 +1,7 @@
 "use client";
 
+import useFontOptions from '../SiteStyle/useFontOptions';
+import { WEIGHT_OPTIONS } from '../../lib/typography';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   AdminModal,
@@ -33,20 +35,6 @@ import styles from './MenuEditor.module.css';
  */
 
 export type MenuScope = 'desktop' | 'mobile';
-
-const FONT_OPTIONS = [
-  { value: '', label: 'Inter (police du site)' },
-  { value: 'Playfair Display, serif', label: 'Playfair Display' },
-  { value: 'Roboto, sans-serif', label: 'Roboto' },
-  { value: 'Arial, sans-serif', label: 'Arial' },
-];
-
-const WEIGHT_OPTIONS = [
-  { value: '400', label: '400 — normal' },
-  { value: '500', label: '500 — moyen' },
-  { value: '600', label: '600 — semi-gras' },
-  { value: '700', label: '700 — gras' },
-];
 
 /** Visibilité par défaut des entrées historiques. */
 const DEFAULT_VISIBLE: Record<string, boolean> = {
@@ -129,6 +117,7 @@ export default function MenuEditor({
   const config = useMemo(() => configFor(scope), [scope]);
   const [tab, setTab] = useState<'navigation' | 'police' | 'couleurs'>('navigation');
   const [state, setState] = useState<MenuState>(DEFAULT_STATE);
+  const fontOptions = useFontOptions(state.fontFamily, 'Police du paragraphe (par défaut)');
   const [baseline, setBaseline] = useState(JSON.stringify(DEFAULT_STATE));
   const [pages, setPages] = useState<{ slug: string; title: string }[]>([]);
   const [saving, setSaving] = useState(false);
@@ -356,7 +345,7 @@ export default function MenuEditor({
             label="Police"
             value={state.fontFamily}
             onChange={(v) => update({ fontFamily: v })}
-            options={FONT_OPTIONS}
+            options={fontOptions}
           />
           <SelectField
             label="Épaisseur"

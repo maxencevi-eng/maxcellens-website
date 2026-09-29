@@ -1,4 +1,5 @@
 "use client";
+import useFontOptions from '../SiteStyle/useFontOptions';
 import { AdminModal } from '../admin';
 
 import React, { useEffect, useState } from 'react';
@@ -6,7 +7,6 @@ import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { supabase } from '../../lib/supabase';
 import ModalTabs from '../ui/ModalTabs';
-import { useSiteStyle } from '../SiteStyle/SiteStyleProvider';
 
 const RichTextModal = dynamic(() => import('../RichTextModal/RichTextModal'), { ssr: false });
 
@@ -39,11 +39,6 @@ const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 12px', ma
 const labelStyle: React.CSSProperties = { fontSize: 11, color: '#888', display: 'block', marginBottom: 3 };
 
 export default function ContactEditModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
-  const { style: siteStyle } = useSiteStyle();
-  const siteFontOptions = [
-    { value: '', label: 'Par défaut (site)' },
-    ...((siteStyle.fonts || []).map((f: { name: string }) => ({ value: f.name, label: f.name }))),
-  ];
   const [contactHandle, setContactHandle] = useState('@maxcellens');
   const [rows, setRows] = useState<AboutRow[]>(DEFAULT_ROWS);
   const [introBackgroundColor, setIntroBackgroundColor] = useState('');
@@ -65,6 +60,8 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
   const [labelFontSize, setLabelFontSize] = useState(10);
   const [labelColor, setLabelColor] = useState('');
   const [labelFontFamily, setLabelFontFamily] = useState('');
+  const handleFontOptions = useFontOptions(handleFontFamily);
+  const labelFontOptions = useFontOptions(labelFontFamily);
 
   useEffect(() => {
     let mounted = true;
@@ -222,7 +219,7 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
                 <div>
                   <div style={{ fontSize: 13, color: '#666' }}>Police</div>
                   <select value={handleFontFamily} onChange={(e) => setHandleFontFamily(e.target.value)} style={{ width: '100%', marginTop: 4, padding: '6px 10px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13 }}>
-                    {siteFontOptions.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                    {handleFontOptions.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                   </select>
                 </div>
                 <div>
@@ -265,7 +262,7 @@ export default function ContactEditModal({ onClose, onSaved }: { onClose: () => 
                     <label style={labelStyle}>Police</label>
                     <select value={labelFontFamily} onChange={e => setLabelFontFamily(e.target.value)}
                       style={{ width: '100%', padding: '6px 8px', border: '1px solid #e6e6e6', borderRadius: 6, fontSize: 13 }}>
-                      {siteFontOptions.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                      {labelFontOptions.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
                     </select>
                   </div>
                 </div>

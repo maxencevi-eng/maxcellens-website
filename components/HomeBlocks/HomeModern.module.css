@@ -13,7 +13,6 @@
   --h-pad-x: clamp(20px, 4.5vw, 72px);
   --h-pad-y: clamp(72px, 9vw, 144px);
   --h-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --h-display: var(--font-h2-family, inherit);
 
   width: 100cqw;
   max-width: none;
@@ -28,7 +27,7 @@
   background: var(--bg, #f2f0eb);
 }
 
-.managed { --h-radius: clamp(20px, 2.2vw, 34px); --h-radius-sm: clamp(16px, 1.5vw, 22px); --h-pad-x: clamp(20px, 4.5vw, 72px); --h-pad-y: clamp(64px, 8vw, 120px); --h-ease: cubic-bezier(0.22, 1, 0.36, 1); --h-display: var(--font-h2-family, inherit); }
+.managed { --h-radius: clamp(20px, 2.2vw, 34px); --h-radius-sm: clamp(16px, 1.5vw, 22px); --h-pad-x: clamp(20px, 4.5vw, 72px); --h-pad-y: clamp(64px, 8vw, 120px); --h-ease: cubic-bezier(0.22, 1, 0.36, 1);  }
 
 /* ── Panneaux et tons ── */
 .panel {
@@ -89,21 +88,12 @@
 
 /* ── Typographie ── */
 .display.display {
-  font-family: var(--h-display);
-  font-size: clamp(2.4rem, 5.4vw, 5.25rem);
-  font-weight: 500;
-  line-height: 0.98;
-  letter-spacing: -0.04em;
   margin: 0;
   color: inherit;
   text-wrap: balance;
 }
 
 .lead.lead {
-  font-family: var(--font-body-family, inherit);
-  font-size: clamp(1.02rem, 1.25vw, 1.2rem);
-  font-weight: 400;
-  line-height: 1.6;
   color: var(--t-muted);
   margin: 0;
   max-width: 52ch;
@@ -114,12 +104,6 @@
   align-items: center;
   gap: 10px;
   margin: 0 0 22px;
-  font-family: var(--font-body-family, inherit);
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
   color: var(--t-muted);
 }
 .eyebrow::before {
@@ -132,8 +116,8 @@
 }
 
 .rich {
-  font-size: clamp(0.98rem, 1.1vw, 1.08rem);
-  line-height: 1.7;
+  font-size: var(--type-body);
+  line-height: var(--font-body-line);
   color: var(--t-muted);
 }
 .rich p { margin: 0 0 0.8em; }
@@ -322,11 +306,6 @@
 }
 
 .introTitle.introTitle {
-  font-family: var(--font-h1-family, var(--h-display));
-  font-size: clamp(3rem, 8vw, 8.75rem);
-  font-weight: 500;
-  line-height: 0.92;
-  letter-spacing: -0.055em;
   margin: 0;
   color: var(--t-fg);
   text-wrap: balance;
@@ -403,8 +382,8 @@
   border-top: 1px solid var(--t-line);
 }
 .introText {
-  font-size: clamp(1rem, 1.2vw, 1.15rem);
-  line-height: 1.65;
+  font-size: var(--type-body);
+  line-height: var(--font-body-line);
   color: var(--t-muted);
   max-width: 46ch;
 }
@@ -556,17 +535,10 @@
 .svcBottom { display: flex; flex-direction: column; padding: clamp(20px, 2vw, 32px); }
 .svcTitle.svcTitle {
   margin: 0;
-  font-family: var(--h-display);
-  font-size: clamp(1.75rem, 2.5vw, 2.6rem);
-  font-weight: 500;
-  letter-spacing: -0.035em;
-  line-height: 1;
   color: #fff;
 }
 .svcDesc.svcDesc {
   margin: 0;
-  font-size: 15px;
-  line-height: 1.5;
   color: rgba(255, 255, 255, 0.78);
   max-width: 34ch;
   display: grid;
@@ -633,7 +605,8 @@
   margin-bottom: 20px;
 }
 .portraitCounterNow {
-  font-family: var(--h-display);
+  font-family: var(--font-h2-family);
+  font-weight: var(--font-h2-weight);
   font-size: clamp(3rem, 5vw, 5rem);
   line-height: 0.9;
   letter-spacing: -0.05em;
@@ -648,11 +621,6 @@
 }
 .portraitSlideTitle.portraitSlideTitle {
   margin: 0 0 14px;
-  font-family: var(--h-display);
-  font-size: clamp(1.8rem, 2.8vw, 2.8rem);
-  font-weight: 500;
-  letter-spacing: -0.035em;
-  line-height: 1;
   color: var(--t-fg);
 }
 .portraitBody .rich { max-width: 44ch; }
@@ -735,7 +703,7 @@
   background: var(--t-accent);
   color: var(--t-accent-fg);
 }
-.featureTitle { margin: 0 0 8px; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; color: var(--t-fg); }
+.featureTitle.featureTitle { margin: 0 0 8px; color: var(--t-fg); }
 .featureText { margin: 0; font-size: 14px; line-height: 1.55; color: var(--t-muted); white-space: pre-line; overflow-wrap: anywhere; }
 
 .videos { margin-top: clamp(56px, 7vw, 112px); }
@@ -787,7 +755,7 @@
 }
 .videoCard:hover .videoPlay { transform: scale(1.12); background: #fff; color: #111; }
 .videoCard:focus-visible .videoThumb { outline: 2px solid var(--t-fg); outline-offset: 3px; }
-.videoTitle { font-size: 17px; font-weight: 500; letter-spacing: -0.015em; color: var(--t-fg); }
+.videoTitle.videoTitle { margin: 0; color: var(--t-fg); }
 .videoDesc { font-size: 14px; line-height: 1.5; color: var(--t-muted); }
 
 /* ═══════════════════ Bureau à la carte ═══════════════════ */
@@ -810,15 +778,15 @@
 .statIndex { display: block; margin-bottom: clamp(28px, 4vw, 56px); font-size: 11px; letter-spacing: 0.14em; color: var(--t-faint); font-variant-numeric: tabular-nums; }
 .statValue {
   margin-top: auto;
-  font-family: var(--h-display);
+  font-family: var(--font-h2-family);
   font-size: clamp(2.75rem, 5.6vw, 6rem);
-  font-weight: 500;
+  font-weight: var(--font-h2-weight);
   line-height: 0.9;
-  letter-spacing: -0.055em;
+  letter-spacing: var(--font-h2-tracking);
   font-variant-numeric: tabular-nums;
   color: inherit;
 }
-.statWord { font-size: clamp(2rem, 3.6vw, 3.75rem); line-height: 1; letter-spacing: -0.04em; }
+.statWord { font-size: clamp(2rem, 3.6vw, 3.75rem); line-height: 1; }
 .statLabel { margin: 14px 0 0; font-size: 14px; line-height: 1.5; color: var(--t-muted); }
 .stats .inner[style] .statLabel,
 .stats .inner[style] .statIndex { color: inherit; opacity: 0.7; }
@@ -858,7 +826,7 @@
   color: var(--quote-card-text, var(--t-fg));
 }
 .quoteGlyph {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-h2-family);
   font-size: 72px;
   line-height: 0.6;
   height: 34px;
@@ -867,9 +835,9 @@
 .quoteText {
   flex: 1;
   margin: 18px 0 32px;
-  font-size: clamp(1.02rem, 1.25vw, 1.18rem);
+  font-family: var(--font-body-family);
+  font-size: calc(var(--type-body) * 1.06);
   line-height: 1.55;
-  letter-spacing: -0.01em;
   color: inherit;
 }
 .quoteAuthor { display: flex; align-items: center; gap: 12px; }
@@ -913,11 +881,6 @@
 .ctaPill { margin-bottom: clamp(28px, 4vw, 48px); }
 .ctaTitle.ctaTitle {
   margin: 0;
-  font-family: var(--font-h1-family, var(--h-display));
-  font-size: clamp(3.25rem, 10vw, 10.5rem);
-  font-weight: 500;
-  line-height: 0.9;
-  letter-spacing: -0.06em;
   color: var(--t-fg);
   text-wrap: balance;
   max-width: 14ch;

@@ -1,10 +1,10 @@
 "use client";
+import useFontOptions from '../SiteStyle/useFontOptions';
 import { AdminModal } from '../admin';
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import ModalTabs from '../ui/ModalTabs';
-import { useSiteStyle } from '../SiteStyle/SiteStyleProvider';
 
 export interface FaqItem {
   question: string;
@@ -76,11 +76,6 @@ function ColorInput({ value, onChange, placeholder = 'transparent' }: { value: s
 }
 
 export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () => void; onSaved?: () => void }) {
-  const { style: siteStyle } = useSiteStyle();
-  const fontOptions = [
-    { value: '', label: 'Par défaut (site)' },
-    ...((siteStyle.fonts || []).map((f: { name: string }) => ({ value: f.name, label: f.name }))),
-  ];
   const [tab, setTab] = useState('contenu');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +91,7 @@ export default function ContactFaqEditModal({ onClose, onSaved }: { onClose: () 
   const [titleFontSize, setTitleFontSize] = useState(0);
   const [titleColor, setTitleColor] = useState('');
   const [titleFontFamily, setTitleFontFamily] = useState('');
+  const fontOptions = useFontOptions(titleFontFamily);
   const [titleFontWeight, setTitleFontWeight] = useState(700);
   const [highlightColor, setHighlightColor] = useState('');
   const [descriptionFontSize, setDescriptionFontSize] = useState(0);

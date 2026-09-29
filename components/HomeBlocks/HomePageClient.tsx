@@ -532,7 +532,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
           <div className={innerClass("home_banner")}>
             <div className={`${styles.split} ${imgRight ? '' : styles.splitReverse}`}>
               <div className={styles.splitText}>
-                {b.eyebrow && <span className={styles.eyebrow} style={b.blockTitleAlign ? { justifyContent: b.blockTitleAlign === 'center' ? 'center' : b.blockTitleAlign === 'right' ? 'flex-end' : undefined } : undefined}>{b.eyebrow}</span>}
+                {b.eyebrow && <span className={`${styles.eyebrow} style-h5`} style={b.blockTitleAlign ? { justifyContent: b.blockTitleAlign === 'center' ? 'center' : b.blockTitleAlign === 'right' ? 'flex-end' : undefined } : undefined}>{b.eyebrow}</span>}
                 {heading(b.blockTitle, titleTag, styles.display, textStyle(b.blockTitleFontSize, b.blockTitleColor, b.blockTitleAlign))}
                 {b.blockSubtitle && React.createElement(subtitleTag, {
                   className: `${styles.lead} style-${subtitleTag}`,
@@ -581,7 +581,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
         <div className={innerClass("home_services")}>
           <div className={styles.head}>
             <div>
-              <span className={styles.eyebrow}>Services — {pad2(serviceItems.length)}</span>
+              <span className={`${styles.eyebrow} style-h5`}>Services — {pad2(serviceItems.length)}</span>
               {heading(sv.blockTitle, titleTag, styles.display, textStyle(sv.blockTitleFontSize, sv.blockTitleColor, sv.blockTitleAlign))}
             </div>
             {sv.blockSubtitle ? (
@@ -646,7 +646,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
             }}
           >
             <div className={styles.portraitHead}>
-              <span className={styles.eyebrow}>Séances photo</span>
+              <span className={`${styles.eyebrow} style-h5`}>Séances photo</span>
               {titleEl}
             </div>
 
@@ -747,7 +747,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
         <div className={innerClass("home_cadreur")}>
           <div className={styles.bento}>
             <AnimateInView variant="fadeUp" className={`${styles.card} ${styles.bentoText}`}>
-              <span className={styles.eyebrow}>Tournage & production</span>
+              <span className={`${styles.eyebrow} style-h5`}>Tournage & production</span>
               {heading(cadreurBlock.title, titleTag, styles.display, textStyle(cb.titleFontSize, cb.titleColor, cb.titleAlign))}
               {cadreurBlock.html ? <div className={`${styles.rich} ${styles.bentoRich}`} dangerouslySetInnerHTML={{ __html: cadreurBlock.html }} /> : null}
             </AnimateInView>
@@ -771,7 +771,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
                   return (
                     <AnimateStaggerItem key={index} className={`${styles.card} ${styles.feature}`}>
                       <span className={styles.featureIcon}><Icon size={20} strokeWidth={1.6} aria-hidden="true" /></span>
-                      {feature.title && <h3 className={styles.featureTitle}>{feature.title}</h3>}
+                      {feature.title && <h3 className={`${styles.featureTitle} style-h4`}>{feature.title}</h3>}
                       {feature.text && <p className={styles.featureText}>{feature.text}</p>}
                     </AnimateStaggerItem>
                   );
@@ -783,7 +783,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
           {cadreurVisibleVideos.length > 0 && (
             <div className={styles.videos}>
               {cb.videosSectionTitle ? (
-                <p className={styles.eyebrow} style={{ justifyContent: cb.videosSectionTitleAlign === 'center' ? 'center' : cb.videosSectionTitleAlign === 'right' ? 'flex-end' : undefined }}>
+                <p className={`${styles.eyebrow} style-h5`} style={{ justifyContent: cb.videosSectionTitleAlign === 'center' ? 'center' : cb.videosSectionTitleAlign === 'right' ? 'flex-end' : undefined }}>
                   {cb.videosSectionTitle}
                 </p>
               ) : null}
@@ -806,7 +806,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="7,4 20,12 7,20" /></svg>
                           </span>
                         </span>
-                        {vid.title && <span className={styles.videoTitle}>{vid.title}</span>}
+                        {vid.title && <span className={`${styles.videoTitle} style-h4`}>{vid.title}</span>}
                         {vid.description && <span className={styles.videoDesc}>{vid.description}</span>}
                       </button>
                     </AnimateStaggerItem>
@@ -850,7 +850,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
               </AnimateInView>
             ) : null}
             <div className={styles.splitText} style={ab.contentBgColor ? { background: ab.contentBgColor, padding: 'clamp(24px, 3vw, 48px)', borderRadius: 'var(--h-radius-sm)' } : undefined}>
-              <span className={styles.eyebrow}>Bureau à la carte</span>
+              <span className={`${styles.eyebrow} style-h5`}>Bureau à la carte</span>
               {heading(ab.blockTitle, titleTag, styles.display, textStyle(ab.blockTitleFontSize, ab.blockTitleColor, ab.blockTitleAlign))}
               {ab.blockSubtitle ? React.createElement(subTag, { className: `${styles.lead} style-${subTag}`, style: textStyle(ab.blockSubtitleFontSize, ab.blockSubtitleColor, ab.blockSubtitleAlign) }, ab.blockSubtitle) : null}
               {hasRichTextContent(animationBlock.html) ? <div className={styles.rich} dangerouslySetInnerHTML={{ __html: ab.html }} /> : null}
@@ -895,7 +895,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
     if (q.cardBorderColor) vars['--quote-card-border'] = q.cardBorderColor;
     if (q.cardTextColor) vars['--quote-card-text'] = q.cardTextColor;
     const p = panel(q, "dark", styles.quote);
-    const TitleTag = (q.blockTitleStyle || "p") as any;
+    const TitleTag = (q.blockTitleStyle || "h5") as any;
     const subTag = q.blockSubtitleStyle || "h2";
     return (
       <section {...p} style={{ ...(p.style || {}), ...vars }}>
@@ -903,7 +903,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
         <div className={innerClass("home_quote")}>
           <div className={styles.head}>
             <div>
-              <TitleTag className={`${styles.eyebrow} style-${TitleTag}`} style={textStyle(q.blockTitleFontSize && q.blockTitleFontSize <= 16 ? undefined : q.blockTitleFontSize, q.blockTitleColor, q.blockTitleAlign)}>{q.blockTitle ?? "Témoignages"}</TitleTag>
+              <TitleTag className={`${styles.eyebrow} style-${TitleTag}`} style={textStyle(q.blockTitleFontSize, q.blockTitleColor, q.blockTitleAlign)}>{q.blockTitle ?? "Témoignages"}</TitleTag>
               {heading(q.blockSubtitle || "Ils m'ont fait confiance", subTag, styles.display, textStyle(q.blockSubtitleFontSize, q.blockSubtitleColor, q.blockSubtitleAlign))}
             </div>
             <div className={styles.roundNav}>
@@ -949,7 +949,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
   /* ═════════════ Appel à l'action ═════════════ */
   const ctaSection = hide("home_cta") ? null : (() => {
     const c = cta as any;
-    const titleTag = c.titleStyle || "h2";
+    const titleTag = c.titleStyle || "h1";
     return (
       <section {...panel(c, "dark", styles.cta)}>
         {toolbar("home_cta")}

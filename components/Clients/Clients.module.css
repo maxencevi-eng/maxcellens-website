@@ -10,9 +10,7 @@
   text-align: center;
   padding: 1rem 0 0 0;
 }
-.title {
-  font-size: 1.6rem;
-  font-weight: 700;
+.title.title {
   margin-bottom: 2rem;
   color: #333;
 }
@@ -183,9 +181,6 @@
   }
 }
 @media (max-width: 380px) {
-  .title {
-    font-size: 1.1rem;
-  }
   .section .grid,
   .section .gridCloud {
     padding: 0.5rem 0.75rem;
@@ -206,7 +201,7 @@
 .premium { background: #f3f1ed; padding: 24px 0; border-radius: 0; }
 .premium .inner { padding: 0; }
 .premium > :global(.container) { padding-inline: max(clamp(24px, 5vw, 80px), var(--container-margin-x-desktop, 0px)); }
-.premium .title { font-size: 10px; letter-spacing: .14em; text-transform: none; font-weight: 500; color: #777b7e; }
+.premium .title { color: #777b7e; }
 .premium .grid, .premium .gridCloud, .premium .cloudRow { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 24px; }
 .premium .gridCloud > *, .premium .cloudRow { display: contents; }
 .section.premium .item, .section.premium .loopItem {

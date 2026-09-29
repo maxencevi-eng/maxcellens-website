@@ -60,28 +60,16 @@
   max-width: 540px;
 }
 
-.label {
+.label.label {
+  /* Police, taille et casse : style choisi (par défaut Titre 5 — sur-titre). */
   display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
   color: var(--muted, #6b7280);
   margin-bottom: 0.5rem;
 }
 
-.title {
-  font-size: 1.75rem;
-  font-weight: 700;
+.title.title {
   margin: 0 0 1rem;
-  line-height: 1.25;
   color: var(--fg, #213431);
-}
-
-@media (min-width: 640px) {
-  .title {
-    font-size: 2rem;
-  }
 }
 
 .text {
@@ -179,9 +167,7 @@
   padding: 1.5rem 1rem;
 }
 
-.ctaTitle {
-  font-size: 1.25rem;
-  font-weight: 700;
+.ctaTitle.ctaTitle {
   margin: 0 0 0.5rem;
   color: var(--fg, #213431);
 }

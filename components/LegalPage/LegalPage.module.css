@@ -29,21 +29,13 @@
   padding-bottom: clamp(2rem, 4vw, 3rem);
 }
 
-.eyebrow {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.eyebrow.eyebrow {
   color: var(--muted, #6b7280);
   margin: 0 0 1rem;
 }
 
-.title {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 700;
+.title.title {
   color: var(--fg, #213431);
-  line-height: 1.15;
   margin: 0 0 1.25rem;
 }
 
@@ -69,15 +61,10 @@
   align-items: start;
 }
 
-.sectionTitle {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.sectionTitle.sectionTitle {
   color: var(--fg, #213431);
   margin: 0;
   padding-top: 0.2rem;
-  line-height: 1.4;
 }
 
 .sectionBody {

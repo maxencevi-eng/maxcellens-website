@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { TITLE_STYLE_OPTIONS } from '../../../lib/typography';
 import ModalTabs from '../../ui/ModalTabs';
 import VideoCardField from './VideoCardField';
 import { AdminButton, AdminSection, ImageField, NumberField, SelectField, SliderField, TextField, ToggleField } from '../../admin';
@@ -28,8 +29,8 @@ export function ImageCardsEditor({ data, onChange, lateral = false, pageOptions 
       <TextField label="Sur-titre" value={data.eyebrow} onChange={v => set('eyebrow', v)} />
       <TextField label="Titre" value={data.title} onChange={v => set('title', v)} multiline={2} />
       <TextField label="Sous-titre" value={data.subtitle} onChange={v => set('subtitle', v)} multiline={2} />
-      <SelectField label="Niveau du titre" value={data.headingLevel} onChange={v => set('headingLevel', v as ImageCardsData['headingLevel'])} options={['h1', 'h2', 'h3', 'h4', 'h5', 'p'].map(value => ({ value, label: value }))} />
-      <NumberField label="Taille du titre" value={data.titleSize} onChange={v => set('titleSize', v)} min={12} max={120} unit="px" />
+      <SelectField label="Style du titre" value={data.headingLevel} onChange={v => set('headingLevel', v as ImageCardsData['headingLevel'])} options={TITLE_STYLE_OPTIONS} hint="Police, graisse et taille viennent de Style du site." />
+      <NumberField label="Taille du titre (0 = style du site)" value={data.titleSize} onChange={v => set('titleSize', v)} min={0} max={120} unit="px" />
       <SelectField label="Alignement du texte" value={data.titleAlign} onChange={v => set('titleAlign', v as ImageCardsData['titleAlign'])} options={[{ value: 'left', label: 'Gauche' }, { value: 'center', label: 'Centre' }, { value: 'right', label: 'Droite' }]} />
       {lateral && <SelectField label="Emplacement du titre" value={data.titlePosition} onChange={v => set('titlePosition', v as 'left' | 'right')} options={[{ value: 'left', label: 'À gauche des images' }, { value: 'right', label: 'À droite des images' }]} />}
       <ColorControl label="Couleur des textes du bloc" value={data.color} onChange={v => set('color', v)} />
@@ -68,8 +69,8 @@ export function ImageCardsEditor({ data, onChange, lateral = false, pageOptions 
       <NumberField label="Cartes par ligne sur ordinateur" value={data.columns} onChange={v => set('columns', v)} min={1} max={8} />
       <NumberField label="Espace entre les cartes" value={data.gap} onChange={v => set('gap', v)} min={0} max={80} unit="px" />
       <SelectField label="Format des images" value={data.ratio} onChange={v => set('ratio', v)} options={['21:9', '16:9', '4:3', '3:2', '1:1', '4:5'].map(value => ({ value, label: value }))} />
-      <NumberField label="Arrondi des cartes" value={data.cardRadius} onChange={v => set('cardRadius', v)} min={0} max={64} unit="px" />
-      <NumberField label="Taille des titres des cartes" value={data.cardTitleSize} onChange={v => set('cardTitleSize', v)} min={10} max={48} unit="px" />
+      <NumberField label="Arrondi des cartes (0 = design du site)" value={data.cardRadius} onChange={v => set('cardRadius', v)} min={0} max={64} unit="px" />
+      <NumberField label="Taille des titres des cartes (0 = Titre 4)" value={data.cardTitleSize} onChange={v => set('cardTitleSize', v)} min={0} max={48} unit="px" />
       <SliderField label="Intensité du dégradé" value={data.overlayOpacity} onChange={v => set('overlayOpacity', v)} min={0} max={100} unit="%" />
       <ColorControl label="Fond du bloc" value={data.background} onChange={v => set('background', v)} />
       <ColorControl label="Textes des cartes" value={data.cardColor} onChange={v => set('cardColor', v)} />

@@ -1,5 +1,6 @@
 "use client";
 
+import { TITLE_STYLE_OPTIONS as SHARED_TITLE_STYLE_OPTIONS } from '../../lib/typography';
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import Modal from "../Modal/Modal";
@@ -16,14 +17,7 @@ function clampTitleFontSize(n: number): number {
 
 export type AdminTitleStyleKey = "p" | "h1" | "h2" | "h3" | "h4" | "h5";
 
-const TITLE_STYLE_OPTIONS: { value: AdminTitleStyleKey; label: string }[] = [
-  { value: "p", label: "Paragraphe" },
-  { value: "h1", label: "Titre 1" },
-  { value: "h2", label: "Titre 2" },
-  { value: "h3", label: "Titre 3" },
-  { value: "h4", label: "Titre 4" },
-  { value: "h5", label: "Titre 5" },
-];
+const TITLE_STYLE_OPTIONS = SHARED_TITLE_STYLE_OPTIONS as { value: AdminTitleStyleKey; label: string }[];
 
 
 export default function AdminTitleBlock({

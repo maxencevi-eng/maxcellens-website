@@ -1,4 +1,5 @@
 "use client";
+import { TITLE_STYLE_OPTIONS as SHARED_TITLE_STYLE_OPTIONS } from '../../lib/typography';
 import { AdminModal } from '../admin';
 
 import React, { useState, useEffect } from "react";
@@ -10,14 +11,7 @@ const RichTextModal = dynamic(() => import("../RichTextModal/RichTextModal"), { 
 
 export type TitleStyleKey = 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5';
 
-const TITLE_STYLE_OPTIONS: { value: TitleStyleKey; label: string }[] = [
-  { value: 'p', label: 'Paragraphe' },
-  { value: 'h1', label: 'Titre 1' },
-  { value: 'h2', label: 'Titre 2' },
-  { value: 'h3', label: 'Titre 3' },
-  { value: 'h4', label: 'Titre 4' },
-  { value: 'h5', label: 'Titre 5' },
-];
+const TITLE_STYLE_OPTIONS = SHARED_TITLE_STYLE_OPTIONS as { value: TitleStyleKey; label: string }[];
 
 const TITLE_FONT_SIZE_MIN = 8;
 const TITLE_FONT_SIZE_MAX = 72;
@@ -74,7 +68,7 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
 
   const [label, setLabel] = useState(sectionData.label ?? "");
   const [title, setTitle] = useState(sectionData.title ?? "");
-  const [labelStyle, setLabelStyle] = useState<TitleStyleKey>(sectionData.labelStyle === 'h1' || sectionData.labelStyle === 'h2' || sectionData.labelStyle === 'h3' || sectionData.labelStyle === 'h4' || sectionData.labelStyle === 'h5' || sectionData.labelStyle === 'p' ? sectionData.labelStyle : 'p');
+  const [labelStyle, setLabelStyle] = useState<TitleStyleKey>(sectionData.labelStyle === 'h1' || sectionData.labelStyle === 'h2' || sectionData.labelStyle === 'h3' || sectionData.labelStyle === 'h4' || sectionData.labelStyle === 'h5' || sectionData.labelStyle === 'p' ? sectionData.labelStyle : 'h5');
   const [titleStyle, setTitleStyle] = useState<TitleStyleKey>(sectionData.titleStyle === 'h1' || sectionData.titleStyle === 'h2' || sectionData.titleStyle === 'h3' || sectionData.titleStyle === 'h4' || sectionData.titleStyle === 'h5' || sectionData.titleStyle === 'p' ? sectionData.titleStyle : 'h2');
   const [titleFontSize, setTitleFontSize] = useState<number | "">(sectionData.titleFontSize != null && sectionData.titleFontSize >= TITLE_FONT_SIZE_MIN && sectionData.titleFontSize <= TITLE_FONT_SIZE_MAX ? sectionData.titleFontSize : "");
   const [html, setHtml] = useState(sectionData.html ?? "");
@@ -115,7 +109,7 @@ export default function AnimationBlockModal({ blockKey, initialData, onClose, on
   useEffect(() => {
     setLabel(sectionData.label ?? "");
     setTitle(sectionData.title ?? "");
-    setLabelStyle(sectionData.labelStyle === 'h1' || sectionData.labelStyle === 'h2' || sectionData.labelStyle === 'h3' || sectionData.labelStyle === 'h4' || sectionData.labelStyle === 'h5' || sectionData.labelStyle === 'p' ? sectionData.labelStyle : 'p');
+    setLabelStyle(sectionData.labelStyle === 'h1' || sectionData.labelStyle === 'h2' || sectionData.labelStyle === 'h3' || sectionData.labelStyle === 'h4' || sectionData.labelStyle === 'h5' || sectionData.labelStyle === 'p' ? sectionData.labelStyle : 'h5');
     setTitleStyle(sectionData.titleStyle === 'h1' || sectionData.titleStyle === 'h2' || sectionData.titleStyle === 'h3' || sectionData.titleStyle === 'h4' || sectionData.titleStyle === 'h5' || sectionData.titleStyle === 'p' ? sectionData.titleStyle : 'h2');
     setTitleFontSize(sectionData.titleFontSize != null && sectionData.titleFontSize >= TITLE_FONT_SIZE_MIN && sectionData.titleFontSize <= TITLE_FONT_SIZE_MAX ? sectionData.titleFontSize : "");
     setHtml(sectionData.html ?? "");

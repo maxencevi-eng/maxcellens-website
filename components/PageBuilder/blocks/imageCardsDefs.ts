@@ -45,10 +45,10 @@ export const EMPTY_IMAGE_CARD: ImageCard = {
 };
 export const DEFAULT_PROJECT_CARDS: ImageCardsData = {
   eyebrow: 'Sélection de réalisations', title: 'Des projets concrets. Des histoires vraies.', subtitle: '',
-  headingLevel: 'h2', titleSize: 32, titleAlign: 'left', titlePosition: 'left',
+  headingLevel: 'h2', titleSize: 0, titleAlign: 'left', titlePosition: 'left',
   color: { source: 'custom', value: '#202a2b' }, background: { source: 'custom', value: '#f3f1ed' },
   cardColor: { source: 'custom', value: '#ffffff' }, columns: 4, gap: 12, ratio: '4:3',
-  cardRadius: 0, overlayOpacity: 80, cardTitleSize: 15,
+  cardRadius: 0, overlayOpacity: 80, cardTitleSize: 0,
   ctaLabel: '', ctaHref: '', ctaNewTab: false,
   paddingTop: 32, paddingBottom: 32, paddingX: 48, marginTop: 0, marginBottom: 0,
   radiusTop: 0, radiusBottom: 0,
@@ -57,7 +57,7 @@ export const DEFAULT_PROJECT_CARDS: ImageCardsData = {
 export const DEFAULT_SERVICE_CARDS: ImageCardsData = {
   ...DEFAULT_PROJECT_CARDS, eyebrow: 'Mes prestations', title: 'Des images pour chaque ambition.',
   color: { source: 'custom', value: '#f5f3ef' }, background: { source: 'custom', value: '#192425' },
-  columns: 6, ratio: '4:5', cardTitleSize: 13,
+  columns: 6, ratio: '4:5', cardTitleSize: 0,
   cards: Array.from({ length: 6 }, (_, i) => ({ ...EMPTY_IMAGE_CARD, title: `Prestation ${i + 1}` })),
 };
 

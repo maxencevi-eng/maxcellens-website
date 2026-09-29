@@ -1,6 +1,7 @@
 "use no memo";
 "use client";
 
+import { STYLE_FONT_OPTIONS, fontFamilyOptions, quoteFamily } from '../../lib/typography';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
@@ -225,27 +226,12 @@ function ToolbarPlugin() {
   const [showEmoji, setShowEmoji] = useState(false);
   const emojiPanelRef = useRef<HTMLElement | null>(null);
   const { style: siteStyle } = useSiteStyle();
-  const siteFonts = (siteStyle?.fonts) || [];
-  const typo = siteStyle?.typography || {};
-  const quoteFamily = (f: string) => (!f ? f : /^["'].*["']$/.test(f) ? f : /[\s,]/.test(f) ? `'${f}'` : f);
-  const typoFonts: { label: string; value: string }[] = [];
-  if (typo.p?.family) typoFonts.push({ label: 'Corps (style site)', value: quoteFamily(typo.p.family) });
-  if (typo.h1?.family) typoFonts.push({ label: 'Titre 1 (style site)', value: quoteFamily(typo.h1.family) });
-  if (typo.h2?.family) typoFonts.push({ label: 'Titre 2 (style site)', value: quoteFamily(typo.h2.family) });
-  if (typo.h3?.family) typoFonts.push({ label: 'Titre 3 (style site)', value: quoteFamily(typo.h3.family) });
-  if (typo.h4?.family) typoFonts.push({ label: 'Titre 4 (style site)', value: quoteFamily(typo.h4.family) });
-  if (typo.h5?.family) typoFonts.push({ label: 'Titre 5 (style site)', value: quoteFamily(typo.h5.family) });
+  // Polices des styles du site (via variables : le texte suit les changements
+  // faits dans Style du site), polices importées puis polices système.
   const availableFonts = [
     { label: 'Police par défaut', value: 'inherit' },
-    ...typoFonts,
-    { label: 'Helvetica', value: "'Helvetica Neue', Helvetica, Arial, sans-serif" },
-    { label: 'Georgia', value: "'Georgia', serif" },
-    { label: 'Times', value: "'Times New Roman', Times, serif" },
-    { label: 'Courier', value: "'Courier New', Courier, monospace" },
-    ...siteFonts.map((f: { name?: string }) => ({
-      label: String(f.name || '').trim(),
-      value: quoteFamily(String(f.name || '')),
-    })),
+    ...STYLE_FONT_OPTIONS.map((o) => ({ label: o.label, value: o.value })),
+    ...fontFamilyOptions(siteStyle?.fonts).map((o) => ({ label: o.label, value: quoteFamily(o.value) })),
   ].filter((f) => f.label);
 
   const updateToolbar = useCallback(() => {

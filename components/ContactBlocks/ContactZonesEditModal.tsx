@@ -1,5 +1,6 @@
 "use no memo";
 "use client";
+import { TITLE_STYLE_OPTIONS as SHARED_TITLE_STYLE_OPTIONS } from '../../lib/typography';
 import { AdminModal } from '../admin';
 
 import React, { useEffect, useState } from "react";
@@ -10,14 +11,7 @@ const RichTextModal = dynamic(() => import("../RichTextModal/RichTextModal"), { 
 
 export type TitleStyleKey = "p" | "h1" | "h2" | "h3" | "h4" | "h5";
 
-const TITLE_STYLE_OPTIONS: { value: TitleStyleKey; label: string }[] = [
-  { value: "p", label: "Paragraphe" },
-  { value: "h1", label: "Titre 1" },
-  { value: "h2", label: "Titre 2" },
-  { value: "h3", label: "Titre 3" },
-  { value: "h4", label: "Titre 4" },
-  { value: "h5", label: "Titre 5" },
-];
+const TITLE_STYLE_OPTIONS = SHARED_TITLE_STYLE_OPTIONS as { value: TitleStyleKey; label: string }[];
 
 const TITLE_FONT_SIZE_MIN = 8;
 const TITLE_FONT_SIZE_MAX = 72;

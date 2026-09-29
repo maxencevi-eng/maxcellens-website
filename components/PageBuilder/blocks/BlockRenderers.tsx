@@ -125,11 +125,11 @@ export function HeadingBlock({ data }: { data: HeadingData }) {
       style={{ marginTop: data.marginTop, marginBottom: data.marginBottom }}
     >
       {data.eyebrow ? (
-        <span className={styles.eyebrow} style={{ textAlign: data.align, display: 'block' }}>
+        <span className={`${styles.eyebrow} style-h5`} style={{ textAlign: data.align, display: 'block' }}>
           {data.eyebrow}
         </span>
       ) : null}
-      <Tag className={styles.headingEl} style={style}>
+      <Tag className={`${styles.headingEl} style-${data.level || 'h2'}`} style={style}>
         {data.text}
       </Tag>
     </div>

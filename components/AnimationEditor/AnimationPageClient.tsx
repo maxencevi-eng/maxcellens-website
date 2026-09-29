@@ -249,7 +249,7 @@ export default function AnimationPageClient() {
             <AnimateInView variant="fadeUp">
             <div className={styles.grid}>
               <AnimateInView variant="slideFromLeft" className={styles.gridContent}>
-                {s1.label ? (() => { const Tag = (s1 as any).labelStyle || 'p'; return <Tag className={`${styles.label} style-${Tag}`}>{s1.label}</Tag>; })() : null}
+                {s1.label ? (() => { const Tag = (s1 as any).labelStyle || 'h5'; return <Tag className={`${styles.label} style-${Tag}`}>{s1.label}</Tag>; })() : null}
                 {s1.title ? (() => { const Tag = (s1 as any).titleStyle || 'h2'; const fs = (s1 as any).titleFontSize; return <Tag className={`${styles.title} style-${Tag}`} style={fs != null && fs >= 8 && fs <= 72 ? { fontSize: `${fs}px` } : undefined}>{s1.title}</Tag>; })() : null}
                 {s1.html ? (
                   <div className={styles.text} dangerouslySetInnerHTML={{ __html: s1.html }} />
@@ -289,7 +289,7 @@ export default function AnimationPageClient() {
             <AnimateInView variant="fadeUp">
             <div className={`${styles.grid} ${styles.gridReverse}`}>
               <AnimateInView variant="slideFromRight" className={styles.gridContent}>
-                {s2.label ? (() => { const Tag = (s2 as any).labelStyle || 'p'; return <Tag className={`${styles.label} style-${Tag}`}>{s2.label}</Tag>; })() : null}
+                {s2.label ? (() => { const Tag = (s2 as any).labelStyle || 'h5'; return <Tag className={`${styles.label} style-${Tag}`}>{s2.label}</Tag>; })() : null}
                 {s2.title ? (() => { const Tag = (s2 as any).titleStyle || 'h2'; const fs = (s2 as any).titleFontSize; return <Tag className={`${styles.title} style-${Tag}`} style={fs != null && fs >= 8 && fs <= 72 ? { fontSize: `${fs}px` } : undefined}>{s2.title}</Tag>; })() : null}
                 {s2.html ? (
                   <div className={styles.text} dangerouslySetInnerHTML={{ __html: s2.html }} />
@@ -329,7 +329,7 @@ export default function AnimationPageClient() {
             <AnimateInView variant="fadeUp">
             <div className={styles.grid}>
               <div className={styles.gridContent}>
-                {s3.label ? (() => { const Tag = (s3 as any).labelStyle || 'p'; return <Tag className={`${styles.label} style-${Tag}`}>{s3.label}</Tag>; })() : null}
+                {s3.label ? (() => { const Tag = (s3 as any).labelStyle || 'h5'; return <Tag className={`${styles.label} style-${Tag}`}>{s3.label}</Tag>; })() : null}
                 {s3.title ? (() => { const Tag = (s3 as any).titleStyle || 'h2'; const fs = (s3 as any).titleFontSize; return <Tag className={`${styles.title} style-${Tag}`} style={fs != null && fs >= 8 && fs <= 72 ? { fontSize: `${fs}px` } : undefined}>{s3.title}</Tag>; })() : null}
                 {s3.html ? (
                   <div className={styles.text} dangerouslySetInnerHTML={{ __html: s3.html }} />

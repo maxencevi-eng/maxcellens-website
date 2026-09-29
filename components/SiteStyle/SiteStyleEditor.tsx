@@ -23,20 +23,30 @@ import type {
   TypographyKey,
 } from './SiteStyleProvider';
 import styles from './SiteStyle.module.css';
+import {
+  TYPO_LEVELS,
+  RECOMMENDED_SCALE,
+  WEIGHT_OPTIONS,
+  detectFontMeta,
+  fontFamilyOptions,
+  familyStack,
+  type TypographyLevel,
+} from '../../lib/typography';
 
 type Tab = 'colors' | 'buttons' | 'typography' | 'background' | 'admin';
 
-const TYPO_ROWS: { key: TypographyKey; label: string; placeholder: string; defaultWeight: number }[] = [
-  { key: 'h1', label: 'Titre 1', placeholder: '32px', defaultWeight: 800 },
-  { key: 'h2', label: 'Titre 2', placeholder: '28px', defaultWeight: 600 },
-  { key: 'h3', label: 'Titre 3', placeholder: '22px', defaultWeight: 600 },
-  { key: 'h4', label: 'Titre 4', placeholder: '18px', defaultWeight: 600 },
-  { key: 'h5', label: 'Titre 5', placeholder: '16px', defaultWeight: 600 },
-  { key: 'p', label: 'Paragraphe', placeholder: '16px', defaultWeight: 400 },
+/** Valeurs par défaut affichées quand un niveau n'a pas été réglé. */
+const TYPO_PLACEHOLDER = RECOMMENDED_SCALE;
+
+const TRANSFORM_OPTIONS = [
+  { value: 'none', label: 'Normale' },
+  { value: 'uppercase', label: 'MAJUSCULES' },
 ];
 
-const SYSTEM_FONT =
-  'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial';
+const FONT_STYLE_OPTIONS = [
+  { value: 'normal', label: 'Droit' },
+  { value: 'italic', label: 'Italique' },
+];
 
 const BACKGROUND_PRESETS: { value: BackgroundStyle; label: string; desc: string }[] = [
   { value: 'none', label: 'Aucun', desc: 'Fond uni, sans texture' },
@@ -149,9 +159,10 @@ export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
       const url = json?.publicUrl || json?.url;
       if (!url) throw new Error('Réponse sans URL');
       const name = file.name.replace(/\.[^.]+$/, '') || `police-${Date.now()}`;
+      const meta = detectFontMeta(file.name);
       touched.current = true;
-      setLocal((s) => ({ ...s, fonts: [...(s.fonts || []), { name, url }] }));
-      setMessage(`Police « ${name} » importée.`);
+      setLocal((s) => ({ ...s, fonts: [...(s.fonts || []), { name, url, ...meta }] }));
+      setMessage(`Police « ${meta.family} » (${meta.weight}${meta.style === 'italic' ? ' italique' : ''}) importée.`);
     } catch (e: any) {
       setError(e?.message || String(e));
     } finally {
@@ -179,6 +190,23 @@ export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
     } finally {
       setUploadingBg(false);
     }
+  }
+
+  function updateFont(index: number, next: Record<string, string>) {
+    markTouched();
+    setLocal((s) => ({ ...s, fonts: (s.fonts || []).map((f, i) => (i === index ? { ...f, ...next } : f)) }));
+  }
+
+  /** Applique l'échelle « Studio » à tous les niveaux en conservant les polices choisies. */
+  function applyRecommendedScale() {
+    markTouched();
+    setLocal((s) => {
+      const typography = { ...(s.typography || {}) };
+      TYPO_LEVELS.forEach(({ key }) => {
+        typography[key] = { ...(typography[key] || {}), ...RECOMMENDED_SCALE[key] };
+      });
+      return { ...s, typography };
+    });
   }
 
   function removeFont(index: number) {
@@ -212,13 +240,38 @@ export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
   }
 
   const fontOptions = useMemo(
-    () => [
-      { value: '', label: '(hérité)' },
-      { value: SYSTEM_FONT, label: 'Police système' },
-      ...(local.fonts || []).map((f) => ({ value: f.name, label: f.name })),
-    ],
+    () => [{ value: '', label: '(par défaut)' }, ...fontFamilyOptions(local.fonts)],
     [local.fonts]
   );
+
+  /** Liste des polices, en conservant une valeur enregistrée qui n'y figure plus. */
+  function fontOptionsFor(current: string | undefined) {
+    if (!current || fontOptions.some((o) => o.value === current)) return fontOptions;
+    return [...fontOptions, { value: current, label: `${current} (actuelle)` }];
+  }
+
+  /** Graisses disponibles pour une famille importée, signalées dans la liste. */
+  function weightOptionsFor(family: string | undefined) {
+    const files = (local.fonts || []).filter((f) => (f.family || f.name) === family);
+    const available = new Set(files.map((f) => String(f.weight || '')));
+    if (!files.length || !files.some((f) => f.family)) return WEIGHT_OPTIONS;
+    return WEIGHT_OPTIONS.map((o) => ({ ...o, label: available.has(o.value) ? `${o.label} ✓` : o.label }));
+  }
+
+  /** Style d'aperçu d'un niveau, calculé depuis le formulaire en cours. */
+  function previewStyle(key: keyof typeof TYPO_PLACEHOLDER): React.CSSProperties {
+    const conf: TypographyLevel = { ...TYPO_PLACEHOLDER[key], ...(local.typography?.[key] || {}) };
+    const size = /^\d+(\.\d+)?$/.test(String(conf.size)) ? `${conf.size}px` : conf.size;
+    const ls = String(conf.letterSpacing ?? '');
+    return {
+      fontFamily: familyStack(conf.family) || `var(--font-${key === 'p' ? 'body' : key}-family)`,
+      fontSize: `min(${size}, 56px)`,
+      fontWeight: Number(conf.weight) || undefined,
+      lineHeight: conf.lineHeight,
+      letterSpacing: /^-?\d*\.?\d+$/.test(ls) ? `${ls}em` : ls || undefined,
+      textTransform: conf.transform === 'uppercase' ? 'uppercase' : 'none',
+    };
+  }
 
   const c = local.colors || {};
   const bg = local.colors?.bgColor || '#ffffff';
@@ -413,50 +466,123 @@ export default function SiteStyleEditor({ onClose }: { onClose: () => void }) {
                 Aucune police importée. Les titres utilisent la police système.
               </AdminNotice>
             ) : (
-              <ul className={styles.fontList}>
-                {(local.fonts || []).map((f, i) => (
-                  <li key={`${f.name}-${i}`} className={styles.fontItem}>
-                    <span className={styles.fontSample} style={{ fontFamily: `'${f.name}'` }}>
-                      {f.name}
-                    </span>
-                    <AdminButton
-                      size="sm"
-                      variant="dangerGhost"
-                      iconOnly
-                      aria-label={`Retirer la police ${f.name}`}
-                      onClick={() => removeFont(i)}
-                    >
-                      <Trash2 size={14} aria-hidden="true" />
-                    </AdminButton>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <AdminNotice>
+                  Importez un fichier par graisse (Regular, Medium, Bold…) et rattachez-les à la même
+                  famille : le site choisira alors le bon fichier pour chaque graisse, sans faux gras.
+                </AdminNotice>
+                <ul className={styles.fontList}>
+                  {(local.fonts || []).map((f, i) => (
+                    <li key={`${f.name}-${i}`} className={styles.fontItemRich}>
+                      <span
+                        className={styles.fontSample}
+                        style={{ fontFamily: `'${f.name}'`, fontStyle: f.style === 'italic' ? 'italic' : undefined }}
+                      >
+                        Aa — {f.name}
+                      </span>
+                      <div className={styles.fontFields}>
+                        <TextField
+                          label="Famille"
+                          value={f.family || ''}
+                          onChange={(v) => updateFont(i, { family: v })}
+                          placeholder={detectFontMeta(f.name).family}
+                        />
+                        <SelectField
+                          label="Graisse du fichier"
+                          value={String(f.weight || '400')}
+                          onChange={(v) => updateFont(i, { weight: v })}
+                          options={WEIGHT_OPTIONS}
+                        />
+                        <SelectField
+                          label="Style"
+                          value={f.style === 'italic' ? 'italic' : 'normal'}
+                          onChange={(v) => updateFont(i, { style: v })}
+                          options={FONT_STYLE_OPTIONS}
+                        />
+                      </div>
+                      <AdminButton
+                        size="sm"
+                        variant="dangerGhost"
+                        iconOnly
+                        aria-label={`Retirer la police ${f.name}`}
+                        onClick={() => removeFont(i)}
+                      >
+                        <Trash2 size={14} aria-hidden="true" />
+                      </AdminButton>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </AdminSection>
 
-          {TYPO_ROWS.map((row) => (
-            <AdminSection key={row.key} title={row.label} columns={3}>
-              <SelectField
-                label="Police"
-                value={local.typography?.[row.key]?.family || ''}
-                onChange={(v) => updateTypography(row.key, { family: v })}
-                options={fontOptions}
-              />
-              <TextField
-                label="Taille"
-                value={local.typography?.[row.key]?.size || ''}
-                onChange={(v) => updateTypography(row.key, { size: v })}
-                placeholder={row.placeholder}
-                hint="px, rem ou clamp()"
-              />
-              <TextField
-                label="Graisse"
-                value={String(local.typography?.[row.key]?.weight ?? row.defaultWeight)}
-                onChange={(v) => updateTypography(row.key, { weight: v })}
-                placeholder={String(row.defaultWeight)}
-              />
-            </AdminSection>
-          ))}
+          <AdminSection
+            title="Styles de texte"
+            description="Ces six styles sont proposés dans toutes les listes « Style du titre » des blocs. Les tailles indiquées sont celles des grands écrans : elles se réduisent automatiquement sur tablette et mobile."
+            actions={
+              <AdminButton size="sm" variant="secondary" onClick={applyRecommendedScale}>
+                Appliquer l’échelle Studio
+              </AdminButton>
+            }
+          >
+            <AdminNotice>
+              L’échelle Studio règle tailles, graisses, interlignes et espacements pour les six niveaux
+              (vos polices sont conservées). Vous pouvez ensuite ajuster chaque niveau.
+            </AdminNotice>
+          </AdminSection>
+
+          {TYPO_LEVELS.map((row) => {
+            const conf = local.typography?.[row.key] || {};
+            const ph = TYPO_PLACEHOLDER[row.key];
+            return (
+              <AdminSection key={row.key} title={row.label} description={row.role} columns={3}>
+                <div className={styles.typoPreview} style={previewStyle(row.key)}>
+                  {row.key === 'p'
+                    ? 'Photo et vidéo professionnelles pour entreprises, marques et événements.'
+                    : row.key === 'h5' ? 'Sur-titre de section' : 'Donnez de la force à votre image'}
+                </div>
+                <SelectField
+                  label="Police"
+                  value={conf.family || ''}
+                  onChange={(v) => updateTypography(row.key, { family: v })}
+                  options={fontOptionsFor(conf.family)}
+                />
+                <TextField
+                  label="Taille (grand écran)"
+                  value={conf.size || ''}
+                  onChange={(v) => updateTypography(row.key, { size: v })}
+                  placeholder={ph.size}
+                  hint="px, rem ou clamp()"
+                />
+                <SelectField
+                  label="Graisse"
+                  value={String(conf.weight || ph.weight)}
+                  onChange={(v) => updateTypography(row.key, { weight: v })}
+                  options={weightOptionsFor(conf.family)}
+                />
+                <TextField
+                  label="Interligne"
+                  value={conf.lineHeight || ''}
+                  onChange={(v) => updateTypography(row.key, { lineHeight: v })}
+                  placeholder={ph.lineHeight}
+                  hint="ex. 1.1"
+                />
+                <TextField
+                  label="Espacement des lettres"
+                  value={conf.letterSpacing ?? ''}
+                  onChange={(v) => updateTypography(row.key, { letterSpacing: v })}
+                  placeholder={ph.letterSpacing}
+                  hint="en em, ex. -0.03"
+                />
+                <SelectField
+                  label="Casse"
+                  value={conf.transform || ph.transform || 'none'}
+                  onChange={(v) => updateTypography(row.key, { transform: v })}
+                  options={TRANSFORM_OPTIONS}
+                />
+              </AdminSection>
+            );
+          })}
         </>
       )}
 
