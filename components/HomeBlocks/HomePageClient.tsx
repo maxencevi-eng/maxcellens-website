@@ -54,7 +54,10 @@ import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrder
 import { motion } from "framer-motion";
 import AnimateInView, { AnimateStaggerItem, variants as animVariants } from "../AnimateInView/AnimateInView";
 import type { VideoLightboxItem } from "../VideoGallery/VideoLightbox";
-import { toneOf, panelStyle, htmlToLines, RevealWords, CountUp, Timecode, useMagnetic, Arrow, type Tone } from "./homeDesign";
+import { editorialPresentation } from "./editorialPresentation";
+import { toneOf, panelStyle, htmlToLines, RevealWords, CountUp, Timecode, useMagnetic, Arrow } from "./homeDesign";
+
+type Surface = "base" | "alt" | "ink";
 import styles from "./HomeModern.module.css";
 
 const VideoLightbox = dynamic(() => import("../VideoGallery/VideoLightbox"), { ssr: false });
@@ -89,13 +92,6 @@ function getYouTubeId(url: string) {
 }
 function isYouTubeShort(url: string) { return /\/shorts\//.test(url); }
 function getYouTubeThumb(id: string) { return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : ""; }
-
-const SHADOW_MAP: Record<string, string> = {
-  none: 'none',
-  light: '0 2px 8px rgba(0,0,0,0.15)',
-  medium: '0 4px 16px rgba(0,0,0,0.25)',
-  heavy: '0 8px 30px rgba(0,0,0,0.4)',
-};
 
 const IMAGE_RATIO_MAP: Record<string, string> = {
   '4:1': '4/1',
@@ -182,15 +178,15 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
   };
   const innerClass = (id: string) => `${styles.inner}${!renderOnly && blockWidthModes[id] === "max1600" ? ` ${styles.inner1600}` : ""}`;
 
-  const [intro, setIntro] = useState<HomeIntroData>(() => parse(initialSettings?.home_intro, DEFAULT_INTRO));
-  const [services, setServices] = useState<HomeServicesData>(() => parse(initialSettings?.home_services, DEFAULT_SERVICES));
-  const [banner, setBanner] = useState<HomeBannerData>(() => parse(initialSettings?.home_banner, DEFAULT_BANNER));
-  const [stats, setStats] = useState<HomeStatsData>(() => parse(initialSettings?.home_stats, DEFAULT_STATS));
-  const [portraitBlock, setPortraitBlock] = useState<HomePortraitBlockData>(() => parse(initialSettings?.home_portrait, DEFAULT_PORTRAIT));
-  const [cadreurBlock, setCadreurBlock] = useState<HomeCadreurBlockData>(() => parse(initialSettings?.home_cadreur, DEFAULT_CADREUR));
-  const [animationBlock, setAnimationBlock] = useState<HomeAnimationBlockData>(() => parse(initialSettings?.home_animation, DEFAULT_ANIMATION));
-  const [quote, setQuote] = useState<HomeQuoteData>(() => parse(initialSettings?.home_quote, DEFAULT_QUOTE));
-  const [cta, setCta] = useState<HomeCtaData>(() => parse(initialSettings?.home_cta, DEFAULT_CTA));
+  const [intro, setIntro] = useState<HomeIntroData>(() => editorialPresentation("home_intro", parse(initialSettings?.home_intro, DEFAULT_INTRO)));
+  const [services, setServices] = useState<HomeServicesData>(() => editorialPresentation("home_services", parse(initialSettings?.home_services, DEFAULT_SERVICES)));
+  const [banner, setBanner] = useState<HomeBannerData>(() => editorialPresentation("home_banner", parse(initialSettings?.home_banner, DEFAULT_BANNER)));
+  const [stats, setStats] = useState<HomeStatsData>(() => editorialPresentation("home_stats", parse(initialSettings?.home_stats, DEFAULT_STATS)));
+  const [portraitBlock, setPortraitBlock] = useState<HomePortraitBlockData>(() => editorialPresentation("home_portrait", parse(initialSettings?.home_portrait, DEFAULT_PORTRAIT)));
+  const [cadreurBlock, setCadreurBlock] = useState<HomeCadreurBlockData>(() => editorialPresentation("home_cadreur", parse(initialSettings?.home_cadreur, DEFAULT_CADREUR)));
+  const [animationBlock, setAnimationBlock] = useState<HomeAnimationBlockData>(() => editorialPresentation("home_animation", parse(initialSettings?.home_animation, DEFAULT_ANIMATION)));
+  const [quote, setQuote] = useState<HomeQuoteData>(() => editorialPresentation("home_quote", parse(initialSettings?.home_quote, DEFAULT_QUOTE)));
+  const [cta, setCta] = useState<HomeCtaData>(() => editorialPresentation("home_cta", parse(initialSettings?.home_cta, DEFAULT_CTA)));
   const [currentPortraitSlide, setCurrentPortraitSlide] = useState(0);
   const portraitTouchStartX = useRef<number | null>(null);
   const portraitIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -247,15 +243,15 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
         const json = await resp.json();
         const s = json?.settings || {};
         if (!mounted) return;
-        setIntro(parse(s.home_intro, DEFAULT_INTRO));
-        setServices(parse(s.home_services, DEFAULT_SERVICES));
-        setBanner(parse(s.home_banner, DEFAULT_BANNER));
-        setStats(parse(s.home_stats, DEFAULT_STATS));
-        setPortraitBlock(parse(s.home_portrait, DEFAULT_PORTRAIT));
-        setCadreurBlock(parse(s.home_cadreur, DEFAULT_CADREUR));
-        setAnimationBlock(parse(s.home_animation, DEFAULT_ANIMATION));
-        setQuote(parse(s.home_quote, DEFAULT_QUOTE));
-        setCta(parse(s.home_cta, DEFAULT_CTA));
+        setIntro(editorialPresentation("home_intro", parse(s.home_intro, DEFAULT_INTRO)));
+        setServices(editorialPresentation("home_services", parse(s.home_services, DEFAULT_SERVICES)));
+        setBanner(editorialPresentation("home_banner", parse(s.home_banner, DEFAULT_BANNER)));
+        setStats(editorialPresentation("home_stats", parse(s.home_stats, DEFAULT_STATS)));
+        setPortraitBlock(editorialPresentation("home_portrait", parse(s.home_portrait, DEFAULT_PORTRAIT)));
+        setCadreurBlock(editorialPresentation("home_cadreur", parse(s.home_cadreur, DEFAULT_CADREUR)));
+        setAnimationBlock(editorialPresentation("home_animation", parse(s.home_animation, DEFAULT_ANIMATION)));
+        setQuote(editorialPresentation("home_quote", parse(s.home_quote, DEFAULT_QUOTE)));
+        setCta(editorialPresentation("home_cta", parse(s.home_cta, DEFAULT_CTA)));
       } catch (_) {
         // keep defaults
       } finally {
@@ -272,6 +268,37 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
       window.removeEventListener("site-settings-updated", onUpdate as EventListener);
     };
   }, []);
+
+  /* Images des autres blocs pour la bobine de l'intro. Rendue seule (bloc
+     géré), l'intro ne reçoit que ses propres données : on lit les autres. */
+  const [fetchedGallery, setFetchedGallery] = useState<Record<string, any>>({});
+  useEffect(() => {
+    if (renderOnly !== "home_intro") return;
+    let mounted = true;
+    fetch(`/api/admin/site-settings?keys=${encodeURIComponent("home_services,home_portrait,home_banner,home_cadreur,home_animation")}`)
+      .then((r) => r.json())
+      .then((json) => { if (mounted) setFetchedGallery(json?.settings || {}); })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, [renderOnly]);
+  const galleryImages = useMemo(() => {
+    const src = renderOnly === "home_intro"
+      ? {
+          services: parse<any>(fetchedGallery.home_services, {}),
+          portrait: parse<any>(fetchedGallery.home_portrait, {}),
+          banner: parse<any>(fetchedGallery.home_banner, {}),
+          cadreur: parse<any>(fetchedGallery.home_cadreur, {}),
+          animation: parse<any>(fetchedGallery.home_animation, {}),
+        }
+      : { services, portrait: portraitBlock, banner, cadreur: cadreurBlock, animation: animationBlock } as Record<string, any>;
+    return [
+      ...((src.portrait?.slides || []) as any[]).map((sl) => sl?.image?.url),
+      ...((src.services?.items || []) as any[]).map((it) => it?.image?.url),
+      src.cadreur?.image?.url,
+      src.banner?.image?.url,
+      src.animation?.image?.url,
+    ].filter(Boolean) as string[];
+  }, [renderOnly, fetchedGallery, services, portraitBlock, banner, cadreurBlock, animationBlock]);
 
   // Citations : dérivation toujours exécutée (avant early return) pour respecter l'ordre des Hooks
   const quoteData = (() => {
@@ -405,10 +432,11 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
     </AdminToolbarShell>
   ) : null;
 
-  /** Attributs d'un panneau : ton clair/sombre déduit du fond choisi dans l'admin. */
-  const panel = (data: any, fallback: Tone, extra: string) => ({
+  /** Attributs d'un panneau : surface de la palette (ou fond choisi dans l'admin) et ton clair/sombre. */
+  const panel = (data: any, surface: Surface, extra: string) => ({
     className: `${styles.panel} ${extra}`,
-    "data-tone": toneOf(data.backgroundColor, fallback),
+    "data-surface": data.backgroundColor ? "custom" : surface,
+    "data-tone": toneOf(data.backgroundColor, surface === "ink" ? "dark" : "light"),
     style: panelStyle(data),
   });
 
@@ -421,84 +449,88 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
     const iv = intro as any;
     const titleTag = iv.titleStyle || 'h1';
     const titleSt = textStyle(iv.titleFontSize, iv.titleColor, iv.titleAlign);
-    const imgFocus = iv.image?.focus;
     const lines = htmlToLines(iv.servicesHtml);
     const reveal = (delay: number) => ({
       initial: "hidden" as const,
       animate: splashReady ? "visible" as const : "hidden" as const,
       variants: animVariants.fadeUp,
-      transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] as const, delay },
+      transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] as const, delay },
     });
-    const eyebrowJustify = iv.eyebrowAlign === 'center' ? 'center' : iv.eyebrowAlign === 'right' ? 'flex-end' : undefined;
+    // Bobine d'images : image de l'intro puis celles des autres blocs.
+    const reel = Array.from(new Set([iv.image?.url, ...galleryImages].filter(Boolean) as string[])).slice(0, 12);
+    const columns = reel.length >= 4 ? [reel.filter((_, i) => i % 2 === 0), reel.filter((_, i) => i % 2 === 1)] : null;
+    const onPointerMove = (e: React.PointerEvent<HTMLElement>) => {
+      const r = e.currentTarget.getBoundingClientRect();
+      e.currentTarget.style.setProperty('--mx', `${((e.clientX - r.left) / r.width) * 100}%`);
+      e.currentTarget.style.setProperty('--my', `${((e.clientY - r.top) / r.height) * 100}%`);
+    };
     return (
-      <section {...panel(iv, "dark", styles.intro)}>
+      <section {...panel(iv, "ink", styles.intro)} onPointerMove={onPointerMove}>
         {toolbar("home_intro")}
-        <div className={innerClass("home_intro")}>
-          {iv.eyebrow && (
-            <motion.div className={styles.introTop} style={eyebrowJustify ? { justifyContent: eyebrowJustify } : undefined} {...reveal(0)}>
-              <span
-                className={styles.pill}
-                style={{
-                  ...(iv.eyebrowFontSize ? { fontSize: `${iv.eyebrowFontSize}px` } : {}),
-                  ...(iv.eyebrowColor ? { color: iv.eyebrowColor } : {}),
-                }}
-              >
-                <span className={styles.liveDot} aria-hidden="true" />
-                {iv.eyebrow}
-              </span>
-            </motion.div>
-          )}
-
-          <div className={styles.introGrid}>
-            <div className={styles.introTitleCol}>
-              {iv.titleHtml
-                ? <motion.div {...reveal(0.1)}>{React.createElement(titleTag, { className: `${styles.introTitle} style-${titleTag}`, style: titleSt, dangerouslySetInnerHTML: { __html: iv.titleHtml } })}</motion.div>
-                : heading(intro.title, titleTag, styles.introTitle, titleSt, splashReady, 0.1)}
-            </div>
-
-            <motion.div className={styles.introMediaCol} {...reveal(0.25)}>
-              <div className={`${styles.viewfinder}${iv.imageTilted ? ` ${styles.viewfinderTilted}` : ''}`}>
-                {iv.image?.url ? (
-                  <Image
-                    src={iv.image.url}
-                    alt=""
-                    fill
-                    priority
-                    sizes="(max-width:767px) 100vw, 40vw"
-                    className={styles.viewfinderImg}
-                    style={{ objectPosition: imgFocus ? `${imgFocus.x}% ${imgFocus.y}%` : 'center' }}
-                  />
-                ) : isAdmin ? (
-                  <span className={styles.placeholderNote}>Image — cliquez « Modifier »</span>
-                ) : null}
-                <span className={styles.vfCorners} aria-hidden="true"><i /><i /><i /><i /></span>
-                <span className={styles.vfHud} aria-hidden="true">
-                  <span className={styles.vfRec}><span className={styles.recDot} />REC</span>
-                  <Timecode />
+        <span className={styles.introAurora} aria-hidden="true" />
+        <span className={styles.introLines} aria-hidden="true" />
+        <div className={`${innerClass("home_intro")} ${styles.introLayout}`}>
+          <div className={styles.introCopy}>
+            {iv.eyebrow && (
+              <motion.div className={styles.introTop} {...reveal(0)}>
+                <span className={styles.pill} style={iv.eyebrowColor ? { color: iv.eyebrowColor } : undefined}>
+                  <span className={styles.liveDot} aria-hidden="true" />
+                  {iv.eyebrow}
                 </span>
-                <span className={styles.vfHudBottom} aria-hidden="true">
-                  <span>4K · 25p</span>
-                  <span>ƒ/1.8</span>
-                </span>
-              </div>
+              </motion.div>
+            )}
+            {iv.titleHtml
+              ? <motion.div {...reveal(0.1)}>{React.createElement(titleTag, { className: `${styles.introTitle} style-${titleTag}`, style: titleSt, dangerouslySetInnerHTML: { __html: iv.titleHtml } })}</motion.div>
+              : intro.title ? <RevealWords text={intro.title} as={titleTag} className={`${styles.introTitle} style-${titleTag}`} style={titleSt} active={splashReady} delay={0.1} accentLast /> : null}
+            {intro.html ? <motion.div className={styles.introText} {...reveal(0.35)} dangerouslySetInnerHTML={{ __html: intro.html }} /> : null}
+            <motion.div className={styles.introActions} {...reveal(0.45)}>
+              <Link href="/realisation" className={`${styles.btn} ${styles.btnAccent}`} data-analytics-id="Accueil|Intro réalisations">
+                <span>Voir les réalisations</span><span className={styles.btnIcon}><Arrow /></span>
+              </Link>
+              <Link href="/contact" className={`${styles.btn} ${styles.btnGhost}`} data-analytics-id="Accueil|Intro contact">
+                <span>Parler de votre projet</span>
+              </Link>
             </motion.div>
+            {lines.length ? (
+              <motion.ul className={styles.chips} {...reveal(0.55)}>
+                {lines.map((line, i) => <li key={i}><span>{pad2(i + 1)}</span>{line}</li>)}
+              </motion.ul>
+            ) : null}
           </div>
 
-          {(intro.html || iv.servicesHtml) && (
-            <motion.div className={styles.introFoot} {...reveal(0.4)}>
-              {intro.html ? <div className={styles.introText} dangerouslySetInnerHTML={{ __html: intro.html }} /> : <div />}
-              {lines.length ? (
-                <ol className={styles.introList}>
-                  {lines.map((line, i) => (
-                    <li key={i}><span className={styles.introListNum}>{pad2(i + 1)}</span><span>{line}</span></li>
+          <motion.div className={styles.introStage} {...reveal(0.2)}>
+            <div className={styles.stageFrame}>
+              {columns ? (
+                <div className={styles.reel}>
+                  {columns.map((col, c) => (
+                    <div key={c} className={`${styles.reelCol}${c === 1 ? ` ${styles.reelColReverse}` : ''}`}>
+                      <div className={styles.reelTrack} style={{ animationDuration: `${Math.max(24, col.length * 7)}s` }}>
+                        {[...col, ...col].map((src, i) => (
+                          <div key={i} className={styles.reelItem} aria-hidden={i >= col.length ? true : undefined}>
+                            <Image src={src} alt="" fill sizes="(max-width: 767px) 50vw, 22vw" className={styles.mediaImg} priority={c === 0 && i < 2} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   ))}
-                </ol>
-              ) : iv.servicesHtml ? (
-                <div className={styles.introText} dangerouslySetInnerHTML={{ __html: iv.servicesHtml }} />
+                </div>
+              ) : reel[0] ? (
+                <Image src={reel[0]} alt="" fill priority sizes="(max-width:767px) 100vw, 45vw" className={styles.viewfinderImg} style={iv.image?.focus ? { objectPosition: `${iv.image.focus.x}% ${iv.image.focus.y}%` } : undefined} />
+              ) : isAdmin ? (
+                <span className={styles.placeholderNote}>Image — cliquez « Modifier »</span>
               ) : null}
-              <span className={styles.scrollCue} aria-hidden="true"><span className={styles.scrollCueLine} />Défiler</span>
-            </motion.div>
-          )}
+              <span className={styles.vfCorners} aria-hidden="true"><i /><i /><i /><i /></span>
+              <span className={styles.vfHud} aria-hidden="true">
+                <span className={styles.vfRec}><span className={styles.recDot} />REC</span>
+                <Timecode />
+              </span>
+              <span className={styles.vfHudBottom} aria-hidden="true">
+                <span>4K · 25p</span>
+                <span className={styles.vfMeter}><i /><i /><i /><i /><i /><i /><i /></span>
+                <span>ƒ/1.8</span>
+              </span>
+            </div>
+          </motion.div>
         </div>
       </section>
     );
@@ -527,7 +559,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
         </AnimateInView>
       );
       return (
-        <section {...panel(b, "light", styles.bannerText)}>
+        <section {...panel(b, "base", styles.bannerText)}>
           {toolbar("home_banner")}
           <div className={innerClass("home_banner")}>
             <div className={`${styles.split} ${imgRight ? '' : styles.splitReverse}`}>
@@ -555,7 +587,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
     // Bannière image seule : pleine largeur, légère mise à l'échelle au défilement.
     const hasBg = Boolean(b.backgroundColor);
     return (
-      <section {...panel(b, "light", `${styles.bannerImage}${hasBg ? ` ${styles.bannerImageFilled}` : ''}`)}>
+      <section {...panel(b, "base", `${styles.bannerImage}${hasBg ? ` ${styles.bannerImageFilled}` : ''}`)}>
         {toolbar("home_banner")}
         <div className={hasBg ? innerClass("home_banner") : undefined}>
           <div className={styles.bannerFrame} style={{ aspectRatio: ratio }}>
@@ -576,7 +608,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
     const titleTag = sv.blockTitleStyle || "h2";
     const subTag = sv.blockSubtitleStyle || "p";
     return (
-      <section {...panel(sv, "light", styles.services)}>
+      <section {...panel(sv, "alt", styles.services)}>
         {toolbar("home_services")}
         <div className={innerClass("home_services")}>
           <div className={styles.head}>
@@ -631,7 +663,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
     const slideFs = (activePortraitSlide as any)?.titleFontSize;
     const storeScrollTarget = () => { try { const hashIdx = portraitSlideHref.indexOf('#'); const path = portraitSlideHref.split('?')[0].split('#')[0]; const id = hashIdx !== -1 ? portraitSlideHref.slice(hashIdx + 1) : path === '/portrait' ? 'portrait-gallery-nav' : null; if (id) sessionStorage.setItem('spaScrollTarget', id); } catch (_) {} };
     return (
-      <section {...panel(pb, "dark", styles.portrait)}>
+      <section {...panel(pb, "ink", styles.portrait)}>
         {toolbar("home_portrait")}
         <div className={innerClass("home_portrait")}>
           <div
@@ -736,84 +768,82 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
   const cadreurSection = hide("home_cadreur") ? null : (() => {
     const cb = cadreurBlock as any;
     const vs = cb.videoSettings || {};
-    const vShadow = SHADOW_MAP[vs.shadow || 'medium'] || 'none';
     const vGlossy = vs.glossy ?? false;
     const titleTag = cb.titleStyle || "h2";
     const features = cadreurBlock.features ?? DEFAULT_CADREUR_FEATURES;
-    const ratio = cadreurBlock.imageRatio && IMAGE_RATIO_MAP[cadreurBlock.imageRatio];
+    const hasVideos = cadreurVisibleVideos.length > 0;
     return (
-      <section {...panel(cb, "light", styles.cadreur)}>
+      <section {...panel(cb, "base", styles.cadreur)}>
         {toolbar("home_cadreur")}
         <div className={innerClass("home_cadreur")}>
-          <div className={styles.bento}>
-            <AnimateInView variant="fadeUp" className={`${styles.card} ${styles.bentoText}`}>
+          <div className={styles.head}>
+            <div>
               <span className={`${styles.eyebrow} style-h5`}>Tournage & production</span>
               {heading(cadreurBlock.title, titleTag, styles.display, textStyle(cb.titleFontSize, cb.titleColor, cb.titleAlign))}
-              {cadreurBlock.html ? <div className={`${styles.rich} ${styles.bentoRich}`} dangerouslySetInnerHTML={{ __html: cadreurBlock.html }} /> : null}
-            </AnimateInView>
-            <AnimateInView variant="fade" className={styles.bentoMedia} style={ratio ? { aspectRatio: ratio } : undefined}>
-              {cadreurBlock.image?.url ? (
-                <Image
-                  src={cadreurBlock.image.url}
-                  alt=""
-                  fill
-                  quality={100}
-                  sizes="(max-width: 899px) 100vw, 45vw"
-                  className={styles.mediaImg}
-                  style={cb.image?.focus?.x != null ? { objectPosition: `${cb.image.focus.x}% ${cb.image.focus.y}%` } : undefined}
-                />
-              ) : null}
-            </AnimateInView>
-            {features.length > 0 && (
-              <AnimateInView variant="stagger" className={styles.bentoFeatures}>
-                {features.map((feature, index) => {
-                  const Icon = feature.icon === 'team' ? Users : feature.icon === 'camera' ? Camera : Film;
-                  return (
-                    <AnimateStaggerItem key={index} className={`${styles.card} ${styles.feature}`}>
-                      <span className={styles.featureIcon}><Icon size={20} strokeWidth={1.6} aria-hidden="true" /></span>
-                      {feature.title && <h3 className={`${styles.featureTitle} style-h4`}>{feature.title}</h3>}
-                      {feature.text && <p className={styles.featureText}>{feature.text}</p>}
-                    </AnimateStaggerItem>
-                  );
-                })}
-              </AnimateInView>
-            )}
+            </div>
+            {cadreurBlock.html ? <AnimateInView variant="fadeUp" className={`${styles.rich} ${styles.headLead}`}><div dangerouslySetInnerHTML={{ __html: cadreurBlock.html }} /></AnimateInView> : null}
           </div>
 
-          {cadreurVisibleVideos.length > 0 && (
-            <div className={styles.videos}>
-              {cb.videosSectionTitle ? (
-                <p className={`${styles.eyebrow} style-h5`} style={{ justifyContent: cb.videosSectionTitleAlign === 'center' ? 'center' : cb.videosSectionTitleAlign === 'right' ? 'flex-end' : undefined }}>
-                  {cb.videosSectionTitle}
-                </p>
-              ) : null}
-              <AnimateInView variant="stagger" className={styles.videoGrid} style={{ ['--n' as string]: cadreurVisibleVideos.length } as React.CSSProperties}>
+          {hasVideos ? (
+            <>
+              {cb.videosSectionTitle ? <p className={`${styles.eyebrow} style-h5 ${styles.showcaseLabel}`}>{cb.videosSectionTitle}</p> : null}
+              <AnimateInView variant="stagger" className={styles.showcase} style={{ ['--n' as string]: cadreurVisibleVideos.length } as React.CSSProperties}>
                 {cadreurVisibleVideos.map((vid, i) => {
-                  const thumb = getYouTubeThumb(getYouTubeId(vid.url));
+                  const thumb = getYouTubeThumb(getYouTubeId(vid.url)).replace('hqdefault', i === 0 ? 'maxresdefault' : 'hqdefault');
                   return (
-                    <AnimateStaggerItem key={i}>
+                    <AnimateStaggerItem key={i} className={`${styles.showcaseItem}${i === 0 ? ` ${styles.showcaseFeatured}` : ''}`}>
                       <button
                         type="button"
-                        className={styles.videoCard}
+                        className={styles.showcaseCard}
                         onClick={() => openCadreurLightbox(i)}
                         aria-label={vid.title || `Vidéo ${i + 1}`}
                         data-video-name={vid.title || `Vidéo ${i + 1}`}
                       >
-                        <span className={styles.videoThumb} style={{ boxShadow: vShadow !== 'none' ? vShadow : undefined }}>
-                          <img src={thumb} alt="" loading="lazy" />
-                          {vGlossy && <span className={styles.videoGlossy} />}
-                          <span className={styles.videoPlay}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="7,4 20,12 7,20" /></svg>
-                          </span>
+                        <img
+                          src={thumb}
+                          alt=""
+                          loading="lazy"
+                          onError={(e) => { const img = e.currentTarget; if (img.src.includes('maxresdefault')) img.src = img.src.replace('maxresdefault', 'hqdefault'); }}
+                        />
+                        {vGlossy && <span className={styles.videoGlossy} />}
+                        <span className={styles.showcaseShade} aria-hidden="true" />
+                        <span className={styles.showcaseTop} aria-hidden="true">
+                          <span className={styles.glassPill}>{pad2(i + 1)}</span>
                         </span>
-                        {vid.title && <span className={`${styles.videoTitle} style-h4`}>{vid.title}</span>}
-                        {vid.description && <span className={styles.videoDesc}>{vid.description}</span>}
+                        <span className={styles.showcasePlay} aria-hidden="true">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,4 20,12 7,20" /></svg>
+                        </span>
+                        <span className={styles.showcaseCaption}>
+                          {vid.title && <span className={`${styles.showcaseTitle} style-h4`}>{vid.title}</span>}
+                          {vid.description && <span className={styles.showcaseDesc}>{vid.description}</span>}
+                        </span>
                       </button>
                     </AnimateStaggerItem>
                   );
                 })}
               </AnimateInView>
-            </div>
+            </>
+          ) : cadreurBlock.image?.url ? (
+            <AnimateInView variant="fade" className={styles.cadreurMedia}>
+              <Image src={cadreurBlock.image.url} alt="" fill sizes="100vw" className={styles.mediaImg} style={cb.image?.focus?.x != null ? { objectPosition: `${cb.image.focus.x}% ${cb.image.focus.y}%` } : undefined} />
+            </AnimateInView>
+          ) : null}
+
+          {features.length > 0 && (
+            <AnimateInView variant="stagger" className={styles.featureRow}>
+              {features.map((feature, index) => {
+                const Icon = feature.icon === 'team' ? Users : feature.icon === 'camera' ? Camera : Film;
+                return (
+                  <AnimateStaggerItem key={index} className={styles.feature}>
+                    <span className={styles.featureIcon}><Icon size={18} strokeWidth={1.6} aria-hidden="true" /></span>
+                    <span>
+                      {feature.title && <h3 className={`${styles.featureTitle} style-h4`}>{feature.title}</h3>}
+                      {feature.text && <p className={styles.featureText}>{feature.text}</p>}
+                    </span>
+                  </AnimateStaggerItem>
+                );
+              })}
+            </AnimateInView>
           )}
         </div>
 
@@ -838,26 +868,22 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
     const subTag = ab.blockSubtitleStyle || "p";
     const hasImage = Boolean(ab.image?.url);
     return (
-      <section {...panel(ab, "dark", styles.animation)}>
+      <section {...panel(ab, "ink", `${styles.animation}${hasImage ? ` ${styles.animationWithImage}` : ''}`)}>
         {toolbar("home_animation")}
+        {hasImage ? (
+          <div className={styles.animationBackdrop} aria-hidden="true">
+            <Image src={ab.image.url} alt="" fill className={styles.animationBackdropImg} sizes="(max-width: 899px) 100vw, 62vw" />
+          </div>
+        ) : null}
         <div className={innerClass("home_animation")}>
-          <div className={`${styles.split} ${hasImage ? '' : styles.splitSingle}`}>
-            {hasImage ? (
-              <AnimateInView variant="fade" className={styles.animationMedia}>
-                <div className={styles.mediaCard}>
-                  <Image src={ab.image.url} alt="" fill className={styles.mediaImg} sizes="(max-width: 768px) 100vw, 50vw" />
-                </div>
-              </AnimateInView>
-            ) : null}
-            <div className={styles.splitText} style={ab.contentBgColor ? { background: ab.contentBgColor, padding: 'clamp(24px, 3vw, 48px)', borderRadius: 'var(--h-radius-sm)' } : undefined}>
-              <span className={`${styles.eyebrow} style-h5`}>Bureau à la carte</span>
-              {heading(ab.blockTitle, titleTag, styles.display, textStyle(ab.blockTitleFontSize, ab.blockTitleColor, ab.blockTitleAlign))}
-              {ab.blockSubtitle ? React.createElement(subTag, { className: `${styles.lead} style-${subTag}`, style: textStyle(ab.blockSubtitleFontSize, ab.blockSubtitleColor, ab.blockSubtitleAlign) }, ab.blockSubtitle) : null}
-              {hasRichTextContent(animationBlock.html) ? <div className={styles.rich} dangerouslySetInnerHTML={{ __html: ab.html }} /> : null}
-              <Link href="/animation" className={styles.btn}>
-                <span>Découvrir le bureau à la carte</span><span className={styles.btnIcon}><Arrow /></span>
-              </Link>
-            </div>
+          <div className={styles.animationContent} style={ab.contentBgColor ? { background: ab.contentBgColor, padding: 'clamp(24px, 3vw, 48px)', borderRadius: 'var(--h-radius-sm)' } : undefined}>
+            <span className={`${styles.eyebrow} style-h5`}>Activité d’équipe</span>
+            {heading(ab.blockTitle, titleTag, styles.display, textStyle(ab.blockTitleFontSize, ab.blockTitleColor, ab.blockTitleAlign))}
+            {ab.blockSubtitle ? React.createElement(subTag, { className: `${styles.lead} style-${subTag}`, style: textStyle(ab.blockSubtitleFontSize, ab.blockSubtitleColor, ab.blockSubtitleAlign) }, ab.blockSubtitle) : null}
+            {hasRichTextContent(animationBlock.html) ? <div className={styles.rich} dangerouslySetInnerHTML={{ __html: ab.html }} /> : null}
+            <Link href="/animation" className={`${styles.btn} ${styles.btnAccent}`}>
+              <span>Découvrir le bureau à la carte</span><span className={styles.btnIcon}><Arrow /></span>
+            </Link>
           </div>
         </div>
       </section>
@@ -868,7 +894,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
   const statsSection = hide("home_stats") ? null : (() => {
     const st = stats as any;
     return (
-      <section {...panel(st, "light", styles.stats)}>
+      <section {...panel(st, "alt", styles.stats)}>
         {toolbar("home_stats")}
         <div className={innerClass("home_stats")} style={stats.textColor ? { color: stats.textColor } : undefined}>
           <AnimateInView variant="stagger" className={styles.statsGrid} style={{ ['--n' as string]: Math.max(1, statItems.length) } as React.CSSProperties}>
@@ -894,7 +920,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
     if (q.cardBackground) vars['--quote-card-bg'] = q.cardBackground;
     if (q.cardBorderColor) vars['--quote-card-border'] = q.cardBorderColor;
     if (q.cardTextColor) vars['--quote-card-text'] = q.cardTextColor;
-    const p = panel(q, "dark", styles.quote);
+    const p = panel(q, "alt", styles.quote);
     const TitleTag = (q.blockTitleStyle || "h5") as any;
     const subTag = q.blockSubtitleStyle || "h2";
     return (
@@ -951,7 +977,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
     const c = cta as any;
     const titleTag = c.titleStyle || "h1";
     return (
-      <section {...panel(c, "dark", styles.cta)}>
+      <section {...panel(c, "ink", styles.cta)}>
         {toolbar("home_cta")}
         <span className={styles.ctaGlow} aria-hidden="true" />
         <div className={innerClass("home_cta")}>

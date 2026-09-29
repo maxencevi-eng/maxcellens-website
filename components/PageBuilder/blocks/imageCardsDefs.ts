@@ -39,6 +39,8 @@ export type ImageCardsData = {
   radiusTop: number;
   radiusBottom: number;
   cards: ImageCard[];
+  /** 2 = réglages de présentation faits pour le design Studio. */
+  designVersion?: number;
 };
 export const EMPTY_IMAGE_CARD: ImageCard = {
   image: null, alt: '', title: '', subtitle: '', href: '', newTab: false, focusX: 50, focusY: 50,
@@ -46,24 +48,34 @@ export const EMPTY_IMAGE_CARD: ImageCard = {
 export const DEFAULT_PROJECT_CARDS: ImageCardsData = {
   eyebrow: 'Sélection de réalisations', title: 'Des projets concrets. Des histoires vraies.', subtitle: '',
   headingLevel: 'h2', titleSize: 0, titleAlign: 'left', titlePosition: 'left',
-  color: { source: 'custom', value: '#202a2b' }, background: { source: 'custom', value: '#f3f1ed' },
-  cardColor: { source: 'custom', value: '#ffffff' }, columns: 4, gap: 12, ratio: '4:3',
+  // Couleurs vides : le bloc prend le fond et la couleur de texte de la page.
+  color: { source: 'custom', value: '' }, background: { source: 'custom', value: 'transparent' },
+  cardColor: { source: 'custom', value: '#f4f6f2' }, columns: 4, gap: 12, ratio: '4:3',
   cardRadius: 0, overlayOpacity: 80, cardTitleSize: 0,
   ctaLabel: '', ctaHref: '', ctaNewTab: false,
-  paddingTop: 32, paddingBottom: 32, paddingX: 48, marginTop: 0, marginBottom: 0,
+  paddingTop: 96, paddingBottom: 96, paddingX: 64, marginTop: 0, marginBottom: 0,
   radiusTop: 0, radiusBottom: 0,
   cards: Array.from({ length: 4 }, (_, i) => ({ ...EMPTY_IMAGE_CARD, title: `Projet ${i + 1}` })),
 };
 export const DEFAULT_SERVICE_CARDS: ImageCardsData = {
   ...DEFAULT_PROJECT_CARDS, eyebrow: 'Mes prestations', title: 'Des images pour chaque ambition.',
-  color: { source: 'custom', value: '#f5f3ef' }, background: { source: 'custom', value: '#192425' },
+  color: { source: 'custom', value: '#eef1eb' }, background: { source: 'custom', value: '#1f2b28' },
   columns: 6, ratio: '4:5', cardTitleSize: 0,
   cards: Array.from({ length: 6 }, (_, i) => ({ ...EMPTY_IMAGE_CARD, title: `Prestation ${i + 1}` })),
 };
 
 /** Keep empty lists intentional and give each new instance independent cards. */
+/** Réglages de présentation remis aux valeurs du design Studio pour les
+ *  blocs enregistrés avant lui (le contenu et les cartes sont conservés). */
+const PRESENTATION_KEYS: (keyof ImageCardsData)[] = [
+  'color', 'background', 'cardColor', 'titleSize', 'cardTitleSize', 'cardRadius', 'radiusTop', 'radiusBottom',
+  'paddingTop', 'paddingBottom', 'paddingX', 'marginTop', 'marginBottom', 'headingLevel', 'titleAlign', 'overlayOpacity',
+];
+
 export function normalizeImageCards(raw: Partial<ImageCardsData> | null, defaults: ImageCardsData): ImageCardsData {
-  const data = { ...defaults, ...(raw || {}) };
+  const source: Partial<ImageCardsData> = { ...(raw || {}) };
+  if (source.designVersion !== 2) PRESENTATION_KEYS.forEach((k) => delete source[k]);
+  const data = { ...defaults, ...source, designVersion: 2 };
   return {
     ...data,
     columns: Math.max(1, Math.min(8, Number(data.columns) || defaults.columns)),

@@ -208,7 +208,7 @@ export default function ClientsEditModal({ onClose, onSaved, premium = false, se
     try {
       if (onSaveData) {
         const data = {
-          clients_presentation_version: '1', clients_title: title, clients_title_style: titleStyle,
+          clients_presentation_version: '2', clients_title: title, clients_title_style: titleStyle,
           clients_title_font_size: String(titleFontSize), clients_title_color: titleColor, clients_title_align: titleAlign,
           clients_logos: JSON.stringify(logos), clients_grid: JSON.stringify(grid), clients_bg: bgColor,
           clients_logo_filter: logoFilter, clients_radius_top: String(radiusTop), clients_radius_bottom: String(radiusBottom),
@@ -219,6 +219,7 @@ export default function ClientsEditModal({ onClose, onSaved, premium = false, se
         return;
       }
       const tasks = [
+        fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_presentation_version', value: '2' }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_title', value: title }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_title_style', value: titleStyle }) }),
         fetch('/api/admin/site-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'clients_title_font_size', value: titleFontSize !== '' ? String(titleFontSize) : '' }) }),

@@ -4,7 +4,7 @@
 import { TITLE_STYLE_OPTIONS as SHARED_TITLE_STYLE_OPTIONS } from '../../lib/typography';
 import { hasRichTextContent } from "../../lib/hasRichTextContent";
 
-import { editorialPresentation } from "./editorialPresentation";
+import { editorialPresentation, HOME_DESIGN_VERSION } from "./editorialPresentation";
 
 import { confirmDialog } from '../admin/dialog';
 import React, { useState, useEffect } from "react";
@@ -867,6 +867,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         setSaving(false);
         return;
     }
+    // Marque le bloc comme réglé pour le design Studio : ses couleurs, tailles
+    // et alignements s'appliquent désormais (voir editorialPresentation).
+    payload = { ...(payload as object), designVersion: HOME_DESIGN_VERSION } as BlockData;
     try {
       if (onSaveData) {
         if (!await onSaveData(payload)) throw new Error("Enregistrement impossible");

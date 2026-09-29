@@ -1,5 +1,4 @@
 import { DEFAULT_INTRO, DEFAULT_SERVICES, DEFAULT_BANNER, DEFAULT_STATS, DEFAULT_PORTRAIT, DEFAULT_CADREUR, DEFAULT_ANIMATION, DEFAULT_QUOTE, DEFAULT_CTA } from './homeDefaults';
-import { editorialPresentation } from './editorialPresentation';
 
 export const MANAGED_HOME_BLOCKS = [
   ['home_intro', 'Introduction', DEFAULT_INTRO],
@@ -16,7 +15,8 @@ export const MANAGED_HOME_BLOCKS = [
 
 export function homeBlockDefaults(type: string) {
   const entry = MANAGED_HOME_BLOCKS.find(([key]) => key === type);
-  return entry ? JSON.parse(JSON.stringify(editorialPresentation(type, entry[2]))) : {};
+  // Sans designVersion : les blocs créés reçoivent la présentation Studio par défaut.
+  return entry ? JSON.parse(JSON.stringify(entry[2])) : {};
 }
 export const legacyOrderId = (type: string) => type === 'home_clients' ? 'clients' : type;
 export const isManagedHomeType = (type: string) => MANAGED_HOME_BLOCKS.some(([key]) => key === type);

@@ -59,6 +59,7 @@ export function RevealWords({
   style,
   active,
   delay = 0,
+  accentLast = false,
 }: {
   text: string;
   as?: string;
@@ -67,6 +68,8 @@ export function RevealWords({
   /** Déclenchement piloté (intro) ; sinon à l'entrée dans le viewport. */
   active?: boolean;
   delay?: number;
+  /** Met en valeur le dernier mot (dégradé d'accent). */
+  accentLast?: boolean;
 }) {
   const reduce = useReducedMotion();
   // L'observation porte sur le titre entier : les mots, masqués au départ,
@@ -83,7 +86,7 @@ export function RevealWords({
       <React.Fragment key={i}>
         <span className={s.word}>
           <motion.span
-            className={s.wordIn}
+            className={`${s.wordIn}${accentLast && i === words.length - 1 ? ` ${s.wordAccent}` : ''}`}
             initial="hidden"
             animate={shown ? "visible" : "hidden"}
             variants={{ hidden: { y: "108%" }, visible: { y: "0%" } }}
