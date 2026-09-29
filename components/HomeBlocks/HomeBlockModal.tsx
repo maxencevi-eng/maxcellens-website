@@ -206,6 +206,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [introReel, setIntroReel] = useState<{ url: string; path?: string }[]>([]);
   const [introReelAuto, setIntroReelAuto] = useState(true);
   const [uploadingIntroReel, setUploadingIntroReel] = useState(false);
+  const [introReelProgress, setIntroReelProgress] = useState({ done: 0, total: 0 });
   const [uploadingIntroImage, setUploadingIntroImage] = useState(false);
   const [introHtml, setIntroHtml] = useState("");
   const [introServicesHtml, setIntroServicesHtml] = useState("");
@@ -752,30 +753,43 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     }
   }
 
-  /** Ajoute une ou plusieurs photos à la bobine de l'intro. */
+  /**
+   * Ajoute une ou plusieurs photos à la bobine de l'intro.
+   * Même circuit que les galeries (compression WebP navigateur puis serveur),
+   * mais en 1600 px — largeur ample pour une colonne de la bobine — et trois
+   * envois en parallèle ; chaque photo apparaît dès qu'elle est prête.
+   */
   async function uploadIntroReel(files: FileList) {
+    const list = Array.from(files);
     setUploadingIntroReel(true);
+    setIntroReelProgress({ done: 0, total: list.length });
     setError(null);
-    try {
-      const added: { url: string; path?: string }[] = [];
-      for (const file of Array.from(files)) {
-        const compressed = await compressImageClient(file);
-        const fd = new FormData();
-        fd.append("file", compressed);
-        fd.append("page", "home");
-        fd.append("kind", "image");
-        fd.append("folder", "home/intro-reel");
-        const resp = await fetch("/api/admin/upload-hero-media", { method: "POST", body: fd });
-        const j = await resp.json();
-        if (!resp.ok || !j?.url) throw new Error(j?.error ?? "Erreur d'upload");
-        added.push({ url: j.url, path: j.path ?? undefined });
+    const failures: string[] = [];
+    let next = 0;
+    async function worker() {
+      while (next < list.length) {
+        const file = list[next++];
+        try {
+          const compressed = await compressImageClient(file, 1600);
+          const fd = new FormData();
+          fd.append("file", compressed);
+          fd.append("page", "home");
+          fd.append("kind", "image");
+          fd.append("folder", "home/intro-reel");
+          const resp = await fetch("/api/admin/upload-hero-media", { method: "POST", body: fd });
+          const j = await resp.json();
+          if (!resp.ok || !j?.url) throw new Error(j?.error ?? "Erreur d'upload");
+          setIntroReel((prev) => [...prev, { url: j.url, path: j.path ?? undefined }]);
+        } catch (e: any) {
+          failures.push(`${file.name} : ${e?.message ?? "erreur"}`);
+        } finally {
+          setIntroReelProgress((p) => ({ ...p, done: p.done + 1 }));
+        }
       }
-      setIntroReel((prev) => [...prev, ...added]);
-    } catch (e: any) {
-      setError(e?.message ?? "Erreur upload");
-    } finally {
-      setUploadingIntroReel(false);
     }
+    await Promise.all(Array.from({ length: Math.min(3, list.length) }, worker));
+    if (failures.length) setError(`Échec de l'envoi — ${failures.join(" ; ")}`);
+    setUploadingIntroReel(false);
   }
 
   function moveIntroReel(index: number, dir: -1 | 1) {
@@ -1218,7 +1232,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <label style={{ fontSize: 12, color: 'var(--muted)' }}>Ajouter des photos :</label>
                   <input type="file" accept="image/*" multiple onChange={(e) => { const f = e.target.files; if (f && f.length) uploadIntroReel(f); e.target.value = ''; }} disabled={uploadingIntroReel} />
-                  {uploadingIntroReel && <span style={{ fontSize: 12, color: 'var(--muted)' }}>Upload…</span>}
+                  {uploadingIntroReel && <span style={{ fontSize: 12, color: 'var(--muted)' }}>Envoi {introReelProgress.done}/{introReelProgress.total}…</span>}
                 </div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
                   <input type="checkbox" checked={introReelAuto} onChange={(e) => setIntroReelAuto(e.target.checked)} />

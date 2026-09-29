@@ -1,9 +1,9 @@
 /**
  * Compresses an image file client-side using the Canvas API.
- * Resizes to max 3200px width, converts to WebP at quality 85.
+ * Resizes to max 3200px width (or `maxWidth`), converts to WebP at quality 85.
  * This keeps uploads well under Vercel's 4.5MB serverless limit.
  */
-export async function compressImageClient(file: File): Promise<File> {
+export async function compressImageClient(file: File, maxWidth = 3200): Promise<File> {
   return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -11,7 +11,7 @@ export async function compressImageClient(file: File): Promise<File> {
     img.onload = () => {
       URL.revokeObjectURL(url);
 
-      const MAX_WIDTH = 3200;
+      const MAX_WIDTH = maxWidth;
       let { naturalWidth: w, naturalHeight: h } = img;
       if (w > MAX_WIDTH) {
         h = Math.round(h * MAX_WIDTH / w);
