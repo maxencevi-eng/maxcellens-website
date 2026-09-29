@@ -39,6 +39,12 @@
   color: var(--c-text);
 }
 
+/* « Max 1600 » (bouton ⇔ de l'admin) borne le contenu, jamais le fond. */
+.root :global(.adm-block.block-width-1600) {
+  max-width: none !important;
+  --content-inner-max-width-desktop: 1600px;
+}
+
 /* Le fond générique des pages (.page-blocks::before) est remplacé par la palette. */
 .root.root::before { content: none; }
 
@@ -764,18 +770,37 @@
 
 .cadreurMedia { position: relative; aspect-ratio: 21 / 9; overflow: hidden; border-radius: var(--h-radius-sm); }
 
-/* Atouts : une ligne sobre sous les vidéos */
-.featureRow {
+/* En-tête : titre et texte à gauche, les trois atouts en cartes à droite */
+.cadreurHead {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(20px, 3vw, 48px);
-  margin-top: clamp(40px, 5vw, 72px);
-  padding-top: clamp(24px, 3vw, 36px);
-  border-top: 1px solid var(--t-line);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(32px, 5vw, 88px);
+  align-items: end;
+  margin-bottom: clamp(40px, 5vw, 72px);
 }
-.feature { display: flex; gap: 16px; align-items: flex-start; min-width: 0; }
-.featureIcon { display: inline-grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 12px; background: var(--t-accent); color: var(--t-accent-fg); }
-.featureTitle.featureTitle { margin: 2px 0 6px; color: var(--t-fg); }
+.cadreurIntro { min-width: 0; }
+.cadreurIntro .display { margin-bottom: 20px; }
+/* Le texte suit le style Paragraphe du site, même s'il a été mis en forme dans l'éditeur. */
+.cadreurLead { max-width: 46ch; color: var(--t-muted); font-size: calc(var(--type-body) * 1.05); line-height: var(--font-body-line); }
+.cadreurLead, .cadreurLead * { font-family: var(--font-body-family) !important; font-style: normal !important; }
+.cadreurLead * { font-size: inherit !important; color: inherit !important; text-align: left !important; }
+.cadreurLead p { margin: 0 0 0.5em; }
+.cadreurLead p:last-child { margin: 0; }
+
+.featureStack { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--h-gap); }
+.featureCard {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: clamp(18px, 1.8vw, 26px);
+  border-radius: var(--h-radius-sm);
+  background: var(--t-card);
+  box-shadow: inset 0 0 0 1px var(--t-card-line);
+  transition: transform 0.5s var(--h-ease);
+}
+.featureCard:hover { transform: translateY(-3px); }
+.featureIcon { display: inline-grid; place-items: center; flex: none; width: 40px; height: 40px; margin-bottom: clamp(20px, 2.4vw, 36px); border-radius: 12px; background: var(--t-accent); color: var(--t-accent-fg); }
+.featureTitle.featureTitle { margin: 0 0 6px; color: var(--t-fg); }
 .featureText { margin: 0; font-size: 14px; line-height: 1.55; color: var(--t-muted); white-space: pre-line; overflow-wrap: anywhere; }
 
 /* ═══════════════════ Bureau à la carte ═══════════════════ */
@@ -950,7 +975,7 @@
   .svcGrid { grid-template-columns: repeat(min(var(--n, 3), 2), minmax(0, 1fr)); }
   .statsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 48px; }
   .stat:nth-child(odd) { border-left: 0; padding-left: 0; }
-  .featureRow { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .cadreurHead { grid-template-columns: minmax(0, 1fr); align-items: start; }
   .showcase:has(> :nth-child(3)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .showcase:has(> :nth-child(3)) > .showcaseFeatured { grid-row: auto; grid-column: 1 / -1; }
   .showcase:has(> :nth-child(3)) .showcaseFeatured .showcaseCard { aspect-ratio: 16 / 9; min-height: 0; }
@@ -1016,6 +1041,9 @@
   .svcCard { min-height: 0; }
 
   .showcase, .showcase:has(> :nth-child(3)) { grid-template-columns: minmax(0, 1fr); }
+  .featureStack { grid-template-columns: minmax(0, 1fr); }
+  .featureCard { display: grid; grid-template-columns: auto 1fr; column-gap: 14px; }
+  .featureCard .featureIcon { grid-row: span 2; margin-bottom: 0; }
   .showcasePlay { width: 52px; height: 52px; }
   .showcaseFeatured .showcasePlay { width: 64px; height: 64px; }
 

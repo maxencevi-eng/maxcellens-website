@@ -25,9 +25,11 @@ export default function ModalTabs({ tabs, active, onChange }: {
             type="button"
             onClick={() => onChange(t.id)}
             style={{
-              background: isActive ? 'var(--button-2-bg, #f5f5f5)' : 'transparent',
-              color: isActive ? 'var(--button-2-color, #111)' : 'var(--button-1-color, #213431)',
-              border: isActive ? '1px solid var(--button-2-bg, #ddd)' : '1px solid var(--button-1-bg, #eee)',
+              // Couleurs de l'interface admin : celles des boutons du site
+              // (souvent texte blanc) rendaient les onglets inactifs invisibles.
+              background: isActive ? 'var(--adm-accent, #213431)' : 'transparent',
+              color: isActive ? 'var(--adm-accent-ink, #fff)' : 'var(--adm-ink, #1a1a18)',
+              border: isActive ? '1px solid var(--adm-accent, #213431)' : '1px solid var(--adm-border, #e2e2e0)',
               padding: '8px 12px',
               borderRadius: 6,
               cursor: 'pointer',

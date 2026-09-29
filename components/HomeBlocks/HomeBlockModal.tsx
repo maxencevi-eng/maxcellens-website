@@ -173,6 +173,9 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
   const [introImage, setIntroImage] = useState<{ url: string; path?: string } | null>(null);
   const [introImageFocus, setIntroImageFocus] = useState<{ x: number; y: number } | null>(null);
   const [introImageTilted, setIntroImageTilted] = useState(false);
+  const [introReel, setIntroReel] = useState<{ url: string; path?: string }[]>([]);
+  const [introReelAuto, setIntroReelAuto] = useState(true);
+  const [uploadingIntroReel, setUploadingIntroReel] = useState(false);
   const [uploadingIntroImage, setUploadingIntroImage] = useState(false);
   const [introHtml, setIntroHtml] = useState("");
   const [introServicesHtml, setIntroServicesHtml] = useState("");
@@ -376,6 +379,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
       setIntroImage(d.image ?? null);
       setIntroImageFocus(d.image?.focus ?? null);
       setIntroImageTilted(d.imageTilted ?? false);
+      setIntroReel(Array.isArray(d.reelImages) ? d.reelImages.filter((im: any) => im?.url) : []);
+      setIntroReelAuto(d.reelAuto !== false);
       setIntroHtml(d.html ?? "");
       setIntroServicesHtml(d.servicesHtml ?? "");
       setIntroBackgroundColor(d.backgroundColor ?? "");
@@ -712,6 +717,42 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     }
   }
 
+  /** Ajoute une ou plusieurs photos à la bobine de l'intro. */
+  async function uploadIntroReel(files: FileList) {
+    setUploadingIntroReel(true);
+    setError(null);
+    try {
+      const added: { url: string; path?: string }[] = [];
+      for (const file of Array.from(files)) {
+        const compressed = await compressImageClient(file);
+        const fd = new FormData();
+        fd.append("file", compressed);
+        fd.append("page", "home");
+        fd.append("kind", "image");
+        fd.append("folder", "home/intro-reel");
+        const resp = await fetch("/api/admin/upload-hero-media", { method: "POST", body: fd });
+        const j = await resp.json();
+        if (!resp.ok || !j?.url) throw new Error(j?.error ?? "Erreur d'upload");
+        added.push({ url: j.url, path: j.path ?? undefined });
+      }
+      setIntroReel((prev) => [...prev, ...added]);
+    } catch (e: any) {
+      setError(e?.message ?? "Erreur upload");
+    } finally {
+      setUploadingIntroReel(false);
+    }
+  }
+
+  function moveIntroReel(index: number, dir: -1 | 1) {
+    setIntroReel((prev) => {
+      const next = [...prev];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
   async function uploadBannerImage(file: File) {
     setUploadingBannerImage(true);
     setError(null);
@@ -825,6 +866,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
           titleAlign: introTitleAlign || undefined,
           image: introImage ? { ...introImage, focus: introImageFocus ?? undefined } : null,
           imageTilted: introImageTilted || undefined,
+          reelImages: introReel,
+          reelAuto: introReelAuto,
           html: introHtml,
           servicesHtml: introServicesHtml || undefined,
           backgroundColor: introBackgroundColor?.trim() || undefined,
@@ -1074,7 +1117,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
 
               {tab === 'image' && (<>
               <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Image (colonne droite)</label>
+                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>Image principale (première image du viseur)</label>
                 {introImage?.url ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     <div
@@ -1110,18 +1153,37 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   </div>
                 )}
               </div>
-              {/* Effet incliné */}
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>Effet image penchée</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {([false, true] as const).map((val) => (
-                    <button key={String(val)} type="button"
-                      onClick={() => setIntroImageTilted(val)}
-                      style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #e6e6e6', fontSize: 13, cursor: 'pointer', background: introImageTilted === val ? 'var(--fg, #1a1a18)' : '#fff', color: introImageTilted === val ? '#fff' : 'inherit', fontWeight: introImageTilted === val ? 600 : 400 }}>
-                      {val ? 'Penchée' : 'Droite'}
-                    </button>
-                  ))}
+              {/* Bobine d'images (colonne de droite de l'intro) */}
+              <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #e6e6e6' }}>
+                <label style={{ display: "block", fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Bobine d'images</label>
+                <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 12px' }}>
+                  Les photos défilent dans le viseur, à droite du titre, dans l'ordre ci-dessous (après l'image principale).
+                  Il en faut au moins 4 pour les deux colonnes animées.
+                </p>
+                {introReel.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8, marginBottom: 12 }}>
+                    {introReel.map((im, i) => (
+                      <div key={`${im.url}-${i}`} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid #e6e6e6', background: '#f4f4f2' }}>
+                        <div style={{ aspectRatio: '4 / 5', backgroundImage: `url(${im.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 4, gap: 2 }}>
+                          <button type="button" className="btn-ghost" style={{ fontSize: 12, padding: '2px 6px' }} disabled={i === 0} onClick={() => moveIntroReel(i, -1)} aria-label="Avancer">←</button>
+                          <span style={{ fontSize: 11, color: 'var(--muted)' }}>{i + 1}</span>
+                          <button type="button" className="btn-ghost" style={{ fontSize: 12, padding: '2px 6px' }} disabled={i === introReel.length - 1} onClick={() => moveIntroReel(i, 1)} aria-label="Reculer">→</button>
+                          <button type="button" className="btn-ghost" style={{ fontSize: 12, padding: '2px 6px', color: '#dc2626' }} onClick={() => setIntroReel((prev) => prev.filter((_, j) => j !== i))} aria-label="Retirer">✕</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <label style={{ fontSize: 12, color: 'var(--muted)' }}>Ajouter des photos :</label>
+                  <input type="file" accept="image/*" multiple onChange={(e) => { const f = e.target.files; if (f && f.length) uploadIntroReel(f); e.target.value = ''; }} disabled={uploadingIntroReel} />
+                  {uploadingIntroReel && <span style={{ fontSize: 12, color: 'var(--muted)' }}>Upload…</span>}
                 </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={introReelAuto} onChange={(e) => setIntroReelAuto(e.target.checked)} />
+                  Compléter avec les images des autres blocs (portraits, services, cadreur…)
+                </label>
               </div>
               </>)}
 

@@ -26,6 +26,10 @@ export type HomeIntroData = {
   image?: { url: string; path?: string; focus?: FocusPoint } | null;
   /** Incline légèrement l'image (effet carte penchée). */
   imageTilted?: boolean;
+  /** Images supplémentaires de la bobine qui défile à droite de l'intro. */
+  reelImages?: { url: string; path?: string }[];
+  /** false : la bobine n'utilise que l'image principale et reelImages. */
+  reelAuto?: boolean;
   /** HTML de description (colonne basse gauche). */
   html?: string;
   /** HTML de la liste de services (colonne basse droite, alignée à droite). */

@@ -457,7 +457,10 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
       transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] as const, delay },
     });
     // Bobine d'images : image de l'intro puis celles des autres blocs.
-    const reel = Array.from(new Set([iv.image?.url, ...galleryImages].filter(Boolean) as string[])).slice(0, 12);
+    const own = [iv.image?.url, ...((iv.reelImages || []) as { url?: string }[]).map((im) => im?.url)];
+    const unique = Array.from(new Set([...own, ...(iv.reelAuto === false ? [] : galleryImages)].filter(Boolean) as string[])).slice(0, 14);
+    // De 2 à 3 images : on les répète pour remplir les deux colonnes animées.
+    const reel = unique.length >= 2 && unique.length < 4 ? [...unique, ...unique] : unique;
     const columns = reel.length >= 4 ? [reel.filter((_, i) => i % 2 === 0), reel.filter((_, i) => i % 2 === 1)] : null;
     const onPointerMove = (e: React.PointerEvent<HTMLElement>) => {
       const r = e.currentTarget.getBoundingClientRect();
@@ -776,12 +779,26 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
       <section {...panel(cb, "base", styles.cadreur)}>
         {toolbar("home_cadreur")}
         <div className={innerClass("home_cadreur")}>
-          <div className={styles.head}>
-            <div>
+          <div className={styles.cadreurHead}>
+            <div className={styles.cadreurIntro}>
               <span className={`${styles.eyebrow} style-h5`}>Tournage & production</span>
               {heading(cadreurBlock.title, titleTag, styles.display, textStyle(cb.titleFontSize, cb.titleColor, cb.titleAlign))}
+              {cadreurBlock.html ? <div className={styles.cadreurLead} dangerouslySetInnerHTML={{ __html: cadreurBlock.html }} /> : null}
             </div>
-            {cadreurBlock.html ? <AnimateInView variant="fadeUp" className={`${styles.rich} ${styles.headLead}`}><div dangerouslySetInnerHTML={{ __html: cadreurBlock.html }} /></AnimateInView> : null}
+            {features.length > 0 && (
+              <AnimateInView variant="stagger" className={styles.featureStack}>
+                {features.map((feature, index) => {
+                  const Icon = feature.icon === 'team' ? Users : feature.icon === 'camera' ? Camera : Film;
+                  return (
+                    <AnimateStaggerItem key={index} className={styles.featureCard}>
+                      <span className={styles.featureIcon}><Icon size={18} strokeWidth={1.6} aria-hidden="true" /></span>
+                      {feature.title && <h3 className={`${styles.featureTitle} style-h4`}>{feature.title}</h3>}
+                      {feature.text && <p className={styles.featureText}>{feature.text}</p>}
+                    </AnimateStaggerItem>
+                  );
+                })}
+              </AnimateInView>
+            )}
           </div>
 
           {hasVideos ? (
@@ -804,6 +821,8 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
                           alt=""
                           loading="lazy"
                           onError={(e) => { const img = e.currentTarget; if (img.src.includes('maxresdefault')) img.src = img.src.replace('maxresdefault', 'hqdefault'); }}
+                          // YouTube renvoie une vignette grise de 120 px (sans erreur) quand la version HD n'existe pas.
+                          onLoad={(e) => { const img = e.currentTarget; if (img.src.includes('maxresdefault') && img.naturalWidth <= 120) img.src = img.src.replace('maxresdefault', 'hqdefault'); }}
                         />
                         {vGlossy && <span className={styles.videoGlossy} />}
                         <span className={styles.showcaseShade} aria-hidden="true" />
@@ -829,22 +848,6 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
             </AnimateInView>
           ) : null}
 
-          {features.length > 0 && (
-            <AnimateInView variant="stagger" className={styles.featureRow}>
-              {features.map((feature, index) => {
-                const Icon = feature.icon === 'team' ? Users : feature.icon === 'camera' ? Camera : Film;
-                return (
-                  <AnimateStaggerItem key={index} className={styles.feature}>
-                    <span className={styles.featureIcon}><Icon size={18} strokeWidth={1.6} aria-hidden="true" /></span>
-                    <span>
-                      {feature.title && <h3 className={`${styles.featureTitle} style-h4`}>{feature.title}</h3>}
-                      {feature.text && <p className={styles.featureText}>{feature.text}</p>}
-                    </span>
-                  </AnimateStaggerItem>
-                );
-              })}
-            </AnimateInView>
-          )}
         </div>
 
         {cadreurLightboxOpen && cadreurLightboxItems.length > 0 && (
