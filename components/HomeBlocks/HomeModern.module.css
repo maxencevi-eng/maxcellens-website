@@ -706,7 +706,7 @@
 @keyframes progress { to { transform: scaleX(1); } }
 
 /* ═══════════════════ Cadreur ═══════════════════ */
-.showcaseLabel { margin-bottom: 20px; }
+.showcaseLabel.showcaseLabel { margin: 0 0 20px; color: var(--t-muted); }
 .showcase { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: var(--h-gap); }
 /* Trois vidéos ou plus : une grande à gauche, les autres empilées à droite */
 .showcase:has(> :nth-child(3)) { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }

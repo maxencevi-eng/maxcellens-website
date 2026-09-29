@@ -803,7 +803,10 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
 
           {hasVideos ? (
             <>
-              {cb.videosSectionTitle ? <p className={`${styles.eyebrow} style-h5 ${styles.showcaseLabel}`}>{cb.videosSectionTitle}</p> : null}
+              {cb.videosSectionTitle ? (() => {
+                const Tag = (cb.videosSectionTitleStyle || "h5") as any;
+                return <Tag className={`${styles.showcaseLabel} style-${cb.videosSectionTitleStyle || "h5"}`} style={{ textAlign: cb.videosSectionTitleAlign || "left" }}>{cb.videosSectionTitle}</Tag>;
+              })() : null}
               <AnimateInView variant="stagger" className={styles.showcase} style={{ ['--n' as string]: cadreurVisibleVideos.length } as React.CSSProperties}>
                 {cadreurVisibleVideos.map((vid, i) => {
                   const thumb = getYouTubeThumb(getYouTubeId(vid.url)).replace('hqdefault', i === 0 ? 'maxresdefault' : 'hqdefault');

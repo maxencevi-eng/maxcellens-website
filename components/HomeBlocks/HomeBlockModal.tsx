@@ -288,7 +288,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
     glossy: false,
   });
   const [cadreurVideosSectionTitle, setCadreurVideosSectionTitle] = useState("");
-  const [cadreurVideosSectionTitleAlign, setCadreurVideosSectionTitleAlign] = useState<'left' | 'center' | 'right'>('center');
+  const [cadreurVideosSectionTitleAlign, setCadreurVideosSectionTitleAlign] = useState<'left' | 'center' | 'right'>('left');
+  const [cadreurVideosSectionTitleStyle, setCadreurVideosSectionTitleStyle] = useState<TitleStyleKey>('h5');
 
   // Quote (liste de citations + vitesse)
   const [quoteBlockTitle, setQuoteBlockTitle] = useState("Témoignages");
@@ -529,7 +530,8 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         });
       }
       setCadreurVideosSectionTitle(d.videosSectionTitle ?? "");
-      setCadreurVideosSectionTitleAlign(d.videosSectionTitleAlign ?? "center");
+      setCadreurVideosSectionTitleAlign(d.videosSectionTitleAlign ?? "left");
+      setCadreurVideosSectionTitleStyle(getValidTitleStyle(d.videosSectionTitleStyle, "h5"));
     }
     if (blockKey === "home_animation") {
       setAnimationBlockTitle(d.blockTitle ?? "Animation");
@@ -890,7 +892,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
         payload = { blockTitle: portraitBlockTitle, blockTitleStyle: portraitBlockTitleStyle, blockTitleFontSize: portraitBlockTitleFontSize !== "" ? clampTitleFontSize(portraitBlockTitleFontSize as number) : undefined, blockTitleColor: portraitBlockTitleColor?.trim() || undefined, blockTitleAlign: portraitBlockTitleAlign || undefined, ctaLabel: portraitCtaLabel, ctaHref: portraitCtaHref, ctaButtonStyle: portraitCtaButtonStyle, carouselSpeed: portraitCarouselSpeed, slides: portraitSlides.map((s) => ({ ...s, titleFontSize: s.titleFontSize != null && s.titleFontSize >= TITLE_FONT_SIZE_MIN && s.titleFontSize <= TITLE_FONT_SIZE_MAX ? s.titleFontSize : undefined })), backgroundColor: portraitBackgroundColor?.trim() || undefined, borderRadiusTop: portraitRadiusTop !== "" ? Number(portraitRadiusTop) : undefined, borderRadiusBottom: portraitRadiusBottom !== "" ? Number(portraitRadiusBottom) : undefined, paddingTop: portraitPaddingTop !== "" ? Number(portraitPaddingTop) : undefined, paddingBottom: portraitPaddingBottom !== "" ? Number(portraitPaddingBottom) : undefined };
         break;
       case "home_cadreur":
-        payload = { features: cadreurFeatures, title: cadreurTitle, titleStyle: cadreurTitleStyle, titleFontSize: cadreurTitleFontSize !== "" ? clampTitleFontSize(cadreurTitleFontSize as number) : undefined, titleColor: cadreurTitleColor?.trim() || undefined, titleAlign: cadreurTitleAlign || undefined, html: cadreurHtml, image: cadreurImage, imageRatio: cadreurImageRatio, backgroundColor: cadreurBackgroundColor?.trim() || undefined, videos: cadreurVideos, videoSettings: cadreurVideoSettings, videosSectionTitle: cadreurVideosSectionTitle.trim() || undefined, videosSectionTitleAlign: cadreurVideosSectionTitleAlign, borderRadiusTop: cadreurRadiusTop !== "" ? Number(cadreurRadiusTop) : undefined, borderRadiusBottom: cadreurRadiusBottom !== "" ? Number(cadreurRadiusBottom) : undefined, paddingTop: cadreurPaddingTop !== "" ? Number(cadreurPaddingTop) : undefined, paddingBottom: cadreurPaddingBottom !== "" ? Number(cadreurPaddingBottom) : undefined };
+        payload = { features: cadreurFeatures, title: cadreurTitle, titleStyle: cadreurTitleStyle, titleFontSize: cadreurTitleFontSize !== "" ? clampTitleFontSize(cadreurTitleFontSize as number) : undefined, titleColor: cadreurTitleColor?.trim() || undefined, titleAlign: cadreurTitleAlign || undefined, html: cadreurHtml, image: cadreurImage, imageRatio: cadreurImageRatio, backgroundColor: cadreurBackgroundColor?.trim() || undefined, videos: cadreurVideos, videoSettings: cadreurVideoSettings, videosSectionTitle: cadreurVideosSectionTitle.trim() || undefined, videosSectionTitleAlign: cadreurVideosSectionTitleAlign, videosSectionTitleStyle: cadreurVideosSectionTitleStyle, borderRadiusTop: cadreurRadiusTop !== "" ? Number(cadreurRadiusTop) : undefined, borderRadiusBottom: cadreurRadiusBottom !== "" ? Number(cadreurRadiusBottom) : undefined, paddingTop: cadreurPaddingTop !== "" ? Number(cadreurPaddingTop) : undefined, paddingBottom: cadreurPaddingBottom !== "" ? Number(cadreurPaddingBottom) : undefined };
         break;
       case "home_animation": {
         const rawBg = animationBackgroundColor?.trim() || "";
@@ -1809,6 +1811,12 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                   placeholder="Ex : Mes projets vidéo"
                   style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid #ccc", fontSize: 14 }}
                 />
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>Style :</span>
+                  <select value={cadreurVideosSectionTitleStyle} onChange={(e) => setCadreurVideosSectionTitleStyle(e.target.value as TitleStyleKey)} style={{ ...inputStyle, width: 220, marginTop: 0 }}>
+                    {TITLE_STYLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
                   <span style={{ fontSize: 12, fontWeight: 600 }}>Alignement :</span>
                   {(["left", "center", "right"] as const).map((al) => (

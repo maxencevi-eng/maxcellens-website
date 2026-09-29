@@ -164,6 +164,8 @@ export type HomeCadreurBlockData = {
   /** Title displayed above the video section */
   videosSectionTitle?: string;
   videosSectionTitleAlign?: 'left' | 'center' | 'right';
+  /** Style de texte du titre au-dessus des vidéos (défaut : Titre 5 — sur-titre). */
+  videosSectionTitleStyle?: TitleStyleKey;
   borderRadiusTop?: number;
   borderRadiusBottom?: number;
   paddingTop?: number;
