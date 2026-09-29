@@ -1,5 +1,6 @@
 "use client";
 
+import { markSplashDismissed } from '../AnimateInView/AnimateInView';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, type Transition } from 'framer-motion';
@@ -205,7 +206,7 @@ export default function PageTransitionOverlay() {
       setPhase('covered');
     } else if (phase === 'revealing') {
       setPhase('idle');
-      window.dispatchEvent(new CustomEvent('splash-dismissed'));
+      markSplashDismissed();
     }
   }, [phase, router]);
 

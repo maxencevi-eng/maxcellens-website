@@ -3,16 +3,33 @@
 import React, { useState, useEffect } from "react";
 import { motion, type Variants } from "framer-motion";
 
-/** Module-level flag so any component that mounts after the event still gets ready=true */
-let _splashDismissed = false;
+/**
+ * Fin de l'écran de chargement (splash ou transition de page).
+ *
+ * Le signal `splash-dismissed` est un évènement ponctuel : un composant monté
+ * APRÈS lui (bloc chargé en différé, par ex. l'intro de l'accueil) ne le
+ * recevait jamais et restait invisible. Les émetteurs posent donc aussi
+ * `window.__splashDismissed`, lu ici au montage.
+ */
+export function markSplashDismissed() {
+  if (typeof window === 'undefined') return;
+  (window as any).__splashDismissed = true;
+  window.dispatchEvent(new CustomEvent('splash-dismissed'));
+}
+
+export function isSplashDismissed(): boolean {
+  return typeof window !== 'undefined' && (window as any).__splashDismissed === true;
+}
 
 export function useSplashReady(): boolean {
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    if (_splashDismissed) { setReady(true); return; }
-    const handler = () => { _splashDismissed = true; setReady(true); };
+    if (isSplashDismissed()) { setReady(true); return; }
+    const handler = () => setReady(true);
     window.addEventListener('splash-dismissed', handler, { once: true });
-    return () => window.removeEventListener('splash-dismissed', handler);
+    // Filet de sécurité : jamais de contenu bloqué si le signal se perd.
+    const safety = setTimeout(() => setReady(true), 4000);
+    return () => { window.removeEventListener('splash-dismissed', handler); clearTimeout(safety); };
   }, []);
   return ready;
 }

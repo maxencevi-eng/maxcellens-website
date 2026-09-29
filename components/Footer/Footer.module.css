@@ -12,40 +12,6 @@
   margin-bottom: 0;
 }
 
-/* ── Scroll reveal : la carte footer émerge depuis le bas ── */
-@keyframes footerSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(52px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* CSS scroll-driven animations (Chrome 115+, Firefox 115+) */
-@supports (animation-timeline: view()) {
-  .footer {
-    animation: footerSlideUp linear both;
-    animation-timeline: view();
-    animation-range: entry 0% entry 40%;
-  }
-}
-
-/* Fallback : déclenché par la classe .revealed ajoutée via IntersectionObserver */
-@supports not (animation-timeline: view()) {
-  .footer {
-    opacity: 0;
-    transform: translateY(52px) scale(0.97);
-    transition: opacity 700ms ease, transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  .footer.revealed {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 /* Banner image that sits directly above the footer columns — managed via Footer settings
    Use the same layout approach as PageHeader: a full-bleed wrapper (.banner) with a centered
    inner image area (.bannerInner) that aligns with site content gutters and handles focal/height. */

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import styles from "./PageHeader.module.css";
+import { isSplashDismissed } from "../AnimateInView/AnimateInView";
 
 // Module-level flag: once dismissed, any new instance shows immediately (e.g. back navigation)
 let _dismissed = false;
@@ -13,7 +14,7 @@ export default function PageHeaderEntrance({ children }: { children: React.React
     const el = ref.current;
     if (!el) return;
     // Already dismissed (back navigation, or subsequent SPA navigations)
-    if (_dismissed) {
+    if (_dismissed || isSplashDismissed()) {
       el.setAttribute("data-entrance", "animate");
       return;
     }

@@ -81,12 +81,26 @@ async function persist(key: string, value: unknown): Promise<boolean> {
   }
 }
 
-export function BlockVisibilityProvider({ children }: { children: React.ReactNode }) {
-  const [hiddenBlocks, setHiddenBlocks] = useState<string[]>([]);
-  const [blockWidthModes, setBlockWidthModesState] = useState<Record<string, BlockWidthMode>>({});
-  const [orders, setOrders] = useState<Orders>(defaultOrders);
+/** Valeurs lues côté serveur (layout) : évitent la réorganisation des blocs au chargement. */
+export type BlockVisibilityInitial = {
+  hiddenBlocks: string[];
+  blockWidthModes: Record<string, BlockWidthMode>;
+  orders: Partial<Record<BlockOrderPage, string[]>>;
+};
+
+function initialOrders(initial?: BlockVisibilityInitial): Orders {
+  if (!initial) return defaultOrders;
+  const next = {} as Orders;
+  for (const page of BLOCK_ORDER_PAGES) next[page] = mergeBlockOrder(initial.orders?.[page], DEFAULT_BLOCK_ORDERS[page]);
+  return next;
+}
+
+export function BlockVisibilityProvider({ children, initial }: { children: React.ReactNode; initial?: BlockVisibilityInitial }) {
+  const [hiddenBlocks, setHiddenBlocks] = useState<string[]>(() => initial?.hiddenBlocks ?? []);
+  const [blockWidthModes, setBlockWidthModesState] = useState<Record<string, BlockWidthMode>>(() => initial?.blockWidthModes ?? {});
+  const [orders, setOrders] = useState<Orders>(() => initialOrders(initial));
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initial);
 
   useEffect(() => {
     let mounted = true;

@@ -1,6 +1,6 @@
 "use client";
 import useFooterMenuItems from './useFooterMenuItems';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { AnimationImageRatio } from '../HomeBlocks/homeDefaults';
@@ -15,21 +15,6 @@ export default function Footer() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const footerLogoUrl = `${supabaseUrl}/storage/v1/object/public/site-assets/logos/footer-logo.webp`;
   const [logoSrc, setLogoSrc] = useState<string>(footerLogoUrl);
-  const footerRef = useRef<HTMLElement>(null);
-  const [revealed, setRevealed] = useState(false);
-
-  // Fallback pour navigateurs sans CSS scroll-driven animations
-  useEffect(() => {
-    if (CSS.supports('animation-timeline', 'view()')) return;
-    const el = footerRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setRevealed(true); observer.disconnect(); }
-    }, { threshold: 0.05 });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
   useEffect(() => {
     const v = typeof window !== 'undefined' ? (localStorage.getItem('siteFooterLogoVersion') || '') : '';
     setLogoSrc(v ? `${footerLogoUrl}?t=${v}` : footerLogoUrl);
@@ -445,7 +430,7 @@ export default function Footer() {
   })();
 
   return (
-    <footer ref={footerRef} className={`${styles.footer} ${isMobileFooter ? styles.mobile : ''} ${revealed ? styles.revealed : ''}`} style={{ '--footer-bg': footerBgColor } as React.CSSProperties}>
+    <footer className={`${styles.footer} ${isMobileFooter ? styles.mobile : ''}`} style={{ '--footer-bg': footerBgColor } as React.CSSProperties}>
       {bannerUrl && !bannerError ? (
         <div className={styles.banner} aria-label="Footer banner wrapper">
           <div

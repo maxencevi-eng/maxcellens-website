@@ -6,6 +6,7 @@ import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
 import { Pencil, Film, Users, Camera } from 'lucide-react';
 import { DEFAULT_CADREUR_FEATURES } from './homeDefaults';
 import useBuiltinPageBlocks from '../PageBuilder/useBuiltinPageBlocks';
+import type { BuiltinPagePayload } from '../../lib/builtinPageData';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useSplashReady } from "../AnimateInView/AnimateInView";
 import { useScrollReveal, revealInitialStyle, revealVisibleStyle } from "../../hooks/useScrollReveal";
@@ -160,7 +161,12 @@ function getFanCardStyle(offset: number): React.CSSProperties {
   };
 }
 
-export default function HomePageClient({ initialSettings, renderOnly }: { initialSettings?: Record<string, string>; renderOnly?: string }) {
+export default function HomePageClient({ initialSettings, renderOnly, initialBlocks }: {
+  initialSettings?: Record<string, string>;
+  renderOnly?: string;
+  /** Blocs de l'accueil lus côté serveur (évite leur remplacement au chargement). */
+  initialBlocks?: BuiltinPagePayload;
+}) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loaded, setLoaded] = useState(() => initialSettings !== undefined);
   const [editBlock, setEditBlock] = useState<HomeBlockKey | null>(null);
@@ -170,7 +176,7 @@ export default function HomePageClient({ initialSettings, renderOnly }: { initia
   /* Blocs ajoutés depuis l'administration : leurs sections sont fusionnées
      dans la table ci-dessous et leurs identifiants figurent dans le même
      ordre que les blocs intégrés. */
-  const dynamicBlocks = useBuiltinPageBlocks("home", !renderOnly);
+  const dynamicBlocks = useBuiltinPageBlocks("home", !renderOnly, initialBlocks);
   const hide = (id: string) => {
     if (renderOnly) return id !== renderOnly;
     const state = parse(initialSettings?.[`managed_${id === "clients" ? "home_clients" : id}`], { deleted: false, visible: undefined as boolean | undefined });

@@ -56,15 +56,25 @@ export type BuiltinBlocksApi = {
   modals: React.ReactNode;
 };
 
-export function useBuiltinPageBlocks(pageKey: BuiltinPageKey, enabled = true): BuiltinBlocksApi {
+export function useBuiltinPageBlocks(
+  pageKey: BuiltinPageKey,
+  enabled = true,
+  /** Blocs lus côté serveur : affichés dès le premier rendu. */
+  serverPayload?: { pageId: string | null; managedHome?: boolean; blocks: PageBlock[] },
+): BuiltinBlocksApi {
   const { isAdmin, getOrder, setOrder } = useBlockVisibility();
   const orderPage = pageKey as BlockOrderPage;
 
-  const [pageId, setPageId] = useState<string | null>(null);
-  const [initial, setInitial] = useState<PageBlock[] | null>(null);
+  const [pageId, setPageId] = useState<string | null>(() => serverPayload?.pageId ?? null);
+  const [initial, setInitial] = useState<PageBlock[] | null>(() =>
+    !serverPayload ? null : pageKey === "home" && !serverPayload.managedHome ? null : serverPayload.blocks
+  );
 
   useEffect(() => {
     if (!enabled) return;
+    // Visiteur : les blocs du serveur suffisent. L'admin recharge pour voir
+    // aussi les blocs masqués et les brouillons.
+    if (serverPayload && !isAdmin) return;
     let mounted = true;
     (async () => {
       try {

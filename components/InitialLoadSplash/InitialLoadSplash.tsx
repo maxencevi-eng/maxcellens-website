@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
+import { markSplashDismissed } from '../AnimateInView/AnimateInView';
 
 /**
  * InitialLoadSplash – Full-screen overlay with animated favicon logo.
@@ -50,7 +51,7 @@ export default function InitialLoadSplash() {
     setFadeOut(true);
     setTimeout(() => {
       setVisible(false);
-      window.dispatchEvent(new CustomEvent('splash-dismissed'));
+      markSplashDismissed();
     }, 600);
   }, []);
 

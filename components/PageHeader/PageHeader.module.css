@@ -1,20 +1,18 @@
-/* Wrapper d’entrée — caché jusqu’au splash-dismissed */
+/* Wrapper d'entrée. L'écran de chargement masque déjà la page : le bandeau
+   est donc visible d'emblée, pour apparaître en même temps que l'en-tête et
+   les blocs (un fondu séparé le faisait arriver après eux). Seul le léger
+   zoom de l'image est déclenché à la fin du chargement. */
 .headerEntranceWrap {
-  opacity: 0;
-}
-
-.headerEntranceWrap[data-entrance="animate"] {
-  animation: headerReveal 0.8s ease-out forwards;
-}
-
-@keyframes headerReveal {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  opacity: 1;
 }
 
 /* Ken Burns : déclenché uniquement à l’entrée pour éviter le glitch */
+.headerEntranceWrap .imageWrap img { transform: scale(1.05); }
 .headerEntranceWrap[data-entrance="animate"] .imageWrap img {
   animation: kenBurns 2200ms ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .headerEntranceWrap .imageWrap img { transform: none; animation: none !important; }
 }
 
 /* ── Ken Burns ── */

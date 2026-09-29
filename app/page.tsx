@@ -6,6 +6,7 @@ import { SITE_URL } from '../lib/siteUrl';
 import JsonLdScript from '../components/SeoCommandCenter/JsonLdScript';
 import DefaultJsonLd from '../components/SeoCommandCenter/DefaultJsonLd';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
+import { readBuiltinPagePublic } from '../lib/builtinPageData';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.maxcellens.com';
 const baseUrl = siteUrl.replace(/\/$/, '');
@@ -59,7 +60,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const initialSettings = await getHomeInitialSettings();
+  const [initialSettings, initialBlocks] = await Promise.all([getHomeInitialSettings(), readBuiltinPagePublic('home')]);
   return (
     <main>
       <DefaultJsonLd />
@@ -70,7 +71,7 @@ export default async function HomePage() {
         subtitle="Portfolio photo & vidéo"
         bgImage="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1600&q=80"
       />
-      <HomePageClient initialSettings={initialSettings} />
+      <HomePageClient initialSettings={initialSettings} initialBlocks={initialBlocks} />
     </main>
   );
 }

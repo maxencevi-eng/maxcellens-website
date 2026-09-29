@@ -23,6 +23,7 @@ import { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { supabaseAdmin } from '../lib/supabaseAdmin';
 import { fontFaceCss, typographyCssVars } from '../lib/typography';
+import { readBlockVisibility } from '../lib/blockVisibility';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.maxcellens.com';
 const baseUrl = siteUrl.replace(/\/$/, '');
@@ -173,6 +174,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const preconnectSupabase = supabaseUrl ? `<link rel="preconnect" href="${supabaseUrl.replace(/^(https?:\/\/[^\/]+).*$/, '$1')}" crossorigin="anonymous" />` : '';
   const headContent = `<meta name="viewport" content="width=device-width, initial-scale=1" />\n${preconnectSupabase}\n${googleVerifMeta}\n${faviconLinks}\n${fontNonBlocking}\n${styleTag}`;
 
+  // Ordre et visibilité des blocs dès le rendu serveur (pas de réorganisation au chargement).
+  const blockVisibility = await readBlockVisibility();
+
   return (
     <html lang="fr" className="wf-loading" suppressHydrationWarning>
       <head suppressHydrationWarning dangerouslySetInnerHTML={{ __html: headContent }} />
@@ -183,7 +187,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <SpaScrollTarget />
         <SiteStyleProvider>
           <PageLayoutProvider>
-            <BlockVisibilityProvider>
+            <BlockVisibilityProvider initial={blockVisibility}>
               <DisableImageSave />
               <AnalyticsCollector />
               <AdminSidebarClient />
