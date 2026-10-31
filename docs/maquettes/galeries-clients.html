@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette — Galeries clients Maxcellens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Tokens repris de components/admin/tokens.css */
+:root{
+  --bg:#F2F0EB; --surface:#fff; --sunken:#f7f6f2; --hover:#f0eee8; --active:#e8e5dd;
+  --ink:#1e2b28; --ink-soft:#4a5a56; --muted:#7b8783; --border:#e2ded4; --border-strong:#cfc9bb;
+  --accent:#213431; --accent-wash:rgba(33,52,49,.08); --accent-ring:rgba(33,52,49,.22);
+  --danger:#b4342a; --danger-wash:rgba(180,52,42,.09); --success:#2f6b45; --success-wash:rgba(47,107,69,.1);
+  --warning:#9a6314; --warning-wash:rgba(154,99,20,.1);
+  --r-sm:9px; --r:13px; --r-lg:20px; --r-xl:26px;
+  --serif:'Playfair Display',Georgia,serif; --sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+body{font-family:var(--sans);background:#d9d5cb;color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+input,select,textarea{font:inherit;color:inherit}
+img{display:block}
+svg.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ── Sélecteur d'écrans de la maquette ── */
+.switch{position:sticky;top:0;z-index:100;background:#141816;color:#cfd6d3;display:flex;gap:4px;align-items:center;padding:8px 14px;overflow-x:auto}
+.switch b{color:#fff;font-weight:600;margin-right:10px;white-space:nowrap;font-size:13px}
+.switch button{padding:7px 12px;border-radius:999px;white-space:nowrap;font-size:12.5px;color:#aab4b0}
+.switch button.on{background:#fff;color:#141816}
+.switch .sep{width:1px;height:18px;background:#38403d;margin:0 6px}
+.screen{display:none;min-height:calc(100vh - 46px)}
+.screen.on{display:block}
+
+/* ── Admin : coque ── */
+.adm{display:grid;grid-template-columns:232px 1fr;min-height:calc(100vh - 46px);background:var(--bg)}
+.side{background:var(--surface);border-right:1px solid var(--border);padding:18px 12px;display:flex;flex-direction:column;gap:2px}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 10px 18px;font-weight:600}
+.brand .logo{width:30px;height:30px;border-radius:9px;background:var(--accent);color:#fff;display:grid;place-items:center;font-family:var(--serif);font-size:15px}
+.nav{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--r-sm);color:var(--ink-soft)}
+.nav:hover{background:var(--hover)}
+.nav.on{background:var(--accent-wash);color:var(--ink);font-weight:600}
+.nav .n{margin-left:auto;font-size:12px;color:var(--muted)}
+.side h6{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:16px 12px 6px;font-weight:600}
+.main{padding:28px 36px 120px;min-width:0}
+.top{display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+.top h1{font-family:var(--serif);font-weight:500;font-size:30px;letter-spacing:-.01em}
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:8px 14px;min-width:260px;color:var(--muted)}
+.search input{border:0;outline:0;background:none;flex:1}
+.sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--hover)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{filter:brightness(1.15)}
+.btn.ghost{border-color:transparent;background:none}
+.btn.sm{padding:6px 12px;font-size:13px}
+.btn.danger{color:var(--danger)}
+.split{display:inline-flex}
+.split .btn:first-child{border-radius:999px 0 0 999px}
+.split .btn:last-child{border-radius:0 999px 999px 0;border-left:1px solid rgba(255,255,255,.25);padding:9px 11px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:22px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:13px;color:var(--ink-soft)}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:3px}
+.seg button{padding:5px 10px;border-radius:999px;color:var(--muted);display:flex}
+.seg button.on{background:var(--active);color:var(--ink)}
+.count{color:var(--muted);font-size:13px}
+
+/* cartes */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:22px}
+.card{background:var(--surface);border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--border);position:relative;transition:box-shadow .2s,transform .2s}
+.card:hover{box-shadow:0 10px 30px rgba(30,43,40,.10);transform:translateY(-2px)}
+.card.sel{outline:2px solid var(--accent);outline-offset:2px}
+.thumb{aspect-ratio:4/3;background:var(--sunken);position:relative;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb .mosaic{display:grid;grid-template-columns:1fr 1fr;gap:3px;height:100%}
+.thumb .mosaic img{height:100%}
+.ck{position:absolute;top:10px;left:10px;width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.92);border:1.5px solid var(--border-strong);display:grid;place-items:center;opacity:0;transition:opacity .15s;color:#fff}
+.card:hover .ck,.card.sel .ck,.selecting .ck{opacity:1}
+.card.sel .ck{background:var(--accent);border-color:var(--accent)}
+.badges{position:absolute;top:10px;right:10px;display:flex;gap:5px}
+.bdg{width:26px;height:26px;border-radius:8px;background:rgba(20,24,22,.62);backdrop-filter:blur(6px);color:#fff;display:grid;place-items:center}
+.bdg svg.i{width:14px;height:14px}
+.meta{padding:13px 15px 15px}
+.meta h3{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta p{color:var(--muted);font-size:12.5px;margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.pub{background:var(--success-wash);color:var(--success)}
+.pill.draft{background:var(--active);color:var(--ink-soft)}
+.pill.exp{background:var(--warning-wash);color:var(--warning)}
+.dot{width:3px;height:3px;border-radius:50%;background:var(--border-strong)}
+.qa{position:absolute;bottom:72px;right:10px;display:flex;gap:6px;opacity:0;transition:opacity .15s}
+.card:hover .qa{opacity:1}
+.qa button{background:rgba(255,255,255,.95);border-radius:999px;padding:6px 11px;font-size:12px;font-weight:600;display:flex;gap:6px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+
+/* tableau */
+table.tbl{width:100%;border-collapse:separate;border-spacing:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.tbl th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;text-align:left;padding:12px 14px;background:var(--sunken);border-bottom:1px solid var(--border)}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tr:hover td{background:var(--sunken)}
+.tbl tr.sel td{background:var(--accent-wash)}
+.tbl .mini{width:44px;height:32px;border-radius:6px;object-fit:cover}
+.tbl .t{display:flex;align-items:center;gap:12px;font-weight:600}
+.tbl .t small{display:block;color:var(--muted);font-weight:400;font-size:12px}
+.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12.5px;background:var(--sunken);border:1px solid var(--border);padding:3px 8px;border-radius:6px;display:inline-flex;gap:6px;align-items:center}
+.cb{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border-strong);display:inline-grid;place-items:center;color:#fff;vertical-align:middle}
+.cb.on{background:var(--accent);border-color:var(--accent)}
+.cb svg.i{width:12px;height:12px;stroke-width:3}
+
+/* barre d'actions groupées */
+.bulk{position:fixed;left:50%;bottom:26px;transform:translate(-50%,140%);background:#141816;color:#fff;border-radius:999px;padding:8px 8px 8px 20px;display:flex;align-items:center;gap:4px;box-shadow:0 18px 50px rgba(0,0,0,.3);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:50;white-space:nowrap}
+.bulk.on{transform:translate(-50%,0)}
+.bulk .n{font-weight:600;margin-right:10px}
+.bulk button{padding:8px 12px;border-radius:999px;display:flex;align-items:center;gap:7px;color:#dfe6e3;font-size:13px}
+.bulk button:hover{background:rgba(255,255,255,.1);color:#fff}
+.bulk .del{color:#f19a91}
+.bulk .x{background:rgba(255,255,255,.1);margin-left:6px}
+.bulk .vs{width:1px;height:20px;background:rgba(255,255,255,.15);margin:0 4px}
+
+/* ── Modales ── */
+.ov{position:fixed;inset:0;background:rgba(20,24,22,.5);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
+.ov.on{display:flex}
+.modal{background:var(--surface);border-radius:var(--r-xl);width:min(640px,100%);max-height:90vh;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.25)}
+.modal.wide{width:min(920px,100%)}
+.mh{display:flex;align-items:center;gap:12px;padding:22px 26px 6px}
+.mh h2{font-family:var(--serif);font-weight:500;font-size:23px}
+.mh .close{margin-left:auto;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--sunken)}
+.mb{padding:14px 26px 22px}
+.mf{display:flex;gap:10px;justify-content:flex-end;padding:16px 26px;border-top:1px solid var(--border);background:var(--sunken);border-radius:0 0 var(--r-xl) var(--r-xl)}
+.lbl{font-size:12px;font-weight:600;color:var(--ink-soft);margin:14px 0 6px;display:block}
+.field{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:var(--r);padding:4px 4px 4px 14px;background:var(--surface)}
+.field input{border:0;outline:0;flex:1;padding:8px 0;background:none;min-width:0}
+.field:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
+.field .btn{padding:7px 12px;font-size:13px}
+textarea.msg{width:100%;border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;min-height:150px;resize:vertical;line-height:1.55;background:var(--sunken);outline:0}
+.share-grid{display:grid;grid-template-columns:1fr 168px;gap:24px}
+.qr{border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center;font-size:12px;color:var(--muted)}
+.qr canvas,.qr svg{width:100%;height:auto;margin-bottom:8px}
+.quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+/* modèles */
+.tpls{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.tpl{border:1.5px solid var(--border);border-radius:var(--r-lg);padding:16px;text-align:left;display:flex;gap:14px;align-items:flex-start;transition:border-color .15s,background .15s}
+.tpl:hover{background:var(--sunken)}
+.tpl.on{border-color:var(--accent);background:var(--accent-wash)}
+.tpl .sw{width:58px;height:58px;border-radius:12px;flex:none;background-size:cover;background-position:center;position:relative;overflow:hidden}
+.tpl .sw::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,.45))}
+.tpl h4{font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:8px}
+.tpl p{color:var(--muted);font-size:12.5px;margin-top:4px;line-height:1.45}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.tag{font-size:11px;padding:3px 8px;border-radius:6px;background:var(--sunken);border:1px solid var(--border);color:var(--ink-soft);display:inline-flex;gap:4px;align-items:center}
+.tag.off{color:var(--muted);text-decoration:line-through}
+.tag svg.i{width:11px;height:11px}
+.star{color:#c08a1a;font-size:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* ── Éditeur ── */
+.ed{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 46px);background:var(--bg)}
+.ed-head{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:14px 26px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:46px;z-index:20}
+.ed-head h2{font-size:17px;font-weight:600}
+.ed-head small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+.status{display:inline-flex;align-items:center;gap:6px;background:var(--success-wash);color:var(--success);font-weight:600;font-size:11.5px;letter-spacing:.05em;padding:6px 12px;border-radius:999px;text-transform:uppercase}
+.ed-side{background:var(--surface);border-right:1px solid var(--border)}
+.ed-cover{aspect-ratio:16/10;position:relative}
+.ed-cover img{width:100%;height:100%;object-fit:cover}
+.ed-cover span{position:absolute;bottom:10px;left:10px;font-size:11.5px;background:rgba(255,255,255,.92);padding:4px 9px;border-radius:999px;font-weight:600}
+.ed-tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--border)}
+.ed-tabs button{padding:14px 0 12px;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);border-bottom:2px solid transparent}
+.ed-tabs button.on{color:var(--ink);border-color:var(--accent);font-weight:600}
+.ed-list{padding:14px 12px}
+.ed-list h6{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:4px 10px 8px;display:flex;justify-content:space-between;font-weight:600}
+.ed-list h6 a{color:var(--accent);text-transform:none;letter-spacing:0;font-size:12.5px;cursor:pointer}
+.ed-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-sm);color:var(--ink-soft)}
+.ed-item.on{background:var(--accent-wash);color:var(--ink);font-weight:600}
+.ed-item .grip{color:var(--border-strong)}
+.ed-item .tog{margin-left:auto;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--active);color:var(--muted)}
+.ed-item .tog.on{background:var(--success-wash);color:var(--success)}
+.ed-main{padding:26px 34px 80px;min-width:0}
+.ed-pane{display:none}
+.ed-pane.on{display:block}
+.drop{border:1.5px dashed var(--border-strong);border-radius:var(--r-lg);padding:18px 20px;display:flex;align-items:center;gap:16px;background:var(--surface);margin-bottom:18px}
+.drop .ic{width:42px;height:42px;border-radius:12px;background:var(--accent-wash);display:grid;place-items:center;color:var(--accent)}
+.prog{flex:1}
+.prog .bar{height:6px;background:var(--active);border-radius:99px;overflow:hidden;margin-top:8px}
+.prog .bar i{display:block;height:100%;width:68%;background:var(--accent);border-radius:99px;animation:load 3s ease-in-out infinite alternate}
+@keyframes load{from{width:52%}to{width:78%}}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.ph{aspect-ratio:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);display:grid;place-items:center;padding:10px;position:relative}
+.ph img{max-width:100%;max-height:100%;border-radius:4px}
+.ph .h{position:absolute;top:8px;left:8px;font-size:10.5px;background:rgba(20,24,22,.7);color:#fff;padding:2px 7px;border-radius:5px}
+.ph.up img{opacity:.35}
+.ph.up::after{content:"";position:absolute;left:14px;right:14px;bottom:14px;height:4px;border-radius:9px;background:linear-gradient(90deg,var(--accent) 45%,var(--active) 45%)}
+.sec{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;margin-bottom:18px;max-width:760px}
+.sec h3{font-size:16px;font-weight:600;display:flex;align-items:center;gap:10px}
+.sec .desc{color:var(--muted);font-size:13px;margin-top:4px;line-height:1.5}
+.opt{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.opt button{border:1.5px solid var(--border);border-radius:var(--r);padding:12px;text-align:left}
+.opt button.on{border-color:var(--accent);background:var(--accent-wash)}
+.opt b{display:flex;gap:8px;align-items:center;font-size:13.5px}
+.opt span{display:block;color:var(--muted);font-size:12px;margin-top:4px;line-height:1.4}
+.sw-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-top:1px solid var(--border)}
+.sw-row:first-of-type{border-top:0}
+.sw-row b{font-weight:500}
+.sw-row small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px}
+.toggle{width:40px;height:24px;border-radius:99px;background:var(--border-strong);position:relative;flex:none;transition:background .2s}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on{background:var(--accent)}
+.toggle.on::after{transform:translateX(16px)}
+.checks{display:flex;gap:8px;flex-wrap:wrap}
+.checks label{display:flex;gap:7px;align-items:center;border:1px solid var(--border);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
+.checks input{accent-color:var(--accent)}
+.wm-prev{display:grid;grid-template-columns:240px 1fr;gap:18px;margin-top:14px;align-items:center}
+.wm-img{position:relative;border-radius:var(--r);overflow:hidden;aspect-ratio:3/2}
+.wm-img img{width:100%;height:100%;object-fit:cover}
+.wm-img .wm{position:absolute;right:10px;bottom:8px;color:#fff;font-family:var(--serif);font-size:15px;opacity:.75;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+.wm-img .wm-tile{position:absolute;inset:-40%;display:flex;flex-wrap:wrap;gap:20px 34px;transform:rotate(-24deg);color:#fff;opacity:.22;font-family:var(--serif);font-size:13px;pointer-events:none;align-content:center}
+.ribbon{display:flex;gap:8px;flex-wrap:wrap;margin-left:6px}
+.rb{font-size:11.5px;padding:5px 10px;border-radius:999px;background:var(--sunken);border:1px solid var(--border);display:inline-flex;gap:6px;align-items:center;color:var(--ink-soft)}
+.rb.ok{background:var(--success-wash);border-color:transparent;color:var(--success)}
+
+/* ── Client ── */
+.cl{background:#F2F0EB;color:#1b1f1d;font-family:var(--sans)}
+.cl.night{background:#121614;color:#e9ece8}
+.gate{min-height:calc(100vh - 46px);position:relative;display:grid;place-items:center;overflow:hidden}
+.gate .bgimg{position:absolute;inset:-30px;background:url(https://picsum.photos/seed/maxpot1/1600/1000) center/cover;filter:blur(22px) brightness(.55);transform:scale(1.05)}
+.gate-card{position:relative;background:rgba(250,249,246,.94);border-radius:28px;padding:44px 44px 36px;width:min(420px,92vw);text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.gate-card .logo-t{font-family:var(--serif);font-size:15px;letter-spacing:.32em;text-transform:uppercase;color:#4a5a56}
+.gate-card h1{font-family:var(--serif);font-weight:400;font-size:30px;margin:26px 0 6px;line-height:1.15}
+.gate-card .date{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#7b8783}
+.gate-card .f{margin-top:30px;display:flex;border:1px solid #cfc9bb;border-radius:999px;padding:5px;background:#fff}
+.gate-card .f input{flex:1;border:0;outline:0;padding:0 16px;background:none;letter-spacing:.06em}
+.gate-card .f button{background:#213431;color:#fff;border-radius:999px;padding:11px 20px;font-weight:500;display:flex;gap:8px;align-items:center}
+.gate-card .hint{font-size:12px;color:#7b8783;margin-top:14px}
+.cover{height:calc(100vh - 46px);min-height:560px;position:relative;overflow:hidden;color:#fff}
+.cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:kb 18s ease-out forwards}
+@keyframes kb{from{transform:scale(1.08)}to{transform:scale(1)}}
+.cover::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.25) 0%,transparent 28%,transparent 50%,rgba(0,0,0,.6) 100%)}
+.cover .brandmark{position:absolute;top:30px;left:44px;z-index:2;font-family:var(--serif);letter-spacing:.32em;text-transform:uppercase;font-size:14px}
+.cover .cc{position:absolute;left:44px;right:44px;bottom:52px;z-index:2;display:flex;align-items:flex-end;justify-content:space-between;gap:30px}
+.cover h1{font-family:var(--serif);font-weight:400;font-size:clamp(38px,6vw,76px);line-height:1;letter-spacing:-.01em}
+.cover .d{margin-top:16px;font-size:12px;letter-spacing:.28em;text-transform:uppercase;opacity:.9}
+.cover .go{border:1px solid rgba(255,255,255,.85);padding:14px 26px;border-radius:999px;color:#fff;backdrop-filter:blur(4px);background:rgba(255,255,255,.08);display:flex;gap:10px;align-items:center;font-weight:500}
+.cover .go:hover{background:#fff;color:#1b1f1d}
+.cover .scroll{position:absolute;left:50%;bottom:18px;z-index:2;transform:translateX(-50%);opacity:.75;animation:bob 2s ease-in-out infinite}
+@keyframes bob{50%{transform:translate(-50%,6px)}}
+.cbar{position:sticky;top:46px;z-index:30;background:rgba(242,240,235,.88);backdrop-filter:blur(14px);border-bottom:1px solid rgba(0,0,0,.06)}
+.night .cbar{background:rgba(18,22,20,.86);border-color:rgba(255,255,255,.07)}
+.cbar-in{max-width:1480px;margin:0 auto;padding:14px 32px;display:flex;align-items:center;gap:24px}
+.cbar h2{font-family:var(--serif);font-weight:400;font-size:19px;white-space:nowrap}
+.cbar h2 small{display:block;font-family:var(--sans);font-size:10px;letter-spacing:.24em;text-transform:uppercase;opacity:.55;margin-top:2px}
+.sets{display:flex;gap:4px;overflow-x:auto}
+.sets button{padding:7px 14px;border-radius:999px;font-size:13px;opacity:.65;white-space:nowrap}
+.sets button.on{opacity:1;background:rgba(0,0,0,.07);font-weight:500}
+.night .sets button.on{background:rgba(255,255,255,.1)}
+.cact{margin-left:auto;display:flex;gap:4px}
+.cact button{display:flex;gap:8px;align-items:center;padding:8px 13px;border-radius:999px;font-size:13.5px}
+.cact button:hover{background:rgba(0,0,0,.06)}
+.night .cact button:hover{background:rgba(255,255,255,.08)}
+.cact .fav-n{font-size:11px;background:#213431;color:#fff;border-radius:99px;padding:1px 7px}
+.jg{max-width:1480px;margin:0 auto;padding:22px 32px 40px;display:flex;flex-wrap:wrap;gap:8px}
+.jg::after{content:"";flex-grow:999}
+.jg figure{position:relative;flex-grow:1;overflow:hidden;cursor:zoom-in;background:#e3dfd6;margin:0}
+.night .jg figure{background:#1d2220}
+.jg figure img{width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.2,.8,.2,1),opacity .6s}
+.jg figure:hover img{transform:scale(1.025)}
+.jg figure .ov2{position:absolute;inset:auto 0 0 0;padding:30px 10px 10px;display:flex;justify-content:flex-end;gap:6px;background:linear-gradient(transparent,rgba(0,0,0,.35));opacity:0;transition:opacity .2s}
+.jg figure:hover .ov2{opacity:1}
+.ov2 button{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.95);color:#1b1f1d;display:grid;place-items:center}
+.ov2 button.faved{color:#c0392b}
+.ov2 button.faved svg{fill:currentColor}
+.set-title{max-width:1480px;margin:0 auto;padding:40px 32px 0;display:flex;align-items:baseline;gap:14px}
+.set-title h3{font-family:var(--serif);font-weight:400;font-size:28px}
+.set-title span{font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:.5}
+.cfoot{text-align:center;padding:60px 20px 70px;border-top:1px solid rgba(0,0,0,.07)}
+.night .cfoot{border-color:rgba(255,255,255,.07)}
+.cfoot .logo-t{font-family:var(--serif);letter-spacing:.32em;text-transform:uppercase;font-size:15px}
+.cfoot p{opacity:.6;font-size:13px;margin-top:10px}
+.expire{display:inline-flex;gap:8px;align-items:center;font-size:12.5px;margin-top:22px;padding:7px 14px;border-radius:999px;background:rgba(154,99,20,.1);color:#9a6314}
+.theme-sw{position:fixed;right:18px;bottom:18px;z-index:60;background:#fff;border-radius:999px;padding:5px;display:flex;gap:4px;box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:12px;color:#1e2b28}
+.theme-sw button{padding:7px 12px;border-radius:999px}
+.theme-sw button.on{background:#213431;color:#fff}
+.theme-sw span{padding:7px 4px 7px 10px;color:#7b8783}
+
+/* visionneuse */
+.lb{position:fixed;inset:0;background:rgba(10,12,11,.97);z-index:300;display:none;color:#fff}
+.lb.on{display:block}
+.lb-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:6px;padding:16px 20px;z-index:2}
+.lb-top .c{font-size:13px;opacity:.7;letter-spacing:.06em}
+.lb-top .sp{flex:1}
+.lb-top button{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:#fff}
+.lb-top button:hover{background:rgba(255,255,255,.1)}
+.lb-top button.faved{color:#ff6b5e}
+.lb-top button.faved svg{fill:currentColor}
+.lb-img{position:absolute;inset:74px 90px 90px;display:grid;place-items:center}
+.lb-img img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,.5);transition:opacity .35s}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:54px;height:54px;border-radius:50%;display:grid;place-items:center;color:#fff;background:rgba(255,255,255,.06)}
+.lb-nav:hover{background:rgba(255,255,255,.14)}
+.lb-nav.p{left:20px}.lb-nav.n{right:20px}
+.lb-strip{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:6px}
+.lb-strip img{width:52px;height:38px;object-fit:cover;border-radius:4px;opacity:.4;cursor:pointer}
+.lb-strip img.on{opacity:1;outline:2px solid #fff}
+.lb-play{position:absolute;bottom:0;left:0;height:2px;background:#fff;width:0}
+.lb.playing .lb-play{animation:prog 4s linear infinite}
+@keyframes prog{to{width:100%}}
+.lb.playing .lb-strip,.lb.playing .lb-nav{opacity:0;transition:opacity .4s}
+
+/* dialogue de téléchargement client */
+.dl{background:#fbfaf7;color:#1b1f1d;border-radius:26px;width:min(480px,100%);padding:30px}
+.dl h2{font-family:var(--serif);font-weight:400;font-size:26px}
+.dl p.s{color:#7b8783;font-size:13.5px;margin-top:6px}
+.dl .o{display:flex;gap:12px;align-items:center;border:1.5px solid #e2ded4;border-radius:16px;padding:14px 16px;margin-top:10px;cursor:pointer;text-align:left;width:100%}
+.dl .o.on{border-color:#213431;background:rgba(33,52,49,.05)}
+.dl .o b{font-weight:600;font-size:14px}
+.dl .o small{display:block;color:#7b8783;font-size:12.5px;margin-top:2px}
+.dl .o .r{width:18px;height:18px;border-radius:50%;border:1.5px solid #cfc9bb;margin-left:auto;flex:none}
+.dl .o.on .r{border:5px solid #213431}
+.dl h5{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#7b8783;margin:22px 0 2px;font-weight:600}
+.dl .go{width:100%;margin-top:22px;background:#213431;color:#fff;border-radius:999px;padding:14px;font-weight:500;display:flex;gap:10px;justify-content:center;align-items:center}
+.dl .zip{margin-top:16px;display:none}
+.dl .zip.on{display:block}
+.dl .zip .bar{height:6px;background:#e8e5dd;border-radius:9px;overflow:hidden;margin-top:8px}
+.dl .zip .bar i{display:block;height:100%;width:0;background:#213431;transition:width .2s}
+.dl .zip small{color:#7b8783;font-size:12.5px;display:flex;justify-content:space-between}
+
+/* mobile */
+.phones{display:flex;gap:40px;justify-content:center;padding:50px 20px 80px;flex-wrap:wrap;background:var(--bg)}
+.phone{width:300px;height:620px;border-radius:44px;background:#111;padding:11px;box-shadow:0 30px 60px rgba(0,0,0,.25);position:relative}
+.phone .scr{width:100%;height:100%;border-radius:34px;overflow:hidden;position:relative;background:#F2F0EB}
+.phone .notch{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:90px;height:24px;background:#111;border-radius:20px;z-index:5}
+.phone figcaption{text-align:center;margin-top:16px;color:var(--ink-soft);font-size:13px}
+.m-cover{height:100%;position:relative;color:#fff}
+.m-cover img{width:100%;height:100%;object-fit:cover}
+.m-cover::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 45%,rgba(0,0,0,.65))}
+.m-cover .t{position:absolute;left:22px;right:22px;bottom:40px;z-index:2}
+.m-cover h1{font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.05}
+.m-cover .d{font-size:10px;letter-spacing:.24em;text-transform:uppercase;margin-top:10px;opacity:.85}
+.m-cover .go{margin-top:20px;border:1px solid #fff;border-radius:999px;padding:11px;text-align:center;font-size:13px}
+.m-bar{position:sticky;top:0;padding:46px 16px 10px;background:rgba(242,240,235,.94);display:flex;align-items:center;gap:8px;z-index:3}
+.m-bar h2{font-family:var(--serif);font-weight:400;font-size:16px;flex:1}
+.m-bar span{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.05)}
+.m-sets{display:flex;gap:6px;padding:0 16px 10px;font-size:12px;overflow:hidden}
+.m-sets b{background:rgba(0,0,0,.07);padding:5px 11px;border-radius:99px;font-weight:500;white-space:nowrap}
+.m-sets i{font-style:normal;padding:5px 8px;opacity:.6;white-space:nowrap}
+.m-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:0 3px}
+.m-grid img{width:100%;aspect-ratio:3/4;object-fit:cover}
+.m-grid img.w{grid-column:span 2;aspect-ratio:3/2}
+.m-lb{background:#0b0d0c;height:100%;display:flex;flex-direction:column;color:#fff}
+.m-lb .h{padding:50px 18px 0;display:flex;font-size:12px;opacity:.75;justify-content:space-between}
+.m-lb .im{flex:1;display:grid;place-items:center}
+.m-lb .im img{width:100%}
+.m-lb .a{display:flex;justify-content:space-around;padding:14px 10px 30px;font-size:10.5px;opacity:.9}
+.m-lb .a div{display:flex;flex-direction:column;align-items:center;gap:6px}
+.m-lb .a svg.i{width:20px;height:20px}
+
+.toast{position:fixed;left:50%;top:70px;transform:translate(-50%,-20px);background:#141816;color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;opacity:0;transition:all .25s;z-index:500;pointer-events:none;display:flex;gap:8px;align-items:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.note{max-width:760px;margin:0 0 18px;padding:12px 16px;border-radius:var(--r);background:var(--accent-wash);color:var(--ink-soft);font-size:13px;line-height:1.5}
+@media (max-width:900px){.adm,.ed{grid-template-columns:1fr}.side,.ed-side{display:none}.share-grid,.tpls,.row2,.wm-prev,.opt{grid-template-columns:1fr}.cover .cc{flex-direction:column;align-items:flex-start}.cbar-in{flex-wrap:wrap}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s7 6.5 7 11a7 7 0 0 1-14 0c0-4.5 7-11 7-11z"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+  <symbol id="i-dl-off" viewBox="0 0 24 24"><path d="M12 4v6M5 20h14M3 3l18 18"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-2.2 3.2M6.6 6.6C3.9 8.3 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6M3 3l18 18"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M15 8l2 2"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M3 21v-5h5"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 4h3v16H7zM14 4h3v16h-3z"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></symbol>
+  <symbol id="i-brush" viewBox="0 0 24 24"><path d="M9.5 14.5 18 6a2 2 0 0 1 3 3l-8.5 8.5M7 15c-2 0-3 1.5-3 3 0 1-1 2-2 2 1.5 1.5 3.5 2 5 2a4 4 0 0 0 4-4c0-1.5-1.5-3-4-3z"/></symbol>
+  <symbol id="i-cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 1.3 14H1a2 2 0 0 1 0-4h.1A1.6 1.6 0 0 0 4.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 10 1.3V1a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V7a1.6 1.6 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 11 9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 17h4v4"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.8 6.2.9-4.5 4.4 1 6.2L12 17.4 6.5 20.3l1-6.2L3 9.7l6.2-.9z"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24"><path d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></symbol>
+</svg>
+
+<div class="switch">
+  <b>Maquette — Galeries clients</b>
+  <button data-s="list" class="on">1 · Liste</button>
+  <button data-s="new">2 · Nouvelle galerie (modèle)</button>
+  <button data-s="editor">3 · Éditeur</button>
+  <button data-s="share">4 · Partager</button>
+  <span class="sep"></span>
+  <button data-s="gate">5 · Client : accès</button>
+  <button data-s="client">6 · Client : galerie</button>
+  <button data-s="mobile">7 · Mobile</button>
+</div>
+
+<!-- ═════════ 1. LISTE ═════════ -->
+<section class="screen on" id="s-list">
+ <div class="adm">
+  <aside class="side">
+    <div class="brand"><div class="logo">M</div>Maxcellens · Admin</div>
+    <a class="nav"><svg class="i"><use href="#i-home"/></svg>Tableau de bord</a>
+    <a class="nav on"><svg class="i"><use href="#i-image"/></svg>Galeries clients<span class="n">24</span></a>
+    <a class="nav"><svg class="i"><use href="#i-layers"/></svg>Modèles<span class="n">4</span></a>
+    <a class="nav"><svg class="i"><use href="#i-drop"/></svg>Filigranes<span class="n">3</span></a>
+    <a class="nav"><svg class="i"><use href="#i-trash"/></svg>Corbeille<span class="n">2</span></a>
+    <h6>Dossiers</h6>
+    <a class="nav"><svg class="i"><use href="#i-folder"/></svg>BNP Paribas<span class="n">5</span></a>
+    <a class="nav"><svg class="i"><use href="#i-folder"/></svg>Portraits corporate<span class="n">7</span></a>
+    <a class="nav"><svg class="i"><use href="#i-folder"/></svg>Particuliers<span class="n">4</span></a>
+    <h6>Site</h6>
+    <a class="nav"><svg class="i"><use href="#i-cog"/></svg>Réglages des galeries</a>
+  </aside>
+  <main class="main" id="listMain">
+    <div class="top">
+      <h1>Galeries clients</h1>
+      <label class="search"><svg class="i"><use href="#i-search"/></svg><input placeholder="Titre, client, e-mail, tag…"></label>
+      <span class="sp"></span>
+      <button class="btn" onclick="toast('Export CSV : 24 galeries (lien, mot de passe, statut…)')"><svg class="i"><use href="#i-file"/></svg>Exporter</button>
+      <div class="split"><button class="btn pri" onclick="go('new')"><svg class="i"><use href="#i-plus"/></svg>Nouvelle galerie</button><button class="btn pri" onclick="go('new')"><svg class="i"><use href="#i-chev"/></svg></button></div>
+    </div>
+    <div class="filters">
+      <button class="chip on">Toutes · 24</button>
+      <button class="chip">Publiées · 17</button>
+      <button class="chip">Brouillons · 4</button>
+      <button class="chip">Expirent bientôt · 3</button>
+      <button class="chip">Accès <svg class="i"><use href="#i-chev"/></svg></button>
+      <button class="chip">Tag <svg class="i"><use href="#i-chev"/></svg></button>
+      <button class="chip">Date <svg class="i"><use href="#i-chev"/></svg></button>
+      <span class="sp"></span>
+      <span class="count" id="selCount"></span>
+      <div class="seg"><button class="on" data-v="grid" title="Grille"><svg class="i"><use href="#i-grid"/></svg></button><button data-v="table" title="Tableau"><svg class="i"><use href="#i-list"/></svg></button></div>
+    </div>
+    <div class="grid" id="gridView"></div>
+    <div id="tableView" style="display:none"></div>
+  </main>
+ </div>
+ <div class="bulk" id="bulk">
+   <span class="n" id="bulkN">2 sélectionnées</span>
+   <button onclick="toast('Publiées')"><svg class="i"><use href="#i-globe"/></svg>Publier</button>
+   <button onclick="toast('Accès : mot de passe')"><svg class="i"><use href="#i-lock"/></svg>Accès</button>
+   <button onclick="toast('Nouveaux mots de passe générés · anciens accès révoqués')"><svg class="i"><use href="#i-key"/></svg>Nouveaux mots de passe</button>
+   <button onclick="toast('Filigrane « Signature » appliqué · régénération lancée')"><svg class="i"><use href="#i-drop"/></svg>Filigrane</button>
+   <button onclick="toast('Modèle appliqué')"><svg class="i"><use href="#i-layers"/></svg>Modèle</button>
+   <button onclick="toast('Export CSV de la sélection')"><svg class="i"><use href="#i-file"/></svg>Exporter</button>
+   <span class="vs"></span>
+   <button class="del" onclick="toast('Déplacées dans la corbeille (30 jours)')"><svg class="i"><use href="#i-trash"/></svg>Corbeille</button>
+   <button class="x" onclick="clearSel()"><svg class="i"><use href="#i-x"/></svg></button>
+ </div>
+</section>
+
+<!-- ═════════ 2. NOUVELLE GALERIE ═════════ -->
+<section class="screen" id="s-new" style="background:var(--bg)">
+ <div class="ov on" style="position:relative;inset:auto;min-height:calc(100vh - 46px);background:rgba(20,24,22,.35)">
+  <div class="modal wide">
+    <div class="mh"><h2>Nouvelle galerie</h2><button class="close" onclick="go('list')"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <div class="mb">
+      <div class="row2">
+        <div><span class="lbl">Titre</span><div class="field"><input value="20261108 - Séminaire Kering"></div></div>
+        <div class="row2">
+          <div><span class="lbl">Date de l'évènement</span><div class="field"><input value="08/11/2026"><svg class="i" style="margin-right:10px;color:var(--muted)"><use href="#i-cal"/></svg></div></div>
+          <div><span class="lbl">Dossier</span><div class="field"><input value="Aucun"><svg class="i" style="margin-right:10px;color:var(--muted)"><use href="#i-chev"/></svg></div></div>
+        </div>
+      </div>
+      <div class="row2">
+        <div><span class="lbl">Client</span><div class="field"><input placeholder="Nom du client" value="Claire Martin"></div></div>
+        <div><span class="lbl">E-mail du client</span><div class="field"><input placeholder="pour l'envoi et l'export" value="c.martin@kering.com"></div></div>
+      </div>
+      <span class="lbl" style="margin-top:22px">Partir d'un modèle — tous les réglages sont copiés, modifiables ensuite</span>
+      <div class="tpls" id="tpls">
+        <button class="tpl on">
+          <div class="sw" style="background-image:url(https://picsum.photos/seed/maxcorp/200/200)"></div>
+          <div><h4>Corporate — livraison HD <span class="star">★ par défaut</span></h4>
+          <p>Le client récupère tout, en haute définition.</p>
+          <div class="tags"><span class="tag"><svg class="i"><use href="#i-lock"/></svg>Mot de passe</span><span class="tag"><svg class="i"><use href="#i-dl"/></svg>HD + web · ZIP</span><span class="tag off">Filigrane</span><span class="tag">Expire +6 mois</span></div></div>
+        </button>
+        <button class="tpl">
+          <div class="sw" style="background-image:url(https://picsum.photos/seed/maxparty/200/200)"></div>
+          <div><h4>Évènement — soirée</h4>
+          <p>Partage large aux invités, ambiance Nuit.</p>
+          <div class="tags"><span class="tag"><svg class="i"><use href="#i-link"/></svg>Lien direct</span><span class="tag"><svg class="i"><use href="#i-dl"/></svg>Web seulement</span><span class="tag"><svg class="i"><use href="#i-heart"/></svg>Favoris</span></div></div>
+        </button>
+        <button class="tpl">
+          <div class="sw" style="background-image:url(https://picsum.photos/seed/maxproof/200/200)"></div>
+          <div><h4>Épreuves — sélection client</h4>
+          <p>Le client choisit ses photos à retoucher.</p>
+          <div class="tags"><span class="tag"><svg class="i"><use href="#i-lock"/></svg>Mot de passe</span><span class="tag off">Téléchargement</span><span class="tag"><svg class="i"><use href="#i-drop"/></svg>Filigrane</span><span class="tag"><svg class="i"><use href="#i-heart"/></svg>Favoris · 30 max</span></div></div>
+        </button>
+        <button class="tpl">
+          <div class="sw" style="background-image:url(https://picsum.photos/seed/maxportrait/200/200)"></div>
+          <div><h4>Portrait — livraison finale</h4>
+          <p>Fichiers finaux retouchés, protégés par PIN.</p>
+          <div class="tags"><span class="tag"><svg class="i"><use href="#i-lock"/></svg>Mot de passe + PIN</span><span class="tag"><svg class="i"><use href="#i-dl"/></svg>HD unitaire</span><span class="tag off">Filigrane</span></div></div>
+        </button>
+      </div>
+      <p style="color:var(--muted);font-size:12.5px;margin-top:14px">Mot de passe généré automatiquement : <span class="mono">orage-5163</span> · URL : <span class="mono">maxcellens.fr/client/seminaire-kering</span></p>
+    </div>
+    <div class="mf"><button class="btn ghost" onclick="toast('Gérer les modèles')">Gérer les modèles</button><span class="sp"></span><button class="btn" onclick="go('list')">Annuler</button><button class="btn pri" onclick="go('editor')">Créer et ajouter les photos</button></div>
+  </div>
+ </div>
+</section>
+
+<!-- ═════════ 3. ÉDITEUR ═════════ -->
+<section class="screen" id="s-editor">
+ <div class="ed">
+  <div class="ed-head">
+    <button class="btn ghost sm" onclick="go('list')"><svg class="i"><use href="#i-left"/></svg></button>
+    <div><h2>20260701 - Pot de départ<small>1 juil. 2026 · Sophie D. · modèle « Corporate — livraison HD »</small></h2></div>
+    <span class="status">● Publiée <svg class="i" style="width:12px;height:12px"><use href="#i-chev"/></svg></span>
+    <div class="ribbon">
+      <span class="rb"><svg class="i" style="width:12px;height:12px"><use href="#i-lock"/></svg>Mot de passe</span>
+      <span class="rb ok"><svg class="i" style="width:12px;height:12px"><use href="#i-dl"/></svg>Téléchargement : HD + web</span>
+      <span class="rb">Sans filigrane</span>
+    </div>
+    <span class="sp"></span>
+    <button class="btn ghost sm" onclick="go('client')"><svg class="i"><use href="#i-eye"/></svg>Aperçu</button>
+    <button class="btn pri" onclick="go('share')"><svg class="i"><use href="#i-share"/></svg>Partager</button>
+  </div>
+  <aside class="ed-side">
+    <div class="ed-cover"><img src="https://picsum.photos/seed/maxpot1/600/380" alt=""><span>Couverture</span></div>
+    <div class="ed-tabs">
+      <button class="on" data-p="photos"><svg class="i"><use href="#i-image"/></svg>Photos</button>
+      <button data-p="design"><svg class="i"><use href="#i-brush"/></svg>Design</button>
+      <button data-p="settings"><svg class="i"><use href="#i-cog"/></svg>Réglages</button>
+      <button data-p="activity"><svg class="i"><use href="#i-activity"/></svg>Activité</button>
+    </div>
+    <div class="ed-list" id="edl-photos">
+      <h6>Sets <a>+ Ajouter</a></h6>
+      <div class="ed-item on"><svg class="i grip"><use href="#i-grip"/></svg>Accueil & décor<span class="n" style="margin-left:auto;color:var(--muted);font-size:12px">48</span></div>
+      <div class="ed-item"><svg class="i grip"><use href="#i-grip"/></svg>Discours<span class="n" style="margin-left:auto;color:var(--muted);font-size:12px">112</span></div>
+      <div class="ed-item"><svg class="i grip"><use href="#i-grip"/></svg>Cocktail<span class="n" style="margin-left:auto;color:var(--muted);font-size:12px">135</span></div>
+    </div>
+    <div class="ed-list" id="edl-settings" style="display:none">
+      <h6>Réglages</h6>
+      <div class="ed-item">Général</div>
+      <div class="ed-item on">Accès</div>
+      <div class="ed-item">Téléchargement<span class="tog on">OUI</span></div>
+      <div class="ed-item">Filigrane<span class="tog">NON</span></div>
+      <div class="ed-item">Favoris<span class="tog">NON</span></div>
+      <div class="ed-item" style="margin-top:10px;color:var(--accent)"><svg class="i"><use href="#i-layers"/></svg>Enregistrer comme modèle</div>
+    </div>
+  </aside>
+  <div class="ed-main">
+    <div class="ed-pane on" id="p-photos">
+      <div class="drop">
+        <div class="ic"><svg class="i"><use href="#i-dl"/></svg></div>
+        <div class="prog"><b>Envoi en cours — 201 / 295</b> <span style="color:var(--muted);font-size:12.5px">· originaux directement vers le stockage · ~1 min restante</span><div class="bar"><i></i></div></div>
+        <button class="btn sm"><svg class="i"><use href="#i-plus"/></svg>Ajouter</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <b style="font-size:16px">Accueil & décor</b><span class="count">48 photos</span><span class="sp"></span>
+        <button class="btn sm">Trier : date de prise de vue <svg class="i"><use href="#i-chev"/></svg></button>
+      </div>
+      <div class="pgrid" id="pgrid"></div>
+    </div>
+    <div class="ed-pane" id="p-settings">
+      <div class="sec">
+        <h3><svg class="i"><use href="#i-lock"/></svg>Accès</h3>
+        <div class="opt" id="access">
+          <button class="on"><b><svg class="i"><use href="#i-lock"/></svg>Mot de passe</b><span>Le client saisit un code. Le lien magique permet d'éviter la saisie.</span></button>
+          <button><b><svg class="i"><use href="#i-link"/></svg>Lien direct</b><span>Toute personne qui a le lien voit la galerie. Non référencée.</span></button>
+          <button><b><svg class="i"><use href="#i-globe"/></svg>Publique</b><span>Peut apparaître dans le portfolio du site.</span></button>
+        </div>
+        <span class="lbl" style="margin-top:18px">Mot de passe</span>
+        <div class="field"><input id="pw" value="sable-4827" style="font-family:ui-monospace,Consolas,monospace;letter-spacing:.04em"><button class="btn ghost" onclick="genPw()"><svg class="i"><use href="#i-refresh"/></svg>Générer</button><button class="btn" onclick="copy(document.getElementById('pw').value)"><svg class="i"><use href="#i-copy"/></svg>Copier</button></div>
+        <div class="sw-row" style="margin-top:8px"><div><b>Lien magique</b><small>maxcellens.fr/client/pot-de-depart-sophie?k=7Fq2… : ouvre sans mot de passe</small></div><button class="toggle on"></button></div>
+        <div class="sw-row"><div><b>Inscription par e-mail</b><small>Demander l'e-mail du visiteur avant l'accès</small></div><button class="toggle"></button></div>
+        <div class="sw-row"><div><b>Expiration</b><small>Masquée automatiquement le 31/12/2026 à 23 h 59 · rappel au client 7 jours avant</small></div><button class="toggle on"></button></div>
+      </div>
+      <div class="sec">
+        <h3><svg class="i"><use href="#i-dl"/></svg>Téléchargement <span class="sp"></span><button class="toggle on" id="dlTog"></button></h3>
+        <p class="desc">Réglé pour cette galerie uniquement. Désactivé, aucun bouton n'apparaît côté client et le serveur refuse les téléchargements.</p>
+        <div id="dlOpts">
+          <span class="lbl" style="margin-top:16px">Tailles proposées</span>
+          <div class="checks"><label><input type="checkbox" checked> Originale HD</label><label><input type="checkbox"> HD 3600 px</label><label><input type="checkbox" checked> Web 2048 px</label></div>
+          <span class="lbl">Ce que le client peut télécharger</span>
+          <div class="checks"><label><input type="checkbox" checked> Photo à l'unité</label><label><input type="checkbox" checked> Un set</label><label><input type="checkbox" checked> Galerie complète (ZIP)</label><label><input type="checkbox"> Favoris uniquement</label></div>
+          <div class="sw-row" style="margin-top:10px"><div><b>PIN de téléchargement</b><small>Code à 4 chiffres demandé au moment de télécharger</small></div><button class="toggle"></button></div>
+        </div>
+      </div>
+      <div class="sec">
+        <h3><svg class="i"><use href="#i-drop"/></svg>Filigrane <span class="sp"></span><button class="toggle" id="wmTog"></button></h3>
+        <p class="desc">Incrusté dans les pixels des images affichées. Les originaux ne sont jamais modifiés.</p>
+        <div class="wm-prev">
+          <div class="wm-img"><img src="https://picsum.photos/seed/maxpot5/480/320" alt=""><span class="wm" id="wmMark" style="display:none">© Maxcellens</span></div>
+          <div>
+            <span class="lbl" style="margin-top:0">Modèle de filigrane</span>
+            <div class="seg" id="wmSeg"><button class="on" data-w="sig">Signature</button><button data-w="tile">Mosaïque</button><button data-w="logo">Logo</button></div>
+            <p class="desc" style="margin-top:10px">Changer de filigrane relance la génération des aperçus (~2 min pour 295 photos), avec une barre de progression ici.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ed-pane" id="p-design"><div class="note">Onglet Design : 6 couvertures (plein cadre centré / gauche, divisé, cadre, bandeau, minimal), point focal, 3 ambiances (Clair, Sable, Nuit), 3 paires de polices, grille (justifiée, maçonnerie, carrée), espacement. Aperçu bureau / mobile en direct à droite. Voir l'écran 6 pour le rendu.</div></div>
+    <div class="ed-pane" id="p-activity"><div class="note">Onglet Activité : vues (84), visiteurs uniques (31), téléchargements (212 photos · 6 ZIP), favoris par visiteur avec export des noms de fichiers, tentatives de mot de passe échouées, journal chronologique.</div></div>
+  </div>
+ </div>
+</section>
+
+<!-- ═════════ 4. PARTAGER ═════════ -->
+<section class="screen" id="s-share" style="background:var(--bg)">
+ <div class="ov on" style="position:relative;inset:auto;min-height:calc(100vh - 46px);background:rgba(20,24,22,.35)">
+  <div class="modal wide" style="width:min(780px,100%)">
+    <div class="mh"><h2>Partager la galerie</h2><button class="close" onclick="go('editor')"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <div class="mb">
+      <div class="share-grid">
+        <div>
+          <span class="lbl" style="margin-top:0">Lien</span>
+          <div class="field"><input readonly value="https://maxcellens.fr/client/pot-de-depart-sophie"><button class="btn" onclick="copy('https://maxcellens.fr/client/pot-de-depart-sophie')"><svg class="i"><use href="#i-copy"/></svg>Copier</button></div>
+          <span class="lbl">Mot de passe</span>
+          <div class="field"><input readonly value="sable-4827" style="font-family:ui-monospace,Consolas,monospace"><button class="btn ghost" onclick="toast('Nouveau mot de passe · anciens accès révoqués')"><svg class="i"><use href="#i-refresh"/></svg></button><button class="btn" onclick="copy('sable-4827')"><svg class="i"><use href="#i-copy"/></svg>Copier</button></div>
+          <span class="lbl">Lien magique (sans mot de passe)</span>
+          <div class="field"><input readonly value="https://maxcellens.fr/client/pot-de-depart-sophie?k=7Fq2xA9"><button class="btn" onclick="copy('https://maxcellens.fr/client/pot-de-depart-sophie?k=7Fq2xA9')"><svg class="i"><use href="#i-copy"/></svg>Copier</button></div>
+        </div>
+        <div class="qr" id="qr"></div>
+      </div>
+      <span class="lbl" style="margin-top:20px">Message prêt à envoyer <span style="font-weight:400;color:var(--muted)">· modèle modifiable</span></span>
+      <textarea class="msg" id="msg">Bonjour Sophie,
+
+Vos photos du pot de départ du 1er juillet sont prêtes 🎉
+
+👉 https://maxcellens.fr/client/pot-de-depart-sophie
+🔑 Mot de passe : sable-4827
+
+Vous pouvez les télécharger en haute définition jusqu'au 31 décembre 2026.
+
+Belle journée,
+Maxcellens — Photographe & Vidéaste</textarea>
+      <div class="quick">
+        <button class="btn pri" onclick="copy(document.getElementById('msg').value)"><svg class="i"><use href="#i-copy"/></svg>Copier le message</button>
+        <button class="btn" onclick="toast('Ouverture de la messagerie…')"><svg class="i"><use href="#i-mail"/></svg>E-mail</button>
+        <button class="btn" onclick="toast('Ouverture de WhatsApp…')"><svg class="i"><use href="#i-msg"/></svg>WhatsApp</button>
+        <button class="btn" onclick="toast('QR code téléchargé (PNG)')"><svg class="i"><use href="#i-qr"/></svg>QR en PNG</button>
+      </div>
+    </div>
+  </div>
+ </div>
+</section>
+
+<!-- ═════════ 5. CLIENT : ACCÈS ═════════ -->
+<section class="screen cl" id="s-gate">
+  <div class="gate">
+    <div class="bgimg"></div>
+    <form class="gate-card" onsubmit="event.preventDefault();go('client')">
+      <div class="logo-t">Maxcellens</div>
+      <h1>Pot de départ<br>de Sophie</h1>
+      <div class="date">1 juillet 2026</div>
+      <div class="f"><input type="password" placeholder="Mot de passe" value="sable-4827" aria-label="Mot de passe"><button>Accéder <svg class="i"><use href="#i-right"/></svg></button></div>
+      <div class="hint">Le mot de passe figure dans le message de Maxcellens.</div>
+    </form>
+  </div>
+</section>
+
+<!-- ═════════ 6. CLIENT : GALERIE ═════════ -->
+<section class="screen cl" id="s-client">
+  <div class="cover">
+    <img src="https://picsum.photos/seed/maxpot1/1920/1200" alt="">
+    <div class="brandmark">Maxcellens</div>
+    <div class="cc">
+      <div><h1>Pot de départ<br>de Sophie</h1><div class="d">1 juillet 2026 · Paris</div></div>
+      <button class="go" onclick="document.getElementById('cbar').scrollIntoView({behavior:'smooth'})">Voir les photos <svg class="i"><use href="#i-down"/></svg></button>
+    </div>
+    <svg class="i scroll"><use href="#i-down"/></svg>
+  </div>
+  <div class="cbar" id="cbar"><div class="cbar-in">
+    <h2>Pot de départ de Sophie<small>Maxcellens · 295 photos</small></h2>
+    <div class="sets"><button class="on">Tout</button><button>Accueil & décor</button><button>Discours</button><button>Cocktail</button></div>
+    <div class="cact">
+      <button onclick="toast('Vos favoris')"><svg class="i"><use href="#i-heart"/></svg><span class="fav-n" id="favN">0</span></button>
+      <button onclick="openLb(0,true)"><svg class="i"><use href="#i-play"/></svg>Diaporama</button>
+      <button id="dlBtn" onclick="openDl()"><svg class="i"><use href="#i-dl"/></svg>Télécharger</button>
+    </div>
+  </div></div>
+  <div class="set-title"><h3>Accueil & décor</h3><span>48 photos</span></div>
+  <div class="jg" id="jg1"></div>
+  <div class="set-title"><h3>Discours</h3><span>112 photos</span></div>
+  <div class="jg" id="jg2"></div>
+  <div class="cfoot">
+    <div class="logo-t">Maxcellens</div>
+    <p>Photographe & Vidéaste · Paris<br>contact@maxcellens.fr · maxcellens.fr</p>
+    <div class="expire"><svg class="i"><use href="#i-cal"/></svg>Galerie disponible jusqu'au 31 décembre 2026</div>
+  </div>
+  <div class="theme-sw"><span>Ambiance</span><button class="on" data-t="light">Clair</button><button data-t="sand">Sable</button><button data-t="night">Nuit</button></div>
+</section>
+
+<!-- ═════════ 7. MOBILE ═════════ -->
+<section class="screen" id="s-mobile">
+  <div class="phones">
+    <figure><div class="phone"><div class="notch"></div><div class="scr"><div class="m-cover"><img src="https://picsum.photos/seed/maxpot1/600/1240" alt=""><div class="t"><h1>Pot de départ de Sophie</h1><div class="d">1 juillet 2026</div><div class="go">Voir les photos</div></div></div></div></div><figcaption>Couverture</figcaption></figure>
+    <figure><div class="phone"><div class="notch"></div><div class="scr" style="overflow-y:auto"><div class="m-bar"><h2>Pot de départ</h2><span><svg class="i"><use href="#i-heart"/></svg></span><span><svg class="i"><use href="#i-dl"/></svg></span></div><div class="m-sets"><b>Tout</b><i>Accueil</i><i>Discours</i><i>Cocktail</i></div><div class="m-grid" id="mgrid"></div></div></div><figcaption>Grille + barre au pouce</figcaption></figure>
+    <figure><div class="phone"><div class="notch"></div><div class="scr"><div class="m-lb"><div class="h"><span>✕</span><span>42 / 295</span><span>⋯</span></div><div class="im"><img src="https://picsum.photos/seed/maxpot9/600/420" alt=""></div><div class="a"><div><svg class="i"><use href="#i-heart"/></svg>Favori</div><div><svg class="i"><use href="#i-dl"/></svg>Télécharger</div><div><svg class="i"><use href="#i-play"/></svg>Diaporama</div><div><svg class="i"><use href="#i-share"/></svg>Partager</div></div></div></div></div><figcaption>Visionneuse (glisser pour naviguer)</figcaption></figure>
+  </div>
+</section>
+
+<!-- Visionneuse -->
+<div class="lb" id="lb">
+  <div class="lb-top"><span class="c" id="lbC">1 / 295</span><span class="sp"></span>
+    <button id="lbFav" onclick="toggleFav(lbI)" title="Favori"><svg class="i"><use href="#i-heart"/></svg></button>
+    <button id="lbDl" onclick="toast('Téléchargement de la photo (HD)')" title="Télécharger"><svg class="i"><use href="#i-dl"/></svg></button>
+    <button id="lbPlay" onclick="togglePlay()" title="Diaporama"><svg class="i"><use href="#i-play"/></svg></button>
+    <button onclick="closeLb()" title="Fermer"><svg class="i"><use href="#i-x"/></svg></button></div>
+  <div class="lb-img"><img id="lbImg" alt=""></div>
+  <button class="lb-nav p" onclick="step(-1)"><svg class="i"><use href="#i-left"/></svg></button>
+  <button class="lb-nav n" onclick="step(1)"><svg class="i"><use href="#i-right"/></svg></button>
+  <div class="lb-strip" id="lbStrip"></div>
+  <div class="lb-play"></div>
+</div>
+
+<!-- Téléchargement client -->
+<div class="ov" id="dl" onclick="if(event.target===this)this.classList.remove('on')">
+  <div class="dl">
+    <h2>Télécharger</h2>
+    <p class="s">Les photos sont livrées sans filigrane, en qualité maximale.</p>
+    <h5>Quelles photos ?</h5>
+    <div class="dlg" data-g="scope">
+      <button class="o on"><div><b>Toute la galerie</b><small>295 photos</small></div><span class="r"></span></button>
+      <button class="o"><div><b>Un set</b><small>Accueil & décor · Discours · Cocktail</small></div><span class="r"></span></button>
+      <button class="o"><div><b>Mes favoris</b><small id="dlFav">0 photo</small></div><span class="r"></span></button>
+    </div>
+    <h5>Quelle taille ?</h5>
+    <div class="dlg" data-g="size">
+      <button class="o on"><div><b>Haute définition</b><small>Originaux · ~3,4 Go · pour l'impression</small></div><span class="r"></span></button>
+      <button class="o"><div><b>Web</b><small>2048 px · ~180 Mo · réseaux sociaux, e-mail</small></div><span class="r"></span></button>
+    </div>
+    <button class="go" onclick="fakeZip()"><svg class="i"><use href="#i-dl"/></svg>Télécharger le ZIP</button>
+    <div class="zip" id="zip"><small><span id="zipT">Préparation…</span><span id="zipP">0 %</span></small><div class="bar"><i id="zipB"></i></div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><svg class="i"><use href="#i-check"/></svg><span></span></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const pic=(seed,w,h)=>`https://picsum.photos/seed/${seed}/${w}/${h}`;
+
+/* navigation */
+function go(id){$$('.switch button').forEach(b=>b.classList.toggle('on',b.dataset.s===id));$$('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));window.scrollTo(0,0);$('#bulk').classList.toggle('on',id==='list'&&sel.size>0)}
+$$('.switch button').forEach(b=>b.onclick=()=>go(b.dataset.s));
+
+function toast(t){const el=$('#toast');el.querySelector('span').textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),2200)}
+function copy(t){navigator.clipboard?.writeText(t).catch(()=>{});toast('Copié dans le presse-papiers')}
+
+/* données de la liste */
+const G=[
+ {t:'20260701 - Pot de départ',c:'Sophie D.',d:'1 juil. 2026',n:295,s:'pub',a:'lock',dl:1,wm:0,pw:'sable-4827',seed:'maxpot1',v:84},
+ {t:'Zimmermann Paris',c:'Famille Zimmermann',d:'5 août 2026',n:30,s:'pub',a:'link',dl:1,wm:0,pw:'—',seed:'maxfam',v:41},
+ {t:'20261108 - Séminaire Kering',c:'Claire Martin',d:'8 nov. 2026',n:0,s:'draft',a:'lock',dl:1,wm:0,pw:'orage-5163',seed:null,v:0},
+ {t:'20260618 - BNPP Summer Party',c:'BNP Paribas',d:'18 juin 2026',n:412,s:'pub',a:'lock',dl:1,wm:0,pw:'colline-2290',seed:'maxparty',v:203,m:1},
+ {t:'BNP - 9 avril · Épreuves',c:'BNP Paribas',d:'9 avr. 2026',n:64,s:'exp',a:'lock',dl:0,wm:1,pw:'brume-7718',seed:'maxproof',v:12},
+ {t:'Portraits corporate · avril',c:'BNP Paribas',d:'7 & 9 avr. 2026',n:88,s:'pub',a:'lock',dl:1,wm:0,pw:'phare-3341',seed:'maxportrait',v:57},
+ {t:'Mxl - Reportage Photo',c:'Portfolio',d:'1 janv. 2023',n:178,s:'pub',a:'globe',dl:0,wm:1,pw:'—',seed:'maxreport',v:390},
+ {t:'Mxl - Immobilier',c:'Portfolio',d:'1 janv. 2023',n:48,s:'draft',a:'link',dl:0,wm:1,pw:'—',seed:'maximmo',v:0},
+];
+const ST={pub:['pub','Publiée'],draft:['draft','Brouillon'],exp:['exp','Expire dans 5 j']};
+const AC={lock:['i-lock','Mot de passe'],link:['i-link','Lien direct'],globe:['i-globe','Publique']};
+const sel=new Set([0,3]);
+const ic=(id)=>`<svg class="i"><use href="#${id}"/></svg>`;
+function renderList(){
+  $('#gridView').innerHTML=G.map((g,i)=>`
+   <article class="card ${sel.has(i)?'sel':''}" data-i="${i}">
+    <div class="thumb">${g.seed?(g.m?`<div class="mosaic">${[1,2,3,4].map(k=>`<img src="${pic(g.seed+k,300,220)}" alt="">`).join('')}</div>`:`<img src="${pic(g.seed,500,375)}" alt="">`):`<div style="height:100%;display:grid;place-items:center;color:var(--muted);font-size:13px">Aucune photo</div>`}
+     <span class="ck">${ic('i-check')}</span>
+     <div class="badges"><span class="bdg" title="${AC[g.a][1]}">${ic(AC[g.a][0])}</span>${g.wm?`<span class="bdg" title="Filigrane">${ic('i-drop')}</span>`:''}<span class="bdg" title="${g.dl?'Téléchargement activé':'Téléchargement désactivé'}">${ic(g.dl?'i-dl':'i-dl-off')}</span></div>
+    </div>
+    <div class="qa"><button data-share>${ic('i-share')}Partager</button><button data-copy="${g.pw}">${ic('i-key')}Code</button></div>
+    <div class="meta"><h3>${g.t}</h3><p><span class="pill ${ST[g.s][0]}">${ST[g.s][1]}</span><span>${g.n} photos</span><span class="dot"></span><span>${g.d}</span></p></div>
+   </article>`).join('');
+  $('#tableView').innerHTML=`<table class="tbl"><thead><tr><th><span class="cb ${sel.size===G.length?'on':''}" data-all>${ic('i-check')}</span></th><th>Galerie</th><th>Statut</th><th>Accès</th><th>Mot de passe</th><th>Téléch.</th><th>Photos</th><th>Vues</th><th></th></tr></thead><tbody>${G.map((g,i)=>`
+   <tr class="${sel.has(i)?'sel':''}" data-i="${i}"><td><span class="cb ${sel.has(i)?'on':''}">${ic('i-check')}</span></td>
+   <td><div class="t">${g.seed?`<img class="mini" src="${pic(g.seed,88,64)}" alt="">`:'<span class="mini" style="background:var(--sunken)"></span>'}<div>${g.t}<small>${g.c} · ${g.d}</small></div></div></td>
+   <td><span class="pill ${ST[g.s][0]}">${ST[g.s][1]}</span></td>
+   <td style="color:var(--ink-soft)"><span style="display:inline-flex;gap:6px;align-items:center">${ic(AC[g.a][0])}${AC[g.a][1]}</span></td>
+   <td>${g.pw!=='—'?`<span class="mono" data-copy="${g.pw}" style="cursor:pointer">${g.pw} ${ic('i-copy')}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+   <td>${g.dl?'<span style="color:var(--success)">HD + web</span>':'<span style="color:var(--muted)">Désactivé</span>'}</td>
+   <td>${g.n}</td><td>${g.v}</td><td><button class="btn ghost sm" data-share>${ic('i-share')}</button></td></tr>`).join('')}</tbody></table>`;
+  const n=sel.size;$('#bulkN').textContent=n+(n>1?' sélectionnées':' sélectionnée');$('#bulk').classList.toggle('on',n>0&&$('#s-list').classList.contains('on'));
+  $('#listMain').classList.toggle('selecting',n>0);
+}
+function clearSel(){sel.clear();renderList()}
+document.addEventListener('click',e=>{
+  const cp=e.target.closest('[data-copy]');if(cp&&cp.dataset.copy!=='—'){e.stopPropagation();copy(cp.dataset.copy);return}
+  if(e.target.closest('[data-share]')){go('share');return}
+  if(e.target.closest('[data-all]')){if(sel.size===G.length)sel.clear();else G.forEach((_,i)=>sel.add(i));renderList();return}
+  const it=e.target.closest('#gridView .card, #tableView tr[data-i]');
+  if(it){const i=+it.dataset.i;if(e.target.closest('.ck,.cb')||sel.size||e.shiftKey){sel.has(i)?sel.delete(i):sel.add(i);renderList()}else go('editor')}
+});
+$$('.filters .seg button').forEach(b=>b.onclick=()=>{$$('.filters .seg button').forEach(x=>x.classList.toggle('on',x===b));$('#gridView').style.display=b.dataset.v==='grid'?'':'none';$('#tableView').style.display=b.dataset.v==='table'?'':'none'});
+$$('.filters .chip').forEach(c=>c.onclick=()=>{if(c.textContent.includes('·')){$$('.filters .chip').forEach(x=>x.classList.remove('on'));c.classList.add('on')}});
+renderList();
+
+/* modèles */
+$$('#tpls .tpl').forEach(t=>t.onclick=()=>{$$('#tpls .tpl').forEach(x=>x.classList.toggle('on',x===t))});
+
+/* éditeur */
+$('#pgrid').innerHTML=Array.from({length:18},(_,i)=>{const w=i%5===3;return `<div class="ph ${i>14?'up':''}">${i===2?'<span class="h">Masquée</span>':''}<img src="${pic('maxpot'+(i+2),w?240:300,w?320:200)}" alt="" style="${i===2?'opacity:.4':''}"></div>`}).join('');
+$$('.ed-tabs button').forEach(b=>b.onclick=()=>{$$('.ed-tabs button').forEach(x=>x.classList.toggle('on',x===b));$$('.ed-pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+b.dataset.p));$('#edl-photos').style.display=b.dataset.p==='photos'?'':'none';$('#edl-settings').style.display=b.dataset.p==='settings'?'':'none'});
+$$('#access button').forEach(b=>b.onclick=()=>$$('#access button').forEach(x=>x.classList.toggle('on',x===b)));
+$$('.toggle').forEach(t=>t.addEventListener('click',()=>t.classList.toggle('on')));
+$('#dlTog').addEventListener('click',()=>{const on=$('#dlTog').classList.contains('on');$('#dlOpts').style.opacity=on?1:.35;$('#dlOpts').style.pointerEvents=on?'':'none';const rb=$$('.ribbon .rb')[1];rb.className='rb'+(on?' ok':'');rb.lastChild.textContent=on?'Téléchargement : HD + web':'Téléchargement désactivé';$('#dlBtn').style.display=on?'':'none';$('#lbDl').style.display=on?'':'none';toast(on?'Téléchargement activé pour cette galerie':'Téléchargement désactivé : boutons masqués côté client')});
+function setWm(){const on=$('#wmTog').classList.contains('on');const mode=$('#wmSeg .on').dataset.w;const host=$('.wm-img');host.querySelector('.wm-tile')?.remove();$('#wmMark').style.display=on&&mode!=='tile'?'':'none';$('#wmMark').textContent=mode==='logo'?'MAXCELLENS':'© Maxcellens';if(on&&mode==='tile'){const d=document.createElement('div');d.className='wm-tile';d.innerHTML=Array(40).fill('© Maxcellens').map(t=>`<span>${t}</span>`).join('');host.appendChild(d)}$$('.ribbon .rb')[2].textContent=on?'Filigrane : '+$('#wmSeg .on').textContent:'Sans filigrane'}
+$('#wmTog').addEventListener('click',setWm);
+$$('#wmSeg button').forEach(b=>b.onclick=()=>{$$('#wmSeg button').forEach(x=>x.classList.toggle('on',x===b));setWm()});
+const W1=['sable','orage','phare','brume','colline','rivage','cèdre','lagune','sommet','galet'].map(w=>w.normalize('NFD').replace(/\p{Diacritic}/gu,''));
+function genPw(){$('#pw').value=W1[Math.floor(Math.random()*W1.length)]+'-'+(1000+Math.floor(Math.random()*9000));toast('Nouveau mot de passe · anciens accès révoqués')}
+
+/* QR (simplifié pour la maquette : motif déterministe ; en prod qrcode.react) */
+(function(){const n=25,c=6;let s='';const r=(x,y)=>{let h=(x*73856093)^(y*19349663)^0x5bd1e995;h=(h^(h>>>13))*0x5bd1e995;return((h^(h>>>15))&3)===0};const fin=(x,y)=>[[0,0],[n-7,0],[0,n-7]].some(([a,b])=>x>=a&&x<a+7&&y>=b&&y<b+7);const finOn=(x,y)=>{for(const[a,b]of[[0,0],[n-7,0],[0,n-7]]){const dx=x-a,dy=y-b;if(dx>=0&&dx<7&&dy>=0&&dy<7)return dx===0||dx===6||dy===0||dy===6||(dx>1&&dx<5&&dy>1&&dy<5)}return false};for(let y=0;y<n;y++)for(let x=0;x<n;x++){if(fin(x,y)?finOn(x,y):r(x,y))s+=`<rect x="${x*c}" y="${y*c}" width="${c}" height="${c}"/>`}$('#qr').innerHTML=`<svg viewBox="-6 -6 ${n*c+12} ${n*c+12}" fill="#1e2b28">${s}</svg>Scanner pour ouvrir<br>la galerie`})();
+
+/* client : grille justifiée */
+const ratios=[1.5,1.5,1.5,.67,1.5,1.5,.75,1.5,1.33,1.5,.67,1.5,1.5,.8,1.5,1.5,1.5,.67];
+const photos=ratios.map((r,i)=>({r,src:pic('maxpot'+(i+2),Math.round(r*600),600),big:pic('maxpot'+(i+2),Math.round(r*1400),1400)}));
+const favs=new Set();
+function jg(el,off){el.innerHTML=photos.slice(off,off+9).map((p,k)=>{const i=off+k;return `<figure style="width:${p.r*260}px;flex-grow:${p.r*100};aspect-ratio:${p.r}" data-p="${i}"><img loading="lazy" src="${p.src}" alt=""><div class="ov2"><button data-f="${i}" title="Favori">${ic('i-heart')}</button>${'<button data-d title="Télécharger">'+ic('i-dl')+'</button>'}</div></figure>`}).join('')}
+jg($('#jg1'),0);jg($('#jg2'),9);
+document.addEventListener('click',e=>{
+ const f=e.target.closest('[data-f]');if(f){e.stopPropagation();toggleFav(+f.dataset.f);return}
+ if(e.target.closest('.jg [data-d]')){e.stopPropagation();toast('Téléchargement de la photo (HD)');return}
+ const fig=e.target.closest('.jg figure');if(fig)openLb(+fig.dataset.p)});
+function toggleFav(i){favs.has(i)?favs.delete(i):favs.add(i);$$(`[data-f="${i}"]`).forEach(b=>b.classList.toggle('faved',favs.has(i)));$('#favN').textContent=favs.size;$('#dlFav').textContent=favs.size+(favs.size>1?' photos':' photo');if(lbI===i)$('#lbFav').classList.toggle('faved',favs.has(i))}
+$$('.theme-sw button').forEach(b=>b.onclick=()=>{$$('.theme-sw button').forEach(x=>x.classList.toggle('on',x===b));const s=$('#s-client');s.classList.toggle('night',b.dataset.t==='night');s.style.background=b.dataset.t==='sand'?'#E9E3D8':'';$('#cbar').style.background=b.dataset.t==='sand'?'rgba(233,227,216,.9)':''});
+
+/* visionneuse + diaporama */
+let lbI=0,timer=null;
+function showLb(){const p=photos[lbI];const im=$('#lbImg');im.style.opacity=0;setTimeout(()=>{im.src=p.big;im.onload=()=>im.style.opacity=1},150);$('#lbC').textContent=(lbI+1)+' / 295';$('#lbFav').classList.toggle('faved',favs.has(lbI));$('#lbStrip').innerHTML=photos.map((q,i)=>Math.abs(i-lbI)<5?`<img src="${q.src}" class="${i===lbI?'on':''}" data-s="${i}" alt="">`:'').join('');}
+function openLb(i,play){lbI=i;$('#lb').classList.add('on');showLb();if(play)togglePlay(true)}
+function closeLb(){$('#lb').classList.remove('on');stopPlay()}
+function step(d){lbI=(lbI+d+photos.length)%photos.length;showLb();if(timer){$('#lb').classList.remove('playing');void $('#lb').offsetWidth;$('#lb').classList.add('playing')}}
+function togglePlay(force){if(timer&&!force){stopPlay();return}clearInterval(timer);timer=setInterval(()=>step(1),4000);$('#lb').classList.add('playing');$('#lbPlay').innerHTML=ic('i-pause')}
+function stopPlay(){clearInterval(timer);timer=null;$('#lb').classList.remove('playing');$('#lbPlay').innerHTML=ic('i-play')}
+$('#lbStrip').onclick=e=>{const t=e.target.closest('[data-s]');if(t){lbI=+t.dataset.s;showLb()}};
+document.addEventListener('keydown',e=>{if(!$('#lb').classList.contains('on'))return;if(e.key==='ArrowRight')step(1);if(e.key==='ArrowLeft')step(-1);if(e.key==='Escape')closeLb();if(e.key===' '){e.preventDefault();togglePlay()}});
+
+/* téléchargement client */
+function openDl(){$('#dl').classList.add('on');$('#zip').classList.remove('on')}
+$$('.dlg').forEach(g=>g.querySelectorAll('.o').forEach(o=>o.onclick=()=>g.querySelectorAll('.o').forEach(x=>x.classList.toggle('on',x===o))));
+function fakeZip(){const z=$('#zip');z.classList.add('on');let k=0;clearInterval(z._t);z._t=setInterval(()=>{k+=7;if(k>=295){k=295;clearInterval(z._t);$('#zipT').textContent='Terminé — 295 photos enregistrées'}else $('#zipT').textContent=`Photo ${k} / 295 · écriture directe sur le disque`;const p=Math.round(k/295*100);$('#zipP').textContent=p+' %';$('#zipB').style.width=p+'%'},80)}
+
+/* mobile */
+$('#mgrid').innerHTML=[0,1,2,3,4,5,6,7,8].map(i=>`<img class="${i%3===0?'w':''}" src="${pic('maxpot'+(i+2),400,i%3===0?270:530)}" alt="">`).join('');
+</script>
+</body>
+</html>

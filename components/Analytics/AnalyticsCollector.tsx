@@ -16,7 +16,8 @@ import {
 export default function AnalyticsCollector() {
   const pathname = usePathname();
   // Ne pas tracker les sous-pages /animation/* (interfaces acteurs/managers/admin/technique...)
-  const shouldTrack = !pathname || pathname === '/animation' || !pathname.startsWith('/animation/');
+  // Ni les galeries clients (/client/*) : pages privées, suivies dans leur propre journal
+  const shouldTrack = !pathname || pathname === '/animation' || (!pathname.startsWith('/animation/') && !pathname.startsWith('/client/'));
   const pathRef = useRef<string | null>(null);
   const isAuthenticatedRef = useRef(false);
   const [authChecked, setAuthChecked] = useState(false);

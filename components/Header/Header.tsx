@@ -278,7 +278,7 @@ export default function Header() {
   const currentNav = (isMobile ? navMobileVisible : navVisible) || {};
 
   // hide site header on animation sub-pages (bac system at /animation/*) — after all hooks
-  if (pathname?.startsWith('/animation/') || pathname?.startsWith('/bac/')) return null;
+  if (pathname?.startsWith('/animation/') || pathname?.startsWith('/bac/') || pathname?.startsWith('/client/')) return null;
 
   function normalizePath(p: string) {
     try { return String(p || '').replace(/\/+$|\/$/g, '').replace(/\/\//g, '/') || '/'; } catch(_) { return String(p || '').replace(/\/+$/g, '') || '/'; }

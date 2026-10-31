@@ -26,6 +26,8 @@ export default function robots(): MetadataRoute.Robots {
           '/politique-de-confidentialite',
           // Sous-pages de galeries : hors périmètre d'indexation
           '/galeries/',
+          // Galeries clients : privées
+          '/client/',
         ],
       },
     ],

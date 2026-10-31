@@ -7,6 +7,7 @@ import {
   Database,
   ExternalLink,
   FileText,
+  Images,
   Pencil,
   Plus,
   RefreshCw,
@@ -155,6 +156,15 @@ export default function AdminDashboard({ title }: { title: string }) {
               </div>
             </div>
             <div className={styles.grid}>
+              <Link href="/admin/galeries" className={styles.tile}>
+                <span className={styles.tileTop}>
+                  <Images size={17} className={styles.tileIcon} aria-hidden="true" />
+                  <span className={styles.tileTitle}>Galeries clients</span>
+                </span>
+                <span className={styles.tileDescription}>
+                  Livraisons privées : galeries, séances, mots de passe, téléchargements, filigranes
+                </span>
+              </Link>
               {quickEntries.map((e) => {
                 const Icon = e.icon;
                 return (
