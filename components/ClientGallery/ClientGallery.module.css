@@ -736,8 +736,10 @@
   padding: 5px;
   background: #fff;
 }
-.gateField:focus-within { border-color: #213431; }
+.gateField:focus-within { border-color: #213431; box-shadow: 0 0 0 3px rgba(33, 52, 49, 0.12); }
 .gateField input { flex: 1; min-width: 0; border: 0; outline: 0; padding: 0 16px; background: none; font: inherit; color: inherit; letter-spacing: 0.04em; }
+/* Le focus est porté par la pilule entière, pas par le champ */
+.gateField input:focus-visible { outline: none; }
 .gateField button {
   background: #213431 !important;
   color: #fff !important;
