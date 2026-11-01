@@ -306,7 +306,12 @@ export default function ReviewRoom({ mode, galleryTitle, videoName, src, poster,
               playsInline
               preload="metadata"
               onClick={togglePlay}
-              onPlay={() => setPlaying(true)}
+              onPlay={() => {
+                setPlaying(true);
+                // Rien d'écrit : l'instant suit de nouveau la vidéo
+                if (!text.trim()) setCapturedTime(null);
+              }}
+              onSeeked={() => { if (!text.trim()) setCapturedTime(null); }}
               onPause={() => setPlaying(false)}
               onTimeUpdate={(e) => {
                 setTime(e.currentTarget.currentTime);
@@ -492,12 +497,20 @@ export default function ReviewRoom({ mode, galleryTitle, videoName, src, poster,
                     value={text}
                     placeholder={replyTo ? 'Votre réponse…' : linkTime ? `Votre remarque à ${formatTimecode(currentTimecode)}…` : 'Votre remarque générale…'}
                     onFocus={() => {
-                      // On fige l'instant : la vidéo se met en pause pendant la saisie
+                      // La vidéo se met en pause pendant la saisie
                       const v = video.current;
                       if (v && !v.paused) v.pause();
-                      if (capturedTime == null) setCapturedTime(v?.currentTime ?? time);
                     }}
-                    onChange={(e) => setText(e.target.value)}
+                    onChange={(e) => {
+                      // L'instant est figé au premier caractère, pas au clic dans la zone :
+                      // on peut cliquer ici, puis chercher le bon moment dans la vidéo.
+                      if (!text && e.target.value && capturedTime == null) {
+                        const v = video.current;
+                        if (v && !v.paused) v.pause();
+                        setCapturedTime(v?.currentTime ?? time);
+                      }
+                      setText(e.target.value);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
