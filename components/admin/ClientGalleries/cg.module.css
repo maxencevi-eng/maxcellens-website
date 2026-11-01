@@ -557,6 +557,9 @@
 .pickBtn[aria-pressed='true'] { border-color: var(--adm-accent); background: var(--adm-accent-wash); color: var(--adm-ink); font-weight: 600; }
 .mini { aspect-ratio: 4 / 3; border-radius: 7px; position: relative; overflow: hidden; background: #e7e3da; }
 .mini i { position: absolute; display: block; }
+.colsArt { display: grid; gap: 3px; height: 40px; padding: 4px; border-radius: 7px; background: #f2f0eb; }
+.colsArt i { display: block; border-radius: 2px; background: #b9b2a3; }
+.pickBtn[aria-pressed='true'] .colsArt i { background: var(--adm-accent); }
 .swatch { height: 46px; border-radius: 8px; border: 1px solid rgba(0, 0, 0, 0.08); display: flex; align-items: flex-end; padding: 6px 8px; font-size: 15px; }
 .focusPick { position: relative; border-radius: var(--adm-radius); overflow: hidden; cursor: crosshair; max-width: 420px; margin-top: 10px; }
 .focusPick img { width: 100%; display: block; }

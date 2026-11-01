@@ -30,6 +30,8 @@ export type DesignSettings = {
   font: FontPair;
   grid: GridStyle;
   gap: number;
+  /** Images par ligne sur ordinateur (2 à 6) ; réduit automatiquement sur tablette et mobile. */
+  columns: number;
   focus?: { x: number; y: number };
 };
 
@@ -46,6 +48,7 @@ export const DEFAULT_DESIGN: DesignSettings = {
   font: 'serif',
   grid: 'justified',
   gap: 8,
+  columns: 4,
 };
 
 export function normalizeDownload(v: any): DownloadSettings {
@@ -71,6 +74,8 @@ export function normalizeDesign(v: any): DesignSettings {
   if (!['justified', 'masonry', 'square'].includes(d.grid)) d.grid = 'justified';
   const gap = Number(d.gap);
   d.gap = Number.isFinite(gap) ? Math.max(0, Math.min(24, Math.round(gap))) : 8;
+  const columns = Number(d.columns);
+  d.columns = Number.isFinite(columns) ? Math.max(2, Math.min(6, Math.round(columns))) : 4;
   if (d.focus && (typeof d.focus.x !== 'number' || typeof d.focus.y !== 'number')) delete d.focus;
   return d;
 }

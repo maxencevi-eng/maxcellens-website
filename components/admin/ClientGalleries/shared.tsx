@@ -421,6 +421,27 @@ export function DesignFields({ value, onChange }: { value: DesignSettings; onCha
           ))}
         </div>
       </div>
+      <div>
+        <span className={s.lbl}>Images par ligne (sur ordinateur)</span>
+        <div className={s.pick} style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
+          {[2, 3, 4, 5, 6].map((n) => (
+            <button key={n} type="button" className={s.pickBtn} aria-pressed={value.columns === n} onClick={() => onChange({ ...value, columns: n })}>
+              <div className={s.colsArt} style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
+                {Array.from({ length: n * 2 }, (_, i) => (
+                  <i key={i} />
+                ))}
+              </div>
+              <b style={{ fontSize: 15 }}>{n}</b>
+              <span style={{ fontSize: 11.5, marginTop: -6 }}>
+                {n === 2 ? 'très grandes' : n === 3 ? 'grandes' : n === 4 ? 'moyennes' : n === 5 ? 'petites' : 'très petites'}
+              </span>
+            </button>
+          ))}
+        </div>
+        <p className={s.muted} style={{ margin: '6px 0 0', fontSize: 12 }}>
+          Réduit automatiquement sur tablette et mobile. En grille justifiée, c’est une moyenne : les formats sont respectés.
+        </p>
+      </div>
       <div className={s.row2}>
         <SegmentedField
           label="Grille"

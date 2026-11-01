@@ -7,6 +7,7 @@ import {
   normalizeDesign,
   normalizeDownload,
   normalizeFavorites,
+  type AdminGallery,
   type Template,
   type TemplateSettings,
   type Watermark,
@@ -21,12 +22,16 @@ import s from './cg.module.css';
 export function TemplatesManager({
   templates,
   watermarks,
+  galleries,
   onChange,
+  onGalleries,
   toast,
 }: {
   templates: Template[];
   watermarks: Watermark[];
+  galleries: AdminGallery[];
   onChange: (t: Template[]) => void;
+  onGalleries: (updated: AdminGallery[]) => void;
   toast: (m: string) => void;
 }) {
   const [selId, setSelId] = useState<string | null>(templates[0]?.id || null);
@@ -66,6 +71,30 @@ export function TemplatesManager({
     onChange(templates.map((t) => ({ ...t, is_default: t.id === id })));
     toast('Modèle par défaut');
   };
+  const users = draft ? galleries.filter((g) => g.template_id === draft.id && !g.deleted_at) : [];
+  const propagate = async () => {
+    if (!draft || !users.length) return;
+    if (
+      !(await confirmDialog({
+        title: `Appliquer « ${draft.name} » à ${users.length} galerie${users.length > 1 ? 's' : ''} ?`,
+        message:
+          'Accès, téléchargement, filigrane, favoris et présentation de ces galeries seront remplacés par ceux du modèle. Titres, mots de passe, fichiers et dates ne changent pas.',
+        confirmLabel: 'Appliquer',
+      }))
+    )
+      return;
+    try {
+      const j = await adminApi<{ galleries: AdminGallery[] }>('/bulk', {
+        method: 'POST',
+        json: { ids: users.map((g) => g.id), action: 'patch', patch: { apply_template: draft.id } },
+      });
+      onGalleries(j.galleries);
+      toast(`Modèle appliqué à ${j.galleries.length} galerie(s)`);
+    } catch (e: any) {
+      toast(e.message);
+    }
+  };
+
   const remove = async (t: Template) => {
     if (!(await confirmDialog({ title: `Supprimer « ${t.name} » ?`, message: 'Les galeries déjà créées avec ce modèle ne changent pas.', tone: 'danger', confirmLabel: 'Supprimer' }))) return;
     await adminApi(`/templates?id=${t.id}`, { method: 'DELETE' });
@@ -93,6 +122,9 @@ export function TemplatesManager({
           <div className={s.card2}>
             <div className={s.inline}>
               <TextField label="Nom du modèle" value={draft.name} onChange={(v) => setDraft({ ...draft, name: v })} />
+              <AdminButton variant="primary" loading={saving} disabled={!dirty} onClick={save}>
+                {dirty ? 'Enregistrer le modèle' : 'Enregistré'}
+              </AdminButton>
               {!draft.is_default ? (
                 <AdminButton variant="secondary" leadingIcon={<Star size={14} />} onClick={() => makeDefault(draft.id)}>
                   Par défaut
@@ -102,6 +134,18 @@ export function TemplatesManager({
                 Supprimer
               </AdminButton>
             </div>
+            <p>
+              {users.length
+                ? `${users.length} galerie${users.length > 1 ? 's' : ''} créée${users.length > 1 ? 's' : ''} avec ce modèle. Modifier le modèle ne les change pas, sauf si vous l’appliquez.`
+                : 'Aucune galerie créée avec ce modèle pour l’instant.'}
+            </p>
+            {users.length ? (
+              <div style={{ marginTop: 10 }}>
+                <AdminButton size="sm" variant="secondary" onClick={propagate} disabled={dirty} title={dirty ? 'Enregistrez d’abord le modèle' : undefined}>
+                  Appliquer le modèle à ces {users.length} galerie{users.length > 1 ? 's' : ''}
+                </AdminButton>
+              </div>
+            ) : null}
             <div className={s.stack}>
               <TextField label="Description" value={draft.description || ''} onChange={(v) => setDraft({ ...draft, description: v })} placeholder="À quoi sert ce modèle ?" />
               <TagInput label="Tags ajoutés aux galeries créées avec ce modèle" value={st.tags || []} onChange={(tags) => set({ tags })} placeholder="corporate, portraits…" />

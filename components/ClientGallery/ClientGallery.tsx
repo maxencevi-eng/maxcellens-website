@@ -146,6 +146,10 @@ export default function ClientGallery(rawProps: Props) {
   // Aperçu admin : l'onglet Présentation envoie ses réglages non enregistrés
   // (postMessage, même origine) pour un rendu instantané.
   const [live, setLive] = useState<{ design?: DesignSettings; intro?: string | null }>({});
+  // Le bandeau d'aperçu n'est rendu qu'après montage : en session admin, des outils injectés
+  // dans la page faisaient diverger le HTML serveur et l'hydratation.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (!preview) return;
     const onMsg = (e: MessageEvent) => {
@@ -460,7 +464,7 @@ export default function ClientGallery(rawProps: Props) {
                 </button>
               ) : null}
               {canBulk ? (
-                <button className={styles.act} onClick={() => setDlOpen(true)}>
+                <button className={`${styles.act} ${styles.actPrimary}`} onClick={() => setDlOpen(true)}>
                   <Download size={17} />
                   <span className={styles.actLabel}>Télécharger</span>
                 </button>
@@ -549,7 +553,7 @@ export default function ClientGallery(rawProps: Props) {
           ) : null}
         </footer>
 
-        {preview ? (
+        {preview && mounted ? (
           <div className={styles.previewBadge} data-warn={props.availability !== 'ok'}>
             {props.availability === 'draft'
               ? 'Aperçu — galerie en brouillon : publiez-la pour que le client y accède'
@@ -839,7 +843,12 @@ function Grid({
   const ref = useRef<HTMLDivElement>(null);
   const width = useWidth(ref);
   const gap = design.gap;
-  const target = width < 600 ? 170 : width < 1100 ? 250 : 320;
+  // Images par ligne choisies dans l'admin (sur ordinateur) ; réduites sur tablette et mobile
+  const wanted = design.columns || 4;
+  const cols = width < 600 ? Math.max(1, Math.round(wanted / 2)) : width < 1100 ? Math.max(2, wanted - 1) : wanted;
+  // Justifiée : hauteur de ligne calculée pour tenir ~cols photos d'un format moyen
+  const avgRatio = items.length ? items.reduce((a, p) => a + p.w / p.h, 0) / items.length : 1.5;
+  const target = Math.max(120, (width - gap * (cols - 1)) / (cols * avgRatio));
 
   const tile = (p: ClientPhoto, style: React.CSSProperties, sizePx: number) => (
     <div
@@ -891,13 +900,12 @@ function Grid({
 
   if (design.grid === 'square') {
     return (
-      <div ref={ref} className={styles.square} style={{ ['--gap' as any]: `${gap}px` }}>
-        {items.map((p) => tile(p, {}, 400))}
+      <div ref={ref} className={styles.square} style={{ ['--gap' as any]: `${gap}px`, gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+        {items.map((p) => tile(p, {}, width / cols))}
       </div>
     );
   }
   if (design.grid === 'masonry') {
-    const cols = width < 600 ? 2 : width < 1100 ? 3 : 4;
     return (
       <div ref={ref} className={styles.masonry} style={{ ['--gap' as any]: `${gap}px`, columnCount: cols }}>
         {items.map((p) => tile(p, { aspectRatio: `${p.w} / ${p.h}` }, width / cols))}

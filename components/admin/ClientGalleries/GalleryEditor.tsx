@@ -1034,17 +1034,44 @@ function SettingsTab({
         <h3>
           <Layers size={16} /> Modèles
         </h3>
+        {g.template_id && meta.templates.some((t) => t.id === g.template_id) ? (
+          <p>
+            Créée avec le modèle « {meta.templates.find((t) => t.id === g.template_id)?.name} ».
+          </p>
+        ) : null}
         <div className={s.stack}>
           <div className={s.inline}>
-            <SelectField label="Appliquer un modèle" value={tpl} onChange={setTpl} options={meta.templates.map((t) => ({ value: t.id, label: t.name }))} />
+            <SelectField label="Modèle" value={tpl} onChange={setTpl} options={meta.templates.map((t) => ({ value: t.id, label: t.name }))} />
             <AdminButton
               variant="secondary"
               onClick={async () => {
-                if (await confirmDialog({ title: 'Appliquer ce modèle ?', message: 'Accès, téléchargement, filigrane, favoris et présentation seront remplacés.', confirmLabel: 'Appliquer' }))
+                if (await confirmDialog({ title: 'Appliquer ce modèle à la galerie ?', message: 'Accès, téléchargement, filigrane, favoris et présentation seront remplacés.', confirmLabel: 'Appliquer' }))
                   await patchNow({ apply_template: tpl }, 'Modèle appliqué');
               }}
             >
-              Appliquer
+              Appliquer à la galerie
+            </AdminButton>
+            <AdminButton
+              variant="secondary"
+              leadingIcon={<RefreshCw size={14} />}
+              onClick={async () => {
+                if (JSON.stringify(pick(g)) !== JSON.stringify(draft)) return toast('Enregistrez d’abord vos modifications');
+                const t = meta.templates.find((x) => x.id === tpl);
+                if (!t) return;
+                if (
+                  !(await confirmDialog({
+                    title: `Mettre à jour « ${t.name} » ?`,
+                    message: 'Le modèle reprend les réglages actuels de cette galerie (accès, téléchargement, filigrane, favoris, présentation, message, tags). Les galeries existantes ne changent pas.',
+                    confirmLabel: 'Mettre à jour le modèle',
+                  }))
+                )
+                  return;
+                const j = await adminApi<{ template: Template }>('/templates', { method: 'PATCH', json: { id: t.id, fromGalleryId: g.id } });
+                onTemplates(meta.templates.map((x) => (x.id === t.id ? j.template : x)));
+                toast(`Modèle « ${t.name} » mis à jour`);
+              }}
+            >
+              Mettre à jour le modèle avec ces réglages
             </AdminButton>
           </div>
           <div>
@@ -1059,7 +1086,7 @@ function SettingsTab({
                 toast('Modèle créé');
               }}
             >
-              Enregistrer ces réglages comme modèle
+              Enregistrer ces réglages comme nouveau modèle
             </AdminButton>
           </div>
         </div>

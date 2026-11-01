@@ -406,7 +406,14 @@ export default function GalleriesAdmin() {
               <p className={s.muted} style={{ marginTop: -8, marginBottom: 16 }}>
                 Un modèle = tous les réglages d’une galerie. Il est copié à la création : le modifier ne change pas les galeries déjà livrées.
               </p>
-              <TemplatesManager templates={data.templates} watermarks={data.watermarks} onChange={(t) => setData({ ...data, templates: t })} toast={toast.show} />
+              <TemplatesManager
+                templates={data.templates}
+                watermarks={data.watermarks}
+                galleries={data.galleries}
+                onChange={(t) => setData({ ...data, templates: t })}
+                onGalleries={replace}
+                toast={toast.show}
+              />
             </>
           ) : null}
 
@@ -526,7 +533,7 @@ export default function GalleriesAdmin() {
                       onClick={(e) => (sel.size || e.shiftKey || e.metaKey || e.ctrlKey ? toggle(g.id, e) : router.push(`/admin/galeries/${g.id}`))}
                     >
                       <div className={s.thumb}>
-                        {g.cover_url ? <img src={g.cover_url} alt="" loading="lazy" /> : <ImageOff size={26} />}
+                        {g.cover_url ? <img src={g.cover_url} alt="" loading="lazy" style={coverPos(g)} /> : <ImageOff size={26} />}
                         <span
                           className={s.check}
                           onClick={(e) => {
@@ -640,7 +647,7 @@ export default function GalleriesAdmin() {
                           </td>
                           <td>
                             <div className={s.tTitle}>
-                              {g.cover_url ? <img src={g.cover_url} alt="" loading="lazy" /> : <span className={s.ph} />}
+                              {g.cover_url ? <img src={g.cover_url} alt="" loading="lazy" style={coverPos(g)} /> : <span className={s.ph} />}
                               <div>
                                 <span>{g.title}</span>
                                 <small>
@@ -867,4 +874,10 @@ export default function GalleriesAdmin() {
       {toast.node}
     </div>
   );
+}
+
+/** Cadrage des vignettes de couverture selon le point d'intérêt choisi dans Présentation. */
+function coverPos(g: AdminGallery): React.CSSProperties {
+  const f = g.design?.focus;
+  return f ? { objectPosition: `${f.x * 100}% ${f.y * 100}%` } : {};
 }

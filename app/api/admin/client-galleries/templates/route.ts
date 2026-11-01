@@ -71,7 +71,7 @@ export async function POST(req: Request) {
   return NextResponse.json({ template: data });
 }
 
-/** PATCH { id, name?, description?, settings?, is_default? } */
+/** PATCH { id, name?, description?, settings? | fromGalleryId?, is_default? } */
 export async function PATCH(req: Request) {
   const denied = await guardAdmin(req);
   if (denied) return denied;
@@ -81,6 +81,12 @@ export async function PATCH(req: Request) {
   if (body.name?.trim()) patch.name = body.name.trim();
   if ('description' in body) patch.description = body.description || null;
   if (body.settings) patch.settings = cleanSettings(body.settings);
+  if (body.fromGalleryId) {
+    // « Mettre à jour le modèle avec les réglages de cette galerie »
+    const fromGallery = await settingsFromGallery(body.fromGalleryId);
+    if (!fromGallery) return jsonError('Galerie introuvable', 404);
+    patch.settings = fromGallery;
+  }
   if (body.is_default) {
     await db.from('client_gallery_templates').update({ is_default: false }).neq('id', body.id);
     patch.is_default = true;
