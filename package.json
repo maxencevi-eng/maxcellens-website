@@ -1,17 +1,15 @@
 {
   "name": "maxcellens-website",
   "version": "1.0.0",
-  "description": "",
-  "main": "next.config.js",
-  "directories": {
-    "lib": "lib"
-  },
+  "description": "Site vitrine Maxcellens — vidéaste & photographe (Next.js, Supabase)",
   "scripts": {
     "dev": "next dev",
     "dev:fresh": "node -e \"const fs=require('fs');const p='.next';if(fs.existsSync(p)){fs.rmSync(p,{recursive:true});console.log('.next supprimé');}\" && next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test scripts/*.test.cjs",
+    "images:variants": "node scripts/backfill-image-variants.mjs"
   },
   "browserslist": [
     "Chrome >= 87",
@@ -30,8 +28,6 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@lexical/code": "^0.40.0",
-    "@lexical/headless": "^0.40.0",
     "@lexical/html": "^0.40.0",
     "@lexical/link": "^0.40.0",
     "@lexical/list": "^0.40.0",
@@ -58,8 +54,6 @@
     "@types/node": "^25.0.9",
     "@types/react": "^19.2.9",
     "babel-plugin-react-compiler": "^1.0.0",
-    "eslint": "^9.39.2",
-    "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.0",
     "typescript": "^5.9.3"
   }

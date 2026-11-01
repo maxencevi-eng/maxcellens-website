@@ -1,5 +1,6 @@
 "use client";
 
+import { variantSrcSet } from '../../lib/imageVariants';
 import React, { useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 // use native img to avoid next/image remote domain restrictions in admin editor preview
@@ -164,11 +165,11 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
                         <button onClick={() => open(i)} aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}>
                           {pad ? (
                             <div style={{ width: '100%', overflow: 'hidden', position: 'relative', paddingBottom: `${pad}%`, ...skeletonBg }}>
-                              <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, ...imgRevealStyle(i) }} />
+                              <img src={it.image_url} srcSet={variantSrcSet(it.image_url)} sizes="(max-width: 767px) 100vw, 40vw" alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, ...imgRevealStyle(i) }} />
                             </div>
                           ) : (
                             <div style={{ width: '100%', overflow: 'hidden', ...skeletonBg }}>
-                              <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', display: 'block', ...imgRevealStyle(i) }} />
+                              <img src={it.image_url} srcSet={variantSrcSet(it.image_url)} sizes="(max-width: 767px) 100vw, 40vw" alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', display: 'block', ...imgRevealStyle(i) }} />
                             </div>
                           )}
                         </button>
@@ -193,7 +194,7 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
                   <div key={`${String(it.id)}-${i}`} style={{ display: 'block' }}>
                     <button onClick={() => { if (settings.galleryType === 'grid' || !settings.galleryType || settings.galleryType === 'masonry') open(i); }} aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}>
                       <div style={{ width: '100%', borderRadius: 0, overflow: 'hidden', position: 'relative', paddingBottom: `${paddingBottom}%`, ...skeletonBg }}>
-                        <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, ...imgRevealStyle(i) }} />
+                        <img src={it.image_url} srcSet={variantSrcSet(it.image_url)} sizes="(max-width: 767px) 100vw, 40vw" alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, ...imgRevealStyle(i) }} />
                       </div>
                     </button>
                   </div>
@@ -203,7 +204,7 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
                 <div key={`${String(it.id)}-${i}`}>
                   <button onClick={() => open(i)} aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'pointer', display: 'block', width: '100%' }}>
                     <div style={{ position: 'relative', width: '100%', borderRadius: 0, overflow: 'hidden', height: '100%', minHeight: 60, ...skeletonBg }}>
-                      <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block', ...imgRevealStyle(i) }} />
+                      <img src={it.image_url} srcSet={variantSrcSet(it.image_url)} sizes="(max-width: 767px) 100vw, 40vw" alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block', ...imgRevealStyle(i) }} />
                     </div>
                   </button>
                 </div>
@@ -218,7 +219,7 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
               <div key={`${String(it.id)}-${i}`} style={{ flex: `0 0 ${Math.max(20, Math.floor(100 / Math.max(1, columns)))}%`, scrollSnapAlign: 'center' }}>
                 <div aria-label={it.title || `image-${i}`} style={{ all: 'unset', cursor: 'default', display: 'block', width: '100%' }}>
                   <div style={{ width: '100%', borderRadius: 8, overflow: 'hidden', minHeight: 60, ...skeletonBg }}>
-                    <img src={it.image_url} alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', display: 'block', ...imgRevealStyle(i) }} />
+                    <img src={it.image_url} srcSet={variantSrcSet(it.image_url)} sizes="(max-width: 767px) 100vw, 40vw" alt={it.title || ''} {...imgLoadingProps(i)} style={{ objectFit: 'cover', width: '100%', display: 'block', ...imgRevealStyle(i) }} />
                   </div>
                 </div>
               </div>
@@ -229,7 +230,7 @@ export default function PortraitGallery({ items, settings = {} }: { items: Item[
         {settings.galleryType === 'slideshow' && (
           <div style={{ position: 'relative' }}>
             <div style={{ width: '100%', borderRadius: 8, overflow: 'hidden', background: '#f6f7f8' }}>
-              <img src={items[slideshowIndex % items.length].image_url} alt={items[slideshowIndex % items.length].title || ''} style={{ objectFit: 'cover', width: '100%', display: 'block' }} />
+              <img src={items[slideshowIndex % items.length].image_url} srcSet={variantSrcSet(items[slideshowIndex % items.length].image_url)} sizes="100vw" alt={items[slideshowIndex % items.length].title || ''} style={{ objectFit: 'cover', width: '100%', display: 'block' }} />
             </div>
             <div style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)' }}>
               <button onClick={() => setSlideshowIndex((s) => (s - 1 + items.length) % items.length)}>◀</button>

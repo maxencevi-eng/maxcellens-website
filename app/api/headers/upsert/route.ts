@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/adminAuth';
+import { withVariants } from '@/lib/imageVariants';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 
 // Use the shared admin client; the module will warn if it's not configured.
 
 export async function POST(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   try {
     if (!supabaseAdmin) return NextResponse.json({ error: 'Admin credentials not configured' }, { status: 503 });
 
@@ -36,7 +40,7 @@ export async function POST(req: Request) {
     // on success, remove previous stored image if different
     try {
       if (prevPath && prevPath !== storedPath) {
-        const rem = await supabaseAdmin.storage.from('medias').remove([prevPath]);
+        const rem = await supabaseAdmin.storage.from('medias').remove(withVariants([prevPath]));
         if (rem?.error) console.warn('Failed to delete old header image', rem.error, prevPath);
       }
     } catch (e) { console.warn('Error deleting previous header image', e); }

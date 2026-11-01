@@ -25,7 +25,7 @@ export type BuiltinPageKey =
 export const BUILTIN_PAGES: { key: BuiltinPageKey; label: string; path: string }[] = [
   { key: 'home', label: 'Accueil', path: '/' },
   { key: 'realisation', label: 'Réalisation', path: '/realisation' },
-  { key: 'evenement', label: 'Évènement', path: '/evenement' },
+  { key: 'evenement', label: 'Événement', path: '/evenement' },
   { key: 'corporate', label: 'Corporate', path: '/corporate' },
   { key: 'portrait', label: 'Portrait', path: '/portrait' },
   { key: 'animation', label: 'Animation', path: '/animation' },

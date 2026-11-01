@@ -49,7 +49,7 @@ export async function GET(req: Request, ctx: Ctx) {
     }
     return NextResponse.json({ comments, identified: !!r.vid, lastSubmission });
   } catch (e: any) {
-    return NextResponse.json({ error: isMissingTable(e.message) ? REVIEW_MIGRATION_HINT : e.message }, { status: 500 });
+    return NextResponse.json({ error: isMissingTable(e.message) ? REVIEW_MIGRATION_HINT : 'Erreur serveur' }, { status: 500 });
   }
 }
 
@@ -139,6 +139,6 @@ export async function POST(req: Request, ctx: Ctx) {
     }
     return NextResponse.json({ comments: await listComments(g.id, photoId, vid) });
   } catch (e: any) {
-    return NextResponse.json({ error: isMissingTable(e.message) ? REVIEW_MIGRATION_HINT : e.message }, { status: 500 });
+    return NextResponse.json({ error: isMissingTable(e.message) ? REVIEW_MIGRATION_HINT : 'Erreur serveur' }, { status: 500 });
   }
 }

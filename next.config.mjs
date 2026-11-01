@@ -12,13 +12,29 @@ try {
   // ignore
 }
 
+// En-têtes de sécurité appliqués à toutes les réponses. La CSP se limite aux
+// directives sans risque pour le rendu (le site s'appuie sur des scripts
+// inline et des médias tiers : YouTube, Vimeo, OpenStreetMap, Supabase, R2).
+const securityHeaders = [
+  { key: 'Content-Security-Policy', value: "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; upgrade-insecure-requests" },
+  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()' },
+];
+
 const nextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
   serverExternalPackages: ['sharp'],
   images: {
-    // Images are already pre-compressed and converted to WebP at upload time.
-    // Disabling Next.js image optimization prevents a second lossy re-encoding pass.
-    unoptimized: true,
+    // Les images sont compressées en WebP à l'envoi, avec des déclinaisons
+    // 480 / 960 / 1600 / 2400 px (lib/imageVariants.ts). Le loader choisit la
+    // bonne déclinaison : aucun réencodage à la volée par Vercel.
+    loader: 'custom',
+    loaderFile: './lib/imageLoader.ts',
+    deviceSizes: [480, 640, 960, 1280, 1600, 1920, 2400, 3200],
+    imageSizes: [160, 240, 320],
     remotePatterns: [
       ...(supabaseHostname ? [{ protocol: 'https', hostname: supabaseHostname }] : []),
       { protocol: 'https', hostname: 'images.unsplash.com' },
@@ -26,6 +42,7 @@ const nextConfig = {
   },
   async headers() {
     return [
+      { source: '/:path*', headers: securityHeaders },
       // Cache « immuable » d'un an : seulement en production, où les fichiers
       // de /_next/static portent un hash de contenu. En développement, leurs
       // noms restent stables d'une modification à l'autre : le navigateur
@@ -64,21 +81,8 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', 'framer-motion', 'qrcode.react'],
   },
-  // Stub @tiptap/react (projet migré sur Lexical) pour éviter erreurs HMR / chunks fantômes
-  // Turbopack n'accepte pas les chemins absolus Windows → chemins relatifs au projet
   turbopack: {
     root: __dirname,
-    resolveAlias: {
-      '@tiptap/react': './lib/stub-tiptap-react.ts',
-      '@tiptap/react/dist/index.js': './lib/stub-tiptap-react.ts',
-    },
-  },
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve?.alias,
-      '@tiptap/react': path.resolve(__dirname, 'lib/stub-tiptap-react.ts'),
-    };
-    return config;
   },
   // Serve all BAC system pages at /animation/* (canonical URL)
   async rewrites() {

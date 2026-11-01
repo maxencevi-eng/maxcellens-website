@@ -38,7 +38,7 @@ export async function POST(req: Request, ctx: Ctx) {
   let id = existing?.id as string | undefined;
   if (!id) {
     const { data, error } = await db.from('client_gallery_visitors').insert({ gallery_id: g.id, email: email || null, name }).select('id').single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) { console.error('client visitor', error); return NextResponse.json({ error: 'Enregistrement impossible, réessayez' }, { status: 500 }); }
     id = data.id;
   } else if (name) {
     await db.from('client_gallery_visitors').update({ name }).eq('id', id);

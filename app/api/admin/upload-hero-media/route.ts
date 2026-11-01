@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/adminAuth';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin'
+import { withVariants } from '@/lib/imageVariants';
+import { IMMUTABLE_CACHE, uploadImageVariants } from '@/lib/imageVariantsServer';
 
 export async function POST(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   try {
     if (!supabaseAdmin) return NextResponse.json({ error: 'Admin credentials not configured' }, { status: 503 });
     const form = await req.formData();
@@ -55,11 +60,22 @@ export async function POST(req: Request) {
 
       const name = `image-${page}-${Date.now()}.webp`;
       const path = folder ? `${folder.replace(/\/+$|^\/+/, '')}/${name}` : `headers/${page}/images/${name}`;
-      const { data, error: uploadError } = await supabaseAdmin.storage.from('medias').upload(path, outBuf, { contentType: finalContentType, upsert: true });
+      const { error: uploadError } = await supabaseAdmin.storage.from('medias').upload(path, outBuf, { contentType: finalContentType, upsert: true, cacheControl: IMMUTABLE_CACHE });
       if (uploadError) return NextResponse.json({ error: String(uploadError) }, { status: 500 });
 
+      // Déclinaisons 480 → 2400 px : le site les référence systématiquement,
+      // une image sans déclinaisons s'afficherait cassée. En cas d'échec on
+      // annule l'envoi plutôt que de laisser une image incomplète.
+      try {
+        await uploadImageVariants(outBuf, path);
+      } catch (e) {
+        console.error('upload-hero-media: variants failed', e);
+        await supabaseAdmin.storage.from('medias').remove(withVariants([path])).catch(() => {});
+        return NextResponse.json({ error: "Création des tailles d'image impossible, réessayez." }, { status: 500 });
+      }
+
       if (oldPathToDelete && oldPathToDelete !== path) {
-        await supabaseAdmin.storage.from('medias').remove([oldPathToDelete]).catch((e) => console.warn('upload-hero-media: remove old image failed', e));
+        await supabaseAdmin.storage.from('medias').remove(withVariants([oldPathToDelete])).catch((e) => console.warn('upload-hero-media: remove old image failed', e));
       }
 
       const gp = supabaseAdmin.storage.from('medias').getPublicUrl(path);
@@ -85,7 +101,7 @@ export async function POST(req: Request) {
       if (uploadError) return NextResponse.json({ error: String(uploadError) }, { status: 500 });
 
       if (oldPathToDelete && oldPathToDelete !== path) {
-        await supabaseAdmin.storage.from('medias').remove([oldPathToDelete]).catch((e) => console.warn('upload-hero-media: remove old video failed', e));
+        await supabaseAdmin.storage.from('medias').remove(withVariants([oldPathToDelete])).catch((e) => console.warn('upload-hero-media: remove old video failed', e));
       }
 
       // build public URL immediately and return it; transcode in background to avoid blocking client

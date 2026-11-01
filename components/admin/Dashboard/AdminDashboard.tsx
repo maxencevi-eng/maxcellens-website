@@ -24,7 +24,7 @@ import styles from './AdminDashboard.module.css';
 const STATIC_PAGES: { slug: string; title: string }[] = [
   { slug: '/', title: 'Accueil' },
   { slug: '/realisation', title: 'Réalisation' },
-  { slug: '/evenement', title: 'Évènement' },
+  { slug: '/evenement', title: 'Événement' },
   { slug: '/corporate', title: 'Corporate' },
   { slug: '/portrait', title: 'Portrait' },
   { slug: '/animation', title: 'Animation' },

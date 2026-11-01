@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/adminAuth';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 
 /**
@@ -7,6 +8,8 @@ import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
  * puis supprime l'ancienne clé pour garder une seule source de vérité.
  */
 export async function POST(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   try {
     if (!supabaseAdmin) {
       return NextResponse.json({ error: 'Admin credentials not configured' }, { status: 503 });

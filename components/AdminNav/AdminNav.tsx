@@ -9,7 +9,7 @@ import styles from "./AdminNav.module.css";
 const MAIN_PAGES: { href: string; label: string; description: string }[] = [
   { href: "/", label: "Accueil", description: "Voir et modifier l’introduction du site" },
   { href: "/realisation", label: "Réalisation", description: "Accéder à la section portfolio vidéo" },
-  { href: "/evenement", label: "Évènement", description: "Modifier la page événements et reportages" },
+  { href: "/evenement", label: "Événement", description: "Modifier la page événements et reportages" },
   { href: "/corporate", label: "Corporate", description: "Gérer la page entreprise et témoignages" },
   { href: "/portrait", label: "Portrait", description: "Mettre à jour les galeries portrait" },
   { href: "/animation", label: "Animation", description: "Piloter les contenus animation" },

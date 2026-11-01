@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from '@/lib/adminAuth';
+import { withVariants } from '@/lib/imageVariants';
 import { supabaseAdmin } from "../../../../lib/supabaseAdmin";
 
 const BUCKET_MEDIAS = "medias";
@@ -55,6 +57,8 @@ async function listAllPaths(bucket: string, prefix: string): Promise<string[]> {
 }
 
 export async function POST(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   try {
     if (!supabaseAdmin) {
       return NextResponse.json({ error: "Admin credentials not configured" }, { status: 503 });
@@ -107,7 +111,7 @@ export async function POST(req: Request) {
       const chunk = 500;
       for (let i = 0; i < pathsToDelete.length; i += chunk) {
         const slice = pathsToDelete.slice(i, i + chunk);
-        const { error: removeError } = await supabaseAdmin.storage.from(BUCKET_MEDIAS).remove(slice);
+        const { error: removeError } = await supabaseAdmin.storage.from(BUCKET_MEDIAS).remove(withVariants(slice));
         if (removeError) {
           console.warn("delete-gallery: remove storage failed", removeError);
         }

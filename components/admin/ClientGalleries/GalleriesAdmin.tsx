@@ -745,7 +745,7 @@ export default function GalleriesAdmin() {
                 </select>
                 <select className={s.select} value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Tri">
                   <option value="created">Plus récentes</option>
-                  <option value="event">Date d’évènement</option>
+                  <option value="event">Date d’événement</option>
                   <option value="title">Nom</option>
                   <option value="views">Plus vues</option>
                   <option value="size">Plus lourdes</option>

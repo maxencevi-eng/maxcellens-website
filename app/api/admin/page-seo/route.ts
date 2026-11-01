@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/adminAuth';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 import type { PageSeoRow } from '../../../../lib/pageSeo';
 
@@ -49,6 +50,8 @@ export async function GET(req: Request) {
 
 /** POST — création/mise à jour des paramètres SEO d’une page (admin). */
 export async function POST(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   try {
     if (!supabaseAdmin) {
       return NextResponse.json({ error: 'Admin credentials not configured' }, { status: 503 });

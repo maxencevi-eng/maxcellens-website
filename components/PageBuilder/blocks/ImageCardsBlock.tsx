@@ -1,5 +1,6 @@
 "use client";
 
+import { variantSrcSet } from '../../../lib/imageVariants';
 import React, { useState } from 'react';
 import VideoLightbox from '../../VideoGallery/VideoLightbox';
 import { RATIO_VALUES, resolveColor } from './blockDefs';
@@ -62,7 +63,7 @@ export function ImageCardsBlock({ data, lateral = false }: { data: ImageCardsDat
           const cover = card.image?.url || (video?.youtubeId ? `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg` : '');
           const Tag = video ? 'button' : href ? 'a' : 'div';
           return <Tag key={index} className={`${styles.card}${video || href ? ` ${styles.interactive}` : ''}`} href={href} type={video ? 'button' : undefined} aria-label={video ? `Lire ${card.title || 'la vidéo'}` : undefined} onClick={video ? () => { const i = playable.findIndex(item => item.cardIndex === index); setInitialVideo(i); setActiveVideo(i); } : undefined} target={href && card.newTab ? '_blank' : undefined} rel={href && card.newTab ? 'noopener noreferrer' : undefined} style={{ aspectRatio: RATIO_VALUES[data.ratio] || '4 / 3', color: resolveColor(data.cardColor) }}>
-            {cover ? <img src={cover} alt={card.alt} loading="lazy" style={{ objectPosition: `${card.focusX}% ${card.focusY}%` }} /> : video?.kind === 'file' ? <video src={video.url} muted playsInline preload="metadata" className={styles.videoPreview} /> : null}
+            {cover ? <img src={cover} srcSet={variantSrcSet(cover)} sizes="(max-width: 767px) 90vw, 33vw" alt={card.alt} loading="lazy" decoding="async" style={{ objectPosition: `${card.focusX}% ${card.focusY}%` }} /> : video?.kind === 'file' ? <video src={video.url} muted playsInline preload="metadata" className={styles.videoPreview} /> : null}
             <span className={styles.shade} aria-hidden="true" />
             {!lateral && <span className={styles.index} aria-hidden="true">{pad2(index + 1)}</span>}
             {video && <span className={styles.play} aria-hidden="true"><PlayIcon /></span>}

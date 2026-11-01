@@ -1,6 +1,7 @@
 "use no memo";
 "use client";
 
+import { variantSrcSet } from '../../lib/imageVariants';
 import { AdminToolbarShell, AdminToolbarButton } from '../admin/AdminToolbar';
 import { Pencil, MapPin, TrainFront, Plane, Car, Compass, Globe, CalendarDays } from 'lucide-react';
 import useBuiltinPageBlocks from '../PageBuilder/useBuiltinPageBlocks';
@@ -127,7 +128,7 @@ function GalleryRow({ items, speed }: { items: ContactGalleryItem[]; speed: numb
   const itemEl = (item: ContactGalleryItem, i: number) => (
     <div key={i} className={styles.galleryItem}>
       <div className={styles.galleryImgWrap}>
-        <img src={item.url} alt={item.caption ?? ''} className={styles.galleryImg} loading="lazy" />
+        <img src={item.url} srcSet={variantSrcSet(item.url)} sizes="(max-width: 767px) 70vw, 30vw" alt={item.caption ?? ''} className={styles.galleryImg} loading="lazy" decoding="async" />
       </div>
       {item.caption && <p className={styles.galleryCaption}>{item.caption}</p>}
     </div>
@@ -151,7 +152,8 @@ function GalleryRow({ items, speed }: { items: ContactGalleryItem[]; speed: numb
   );
 }
 
-export default function ContactBlocks() {
+/** `afterIntro` : contenu fixe rendu juste après le bloc d'introduction (formulaire de contact). */
+export default function ContactBlocks({ afterIntro }: { afterIntro?: React.ReactNode } = {}) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [open, setOpen] = useState(false);
   const [openZones, setOpenZones] = useState(false);
@@ -292,6 +294,8 @@ export default function ContactBlocks() {
                 className={styles.photo}
                 alt="Portrait"
                 src={String(photo.url)}
+                srcSet={variantSrcSet(String(photo.url))}
+                sizes="(max-width: 767px) 100vw, 45vw"
                 onLoad={() => setImgLoaded(true)}
               />
             </div>
@@ -611,8 +615,12 @@ export default function ContactBlocks() {
   return (
     <div className={`${styles.wrapper} page-blocks`}>
       {blockOrderContact.map((blockId) => (
-        <Fragment key={blockId}>{sections[blockId] ?? null}</Fragment>
+        <Fragment key={blockId}>
+          {sections[blockId] ?? null}
+          {blockId === 'contact_intro' ? afterIntro : null}
+        </Fragment>
       ))}
+      {!blockOrderContact.includes('contact_intro') ? afterIntro : null}
       {dynamicBlocks.addButton}
       {dynamicBlocks.modals}
       {open ? (

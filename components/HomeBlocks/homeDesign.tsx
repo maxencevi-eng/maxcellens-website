@@ -127,8 +127,11 @@ export function CountUp({ value }: { value: string }) {
   }, [inView, reduce, target, animated]);
 
   if (!match || reduce) return <span ref={ref}>{value}</span>;
+  // La valeur réelle est présente dans le HTML (moteurs de recherche, lecteurs
+  // d'écran) ; seul le compteur animé, masqué de l'accessibilité, part de 0.
   return (
-    <span ref={ref} aria-label={value}>
+    <span ref={ref}>
+      <span className="sr-only">{value}</span>
       <span aria-hidden="true">{match[1]}{inView ? current : 0}{match[3]}</span>
     </span>
   );

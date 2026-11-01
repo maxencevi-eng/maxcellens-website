@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/adminAuth';
+import { withVariants } from '@/lib/imageVariants';
 import { revalidatePath } from 'next/cache'
 import { supabaseAdmin, getHeaderForPage } from '../../../../lib/supabaseAdmin'
 
@@ -68,6 +70,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   try {
     const body = await req.json();
     const { page, mode: incomingMode, settings, settings_site } = body || {};
@@ -144,7 +148,7 @@ export async function POST(req: Request) {
                 if (prevSettings.path) toRemove.push(prevSettings.path);
                 // remove best-effort
                 if (toRemove.length) {
-                  try { await supabaseAdmin.storage.from('medias').remove(toRemove); } catch (e) { console.warn('Failed to remove previous hero files from medias', e); }
+                  try { await supabaseAdmin.storage.from('medias').remove(withVariants(toRemove)); } catch (e) { console.warn('Failed to remove previous hero files from medias', e); }
                 }
               } catch (e) { console.warn('Failed to parse previous hero site_settings for cleanup', e); }
             }
@@ -194,7 +198,7 @@ export async function POST(req: Request) {
       const toRemove = (normNew.length > 0) ? normPrev.filter(p => !normNew.includes(p)) : [];
       if (toRemove.length) {
         try {
-          const rem = await supabaseAdmin.storage.from('medias').remove(toRemove);
+          const rem = await supabaseAdmin.storage.from('medias').remove(withVariants(toRemove));
           if (rem?.error) console.warn('Failed to remove previous hero files', rem.error, toRemove);
         } catch (e) { console.warn('Error removing previous hero files', e); }
       }

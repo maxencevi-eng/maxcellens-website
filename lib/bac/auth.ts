@@ -6,14 +6,35 @@ import type { BacAuthPayload, ProfilType } from './types';
 
 const COOKIE_NAME = 'bac_session';
 const COOKIE_MAX_AGE = 12 * 60 * 60; // 12h in seconds
-const SECRET = process.env.BAC_SESSION_SECRET || process.env.BAC_ADMIN_PASSWORD || 'bac-default-secret-change-me';
+const PBKDF2_ITERATIONS = 210_000;
+
+/**
+ * Secret de signature des sessions. Plus de valeur par défaut : un secret
+ * connu permettrait de forger un cookie admin.
+ */
+function getSecret(): string {
+  const s = process.env.BAC_SESSION_SECRET || process.env.BAC_ADMIN_PASSWORD;
+  if (!s) throw new Error('BAC_SESSION_SECRET manquant');
+  return s;
+}
+
+const toHex = (buf: ArrayBuffer | Uint8Array) =>
+  Array.from(buf instanceof Uint8Array ? buf : new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+
+/** Comparaison en temps constant de deux chaînes. */
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
 
 // Simple HMAC-like signing using Web Crypto (Edge-compatible)
 async function sign(payload: string): Promise<string> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     'raw',
-    encoder.encode(SECRET),
+    encoder.encode(getSecret()),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']
@@ -27,11 +48,12 @@ async function verify(token: string): Promise<string | null> {
   const parts = token.split('.');
   if (parts.length !== 2) return null;
   const [payloadB64, sigHex] = parts;
+  if (!/^[0-9a-f]{64}$/i.test(sigHex)) return null;
   const payload = Buffer.from(payloadB64, 'base64url').toString('utf-8');
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     'raw',
-    encoder.encode(SECRET),
+    encoder.encode(getSecret()),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['verify']
@@ -41,17 +63,32 @@ async function verify(token: string): Promise<string | null> {
   return valid ? payload : null;
 }
 
-// Hash password using SHA-256 (for storage — simple hash is fine for this use case)
+async function pbkdf2(password: string, salt: Uint8Array, iterations: number): Promise<string> {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: salt as BufferSource, iterations }, key, 256);
+  return toHex(bits);
+}
+
+/** Hachage PBKDF2-SHA256 salé : `pbkdf2$<itérations>$<sel>$<empreinte>`. */
 export async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password + SECRET);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  return `pbkdf2$${PBKDF2_ITERATIONS}$${toHex(salt)}$${await pbkdf2(password, salt, PBKDF2_ITERATIONS)}`;
+}
+
+/** Ancien format (SHA-256 + secret global), conservé pour les profils existants. */
+async function legacyHash(password: string): Promise<string> {
+  return toHex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password + getSecret())));
+}
+
+export function isLegacyHash(hash: string): boolean {
+  return !hash.startsWith('pbkdf2$');
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  const computed = await hashPassword(password);
-  return computed === hash;
+  if (isLegacyHash(hash)) return safeEqual(await legacyHash(password), hash);
+  const [, iter, saltHex, expected] = hash.split('$');
+  const salt = new Uint8Array((saltHex.match(/.{2}/g) || []).map((h) => parseInt(h, 16)));
+  return safeEqual(await pbkdf2(password, salt, Number(iter)), expected);
 }
 
 // Create session cookie
@@ -100,7 +137,7 @@ export async function loginBac(slug: string, password: string): Promise<{ token:
   // Admin special case
   if (slug === 'admin') {
     const adminPw = process.env.BAC_ADMIN_PASSWORD;
-    if (!adminPw || password !== adminPw) return null;
+    if (!adminPw || !safeEqual(password, adminPw)) return null;
     const token = await createBacSession('admin', 'admin');
     return { token, type: 'admin' };
   }
@@ -118,6 +155,15 @@ export async function loginBac(slug: string, password: string): Promise<{ token:
 
   const valid = await verifyPassword(password, profil.mot_de_passe_hash);
   if (!valid) return null;
+
+  // Migration transparente vers PBKDF2 à la première connexion réussie
+  if (isLegacyHash(profil.mot_de_passe_hash)) {
+    try {
+      await supabaseAdmin.from('bac_profils_acces').update({ mot_de_passe_hash: await hashPassword(password) }).eq('slug', profil.slug);
+    } catch (e) {
+      console.error('BAC: migration du hachage impossible', e);
+    }
+  }
 
   const token = await createBacSession(profil.slug, profil.type);
   return { token, type: profil.type };

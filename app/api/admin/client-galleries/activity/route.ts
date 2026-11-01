@@ -8,8 +8,8 @@ const TYPES = ['view', 'unlock', 'unlock_fail', 'download_photo', 'download_zip'
 /**
  * GET /api/admin/client-galleries/activity?days=30&type=&gallery=&limit=300
  *
- * Suivi global : compteurs exacts sur la période (par type d'évènement),
- * journal des derniers évènements enrichi (galerie, fichier, visiteur) et
+ * Suivi global : compteurs exacts sur la période (par type d'événement),
+ * journal des derniers événements enrichi (galerie, fichier, visiteur) et
  * galeries publiées jamais ouvertes.
  */
 export async function GET(req: Request) {

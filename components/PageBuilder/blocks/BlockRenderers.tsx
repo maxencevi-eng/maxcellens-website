@@ -1,5 +1,6 @@
 "use client";
 
+import { variantSrcSet } from '../../../lib/imageVariants';
 import React from 'react';
 import Link from 'next/link';
 import {
@@ -188,6 +189,8 @@ export function ImageBlock({ data, squareImages = false }: { data: ImageBlockDat
         <img
           className={styles.imageEl}
           src={data.image.url}
+          srcSet={variantSrcSet(data.image.url)}
+          sizes="(max-width: 767px) 100vw, 70vw"
           alt={data.alt || ''}
           loading="lazy"
           style={{

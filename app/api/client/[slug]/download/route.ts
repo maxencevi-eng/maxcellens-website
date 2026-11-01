@@ -57,7 +57,7 @@ export async function POST(req: Request, ctx: Ctx) {
     q = q.in('id', favs.map((f: any) => f.photo_id));
   }
   const { data: photos, error } = await q;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) { console.error('client download', error); return NextResponse.json({ error: 'Téléchargement momentanément impossible' }, { status: 500 }); }
   if (!photos?.length) return NextResponse.json({ error: 'Aucune photo' }, { status: 404 });
 
   // Noms uniques dans le ZIP

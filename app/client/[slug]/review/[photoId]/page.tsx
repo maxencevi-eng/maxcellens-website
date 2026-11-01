@@ -18,7 +18,7 @@ type Props = {
 };
 
 export const metadata: Metadata = {
-  title: 'Review vidéo — Maxcellens',
+  title: 'Review vidéo',
   robots: { index: false, follow: false, nocache: true },
 };
 

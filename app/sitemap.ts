@@ -20,7 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/portrait`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
     { url: `${baseUrl}/realisation`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
     { url: `${baseUrl}/animation`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${baseUrl}/galeries`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
+    // /galeries est en noindex (réglage SEO) : l'annoncer au sitemap serait contradictoire
   ];
 
   // Pages créées depuis l'administration : sans cela une page publiée

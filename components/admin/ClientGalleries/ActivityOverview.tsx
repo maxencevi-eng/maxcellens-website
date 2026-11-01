@@ -203,7 +203,7 @@ export default function ActivityOverview({
         <div className={s.card2} style={{ padding: 0, overflow: 'hidden' }}>
           <div className={s.activityHead}>
             Journal
-            {data?.truncated ? <span className={s.muted}> · {data.events.length} derniers évènements</span> : null}
+            {data?.truncated ? <span className={s.muted}> · {data.events.length} derniers événements</span> : null}
           </div>
           {data && !data.events.length ? <p className={s.muted} style={{ padding: '0 18px 18px' }}>Aucune activité sur cette période.</p> : null}
           {data?.events.length ? (
@@ -290,7 +290,7 @@ export default function ActivityOverview({
   );
 }
 
-/** Destination d'une ligne du journal : là où l'on agit sur cet évènement. */
+/** Destination d'une ligne du journal : là où l'on agit sur cet événement. */
 function targetOf(e: Ev): { tab?: string; video?: string | null } {
   if (e.type === 'comment' || e.type === 'review_submitted') return { tab: 'reviews', video: e.photo_id };
   return { tab: 'activity' };

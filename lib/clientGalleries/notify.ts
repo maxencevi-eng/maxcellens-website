@@ -1,41 +1,13 @@
 import { SITE_URL } from '../siteUrl';
+import { escapeHtml as esc, mailConfigured, sendMail } from '../mail';
 import { formatTimecode } from './types';
 
-/**
- * E-mails de notification (Resend, API HTTP — aucune dépendance).
- *
- * Variables : RESEND_API_KEY, NOTIFY_EMAIL (destinataire),
- *             MAIL_FROM (facultatif ; par défaut l'expéditeur de test Resend,
- *             qui n'envoie qu'à l'adresse du compte Resend — suffisant pour
- *             se notifier soi-même, sans configurer de domaine).
- */
+/** E-mails de notification des galeries clients (envoyés via Brevo, voir lib/mail.ts). */
 
-export const mailConfigured = !!(process.env.RESEND_API_KEY && process.env.NOTIFY_EMAIL);
+export { mailConfigured };
 
-function esc(s: string) {
-  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-}
-
-async function send(subject: string, html: string, replyTo?: string | null): Promise<boolean> {
-  if (!mailConfigured) return false;
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: process.env.MAIL_FROM || 'Maxcellens Galeries <onboarding@resend.dev>',
-        to: [process.env.NOTIFY_EMAIL],
-        subject,
-        html,
-        ...(replyTo ? { reply_to: replyTo } : {}),
-      }),
-    });
-    if (!res.ok) console.warn('Notification e-mail refusée', res.status, await res.text().catch(() => ''));
-    return res.ok;
-  } catch (e) {
-    console.warn('Notification e-mail impossible', e);
-    return false;
-  }
+function send(subject: string, html: string, replyTo?: string | null): Promise<boolean> {
+  return sendMail({ subject, html, replyTo: replyTo ? { email: replyTo } : null });
 }
 
 export async function notifyReviewSubmitted(p: {

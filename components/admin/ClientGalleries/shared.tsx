@@ -78,7 +78,7 @@ export function galleriesCsv(list: AdminGallery[], folders: Folder[]): string {
     return /[;"\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
   };
   const head = [
-    'Titre', 'Client', 'E-mail', 'Dossier', 'Date évènement', 'Statut', 'Accès', 'Lien', 'Mot de passe',
+    'Titre', 'Client', 'E-mail', 'Dossier', 'Date événement', 'Statut', 'Accès', 'Lien', 'Mot de passe',
     'Lien magique', 'PIN téléchargement', 'Téléchargement', 'Expiration', 'Éléments', 'Poids', 'Vues',
     'Téléchargements', 'Première ouverture', 'Créée le',
   ];
@@ -500,7 +500,7 @@ export function ReviewFields({
       ) : null}
       {value.enabled && mailReady === false ? (
         <p className={s.muted} style={{ margin: 0 }}>
-          ⚠ Notifications e-mail non configurées : ajoutez <code>RESEND_API_KEY</code> et <code>NOTIFY_EMAIL</code> (voir la documentation). Les reviews restent visibles dans l’admin.
+          ⚠ Notifications e-mail non configurées : ajoutez <code>BREVO_API_KEY</code>, <code>MAIL_FROM</code> et <code>NOTIFY_EMAIL</code> (voir la documentation). Les reviews restent visibles dans l’admin.
         </p>
       ) : null}
     </>

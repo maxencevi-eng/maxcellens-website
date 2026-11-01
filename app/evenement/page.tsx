@@ -6,7 +6,7 @@ import EvenementPageClient from '../../components/EvenementPageClient/EvenementP
 
 export async function generateMetadata(): Promise<Metadata> {
   return buildPageMetadata('evenement', {
-    title: 'Évènement',
+    title: 'Événement',
     description:
       'Couverture photo et vidéo d’événements : séminaires, conférences, soirées d’entreprise.',
   });
@@ -16,7 +16,7 @@ export default function Evenement() {
   return (
     <>
       <JsonLdScript slug="evenement" />
-      <PageHeader page="evenement" title="Évènement" subtitle="Captation et reportage d'évènements" bgImage="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1600&q=80" />
+      <PageHeader page="evenement" title="Événement" subtitle="Captation et reportage d'événements" bgImage="https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=1600&q=80" />
       <EvenementPageClient />
     </>
   );

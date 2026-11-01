@@ -27,6 +27,9 @@ import { readBlockVisibility } from '../lib/blockVisibility';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.maxcellens.com';
 const baseUrl = siteUrl.replace(/\/$/, '');
+
+/** Neutralise une valeur destinée à une déclaration CSS (pas de sortie de bloc ni de balise). */
+const cssSafe = (v: unknown) => String(v ?? '').replace(/[<>{};]/g, '');
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 // Preconnect URL for Supabase
 const supabaseOrigin = supabaseUrl.replace(/^(https?:\/\/[^\/]+).*$/, '$1');
@@ -81,6 +84,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
       if (map.navHeight) cssVars += `--nav-height: ${Number(map.navHeight)}px;`;
       if (map.navGap) cssVars += `--nav-gap: ${Number(map.navGap)/10}rem;`;
+      // Valeurs texte recopiées dans un <style> : on retire ce qui permettrait d'en sortir.
+      Object.keys(map).forEach((k) => { if (k !== 'site_style') map[k] = cssSafe(map[k]); });
       if (map.navFontFamily) cssVars += `--nav-font-family: ${map.navFontFamily};`;
       if (map.navFontSize) cssVars += `--nav-font-size: ${Number(map.navFontSize)}rem;`;
       if (map.navFontWeight) cssVars += `--nav-font-weight: ${map.navFontWeight};`;
@@ -165,10 +170,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         {fontPreloads.map((u) => <link key={u} rel="preload" href={u} as="font" type="font/woff2" crossOrigin="anonymous" />)}
         {logoPreload ? <link rel="preload" href={logoPreload} as="image" /> : null}
-        {cssVars ? <style dangerouslySetInnerHTML={{ __html: `:root{${cssVars}}` }} /> : null}
-        {siteFontRules ? <style id="site-fonts" dangerouslySetInnerHTML={{ __html: siteFontRules }} /> : null}
+        {cssVars ? <style dangerouslySetInnerHTML={{ __html: `:root{${cssVars.replace(/</g, '')}}` }} /> : null}
+        {siteFontRules ? <style id="site-fonts" dangerouslySetInnerHTML={{ __html: siteFontRules.replace(/</g, '') }} /> : null}
         {logoVersionScript ? <script dangerouslySetInnerHTML={{ __html: logoVersionScript }} /> : null}
         <script dangerouslySetInnerHTML={{ __html: fontLoaderScript }} />
+        {/* Sans JavaScript, les titres animés mot à mot restent lisibles */}
+        <noscript><style>{'[class*="wordIn"]{transform:none!important}'}</style></noscript>
         <script dangerouslySetInnerHTML={{ __html: trustedTypesShim }} />
       </head>
       <body>

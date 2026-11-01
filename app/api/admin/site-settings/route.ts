@@ -1,62 +1,35 @@
 import { NextResponse } from 'next/server';
+import { isAdminRequest, requireAdmin } from '@/lib/adminAuth';
 import { revalidatePath } from 'next/cache';
-import { supabaseAdmin, supabaseUrl, serviceKey } from '../../../../lib/supabaseAdmin';
+import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 
-// Simple GET/POST to read/write key/value settings in `site_settings` table.
+/** Réglages réservés à l'admin (IP exclues des statistiques, etc.). */
+const isPrivateKey = (key: string) => key.startsWith('analytics_');
+
+// GET public (le site lit ses réglages d'affichage) ; POST réservé à l'admin.
 export async function GET(req: Request) {
-  try {
-    if (!supabaseAdmin) return NextResponse.json({ error: 'Admin credentials not configured' }, { status: 503 });
-    const url = new URL(req.url);
-    const keysParam = url.searchParams.get('keys') || '';
-    const keys = keysParam.split(',').map(k => k.trim()).filter(Boolean);
+  if (!supabaseAdmin) return NextResponse.json({ error: 'Admin credentials not configured' }, { status: 503 });
+  const keys = (new URL(req.url).searchParams.get('keys') || '').split(',').map((k) => k.trim()).filter(Boolean);
+  const admin = keys.some(isPrivateKey) || !keys.length ? await isAdminRequest(req) : false;
 
-    if (!keys.length) {
-      // return all settings via PostgREST to avoid client library issues
-      try {
-        const resp = await fetch(`${supabaseUrl.replace(/\/+$/,'')}/rest/v1/site_settings?select=key,value`, {
-          headers: {
-            apikey: String(serviceKey),
-            Authorization: `Bearer ${String(serviceKey)}`
-          }
-        });
-        if (!resp.ok) return NextResponse.json({ error: `Supabase REST error ${resp.status}` }, { status: 500 });
-        const data = await resp.json();
-        const map: Record<string, string> = {};
-        (data || []).forEach((r: any) => { if (r && typeof r.key !== 'undefined') map[r.key] = r.value; });
-        return NextResponse.json({ settings: map });
-      } catch (e) {
-        console.error('site-settings REST fetch error', e);
-        return NextResponse.json({ error: String(e) }, { status: 500 });
-      }
-    }
-
-    const map: Record<string, string> = {};
-    try {
-      // Query PostgREST and filter server-side
-      const resp = await fetch(`${supabaseUrl.replace(/\/+$/,'')}/rest/v1/site_settings?select=key,value`, {
-        headers: {
-          apikey: String(serviceKey),
-          Authorization: `Bearer ${String(serviceKey)}`
-        }
-      });
-      if (!resp.ok) {
-        console.error('site-settings REST bulk fetch failed', resp.status);
-        return NextResponse.json({ error: `Supabase REST error ${resp.status}` }, { status: 500 });
-      }
-      const data = await resp.json();
-      (data || []).forEach((r: any) => { if (r && typeof r.key !== 'undefined' && keys.includes(r.key)) map[r.key] = r.value; });
-      return NextResponse.json({ settings: map });
-    } catch (e) {
-      console.error('site-settings REST bulk exception', e);
-      return NextResponse.json({ error: String(e) }, { status: 500 });
-    }
-  } catch (err: any) {
-    console.error('site-settings GET error', err);
-    return NextResponse.json({ error: err?.message || String(err) }, { status: 500 });
+  let query = supabaseAdmin.from('site_settings').select('key,value');
+  if (keys.length) query = query.in('key', keys);
+  const { data, error } = await query;
+  if (error) {
+    console.error('site-settings GET error', error);
+    return NextResponse.json({ error: 'Lecture des réglages impossible' }, { status: 500 });
   }
+
+  const map: Record<string, string> = {};
+  (data || []).forEach((r: any) => {
+    if (r && typeof r.key === 'string' && (admin || !isPrivateKey(r.key))) map[r.key] = r.value;
+  });
+  return NextResponse.json({ settings: map });
 }
 
 export async function POST(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   try {
     if (!supabaseAdmin) return NextResponse.json({ error: 'Admin credentials not configured' }, { status: 503 });
     const body = await req.json();

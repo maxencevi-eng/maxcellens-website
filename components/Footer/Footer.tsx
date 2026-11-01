@@ -367,8 +367,8 @@ export default function Footer() {
         ) : (
           <>
             <p>Maxence Viozelange</p>
-            <p>📞 06.74.96.64.58</p>
-            <p>✉️ maxcellens@gmail.com</p>
+            <p>06 74 96 64 58</p>
+            <p>maxcellens@gmail.com</p>
           </>
         ))}
       </div>

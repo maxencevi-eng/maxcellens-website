@@ -1,5 +1,6 @@
 "use client";
 
+import { variantSrcSet } from '../../lib/imageVariants';
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { supabase } from "../../lib/supabase";
@@ -131,6 +132,8 @@ export default function GalleriesMenuClient() {
                 <img
                   ref={(el) => { if (el && el.complete && el.naturalWidth > 0) markLoaded(i); }}
                   src={p.headerImageUrl || DEFAULT_HEADER}
+                  srcSet={variantSrcSet(p.headerImageUrl)}
+                  sizes="(max-width: 767px) 100vw, 33vw"
                   alt={p.name || "Galerie"}
                   loading={i < 4 ? "eager" : "lazy"}
                   decoding="async"

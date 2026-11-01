@@ -1,5 +1,6 @@
 "use client";
 
+import { variantSrcSet } from '../../lib/imageVariants';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -81,6 +82,8 @@ export default function Lightbox({ images, index, onClose, onPrev, onNext }: Pro
         >
           <img
             src={img.src}
+            srcSet={variantSrcSet(img.src)}
+            sizes="100vw"
             alt={img.title || ''}
             width={1200}
             height={800}

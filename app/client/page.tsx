@@ -3,7 +3,7 @@ import ClientHome from '@/components/ClientGallery/ClientHome';
 import { siteLogoUrl } from '@/lib/clientGalleries/logo';
 
 export const metadata: Metadata = {
-  title: 'Espace client — Maxcellens',
+  title: 'Espace client',
   robots: { index: false, follow: false },
 };
 

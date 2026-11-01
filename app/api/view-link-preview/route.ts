@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/adminAuth';
 
 export async function GET(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   const { searchParams } = new URL(req.url);
   const url = searchParams.get('url');
 

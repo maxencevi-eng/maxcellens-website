@@ -100,7 +100,7 @@ export function NewGalleryDialog({
         </div>
         <div className={s.row2}>
           <div>
-            <span className={s.lbl}>Date de l'évènement</span>
+            <span className={s.lbl}>Date de l'événement</span>
             <div className={s.field}>
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>

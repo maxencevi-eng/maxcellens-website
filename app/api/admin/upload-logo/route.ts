@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/adminAuth';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 import sharp from 'sharp';
 
 // POST handler: expects form-data with 'file' and 'category' (e.g. 'logos' or 'favicons')
 export async function POST(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   try {
     if (!supabaseAdmin) return NextResponse.json({ error: 'Admin credentials not configured' }, { status: 503 });
     const form = await req.formData();

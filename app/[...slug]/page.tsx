@@ -124,7 +124,7 @@ async function buildPageOptions() {
   return [
     { value: '/', label: 'Accueil' },
     { value: '/realisation', label: 'Réalisation' },
-    { value: '/evenement', label: 'Évènement' },
+    { value: '/evenement', label: 'Événement' },
     { value: '/corporate', label: 'Corporate' },
     { value: '/portrait', label: 'Portrait' },
     { value: '/animation', label: 'Animation' },

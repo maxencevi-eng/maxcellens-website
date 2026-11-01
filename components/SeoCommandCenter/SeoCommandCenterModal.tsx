@@ -10,7 +10,7 @@ const SLUG_LABELS: Record<string, string> = {
   contact: "Contact",
   animation: "Animation",
   realisation: "Réalisation",
-  evenement: "Évènement",
+  evenement: "Événement",
   corporate: "Corporate",
   portrait: "Portrait",
   galeries: "Galeries",

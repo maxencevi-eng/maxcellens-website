@@ -90,7 +90,7 @@ const RichTextModal = dynamic(() => import("../RichTextModal/RichTextModal"), { 
 
 /** Sur-titres affichés par défaut par le design de l'accueil. */
 const EYEBROW_DEFAULTS: Partial<Record<string, string>> = {
-  home_services: "Services — 03 (numéro automatique)",
+  home_services: "Services",
   home_portrait: "Séances photo",
   home_cadreur: "Tournage & production",
   home_animation: "Activité d’équipe",

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { supabase } from '../../lib/supabase';
+import { getSupabaseClient } from '../../lib/supabase';
 import type { BacSession, BacCasting, BacChoixScene, BacSaisie } from '../../lib/bac/types';
 
 interface GroupeStatusData {
@@ -35,20 +35,26 @@ export default function CoordinateurInterface({ isAdmin = false, embedded = fals
   useEffect(() => {
     if (!selectedSessionId) return;
 
-    const channel = supabase
-      .channel(`coord-${selectedSessionId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bac_casting_groupes', filter: `session_id=eq.${selectedSessionId}` }, () => {
-        loadGroupsData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bac_choix_scenes', filter: `session_id=eq.${selectedSessionId}` }, () => {
-        loadGroupsData();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bac_saisies_acteurs', filter: `session_id=eq.${selectedSessionId}` }, () => {
-        loadGroupsData();
-      })
-      .subscribe();
+    let cancelled = false;
+    let cleanup = () => {};
+    getSupabaseClient().then((client) => {
+      if (cancelled) return;
+      const channel = client
+        .channel(`coord-${selectedSessionId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bac_casting_groupes', filter: `session_id=eq.${selectedSessionId}` }, () => {
+          loadGroupsData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bac_choix_scenes', filter: `session_id=eq.${selectedSessionId}` }, () => {
+          loadGroupsData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bac_saisies_acteurs', filter: `session_id=eq.${selectedSessionId}` }, () => {
+          loadGroupsData();
+        })
+        .subscribe();
+      cleanup = () => { client.removeChannel(channel); };
+    });
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { cancelled = true; cleanup(); };
   }, [selectedSessionId]);
 
   async function loadSessions() {

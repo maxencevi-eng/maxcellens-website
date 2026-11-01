@@ -953,7 +953,7 @@ function SettingsTab({
           </div>
           <div className={s.row2}>
             <div>
-              <span className={s.lbl}>Date de l’évènement</span>
+              <span className={s.lbl}>Date de l’événement</span>
               <div className={s.field}>
                 <input type="date" value={draft.event_date || ''} onChange={(e) => set({ event_date: e.target.value || null })} />
               </div>

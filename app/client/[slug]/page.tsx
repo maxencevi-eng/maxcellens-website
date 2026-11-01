@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const g = await gallerySlugLookup(slug);
   return {
-    title: g && availability(g) === 'ok' ? `${g.title} — Maxcellens` : 'Galerie — Maxcellens',
+    title: g && availability(g) === 'ok' ? g.title : 'Galerie',
     robots: { index: false, follow: false, nocache: true },
     // Pas d'aperçu de lien : la couverture d'une galerie privée ne doit pas fuiter
     openGraph: null,

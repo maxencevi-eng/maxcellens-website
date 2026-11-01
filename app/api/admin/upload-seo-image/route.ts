@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/adminAuth';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 
 const BUCKET = 'seo-assets';
@@ -6,6 +7,8 @@ const MAX_BYTES = 500 * 1024; // 500 KB pour OG / Twitter
 
 /** POST — upload d’une image OG ou Twitter pour une page (admin). */
 export async function POST(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   try {
     if (!supabaseAdmin) {
       return NextResponse.json({ error: 'Admin credentials not configured' }, { status: 503 });

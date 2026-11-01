@@ -315,7 +315,7 @@ Maquette : `docs/maquettes/galeries-clients.html` (ouvrir dans le navigateur, on
 | **2. Page de livraison** | Couvertures, ambiances, typo, grille justifiée, visionneuse, diaporama, sets, téléchargement unitaire et ZIP streaming selon le réglage de la galerie, onglet Design avec aperçu | La page client est au niveau d'un vrai livrable |
 | **3. Gestion & partage** | Vue tableau, recherche, filtres, sélection multiple, actions groupées, corbeille, export CSV, modale Partager (message, QR, lien magique), filigranes (éditeur + régénération) | Toutes les demandes du brief sont couvertes |
 | **4. Interaction client** | Favoris + listes + export pour la retouche, inscription e-mail, PIN de téléchargement, expiration + page « plus disponible », onglet Activité, KPI dans le tableau de bord | Suivi de ce que le client a vu, aimé et téléchargé |
-| **5. Confort** | Dossiers clients, dupliquer une galerie, envoi d'e-mail depuis le site (Resend) avec rappel d'expiration automatique, publier une galerie dans le portfolio `/galeries`, archivage des originaux, bascule R2 | Gain de temps à chaque livraison |
+| **5. Confort** | Dossiers clients, dupliquer une galerie, envoi d’e-mail depuis le site (Brevo) avec rappel d'expiration automatique, publier une galerie dans le portfolio `/galeries`, archivage des originaux, bascule R2 | Gain de temps à chaque livraison |
 
 Chaque lot fait l'objet d'un commit autonome qui ne casse pas le site. Les lots 1 et 2 suffisent pour arrêter Pixieset sur les nouvelles livraisons.
 
@@ -410,14 +410,13 @@ Réglage **« Mode review des vidéos »** (galerie → Réglages, et dans les m
 
 ### Mise en service
 1. Supabase → SQL Editor : exécuter `supabase/migrations/20261103000000_client_gallery_reviews.sql` (et `20261102000000_client_gallery_folders_tree.sql` si ce n'est pas déjà fait).
-2. Créer un compte gratuit sur **resend.com** avec l'adresse qui doit recevoir les notifications, puis **API Keys → Create API Key**.
+2. Les e-mails partent par **Brevo** (même configuration que le formulaire de contact, voir `lib/mail.ts`) : domaine `maxcellens.com` authentifié dans Brevo, puis une clé API dédiée au site.
 3. Variables (Vercel + `.env.local`) :
    ```
-   RESEND_API_KEY=re_…
-   NOTIFY_EMAIL=adresse du compte Resend
-   # MAIL_FROM=Maxcellens <galeries@maxcellens.com>   ← seulement après avoir validé le domaine dans Resend
+   BREVO_API_KEY=xkeysib-…
+   MAIL_FROM=Maxcellens <site@maxcellens.com>
+   NOTIFY_EMAIL=maxcellens@gmail.com
    ```
-   Sans domaine validé, Resend envoie depuis `onboarding@resend.dev`, uniquement vers l'adresse du compte. C'est suffisant pour se notifier soi-même.
 
 ## 8. Nom des fichiers sous forme de légende
 

@@ -1,16 +1,22 @@
 // app/bac/api/auth/route.ts — Login / Logout / SSO
 import { NextRequest, NextResponse } from 'next/server';
 import { loginBac, createBacSession, BAC_COOKIE_NAME, BAC_COOKIE_MAX_AGE, getBacSession } from '../../../../lib/bac/auth';
-import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
+import { getAuthUser } from '../../../../lib/adminAuth';
+import { clientIp, rateLimit } from '../../../../lib/rateLimit';
 
 export async function POST(request: NextRequest) {
   try {
+    // 10 tentatives par quart d'heure et par IP
+    if (!rateLimit(`bac-login:${clientIp(request)}`, 10, 15 * 60_000)) {
+      return NextResponse.json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, { status: 429 });
+    }
+
     const body = await request.json();
 
     // SSO: if site admin is already logged in via Supabase Auth
     if (body.sso && body.access_token) {
-      const { data: { user }, error } = await supabaseAdmin.auth.getUser(body.access_token);
-      if (error || !user) {
+      const user = await getAuthUser(new Request(request.url, { headers: { authorization: `Bearer ${body.access_token}` } }));
+      if (!user) {
         return NextResponse.json({ error: 'Token Supabase invalide' }, { status: 401 });
       }
       // Valid Supabase user → auto-create BAC admin session

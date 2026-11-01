@@ -150,8 +150,8 @@
   display: inline-block;
   overflow: hidden;
   vertical-align: top;
-  padding-bottom: 0.08em;
-  margin-bottom: -0.08em;
+  padding-bottom: 0.2em;
+  margin-bottom: -0.2em;
 }
 .wordIn { display: inline-block; will-change: transform; }
 
@@ -368,6 +368,10 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  /* Le fond ne couvre que la boîte : on l'étend sous la ligne de base
+     pour que les jambages (g, p, y…) restent visibles. */
+  padding-bottom: 0.2em;
+  margin-bottom: -0.2em;
 }
 
 .introText {

@@ -521,7 +521,7 @@ export default function HomePageClient({ initialSettings, renderOnly, initialBlo
                       <div className={styles.reelTrack} style={{ animationDuration: `${Math.max(24, col.length * 7)}s` }}>
                         {[...col, ...col].map((src, i) => (
                           <div key={i} className={styles.reelItem} aria-hidden={i >= col.length ? true : undefined}>
-                            <Image src={src} alt="" fill sizes="(max-width: 767px) 50vw, 22vw" className={styles.mediaImg} priority={c === 0 && i < 2} />
+                            <Image src={src} alt={i < col.length ? "Maxcellens en tournage photo et vidéo" : ""} fill sizes="(max-width: 767px) 50vw, 22vw" className={styles.mediaImg} priority={c === 0 && i < 2} />
                           </div>
                         ))}
                       </div>
@@ -529,7 +529,7 @@ export default function HomePageClient({ initialSettings, renderOnly, initialBlo
                   ))}
                 </div>
               ) : reel[0] ? (
-                <Image src={reel[0]} alt="" fill priority sizes="(max-width:767px) 100vw, 45vw" className={styles.viewfinderImg} style={iv.image?.focus ? { objectPosition: `${iv.image.focus.x}% ${iv.image.focus.y}%` } : undefined} />
+                <Image src={reel[0]} alt="Maxcellens en tournage photo et vidéo" fill priority sizes="(max-width:767px) 100vw, 45vw" className={styles.viewfinderImg} style={iv.image?.focus ? { objectPosition: `${iv.image.focus.x}% ${iv.image.focus.y}%` } : undefined} />
               ) : isAdmin ? (
                 <span className={styles.placeholderNote}>Image — cliquez « Modifier »</span>
               ) : null}
@@ -565,7 +565,7 @@ export default function HomePageClient({ initialSettings, renderOnly, initialBlo
         <AnimateInView variant="fade" className={styles.bannerMedia}>
           <div className={styles.mediaCard}>
             {b.image?.url ? (
-              <Image src={b.image.url} alt="" fill sizes="(max-width:768px) 100vw, 46vw" className={styles.mediaImg} style={focus} />
+              <Image src={b.image.url} alt={b.blockTitle || "Maxcellens, vidéaste et photographe"} fill sizes="(max-width:768px) 100vw, 46vw" className={styles.mediaImg} style={focus} />
             ) : isAdmin ? (
               <span className={styles.placeholderNote}>Image — cliquez « Modifier »</span>
             ) : null}
@@ -606,7 +606,7 @@ export default function HomePageClient({ initialSettings, renderOnly, initialBlo
         <div className={hasBg ? innerClass("home_banner") : undefined}>
           <div className={styles.bannerFrame} style={{ aspectRatio: ratio }}>
             {b.image?.url ? (
-              <Image src={b.image.url} alt="" fill sizes="100vw" className={styles.bannerImg} style={focus} />
+              <Image src={b.image.url} alt={b.blockTitle || "Maxcellens, vidéaste et photographe"} fill sizes="100vw" className={styles.bannerImg} style={focus} />
             ) : isAdmin ? (
               <span className={styles.placeholderNote}>Bannière — cliquez « Modifier » pour ajouter une image</span>
             ) : null}
@@ -627,7 +627,7 @@ export default function HomePageClient({ initialSettings, renderOnly, initialBlo
         <div className={innerClass("home_services")}>
           <div className={styles.head}>
             <div>
-              {eyebrowOf(sv, `Services — ${pad2(serviceItems.length)}`) ? <span className={`${styles.eyebrow} style-h5`}>{eyebrowOf(sv, `Services — ${pad2(serviceItems.length)}`)}</span> : null}
+              {eyebrowOf(sv, 'Services') ? <span className={`${styles.eyebrow} style-h5`}>{eyebrowOf(sv, 'Services')}</span> : null}
               {heading(sv.blockTitle, titleTag, styles.display, textStyle(sv.blockTitleFontSize, sv.blockTitleColor, sv.blockTitleAlign))}
             </div>
             {sv.blockSubtitle ? (
@@ -717,7 +717,7 @@ export default function HomePageClient({ initialSettings, renderOnly, initialBlo
                       {slide.image?.url ? (
                         <Image
                           src={slide.image.url}
-                          alt=""
+                          alt={slide.title ? `Portrait ${slide.title}, Maxcellens` : 'Portrait, Maxcellens'}
                           width={500}
                           height={667}
                           quality={100}
@@ -853,7 +853,7 @@ export default function HomePageClient({ initialSettings, renderOnly, initialBlo
             </>
           ) : cadreurBlock.image?.url ? (
             <AnimateInView variant="fade" className={styles.cadreurMedia}>
-              <Image src={cadreurBlock.image.url} alt="" fill sizes="100vw" className={styles.mediaImg} style={cb.image?.focus?.x != null ? { objectPosition: `${cb.image.focus.x}% ${cb.image.focus.y}%` } : undefined} />
+              <Image src={cadreurBlock.image.url} alt="Cadreur vidéo en tournage, Maxcellens" fill sizes="100vw" className={styles.mediaImg} style={cb.image?.focus?.x != null ? { objectPosition: `${cb.image.focus.x}% ${cb.image.focus.y}%` } : undefined} />
             </AnimateInView>
           ) : null}
 

@@ -20,7 +20,7 @@ export type MenuItem = {
 /** Entrées historiques, dans leur ordre d'origine. */
 export const BUILTIN_MENU_ITEMS: { key: string; label: string; href: string }[] = [
   { key: 'realisation', label: 'Réalisation', href: '/realisation' },
-  { key: 'evenement', label: 'Évènement', href: '/evenement' },
+  { key: 'evenement', label: 'Événement', href: '/evenement' },
   { key: 'corporate', label: 'Corporate', href: '/corporate' },
   { key: 'portrait', label: 'Portrait', href: '/portrait' },
   { key: 'animation', label: 'Animation', href: '/animation' },

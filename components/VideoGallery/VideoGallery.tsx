@@ -1,5 +1,6 @@
 "use client";
 
+import { variantSrcSet } from '../../lib/imageVariants';
 import React, { useState, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
@@ -310,6 +311,8 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
                     <img
                       ref={(el) => { if (el && el.complete && el.naturalWidth > 0) markLoaded(i); }}
                       src={coverSrc}
+                      srcSet={variantSrcSet(coverSrc)}
+                      sizes="(max-width: 767px) 100vw, 50vw"
                       alt=""
                       loading={i < 4 ? 'eager' : 'lazy'}
                       decoding="async"
@@ -391,6 +394,8 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
                           <img
                             ref={(el) => { if (el && el.complete && el.naturalWidth > 0) markLoaded(myIndex); }}
                             src={coverSrc}
+                            srcSet={variantSrcSet(coverSrc)}
+                            sizes="(max-width: 767px) 100vw, 50vw"
                             alt=""
                             loading={myIndex < 4 ? 'eager' : 'lazy'}
                             decoding="async"
@@ -445,6 +450,8 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
                   <img
                     ref={(el) => { if (el && el.complete && el.naturalWidth > 0) markLoaded(myIndex); }}
                     src={coverSrc}
+                    srcSet={variantSrcSet(coverSrc)}
+                    sizes="(max-width: 767px) 100vw, 50vw"
                     alt=""
                     loading={myIndex < 4 ? 'eager' : 'lazy'}
                     decoding="async"

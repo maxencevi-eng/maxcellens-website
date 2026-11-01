@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/adminAuth';
+import { withVariants } from '@/lib/imageVariants';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin'
 
 export async function POST(req: Request) {
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
   try {
     if (!supabaseAdmin) return NextResponse.json({ error: 'Admin credentials not configured' }, { status: 503 });
     const body = await req.json();
@@ -77,7 +81,7 @@ export async function POST(req: Request) {
     if (!toDelete.length) return NextResponse.json({ ok: true, removed: [] });
 
     try {
-      const rem = await supabaseAdmin.storage.from('medias').remove(toDelete);
+      const rem = await supabaseAdmin.storage.from('medias').remove(withVariants(toDelete as string[]));
       if (rem?.error) {
         console.warn('delete-hero-media: remove error', rem.error);
         return NextResponse.json({ error: rem.error, removed: [] }, { status: 500 });

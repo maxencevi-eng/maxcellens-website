@@ -257,7 +257,7 @@ export default function AnimationPageClient() {
               </AnimateInView>
               <AnimateInView variant="slideFromRight" className={styles.gridMedia}>
                 {s1.image?.url ? (
-                  <img src={s1.image.url} alt="" className={styles.image} />
+                  <img src={s1.image.url} alt={s1.title ? `${s1.title}, Bureau à la carte` : 'Bureau à la carte, tournage en entreprise'} className={styles.image} loading="lazy" decoding="async" />
                 ) : (
                   <div className={styles.image} style={{ background: "var(--muted)", opacity: 0.2, minHeight: 200 }} />
                 )}
@@ -297,7 +297,7 @@ export default function AnimationPageClient() {
               </AnimateInView>
               <AnimateInView variant="slideFromLeft" className={styles.gridMedia}>
                 {s2.image?.url ? (
-                  <img src={s2.image.url} alt="" className={styles.image} />
+                  <img src={s2.image.url} alt={s2.title ? `${s2.title}, Bureau à la carte` : 'Bureau à la carte, tournage en entreprise'} className={styles.image} loading="lazy" decoding="async" />
                 ) : (
                   <div className={styles.image} style={{ background: "var(--muted)", opacity: 0.2, minHeight: 200 }} />
                 )}
@@ -347,7 +347,7 @@ export default function AnimationPageClient() {
               </div>
               <div className={styles.gridMedia}>
                 {s3.image?.url ? (
-                  <img src={s3.image.url} alt="" className={styles.image} />
+                  <img src={s3.image.url} alt={s3.title ? `${s3.title}, Bureau à la carte` : 'Bureau à la carte, tournage en entreprise'} className={styles.image} loading="lazy" decoding="async" />
                 ) : (
                   <div className={styles.image} style={{ background: "var(--muted)", opacity: 0.2, minHeight: 200 }} />
                 )}

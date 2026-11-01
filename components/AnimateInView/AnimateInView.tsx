@@ -6,7 +6,7 @@ import { motion, type Variants } from "framer-motion";
 /**
  * Fin de l'écran de chargement (splash ou transition de page).
  *
- * Le signal `splash-dismissed` est un évènement ponctuel : un composant monté
+ * Le signal `splash-dismissed` est un événement ponctuel : un composant monté
  * APRÈS lui (bloc chargé en différé, par ex. l'intro de l'accueil) ne le
  * recevait jamais et restait invisible. Les émetteurs posent donc aussi
  * `window.__splashDismissed`, lu ici au montage.
