@@ -70,7 +70,8 @@ export default function ActivityOverview({
 }: {
   galleries: AdminGallery[];
   folders: Folder[];
-  onOpenGallery: (id: string) => void;
+  /** Ouvre la galerie sur l'onglet utile (et la vidéo, ou le partage). */
+  onOpenGallery: (id: string, target?: { tab?: string; video?: string | null; share?: boolean }) => void;
 }) {
   const [days, setDays] = useState(30);
   const [type, setType] = useState('');
@@ -219,7 +220,7 @@ export default function ActivityOverview({
                 </thead>
                 <tbody>
                   {data.events.map((e) => (
-                    <tr key={e.id} onClick={() => byId.has(e.gallery_id) && onOpenGallery(e.gallery_id)}>
+                    <tr key={e.id} onClick={() => byId.has(e.gallery_id) && onOpenGallery(e.gallery_id, targetOf(e))} title={hintOf(e)}>
                       <td className={s.muted}>{fmtDate(e.created_at, true)}</td>
                       <td>
                         <div className={s.tTitle} style={{ maxWidth: 260 }}>
@@ -250,7 +251,7 @@ export default function ActivityOverview({
             {data?.top.length ? (
               <ul className={s.log} style={{ marginTop: 8 }}>
                 {data.top.map((t) => (
-                  <li key={t.id} style={{ cursor: byId.has(t.id) ? 'pointer' : 'default' }} onClick={() => byId.has(t.id) && onOpenGallery(t.id)}>
+                  <li key={t.id} style={{ cursor: byId.has(t.id) ? 'pointer' : 'default' }} onClick={() => byId.has(t.id) && onOpenGallery(t.id, { tab: 'activity' })} title="Ouvrir l’activité de la galerie">
                     <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>{galleryName(t.id)}</span>
                     <span className={s.muted} style={{ whiteSpace: 'nowrap' }}>
                       {t.downloads} ⬇ · {t.views} vues{t.favorites ? ` · ${t.favorites} ♥` : ''}
@@ -268,7 +269,7 @@ export default function ActivityOverview({
             {data?.neverOpened.length ? (
               <ul className={s.log} style={{ marginTop: 8 }}>
                 {data.neverOpened.map((g) => (
-                  <li key={g.id} style={{ cursor: 'pointer' }} onClick={() => onOpenGallery(g.id)}>
+                  <li key={g.id} style={{ cursor: 'pointer' }} onClick={() => onOpenGallery(g.id, { share: true })} title="Ouvrir le partage pour relancer le client">
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <b style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.title}</b>
                       <small className={s.muted}>{[g.client_name, g.client_email, g.folder_id ? folderPath(folders, g.folder_id) : null].filter(Boolean).join(' · ')}</small>
@@ -287,4 +288,13 @@ export default function ActivityOverview({
       </div>
     </div>
   );
+}
+
+/** Destination d'une ligne du journal : là où l'on agit sur cet évènement. */
+function targetOf(e: Ev): { tab?: string; video?: string | null } {
+  if (e.type === 'comment' || e.type === 'review_submitted') return { tab: 'reviews', video: e.photo_id };
+  return { tab: 'activity' };
+}
+function hintOf(e: Ev): string {
+  return e.type === 'comment' || e.type === 'review_submitted' ? 'Ouvrir la review de cette vidéo' : 'Ouvrir l’activité de la galerie';
 }

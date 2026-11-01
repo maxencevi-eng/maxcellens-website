@@ -468,15 +468,36 @@ export function DesignFields({ value, onChange }: { value: DesignSettings; onCha
 }
 
 /** Réglage du mode review (vidéos) — galerie et modèles. */
-export function ReviewFields({ value, onChange, mailReady }: { value: { enabled: boolean }; onChange: (v: { enabled: boolean }) => void; mailReady?: boolean }) {
+export function ReviewFields({
+  value,
+  onChange,
+  mailReady,
+}: {
+  value: { enabled: boolean; requireEmail?: boolean };
+  onChange: (v: { enabled: boolean; requireEmail: boolean }) => void;
+  mailReady?: boolean;
+}) {
+  const requireEmail = value.requireEmail !== false;
   return (
     <>
       <ToggleField
         label="Mode review des vidéos"
         hint="Un clic sur une vidéo ouvre une page de commentaires horodatés. Le client valide sa review quand il a fini, et vous êtes prévenu par e-mail."
         checked={value.enabled}
-        onChange={(v) => onChange({ enabled: v })}
+        onChange={(v) => onChange({ enabled: v, requireEmail })}
       />
+      {value.enabled ? (
+        <ToggleField
+          label="Demander l’e-mail du client"
+          hint={
+            requireEmail
+              ? 'Le client indique son nom et son e-mail avant de commenter : vous pouvez lui répondre directement depuis l’e-mail de notification.'
+              : 'Le nom suffit pour commenter ; l’e-mail reste proposé, en facultatif.'
+          }
+          checked={requireEmail}
+          onChange={(v) => onChange({ enabled: true, requireEmail: v })}
+        />
+      ) : null}
       {value.enabled && mailReady === false ? (
         <p className={s.muted} style={{ margin: 0 }}>
           ⚠ Notifications e-mail non configurées : ajoutez <code>RESEND_API_KEY</code> et <code>NOTIFY_EMAIL</code> (voir la documentation). Les reviews restent visibles dans l’admin.

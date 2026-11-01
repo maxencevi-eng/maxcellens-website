@@ -61,6 +61,7 @@ export default async function ReviewPage({ params, searchParams }: Props) {
       src={presign('GET', objectKey(g.id, photo.id, 'original', photo.ext), { expires: 12 * 3600, stableWindowSec: 6 * 3600 })}
       poster={photo.has_preview ? displayUrl(objectKey(g.id, photo.id, 'screen')) : null}
       previewToken={preview ? previewTok || null : null}
+      requireEmail={normalizeReview(g.review).requireEmail}
     />
   );
 }

@@ -28,6 +28,8 @@ type Props = {
   transport: ReviewTransport;
   onBack?: () => void;
   backLabel?: string;
+  /** Côté client : l'e-mail est-il obligatoire pour commenter ? */
+  requireEmail?: boolean;
 };
 
 function initials(name: string | null | undefined) {
@@ -42,7 +44,7 @@ function ago(iso: string) {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
-export default function ReviewRoom({ mode, galleryTitle, videoName, src, poster, transport, onBack, backLabel = 'Retour à la galerie' }: Props) {
+export default function ReviewRoom({ mode, galleryTitle, videoName, src, poster, transport, onBack, backLabel = 'Retour à la galerie', requireEmail = true }: Props) {
   const video = useRef<HTMLVideoElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [comments, setComments] = useState<ReviewComment[]>([]);
@@ -469,7 +471,7 @@ export default function ReviewRoom({ mode, galleryTitle, videoName, src, poster,
 
           <div className={styles.composer}>
             {!identified && transport.identify ? (
-              <IdentifyBox onDone={async (n, e) => {
+              <IdentifyBox requireEmail={requireEmail} onDone={async (n, e) => {
                 await transport.identify!(n, e);
                 setIdentified(true);
                 refresh();
@@ -553,7 +555,7 @@ export default function ReviewRoom({ mode, galleryTitle, videoName, src, poster,
   );
 }
 
-function IdentifyBox({ onDone }: { onDone: (name: string, email: string) => Promise<void> }) {
+function IdentifyBox({ onDone, requireEmail = true }: { onDone: (name: string, email: string) => Promise<void>; requireEmail?: boolean }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
@@ -573,11 +575,19 @@ function IdentifyBox({ onDone }: { onDone: (name: string, email: string) => Prom
         setBusy(false);
       }}
     >
-      <p>Pour commenter, indiquez votre nom et votre e-mail.</p>
+      <p>{requireEmail ? 'Pour commenter, indiquez votre nom et votre e-mail.' : 'Pour commenter, indiquez votre nom.'}</p>
       <input className={styles.input} placeholder="Prénom et nom" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required />
-      <input className={styles.input} type="email" placeholder="Adresse e-mail" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
+      <input
+        className={styles.input}
+        type="email"
+        placeholder={requireEmail ? 'Adresse e-mail' : 'Adresse e-mail (facultatif)'}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        autoComplete="email"
+        required={requireEmail}
+      />
       {error ? <div className={styles.error}>{error}</div> : null}
-      <button className={styles.send} style={{ marginLeft: 0, justifyContent: 'center' }} disabled={busy || !email.trim() || !name.trim()}>
+      <button className={styles.send} style={{ marginLeft: 0, justifyContent: 'center' }} disabled={busy || !name.trim() || (requireEmail && !email.trim())}>
         Commencer la review
       </button>
     </form>

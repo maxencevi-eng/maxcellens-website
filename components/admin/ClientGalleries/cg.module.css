@@ -867,3 +867,5 @@
 }
 .evType[data-type='review_submitted'] { background: var(--adm-success-wash); color: var(--adm-success); }
 .evType[data-type='comment'] { background: rgba(59, 91, 165, 0.1); color: #3b5ba5; }
+/* Activité : les 6 compteurs sur une ligne quand la place le permet */
+.kpis { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); }

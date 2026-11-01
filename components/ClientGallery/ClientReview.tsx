@@ -12,6 +12,7 @@ export default function ClientReview({
   src,
   poster,
   previewToken,
+  requireEmail,
 }: {
   slug: string;
   photoId: string;
@@ -20,6 +21,7 @@ export default function ClientReview({
   src: string;
   poster: string | null;
   previewToken: string | null;
+  requireEmail: boolean;
 }) {
   useEffect(() => {
     // La page du site (vide) ne doit pas défiler sous la salle plein écran
@@ -43,7 +45,7 @@ export default function ClientReview({
       load: () => call('GET'),
       act: (body) => call('POST', body),
       identify: async (name, email) => {
-        const res = await fetch(`/api/client/${slug}/visitor`, { method: 'POST', headers, body: JSON.stringify({ name, email }) });
+        const res = await fetch(`/api/client/${slug}/visitor`, { method: 'POST', headers, body: JSON.stringify({ name, email, purpose: 'review' }) });
         const j = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(j.error || 'Erreur');
       },
@@ -58,6 +60,7 @@ export default function ClientReview({
       src={src}
       poster={poster}
       transport={transport}
+      requireEmail={requireEmail}
       onBack={() => {
         window.location.href = `/client/${slug}${previewToken ? `?preview=${previewToken}` : ''}`;
       }}

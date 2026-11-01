@@ -102,6 +102,7 @@ export default function GalleryEditor({ id }: { id: string }) {
     const t = sp.get('tab');
     if (t && ['files', 'design', 'settings', 'activity', 'reviews'].includes(t)) setTab(t as Tab);
     setInitialVideo(sp.get('video'));
+    if (sp.get('share') === '1') setShare(true);
   }, []);
   const [draft, setDraft] = useState<any>(null);
   const [saving, setSaving] = useState(false);

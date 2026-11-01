@@ -632,7 +632,13 @@ export default function GalleriesAdmin() {
           ) : null}
 
           {view === 'activity' && data ? (
-            <ActivityOverview galleries={data.galleries} folders={folders} onOpenGallery={(id) => router.push(`/admin/galeries/${id}`)} />
+            <ActivityOverview galleries={data.galleries} folders={folders} onOpenGallery={(id, t) => {
+                const qs = new URLSearchParams();
+                if (t?.tab) qs.set('tab', t.tab);
+                if (t?.video) qs.set('video', t.video);
+                if (t?.share) qs.set('share', '1');
+                router.push(`/admin/galeries/${id}${qs.toString() ? `?${qs}` : ''}`);
+              }} />
           ) : null}
 
           {view === 'watermarks' && data ? (

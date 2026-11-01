@@ -894,21 +894,36 @@ function Grid({
           </div>
           {p.duration ? <span className={styles.duration}>{formatDuration(p.duration)}</span> : null}
           {reviewMode ? <span className={styles.reviewBadge}>Review</span> : null}
+          {/* Vidéo : téléchargement toujours visible (souris comme tactile) */}
+          {canDownload ? (
+            <button
+              className={styles.videoDl}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDownload(p);
+              }}
+              aria-label={`Télécharger ${p.name}`}
+              title="Télécharger la vidéo"
+            >
+              <Download size={16} />
+              <span>Télécharger</span>
+            </button>
+          ) : null}
         </>
       ) : null}
       {favEnabled && favs.has(p.id) ? (
-        <span className={styles.favBadge}>
+        <span className={styles.favBadge} data-video={p.kind === 'video'}>
           <Heart size={18} />
         </span>
       ) : null}
-      {favEnabled || canDownload ? (
+      {favEnabled || (canDownload && p.kind !== 'video') ? (
         <div className={styles.tileActions} onClick={(e) => e.stopPropagation()}>
           {favEnabled ? (
             <button className={`${styles.tileBtn} ${favs.has(p.id) ? styles.faved : ''}`} onClick={() => onFav(p.id)} aria-label="Favori">
               <Heart size={16} />
             </button>
           ) : null}
-          {canDownload ? (
+          {canDownload && p.kind !== 'video' ? (
             <button className={styles.tileBtn} onClick={() => onDownload(p)} aria-label="Télécharger">
               <Download size={16} />
             </button>

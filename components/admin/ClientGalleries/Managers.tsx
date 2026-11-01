@@ -183,7 +183,7 @@ export function TemplatesManager({
                 onChange={(id) => set({ watermark_id: id, watermark: false })}
               />
               <FavoritesFields value={normalizeFavorites(st.favorites)} onChange={(v) => set({ favorites: v })} />
-              <ReviewFields value={{ enabled: !!st.review?.enabled }} onChange={(v) => set({ review: v })} />
+              <ReviewFields value={{ enabled: !!st.review?.enabled, requireEmail: st.review?.requireEmail !== false }} onChange={(v) => set({ review: v })} />
             </div>
           </div>
           <div className={s.card2}>

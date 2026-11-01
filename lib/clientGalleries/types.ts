@@ -65,9 +65,15 @@ export function normalizeDownload(v: any): DownloadSettings {
   return d;
 }
 /** Mode review : les vidéos s'ouvrent dans une salle de commentaires horodatés. */
-export type ReviewSettings = { enabled: boolean };
+export type ReviewSettings = {
+  enabled: boolean;
+  /** Le client doit donner son e-mail pour commenter (sinon son nom suffit). */
+  requireEmail: boolean;
+};
 export function normalizeReview(v: any): ReviewSettings {
-  return { enabled: !!(v && typeof v === 'object' && v.enabled) };
+  const o = v && typeof v === 'object' ? v : {};
+  // E-mail demandé par défaut ; désactivable pour une review « nom seulement »
+  return { enabled: !!o.enabled, requireEmail: o.requireEmail !== false };
 }
 
 export function normalizeFavorites(v: any): FavoriteSettings {

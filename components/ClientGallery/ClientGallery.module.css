@@ -1030,3 +1030,22 @@
   padding: 4px 9px; border-radius: 99px; background: #7fd6a4; color: #0f1211;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
+
+/* ── Vidéo : bouton de téléchargement permanent ────────────────────────── */
+.videoDl {
+  position: absolute; top: 10px; right: 10px; z-index: 3;
+  display: inline-flex !important; align-items: center; gap: 7px;
+  height: 34px; padding: 0 12px 0 10px !important; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95) !important; color: #1b1f1d !important;
+  font-size: 12.5px; font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.videoDl:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3); }
+/* Sur petites vignettes : icône seule */
+@media (max-width: 600px) {
+  .videoDl { width: 36px; height: 36px; padding: 0 !important; justify-content: center; }
+  .videoDl span { display: none; }
+}
+/* Le cœur « favori » se décale pour ne pas passer sous le bouton */
+.favBadge[data-video='true'] { top: 52px; }
