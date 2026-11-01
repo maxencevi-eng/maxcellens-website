@@ -4,6 +4,7 @@ import {
   ACCESS_COOKIE_DAYS,
   accessCookieName,
   checkAccessCookie,
+  checkPreviewToken,
   readVisitorCookie,
   visitorCookieName,
 } from './security';
@@ -64,21 +65,33 @@ export function requestCookies(req: Request): CookieReader {
   return { get: (n) => (map.has(n) ? { value: map.get(n)! } : undefined) };
 }
 
+/** En-tête porté par les appels faits depuis l'aperçu admin. */
+export const PREVIEW_HEADER = 'x-cg-preview';
+
 /**
  * Charge la galerie d'une route d'API publique et vérifie disponibilité +
  * accès. Renvoie soit la galerie, soit la réponse d'erreur à retourner.
+ *
+ * Un jeton d'aperçu admin valide (en-tête x-cg-preview) ouvre aussi les
+ * brouillons et galeries expirées : l'aperçu doit permettre de tout tester.
  */
 export async function guardPublic(
   req: Request,
   slug: string,
   opts: { requireAccess?: boolean } = { requireAccess: true }
-): Promise<{ g: PublicGalleryRow; cookies: CookieReader } | { error: NextResponse }> {
+): Promise<{ g: PublicGalleryRow; cookies: CookieReader; preview: boolean } | { error: NextResponse }> {
   const g = await gallerySlugLookup(slug);
-  const av = availability(g);
-  if (av !== 'ok') return { error: NextResponse.json({ error: 'Galerie indisponible' }, { status: 404 }) };
   const cookies = requestCookies(req);
-  if (opts.requireAccess !== false && !hasAccess(g, cookies)) {
-    return { error: NextResponse.json({ error: 'Accès refusé' }, { status: 401 }) };
+  if (g && checkPreviewToken(g.id, g.access_version, req.headers.get(PREVIEW_HEADER))) {
+    return { g, cookies, preview: true };
   }
-  return { g, cookies };
+  const av = availability(g);
+  if (av !== 'ok') {
+    const msg = av === 'draft' ? 'Galerie non publiée' : av === 'expired' ? 'Galerie expirée' : 'Galerie introuvable';
+    return { error: NextResponse.json({ error: msg }, { status: 404 }) };
+  }
+  if (opts.requireAccess !== false && !hasAccess(g, cookies)) {
+    return { error: NextResponse.json({ error: 'Accès expiré : rechargez la page' }, { status: 401 }) };
+  }
+  return { g, cookies, preview: false };
 }

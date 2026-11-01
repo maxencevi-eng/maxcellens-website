@@ -13,7 +13,7 @@ import {
 } from '../../../lib/clientGalleries/types';
 import { adminApi } from './api';
 import { applyWatermark } from './renditions';
-import { AccessFields, DesignFields, DownloadFields, FavoritesFields, WatermarkSelect } from './shared';
+import { AccessFields, DesignFields, DownloadFields, FavoritesFields, TagInput, WatermarkSelect } from './shared';
 import s from './cg.module.css';
 
 /* ── Modèles ──────────────────────────────────────────────────────────── */
@@ -104,6 +104,7 @@ export function TemplatesManager({
             </div>
             <div className={s.stack}>
               <TextField label="Description" value={draft.description || ''} onChange={(v) => setDraft({ ...draft, description: v })} placeholder="À quoi sert ce modèle ?" />
+              <TagInput label="Tags ajoutés aux galeries créées avec ce modèle" value={st.tags || []} onChange={(tags) => set({ tags })} placeholder="corporate, portraits…" />
             </div>
           </div>
           <div className={s.card2}>

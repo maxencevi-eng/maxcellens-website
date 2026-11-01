@@ -441,6 +441,85 @@ export function DesignFields({ value, onChange }: { value: DesignSettings; onCha
   );
 }
 
+/**
+ * Saisie de tags en étiquettes : Entrée, virgule ou point-virgule valide le
+ * tag en cours ; Retour arrière sur un champ vide retire le dernier. Un texte
+ * collé « a, b, c » donne trois tags.
+ */
+export function TagInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label?: string;
+  value: string[];
+  onChange: (tags: string[]) => void;
+  placeholder?: string;
+}) {
+  const [text, setText] = useState('');
+  const add = (raw: string) => {
+    const parts = raw
+      .split(/[,;\n]/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    if (!parts.length) return;
+    const lower = new Set(value.map((t) => t.toLowerCase()));
+    const next = [...value];
+    for (const p of parts) {
+      if (!lower.has(p.toLowerCase())) {
+        next.push(p);
+        lower.add(p.toLowerCase());
+      }
+    }
+    onChange(next);
+    setText('');
+  };
+  return (
+    <div>
+      {label ? <span className={s.lbl}>{label}</span> : null}
+      <div className={s.tagBox} onClick={(e) => (e.currentTarget.querySelector('input') as HTMLInputElement)?.focus()}>
+        {value.map((t) => (
+          <span key={t} className={s.tagChip}>
+            {t}
+            <button type="button" aria-label={`Retirer ${t}`} onClick={() => onChange(value.filter((x) => x !== t))}>
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          value={text}
+          placeholder={value.length ? '' : placeholder}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (/[,;]/.test(v)) add(v);
+            else setText(v);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              add(text);
+            } else if (e.key === 'Backspace' && !text && value.length) {
+              onChange(value.slice(0, -1));
+            }
+          }}
+          onBlur={() => add(text)}
+          onPaste={(e) => {
+            const t = e.clipboardData.getData('text');
+            if (/[,;\n]/.test(t)) {
+              e.preventDefault();
+              add(text + t);
+            }
+          }}
+        />
+      </div>
+      <p className={s.muted} style={{ margin: '6px 0 0', fontSize: 12 }}>
+        Entrée ou virgule pour valider chaque tag.
+      </p>
+    </div>
+  );
+}
+
 export function FolderSelect({ value, folders, onChange, label = 'Dossier' }: { value: string | null; folders: Folder[]; onChange: (v: string | null) => void; label?: string }) {
   return (
     <SelectField

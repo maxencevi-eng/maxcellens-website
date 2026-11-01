@@ -82,6 +82,7 @@ export async function POST(req: Request, ctx: Ctx) {
           placeholder: typeof f.placeholder === 'string' && f.placeholder.length < 4000 ? f.placeholder : null,
           has_web: kind === 'image' && !!f.hasWeb,
           has_preview: kind !== 'file' && !!f.hasPreview,
+          hidden: !!f.hidden,
           ready: false,
         };
       });

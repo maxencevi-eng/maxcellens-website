@@ -82,7 +82,8 @@ export async function POST(req: Request, ctx: Ctx) {
   });
 
   const vid = visitorId(g, cookies);
-  await Promise.all([
+  // L'aperçu admin ne fausse pas les statistiques du client
+  if (!r.preview) await Promise.all([
     logEvent(g.id, scope === 'photo' ? 'download_photo' : 'download_zip', {
       photo_id: scope === 'photo' ? files[0].id : null,
       visitor_id: vid,

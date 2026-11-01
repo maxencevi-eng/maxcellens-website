@@ -21,6 +21,8 @@ export type UploadProgress = {
   bytesTotal: number;
   current: string;
   errors: { name: string; error: string }[];
+  /** Identifiants des éléments envoyés avec succès. */
+  uploadedIds: string[];
 };
 
 const BATCH = 6;
@@ -60,6 +62,8 @@ export async function uploadFiles(
   files: File[],
   opts: {
     setId?: string | null;
+    /** Éléments masqués (ex. couverture importée hors galerie). */
+    hidden?: boolean;
     watermark?: Watermark | null;
     wmKey?: string | null;
     onProgress?: (p: UploadProgress) => void;
@@ -73,8 +77,9 @@ export async function uploadFiles(
     bytesTotal: files.reduce((a, f) => a + f.size, 0),
     current: '',
     errors: [],
+    uploadedIds: [],
   };
-  const emit = () => opts.onProgress?.({ ...prog, errors: [...prog.errors] });
+  const emit = () => opts.onProgress?.({ ...prog, errors: [...prog.errors], uploadedIds: [...prog.uploadedIds] });
   emit();
 
   // Tri naturel par nom (IMG_2 avant IMG_10)
@@ -131,6 +136,7 @@ export async function uploadFiles(
             hasWeb: !!r?.blobs.web,
             hasPreview: !!r,
             setId: opts.setId || null,
+            hidden: !!opts.hidden,
           })),
         },
       });
@@ -165,6 +171,7 @@ export async function uploadFiles(
             if (blob) await withRetry(() => putWithProgress(url, blob, 'image/webp', () => {}));
           }
           ok.push(up.id);
+          prog.uploadedIds.push(up.id);
         } catch (e: any) {
           prog.errors.push({ name: file.name, error: e?.message || 'envoi impossible' });
         }

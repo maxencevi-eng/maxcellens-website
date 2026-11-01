@@ -77,7 +77,7 @@ Objectif : livrer les photos aux clients depuis maxcellens.com, sans passer par 
 
 ```
 Titre;Client;E-mail;Date évènement;Statut;Accès;Lien;Mot de passe;Lien magique;PIN téléchargement;Expiration;Photos;Vues;Téléchargements;Créée le
-20260701 - Pot de départ;Sophie D.;sophie@…;01/07/2026;Publiée;Mot de passe;https://maxcellens.com/client/pot-de-depart-sophie;sable-4827;https://maxcellens.com/client/pot-de-depart-sophie?k=…;;31/12/2026;295;84;212;02/07/2026
+20260701 - Pot de départ;Sophie D.;sophie@…;01/07/2026;Publiée;Mot de passe;https://maxcellens.com/client/pot-de-depart-sophie;k7mq4xzp;https://maxcellens.com/client/pot-de-depart-sophie?k=…;;31/12/2026;295;84;212;02/07/2026
 ```
 
 Exportable pour toute la liste, le résultat filtré ou la sélection.
@@ -185,7 +185,7 @@ RLS activée sur toutes les tables **sans aucune policy pour `anon`**. Tout pass
 
 **Pourquoi un mot de passe chiffré et non haché** : vous voulez pouvoir le réafficher, le copier et l'exporter. C'est un code de partage, pas un mot de passe de compte. On le chiffre avec `GALLERY_SECRET` (variable d'environnement Vercel), donc une fuite de la base seule ne l'expose pas.
 
-**Format des mots de passe générés** : `mot-1234` (ex. `sable-4827`), avec une liste de mots français courts, sans accents ni caractères ambigus. Facile à dicter au téléphone.
+**Format des mots de passe générés** : 8 lettres et chiffres aléatoires (ex. `k7mq4xzp`), sans mot reconnaissable ni caractère confondable (0/o, 1/l/i). Saisie insensible à la casse.
 
 ### 2.2 Stockage
 
@@ -271,7 +271,7 @@ lib/clientGalleries/
 ├── db.ts            ← accès tables (serveur)
 ├── access.ts        ← cookie HMAC, lien magique, rate-limit
 ├── crypto.ts        ← chiffrement des mots de passe / PIN
-├── passwords.ts     ← générateur « mot-1234 »
+├── passwords.ts     ← générateur aléatoire (8 caractères)
 ├── storage.ts       ← interface de stockage (Supabase aujourd'hui, R2 demain)
 ├── renditions.ts    ← (client) canvas → web / thumb / wm
 └── csv.ts

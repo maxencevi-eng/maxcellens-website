@@ -129,18 +129,20 @@ export function ipHash(req: Request): string {
 
 /* ── Générateurs ───────────────────────────────────────────────────────── */
 
-// Mots courts, sans accent ni lettre ambiguë à l'oral : dictables au téléphone.
-const WORDS = [
-  'sable', 'orage', 'phare', 'brume', 'colline', 'rivage', 'cedre', 'lagune', 'sommet', 'galet',
-  'aurore', 'falaise', 'prairie', 'torrent', 'glacier', 'bambou', 'corail', 'ambre', 'ocre', 'jade',
-  'lotus', 'olive', 'menthe', 'cannelle', 'vanille', 'saphir', 'opale', 'cobalt', 'indigo', 'perle',
-  'atlas', 'zenith', 'nuage', 'soleil', 'comete', 'etoile', 'meteore', 'horizon', 'boussole', 'escale',
-  'voilier', 'ancre', 'balise', 'rocher', 'vallon', 'bosquet', 'verger', 'jardin', 'tilleul', 'erable',
-];
+// Lettres et chiffres sans caractères confondables (0/o, 1/l/i) : la saisie
+// est insensible à la casse, inutile d'y mêler des majuscules.
+const LETTERS = 'abcdefghjkmnpqrstuvwxyz';
+const DIGITS = '23456789';
 
+/** 8 caractères aléatoires, au moins 2 chiffres et 2 lettres (ex. « k7mq4xzp »). */
 export function generatePassword(): string {
-  const w = WORDS[crypto.randomInt(WORDS.length)];
-  return `${w}-${crypto.randomInt(1000, 10000)}`;
+  const all = LETTERS + DIGITS;
+  for (;;) {
+    let pw = '';
+    for (let i = 0; i < 8; i++) pw += all[crypto.randomInt(all.length)];
+    const digits = pw.replace(/\D/g, '').length;
+    if (digits >= 2 && digits <= 6) return pw;
+  }
 }
 export function generatePin(): string {
   return String(crypto.randomInt(0, 10000)).padStart(4, '0');

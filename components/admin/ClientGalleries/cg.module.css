@@ -482,6 +482,45 @@
 .field:focus-within { border-color: var(--adm-accent); box-shadow: var(--adm-shadow-focus); }
 .field input { border: 0; outline: 0; background: none; flex: 1; min-width: 0; font: inherit; padding: 7px 0; color: var(--adm-ink); }
 .field input[data-mono='true'] { font-family: var(--adm-font-mono); letter-spacing: 0.03em; }
+.tagBox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-height: var(--adm-control-height);
+  padding: 5px 8px;
+  border: 1px solid var(--adm-border);
+  border-radius: var(--adm-radius);
+  background: var(--adm-surface);
+  cursor: text;
+}
+.tagBox:focus-within { border-color: var(--adm-accent); box-shadow: var(--adm-shadow-focus); }
+.tagBox input { flex: 1; min-width: 120px; border: 0; outline: 0; background: none; font: inherit; color: var(--adm-ink); padding: 4px 2px; }
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 10px;
+  border-radius: 999px;
+  background: var(--adm-accent-wash);
+  color: var(--adm-ink);
+  font-size: 13px;
+  font-weight: 500;
+}
+.tagChip button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--adm-ink-soft);
+  font-size: 15px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+.tagChip button:hover { background: rgba(0, 0, 0, 0.08); color: var(--adm-ink); }
 .saveBar {
   position: fixed;
   left: 50%;

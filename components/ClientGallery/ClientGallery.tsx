@@ -43,7 +43,10 @@ type Props = {
   favorites: FavoriteSettings;
   initialFavorites: string[];
   identified: boolean;
-  preview: boolean;
+  /** Jeton d'aperçu admin : transmis aux routes pour tout tester, brouillons compris. */
+  previewToken: string | null;
+  /** État réel de la galerie, affiché dans le bandeau d'aperçu. */
+  availability: 'ok' | 'draft' | 'expired';
 };
 
 type DlRequest = { scope: 'photo' | 'set' | 'all' | 'favorites'; photoId?: string; setId?: string | null; size: 'original' | 'web' };
@@ -137,8 +140,30 @@ function justify(items: ClientPhoto[], width: number, target: number, gap: numbe
 
 /* ── Composant principal ───────────────────────────────────────────────── */
 
-export default function ClientGallery(props: Props) {
-  const { slug, title, date, design, cover, sets, photos, download, favorites, preview } = props;
+export default function ClientGallery(rawProps: Props) {
+  const preview = !!rawProps.previewToken;
+
+  // Aperçu admin : l'onglet Présentation envoie ses réglages non enregistrés
+  // (postMessage, même origine) pour un rendu instantané.
+  const [live, setLive] = useState<{ design?: DesignSettings; intro?: string | null }>({});
+  useEffect(() => {
+    if (!preview) return;
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.data?.type !== 'cg-live') return;
+      setLive({ design: e.data.design, intro: e.data.intro });
+    };
+    window.addEventListener('message', onMsg);
+    window.parent?.postMessage({ type: 'cg-ready' }, window.location.origin);
+    return () => window.removeEventListener('message', onMsg);
+  }, [preview]);
+  const props: Props = {
+    ...rawProps,
+    ...(live.design ? { design: live.design } : {}),
+    ...('intro' in live ? { intro: live.intro ?? null } : {}),
+  };
+
+  const { slug, title, date, design, cover, sets, photos, download, favorites, previewToken } = props;
+  const jsonHeaders: Record<string, string> = { 'Content-Type': 'application/json', ...(previewToken ? { 'x-cg-preview': previewToken } : {}) };
   const scrollRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const io = useLazyObserver(scrollRef);
@@ -218,7 +243,7 @@ export default function ClientGallery(props: Props) {
     setFavs(next);
     const res = await fetch(`/api/client/${slug}/favorite`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: jsonHeaders,
       body: JSON.stringify({ photoId: id, on }),
     }).catch(() => null);
     if (!res || !res.ok) {
@@ -255,7 +280,7 @@ export default function ClientGallery(props: Props) {
 
     const res = await fetch(`/api/client/${slug}/download`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: jsonHeaders,
       body: JSON.stringify({ ...req, pin: pinValue || undefined }),
     }).catch(() => null);
     const j = res ? await res.json().catch(() => ({})) : {};
@@ -524,7 +549,15 @@ export default function ClientGallery(props: Props) {
           ) : null}
         </footer>
 
-        {preview ? <div className={styles.previewBadge}>Aperçu administrateur — les visites ne sont pas comptées</div> : null}
+        {preview ? (
+          <div className={styles.previewBadge} data-warn={props.availability !== 'ok'}>
+            {props.availability === 'draft'
+              ? 'Aperçu — galerie en brouillon : publiez-la pour que le client y accède'
+              : props.availability === 'expired'
+                ? 'Aperçu — galerie expirée : le client voit « plus disponible »'
+                : 'Aperçu administrateur — visites et téléchargements non comptés'}
+          </div>
+        ) : null}
 
         {/* ── Visionneuse ── */}
         {lb ? (
@@ -589,6 +622,7 @@ export default function ClientGallery(props: Props) {
         {identifyFor ? (
           <IdentifyDialog
             slug={slug}
+            headers={jsonHeaders}
             onClose={() => setIdentifyFor(null)}
             onDone={(serverFavs) => {
               setIdentified(true);
@@ -636,7 +670,7 @@ export default function ClientGallery(props: Props) {
     setFavs((cur) => new Set(cur).add(id));
     const res = await fetch(`/api/client/${slug}/favorite`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: jsonHeaders,
       body: JSON.stringify({ photoId: id, on: true }),
     }).catch(() => null);
     if (!res?.ok) {
@@ -1114,7 +1148,17 @@ function DownloadDialog({
   );
 }
 
-function IdentifyDialog({ slug, onClose, onDone }: { slug: string; onClose: () => void; onDone: (favs: string[]) => void }) {
+function IdentifyDialog({
+  slug,
+  headers,
+  onClose,
+  onDone,
+}: {
+  slug: string;
+  headers: Record<string, string>;
+  onClose: () => void;
+  onDone: (favs: string[]) => void;
+}) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -1128,7 +1172,7 @@ function IdentifyDialog({ slug, onClose, onDone }: { slug: string; onClose: () =
           setError(null);
           const res = await fetch(`/api/client/${slug}/visitor`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ name, email }),
           }).catch(() => null);
           const j = res ? await res.json().catch(() => ({})) : {};

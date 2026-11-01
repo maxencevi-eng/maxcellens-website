@@ -57,6 +57,7 @@ import {
   FavoritesFields,
   FolderSelect,
   ShareDialog,
+  TagInput,
   WatermarkSelect,
   fmtDate,
   galleryLink,
@@ -255,7 +256,18 @@ export default function GalleryEditor({ id }: { id: string }) {
           />
         ) : null}
         {tab === 'design' ? (
-          <DesignTab g={g} draft={draft} setDraft={setDraft} photos={photos} previewKey={previewKey} onCover={(pid) => patchNow({ cover_photo_id: pid }, 'Couverture définie')} />
+          <DesignTab
+            g={g}
+            draft={draft}
+            setDraft={setDraft}
+            photos={photos}
+            previewKey={previewKey}
+            onCover={(pid) => patchNow({ cover_photo_id: pid }, 'Couverture définie')}
+            wm={wm}
+            r2={meta.r2}
+            onUploaded={reloadPhotos}
+            toast={toast.show}
+          />
         ) : null}
         {tab === 'settings' ? (
           <SettingsTab g={g} draft={draft} setDraft={setDraft} meta={meta} patchNow={patchNow} toast={toast.show} onTemplates={(t) => setMeta({ ...meta, templates: t })} />
@@ -724,18 +736,58 @@ function DesignTab({
   photos,
   previewKey,
   onCover,
+  wm,
+  r2,
+  onUploaded,
+  toast,
 }: {
   g: AdminGallery;
   draft: any;
   setDraft: (d: any) => void;
   photos: AdminPhoto[];
   previewKey: number;
-  onCover: (id: string) => void;
+  onCover: (id: string) => Promise<any> | void;
+  wm: Watermark | null;
+  r2: boolean;
+  onUploaded: () => Promise<void>;
+  toast: (m: string) => void;
 }) {
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [uploading, setUploading] = useState(false);
+  const frame = useRef<HTMLIFrameElement>(null);
+  const coverInput = useRef<HTMLInputElement>(null);
   const images = photos.filter((p) => p.kind === 'image');
   const cover = images.find((p) => p.id === g.cover_photo_id) || images[0];
   const focus = draft.design.focus || { x: 0.5, y: 0.5 };
+
+  // Aperçu en direct : chaque changement est envoyé à la page dans l'iframe
+  const live = useMemo(() => ({ type: 'cg-live', design: draft.design, intro: draft.intro || null }), [draft.design, draft.intro]);
+  const send = useCallback(() => {
+    frame.current?.contentWindow?.postMessage(live, window.location.origin);
+  }, [live]);
+  useEffect(send, [send]);
+  useEffect(() => {
+    // La page signale qu'elle est prête (après chargement ou rechargement)
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin === window.location.origin && e.data?.type === 'cg-ready') send();
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, [send]);
+
+  // Couverture importée hors galerie : envoyée comme élément masqué
+  const importCover = async (file: File) => {
+    if (!r2) return toast('Stockage R2 non configuré');
+    setUploading(true);
+    const res = await uploadFiles(g.id, [file], { hidden: true, watermark: wm, wmKey: watermarkKey(wm) });
+    if (res.uploadedIds[0]) {
+      await onCover(res.uploadedIds[0]);
+      setDraft({ ...draft, design: { ...draft.design, focus: { x: 0.5, y: 0.5 } } });
+      await onUploaded();
+      toast('Couverture importée — elle n’apparaît pas dans la galerie');
+    } else toast(res.errors[0]?.error || 'Import impossible');
+    setUploading(false);
+  };
 
   return (
     <div className={s.designCols}>
@@ -759,7 +811,26 @@ function DesignTab({
         </div>
         <div className={s.card2}>
           <h3>Photo de couverture</h3>
-          <p>Choisissez-la dans l’onglet Fichiers (sélection → Couverture), puis cliquez sur la photo ci-dessous pour placer le point d’intérêt.</p>
+          <p>
+            Une photo de la galerie (onglet Fichiers → sélection → Couverture), ou une image importée qui n’apparaîtra pas dans la galerie. Cliquez sur
+            l’image pour placer le point d’intérêt.
+          </p>
+          <div className={s.btnRow} style={{ marginTop: 10, marginBottom: 4 }}>
+            <AdminButton size="sm" variant="secondary" leadingIcon={<Upload size={14} />} loading={uploading} onClick={() => coverInput.current?.click()}>
+              Importer une image de couverture
+            </AdminButton>
+            <input
+              ref={coverInput}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = '';
+                if (f) importCover(f);
+              }}
+            />
+          </div>
           {cover ? (
             <div
               className={s.focusPick}
@@ -785,7 +856,8 @@ function DesignTab({
       </div>
       <div className={s.preview} data-device={device}>
         <div className={s.previewBar}>
-          Aperçu {JSON.stringify(pick(g).design) !== JSON.stringify(draft.design) || (g.intro || '') !== (draft.intro || '') ? '— enregistrez pour voir les changements' : ''}
+          Aperçu en direct
+          {JSON.stringify(pick(g).design) !== JSON.stringify(draft.design) || (g.intro || '') !== (draft.intro || '') ? ' — non enregistré' : ''}
           <span className={s.spacer} />
           <div className={s.seg}>
             <button aria-pressed={device === 'desktop'} onClick={() => setDevice('desktop')} aria-label="Ordinateur">
@@ -796,7 +868,7 @@ function DesignTab({
             </button>
           </div>
         </div>
-        <iframe key={previewKey} src={previewLink(g)} title="Aperçu de la galerie" />
+        <iframe ref={frame} key={previewKey} src={previewLink(g)} title="Aperçu de la galerie" onLoad={send} />
       </div>
     </div>
   );
@@ -854,12 +926,7 @@ function SettingsTab({
             onChange={(v) => set({ slug: slugify(v) })}
             hint={`${galleryLink({ ...g, slug: draft.slug } as AdminGallery)} — changer l’adresse casse les liens déjà envoyés.`}
           />
-          <TextField
-            label="Tags"
-            value={(draft.tags || []).join(', ')}
-            onChange={(v) => set({ tags: v.split(',').map((t) => t.trim()).filter(Boolean) })}
-            placeholder="corporate, portraits"
-          />
+          <TagInput label="Tags" value={draft.tags || []} onChange={(tags) => set({ tags })} placeholder="corporate, portraits…" />
         </div>
       </div>
 

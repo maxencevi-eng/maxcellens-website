@@ -78,7 +78,7 @@ export default async function ClientGalleryPage({ params, searchParams }: Props)
   ]);
 
   const download = normalizeDownload(g.download);
-  const photos: ClientPhoto[] = (photosRes.data || []).map((p: any) => {
+  const toClient = (p: any): ClientPhoto => {
     const kind = p.kind || 'image';
     const img = kind === 'image';
     // Le filigrane ne concerne que les photos ; une vidéo garde sa vignette propre
@@ -105,9 +105,23 @@ export default async function ClientGalleryPage({ params, searchParams }: Props)
             ? presign('GET', objectKey(g.id, p.id, 'original', p.ext), { expires: 6 * 3600, query: { 'response-content-disposition': 'inline' } })
             : null,
     };
-  });
+  };
+  const photos: ClientPhoto[] = (photosRes.data || []).map(toClient);
 
-  const cover = photos.find((p) => p.id === coverId && p.kind === 'image') || photos.find((p) => p.kind === 'image') || null;
+  // La couverture peut être une image importée hors galerie (élément masqué)
+  let cover = photos.find((p) => p.id === coverId && p.kind === 'image') || null;
+  if (!cover && coverId) {
+    const { data: hiddenCover } = await db
+      .from('client_gallery_photos')
+      .select('id, kind, set_id, filename, ext, bytes, duration, width, height, placeholder, has_web, has_preview')
+      .eq('gallery_id', g.id)
+      .eq('id', coverId)
+      .eq('ready', true)
+      .eq('kind', 'image')
+      .maybeSingle();
+    if (hiddenCover) cover = toClient(hiddenCover);
+  }
+  if (!cover) cover = photos.find((p) => p.kind === 'image') || null;
 
   return (
     <ClientGallery
@@ -126,7 +140,8 @@ export default async function ClientGalleryPage({ params, searchParams }: Props)
       favorites={normalizeFavorites(g.favorites)}
       initialFavorites={(favRes.data || []).map((f: any) => f.photo_id)}
       identified={!!vid}
-      preview={preview}
+      previewToken={preview ? one(sp.preview) || null : null}
+      availability={av === 'draft' || av === 'expired' ? av : 'ok'}
     />
   );
 }
