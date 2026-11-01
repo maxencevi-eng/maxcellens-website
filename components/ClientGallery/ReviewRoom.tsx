@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, CheckCircle2, Clock, CornerDownRight, Loader2, Send, X } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, Clock, CornerDownRight, Loader2, Maximize, Pause, Play, Send, Volume2, VolumeX, X } from 'lucide-react';
 import { formatTimecode, type ReviewComment, type ReviewSubmission } from '../../lib/clientGalleries/types';
 import styles from './ReviewRoom.module.css';
 
@@ -53,6 +53,31 @@ export default function ReviewRoom({ mode, galleryTitle, videoName, src, poster,
   const [error, setError] = useState<string | null>(null);
 
   const [time, setTime] = useState(0);
+  const wrap = useRef<HTMLDivElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [idle, setIdle] = useState(false);
+  const idleTimer = useRef<number | undefined>(undefined);
+  // Contrôles masqués après 2,5 s sans mouvement pendant la lecture
+  const wake = () => {
+    setIdle(false);
+    window.clearTimeout(idleTimer.current);
+    idleTimer.current = window.setTimeout(() => setIdle(true), 2500);
+  };
+  const togglePlay = () => {
+    const v = video.current;
+    if (!v) return;
+    if (v.paused) v.play().catch(() => {});
+    else v.pause();
+    wake();
+  };
+  const toggleFullscreen = () => {
+    const el = wrap.current as any;
+    if (!el) return;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+    else (video.current as any)?.webkitEnterFullscreen?.(); // iPhone : plein écran natif
+  };
   const [duration, setDuration] = useState(0);
   const [text, setText] = useState('');
   const [linkTime, setLinkTime] = useState(true);
@@ -92,6 +117,29 @@ export default function ReviewRoom({ mode, galleryTitle, videoName, src, poster,
   }, [refresh]);
 
   /* ── Vidéo ── */
+  // Raccourcis : Espace = lecture/pause, ← → = ±5 s (hors saisie de texte)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.isContentEditable)) return;
+      const v = video.current;
+      if (!v) return;
+      if (e.key === ' ') {
+        e.preventDefault();
+        if (v.paused) v.play().catch(() => {});
+        else v.pause();
+      } else if (e.key === 'ArrowRight') seek(v.currentTime + 5);
+      else if (e.key === 'ArrowLeft') seek(v.currentTime - 5);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Les métadonnées peuvent être chargées avant l'hydratation : on relit la durée au montage
+  useEffect(() => {
+    const v = video.current;
+    if (v && v.readyState >= 1 && v.duration) setDuration(v.duration);
+  }, [src]);
   const seek = (t: number) => {
     const v = video.current;
     if (!v) return;
@@ -210,7 +258,7 @@ export default function ReviewRoom({ mode, galleryTitle, videoName, src, poster,
       <header className={styles.head}>
         {onBack ? (
           <button className={styles.back} onClick={onBack}>
-            <ArrowLeft size={16} /> {backLabel}
+            <ArrowLeft size={16} /> <span className={styles.backLabel}>{backLabel}</span>
           </button>
         ) : null}
         <div className={styles.titles}>
@@ -239,55 +287,119 @@ export default function ReviewRoom({ mode, galleryTitle, videoName, src, poster,
 
       <div className={styles.body}>
         <section className={styles.stage}>
-          <div className={styles.videoWrap}>
+          {/* Lecteur maison : la barre de progression porte les pastilles des commentaires,
+              y compris en plein écran (le plein écran porte sur tout le cadre). */}
+          <div
+            className={styles.videoWrap}
+            ref={wrap}
+            data-playing={playing}
+            data-idle={idle && playing}
+            onMouseMove={wake}
+            onTouchStart={wake}
+          >
             <video
               ref={video}
               src={src}
               poster={poster || undefined}
-              controls
               playsInline
               preload="metadata"
-              controlsList="nodownload"
-              onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
+              onClick={togglePlay}
+              onPlay={() => setPlaying(true)}
+              onPause={() => setPlaying(false)}
+              onTimeUpdate={(e) => {
+                setTime(e.currentTarget.currentTime);
+                if (!duration && e.currentTarget.duration) setDuration(e.currentTarget.duration);
+              }}
               onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
+              onDurationChange={(e) => setDuration(e.currentTarget.duration || 0)}
+              onVolumeChange={(e) => setMuted(e.currentTarget.muted)}
               onContextMenu={(e) => e.preventDefault()}
             />
-          </div>
-          <div
-            className={styles.timeline}
-            onClick={(e) => {
-              if (!duration) return;
-              const r = e.currentTarget.getBoundingClientRect();
-              seek(((e.clientX - r.left - 12) / (r.width - 24)) * duration);
-            }}
-            title="Cliquer pour se déplacer dans la vidéo"
-          >
-            <div className={styles.timelineTrack}>
-              <div className={styles.timelineFill} style={{ width: duration ? `${(time / duration) * 100}%` : 0 }} />
-              {duration
-                ? markers.map((m) => (
-                    <button
-                      key={m.id}
-                      className={styles.marker}
-                      data-role={m.author_role}
-                      data-resolved={m.resolved}
-                      data-active={active === m.id}
-                      style={{ left: `${Math.min(100, (m.timecode! / duration) * 100)}%` }}
-                      title={`${formatTimecode(m.timecode)} · ${m.author_role === 'admin' ? 'Maxcellens' : m.author_name || 'Client'} : ${m.body.slice(0, 80)}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        focusComment(m);
-                      }}
-                      aria-label={`Commentaire à ${formatTimecode(m.timecode)}`}
-                    />
-                  ))
-                : null}
+            {!playing ? (
+              <button className={styles.bigPlay} onClick={togglePlay} aria-label="Lecture">
+                <Play size={30} />
+              </button>
+            ) : null}
+            <div className={styles.controls}>
+              <div
+                className={styles.bar}
+                onPointerDown={(e) => {
+                  if (!duration) return;
+                  const el = e.currentTarget;
+                  el.setPointerCapture(e.pointerId);
+                  const at = (x: number) => {
+                    const r = el.getBoundingClientRect();
+                    seek(Math.max(0, Math.min(1, (x - r.left) / r.width)) * duration);
+                  };
+                  at(e.clientX);
+                  const move = (ev: PointerEvent) => at(ev.clientX);
+                  const up = () => {
+                    el.removeEventListener('pointermove', move);
+                    el.removeEventListener('pointerup', up);
+                  };
+                  el.addEventListener('pointermove', move);
+                  el.addEventListener('pointerup', up);
+                }}
+              >
+                <div className={styles.barTrack}>
+                  <div className={styles.barFill} style={{ width: duration ? `${(time / duration) * 100}%` : 0 }} />
+                  <div className={styles.barHead} style={{ left: duration ? `${(time / duration) * 100}%` : 0 }} />
+                </div>
+                {duration
+                  ? markers.map((m) => (
+                      <button
+                        key={m.id}
+                        className={styles.pin}
+                        data-role={m.author_role}
+                        data-resolved={m.resolved}
+                        data-active={active === m.id}
+                        style={{ left: `${Math.min(100, (m.timecode! / duration) * 100)}%` }}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          focusComment(m);
+                        }}
+                        aria-label={`Commentaire à ${formatTimecode(m.timecode)}`}
+                      >
+                        <span className={styles.pinTip}>
+                          <b>
+                            {formatTimecode(m.timecode)} · {m.author_role === 'admin' ? 'Maxcellens' : m.author_name || 'Client'}
+                          </b>
+                          {m.body.length > 90 ? `${m.body.slice(0, 90)}…` : m.body}
+                        </span>
+                      </button>
+                    ))
+                  : null}
+              </div>
+              <div className={styles.ctrlRow}>
+                <button className={styles.ctrlBtn} onClick={togglePlay} aria-label={playing ? 'Pause' : 'Lecture'}>
+                  {playing ? <Pause size={18} /> : <Play size={18} />}
+                </button>
+                <span className={styles.ctrlTime}>
+                  {formatTimecode(time) || '0:00'} / {formatTimecode(duration) || '0:00'}
+                </span>
+                <span style={{ flex: 1 }} />
+                <span className={styles.ctrlCount}>
+                  {markers.length} commentaire{markers.length > 1 ? 's' : ''}
+                </span>
+                <button
+                  className={styles.ctrlBtn}
+                  onClick={() => {
+                    const v = video.current;
+                    if (v) v.muted = !v.muted;
+                  }}
+                  aria-label={muted ? 'Activer le son' : 'Couper le son'}
+                >
+                  {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                </button>
+                <button className={styles.ctrlBtn} onClick={toggleFullscreen} aria-label="Plein écran">
+                  <Maximize size={17} />
+                </button>
+              </div>
             </div>
           </div>
           <div className={styles.stageMeta}>
-            <span>
-              {formatTimecode(time)} / {formatTimecode(duration)} · {markers.length} repère{markers.length > 1 ? 's' : ''}
-            </span>
+            <span>Les pastilles sur la barre de lecture marquent les commentaires : survolez-les, cliquez pour y aller.</span>
             <span className={styles.legend}>
               <span>
                 <i /> Client
