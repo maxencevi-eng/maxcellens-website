@@ -13,7 +13,7 @@ import {
   type Folder,
   type Watermark,
 } from '../../../lib/clientGalleries/types';
-import { adminApi, copyText, downloadTextFile } from './api';
+import { adminApi, copyTable, copyText, downloadTextFile } from './api';
 import { exifDate } from './exif';
 import { folderOptions, folderPath, galleriesCsv, galleryLink } from './shared';
 import { uploadFiles, type UploadProgress } from './uploader';
@@ -375,10 +375,12 @@ export default function BulkImport({
     }
   };
 
-  const listText = () =>
-    results
-      .map((g) => [g.title, galleryLink(g), g.access_mode === 'password' && g.password ? `Mot de passe : ${g.password}` : null].filter(Boolean).join('\n'))
-      .join('\n\n');
+  /** Une ligne par galerie, une valeur par colonne (collage tableur ou e-mail). */
+  const copyResults = () =>
+    copyTable(
+      ['Galerie', 'Lien', 'Mot de passe', 'Fichiers'],
+      results.map((g) => [g.title, galleryLink(g), g.access_mode === 'password' ? g.password : '', g.files])
+    );
 
   /* ── Rendu ── */
   const overall = run.gt ? ((run.gi - 1 + (run.prog && run.prog.total ? run.prog.done / run.prog.total : 0)) / run.gt) * 100 : 0;
@@ -421,7 +423,7 @@ export default function BulkImport({
               variant="secondary"
               leadingIcon={copied ? <Check size={15} /> : <Copy size={15} />}
               onClick={async () => {
-                if (await copyText(listText())) {
+                if (await copyResults()) {
                   setCopied(true);
                   setTimeout(() => setCopied(false), 1800);
                 }

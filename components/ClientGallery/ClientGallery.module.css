@@ -1049,3 +1049,12 @@
 }
 /* Le cœur « favori » se décale pour ne pas passer sous le bouton */
 .favBadge[data-video='true'] { top: 52px; }
+
+/* Nombre d'éléments à côté du titre, dans la barre */
+.barTitle { display: flex; align-items: center; min-width: 0; }
+.barTitle > span { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.barCount {
+  flex: none; font-style: normal; font-family: var(--body-font); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.04em; color: var(--ink-soft); padding: 2px 9px; border-radius: 99px; background: var(--line);
+  white-space: nowrap; align-self: center;
+}

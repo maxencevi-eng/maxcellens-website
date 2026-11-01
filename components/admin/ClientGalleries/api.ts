@@ -55,3 +55,31 @@ export function downloadTextFile(name: string, content: string, type = 'text/csv
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 30_000);
 }
+
+/**
+ * Copie un tableau dans le presse-papiers, collable proprement partout :
+ * - text/plain en valeurs séparées par des tabulations (LibreOffice, Excel,
+ *   Google Sheets : une ligne par entrée, une valeur par colonne) ;
+ * - text/html en <table> (e-mail, Word, Google Docs).
+ */
+export async function copyTable(header: string[], rows: (string | number | null | undefined)[][]): Promise<boolean> {
+  const cell = (v: any) => (v == null ? '' : String(v)).replace(/[\t\r\n]+/g, ' ').trim();
+  const tsv = [header, ...rows].map((r) => r.map(cell).join('\t')).join('\r\n');
+  const esc = (v: any) => cell(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const html =
+    '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px">' +
+    `<thead><tr>${header.map((h) => `<th style="background:#f2f0eb;text-align:left">${esc(h)}</th>`).join('')}</tr></thead>` +
+    `<tbody>${rows.map((r) => `<tr>${r.map((v) => `<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  try {
+    const CI = (window as any).ClipboardItem;
+    if (CI && navigator.clipboard?.write) {
+      await navigator.clipboard.write([
+        new CI({ 'text/plain': new Blob([tsv], { type: 'text/plain' }), 'text/html': new Blob([html], { type: 'text/html' }) }),
+      ]);
+      return true;
+    }
+  } catch {
+    /* repli texte seul ci-dessous */
+  }
+  return copyText(tsv);
+}

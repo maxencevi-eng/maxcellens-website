@@ -438,8 +438,12 @@ export default function ClientGallery(rawProps: Props) {
         <div className={styles.bar} ref={barRef}>
           <div className={styles.barIn}>
             <div className={styles.barTitle}>
-              <span>{title}</span>
-              <small>Maxcellens · {photos.length} {photos.length > 1 ? 'éléments' : 'élément'}</small>
+              <span>
+                {title}
+                <em className={styles.barCount}>
+                  {photos.length} {photos.length > 1 ? 'éléments' : 'élément'}
+                </em>
+              </span>
             </div>
             <div className={styles.sets} role="toolbar" aria-label="Sections">
               {sets.length > 0 || favorites.enabled ? (
