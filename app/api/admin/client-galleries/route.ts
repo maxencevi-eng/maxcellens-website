@@ -15,7 +15,8 @@ export async function GET(req: Request) {
 
   const [g, f, t, w] = await Promise.all([
     db.from('client_galleries').select('*').order('created_at', { ascending: false }),
-    db.from('client_gallery_folders').select('*').order('created_at', { ascending: false }),
+    // Tri par created_at côté serveur ; l'ordre « position » (si la migration des sous-dossiers est passée) est appliqué côté navigateur
+    db.from('client_gallery_folders').select('*').order('created_at'),
     db.from('client_gallery_templates').select('*').order('position'),
     db.from('client_gallery_watermarks').select('*').order('created_at'),
   ]);

@@ -108,11 +108,13 @@ Volume type : **80 galeries de 6 à 12 photos** (une par collaborateur) le même
 
 Créer 80 galeries une par une n'est pas réaliste. D'où la **création en lot** (lot 1) :
 
-1. « Nouvelle séance » → nom (« Kering — Portraits 2026 »), date, **modèle** (« Portrait — livraison finale »). La séance devient un **dossier**.
-2. Glisser **un dossier parent** contenant un sous-dossier par personne (`Dupont Marie/`, `Martin Paul/`…). On peut aussi coller une liste de noms ou importer un CSV `Nom;E-mail`.
-3. Aperçu avant création : 80 lignes, avec nom de galerie, URL `/client/kering-2026-marie-dupont`, mot de passe généré, nombre de photos et e-mail. Tout reste modifiable.
-4. « Créer les 80 galeries » : les galeries sont créées, puis les photos sont envoyées dans la bonne galerie, avec une seule barre de progression globale.
-5. **Export pour les RH** (CSV/Excel) : `Nom ; E-mail ; Lien ; Mot de passe ; Nb photos`. Le service RH le diffuse, ou vous envoyez vous-même (lot 5).
+1. « **Import en masse** » : déposer toutes les photos d'un coup (fichiers ou dossiers).
+2. Former les groupes (un groupe = une galerie) : à la main (sélection, Maj+clic, nom saisi à côté du bouton de création), ou automatiquement : **toutes les N photos**, **par pause** entre deux prises de vue (EXIF), **par sous-dossier**, **par nom de fichier**.
+3. Pour chaque groupe : nom (= titre et URL `/client/…`) et modèle. Dossier de destination (existant ou nouveau), publication activée par défaut.
+4. « Créer les N galeries » : les galeries sont créées et publiées, puis les photos sont envoyées dans la bonne galerie, avec une seule barre de progression globale.
+5. Écran final : liens et mots de passe, **copie en un clic** ou **export CSV/Excel**.
+
+Les galeries s'organisent ensuite en **dossiers** (barre latérale) : glisser une galerie, ou une sélection, sur un dossier pour l'y ranger.
 
 Corrections après coup : glisser une photo d'une galerie à l'autre, ou ajouter un retardataire dans le dossier de la séance.
 

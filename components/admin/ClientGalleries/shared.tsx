@@ -73,7 +73,6 @@ export function previewLink(g: AdminGallery) {
 
 /* ── Export CSV (Excel FR : BOM + séparateur ;) ── */
 export function galleriesCsv(list: AdminGallery[], folders: Folder[]): string {
-  const folderName = new Map(folders.map((f) => [f.id, f.name]));
   const esc = (v: any) => {
     const t = v == null ? '' : String(v);
     return /[;"\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
@@ -87,7 +86,7 @@ export function galleriesCsv(list: AdminGallery[], folders: Folder[]): string {
     g.title,
     g.client_name,
     g.client_email,
-    g.folder_id ? folderName.get(g.folder_id) : '',
+    g.folder_id ? folderPath(folders, g.folder_id) : '',
     g.event_date ? fmtDate(g.event_date) : '',
     statusLabel(g),
     ACCESS_LABEL[g.access_mode],
@@ -547,7 +546,65 @@ export function FolderSelect({ value, folders, onChange, label = 'Dossier' }: { 
       label={label}
       value={value || ''}
       onChange={(v) => onChange(v || null)}
-      options={[{ value: '', label: 'Aucun dossier' }, ...folders.map((f) => ({ value: f.id, label: f.name }))]}
+      options={[{ value: '', label: 'Aucun dossier (racine)' }, ...folderOptions(folders)]}
     />
   );
+}
+
+/* ── Arborescence des dossiers ─────────────────────────────────────────── */
+
+export function sortFolders(list: Folder[]): Folder[] {
+  return [...list].sort((a, b) => (a.position ?? 0) - (b.position ?? 0) || a.created_at.localeCompare(b.created_at));
+}
+
+/** Dossiers enfants directs (null = racine), triés. */
+export function childFolders(folders: Folder[], parentId: string | null): Folder[] {
+  return sortFolders(folders.filter((f) => (f.parent_id || null) === parentId));
+}
+
+/** Chaîne racine → dossier (inclus). */
+export function folderChain(folders: Folder[], id: string | null | undefined): Folder[] {
+  const byId = new Map(folders.map((f) => [f.id, f]));
+  const chain: Folder[] = [];
+  let cur = id ? byId.get(id) : undefined;
+  for (let guard = 0; cur && guard < 100; guard++) {
+    chain.unshift(cur);
+    cur = cur.parent_id ? byId.get(cur.parent_id) : undefined;
+  }
+  return chain;
+}
+
+export function folderPath(folders: Folder[], id: string | null | undefined): string {
+  return folderChain(folders, id)
+    .map((f) => f.name)
+    .join(' / ');
+}
+
+/** Le dossier et tous ses descendants. */
+export function folderSubtree(folders: Folder[], id: string): Set<string> {
+  const out = new Set<string>([id]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const f of folders) {
+      if (f.parent_id && out.has(f.parent_id) && !out.has(f.id)) {
+        out.add(f.id);
+        grew = true;
+      }
+    }
+  }
+  return out;
+}
+
+/** Options de menu dans l'ordre de l'arbre, indentées par niveau. */
+export function folderOptions(folders: Folder[]): { value: string; label: string }[] {
+  const out: { value: string; label: string }[] = [];
+  const walk = (parent: string | null, depth: number) => {
+    for (const f of childFolders(folders, parent)) {
+      out.push({ value: f.id, label: `${'\u00A0\u00A0\u00A0'.repeat(depth)}${depth ? '└ ' : ''}${f.name}` });
+      if (depth < 20) walk(f.id, depth + 1);
+    }
+  };
+  walk(null, 0);
+  return out;
 }

@@ -57,6 +57,7 @@ import {
   FavoritesFields,
   FolderSelect,
   ShareDialog,
+  folderChain,
   TagInput,
   WatermarkSelect,
   fmtDate,
@@ -174,14 +175,38 @@ export default function GalleryEditor({ id }: { id: string }) {
 
   const wm = g.watermark_id ? meta.watermarks.find((w) => w.id === g.watermark_id) || null : null;
   const st = statusOf(g);
+  // Retour : vers le dossier de la galerie (vue « v » de la liste), sinon la racine
+  const chain = folderChain(meta.folders, g.folder_id);
+  const listHref = (folderId: string | null) => (folderId ? `/admin/galeries?v=folder:${folderId}` : '/admin/galeries');
+  const parent = chain[chain.length - 1] || null;
 
   return (
     <div className={s.page}>
       <div className={s.edHead}>
-        <AdminButton size="sm" variant="ghost" iconOnly aria-label="Retour" onClick={() => router.push('/admin/galeries')}>
+        <AdminButton
+          size="sm"
+          variant="ghost"
+          iconOnly
+          aria-label={parent ? `Retour au dossier ${parent.name}` : 'Retour aux galeries'}
+          title={parent ? `Retour à « ${parent.name} »` : 'Retour aux galeries'}
+          onClick={() => router.push(listHref(parent?.id ?? null))}
+        >
           <ArrowLeft size={16} />
         </AdminButton>
         <div className={s.edTitle}>
+          <nav className={s.edCrumbs} aria-label="Fil d’Ariane">
+            <button type="button" onClick={() => router.push(listHref(null))}>
+              Galeries clients
+            </button>
+            {chain.map((f) => (
+              <React.Fragment key={f.id}>
+                <span aria-hidden>/</span>
+                <button type="button" onClick={() => router.push(listHref(f.id))}>
+                  {f.name}
+                </button>
+              </React.Fragment>
+            ))}
+          </nav>
           <h1 title={g.title}>{g.title}</h1>
           <small>
             /client/{g.slug} · {g.photo_count} élément{g.photo_count > 1 ? 's' : ''} · {formatBytes(g.stored_bytes)}
@@ -1103,12 +1128,48 @@ function SettingsTab({
               if (!(await confirmDialog({ title: 'Mettre la galerie à la corbeille ?', message: 'Le lien cesse de fonctionner. Restauration possible depuis la corbeille.', confirmLabel: 'Mettre à la corbeille', tone: 'danger' })))
                 return;
               await adminApi(`/${g.id}`, { method: 'DELETE' });
-              router.push('/admin/galeries');
+              router.push(g.folder_id ? `/admin/galeries?v=folder:${g.folder_id}` : '/admin/galeries');
             }}
           >
             Mettre à la corbeille
           </AdminButton>
+          <AdminButton
+            variant="danger"
+            leadingIcon={<Trash2 size={14} />}
+            onClick={async () => {
+              // Double confirmation : fichiers effacés du stockage, sans retour possible
+              if (
+                !(await confirmDialog({
+                  title: `Supprimer définitivement « ${g.title} » ?`,
+                  message: 'Les photos, vidéos, documents et statistiques seront effacés. Le lien envoyé au client ne fonctionnera plus.',
+                  confirmLabel: 'Continuer',
+                  tone: 'danger',
+                }))
+              )
+                return;
+              if (
+                !(await confirmDialog({
+                  title: 'Dernière confirmation',
+                  message: 'Cette action est irréversible.',
+                  confirmLabel: 'Supprimer définitivement',
+                  tone: 'danger',
+                }))
+              )
+                return;
+              try {
+                await adminApi(`/${g.id}?permanent=1`, { method: 'DELETE' });
+                router.push(g.folder_id ? `/admin/galeries?v=folder:${g.folder_id}` : '/admin/galeries');
+              } catch (e: any) {
+                toast(e.message);
+              }
+            }}
+          >
+            Supprimer définitivement
+          </AdminButton>
         </div>
+        <p className={s.muted} style={{ margin: '10px 0 0' }}>
+          La corbeille garde la galerie récupérable ; la suppression définitive efface aussi ses fichiers et libère l’espace.
+        </p>
       </div>
     </div>
   );

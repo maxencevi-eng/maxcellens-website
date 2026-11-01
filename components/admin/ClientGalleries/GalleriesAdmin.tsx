@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
+  Activity as ActivityIcon,
   ArrowLeft,
   Check,
   CloudOff,
@@ -12,6 +13,7 @@ import {
   Droplets,
   FileSpreadsheet,
   Folder as FolderIcon,
+  FolderOpen,
   FolderPlus,
   Globe,
   ImageOff,
@@ -44,9 +46,24 @@ import {
   type Watermark,
 } from '../../../lib/clientGalleries/types';
 import { adminApi, copyText, downloadTextFile } from './api';
-import { NewGalleryDialog, SessionDialog } from './CreateDialogs';
+import { NewGalleryDialog } from './CreateDialogs';
+import BulkImport from './BulkImport';
+import ActivityOverview from './ActivityOverview';
 import { TemplatesManager, WatermarksManager } from './Managers';
-import { ACCESS_LABEL, fmtDate, FolderSelect, galleriesCsv, ShareDialog, statusLabel, statusOf, useToast, WatermarkSelect } from './shared';
+import {
+  ACCESS_LABEL,
+  childFolders,
+  fmtDate,
+  folderChain,
+  FolderSelect,
+  folderSubtree,
+  galleriesCsv,
+  ShareDialog,
+  statusLabel,
+  statusOf,
+  useToast,
+  WatermarkSelect,
+} from './shared';
 import s from './cg.module.css';
 
 type Data = {
@@ -57,8 +74,20 @@ type Data = {
   config: { r2: boolean; secret: boolean };
 };
 
-type View = 'all' | 'draft' | 'published' | 'expiring' | 'trash' | 'templates' | 'watermarks' | `folder:${string}`;
+type View = 'all' | 'draft' | 'published' | 'expiring' | 'nofolder' | 'trash' | 'templates' | 'watermarks' | 'activity' | `folder:${string}`;
 type SortKey = 'created' | 'event' | 'title' | 'views' | 'size';
+
+const VIEW_TITLE: Record<string, string> = {
+  all: 'Galeries clients',
+  published: 'Publiées',
+  draft: 'Brouillons',
+  expiring: 'Expirent bientôt',
+  nofolder: 'Hors dossier',
+  trash: 'Corbeille',
+  templates: 'Modèles',
+  watermarks: 'Filigranes',
+  activity: 'Activité',
+};
 
 /* ── Jauge d'espace ── */
 export function StorageMeter({ used, live }: { used: number; live?: boolean }) {
@@ -148,6 +177,7 @@ export default function GalleriesAdmin() {
   const [lastClicked, setLastClicked] = useState<string | null>(null);
   const [dialog, setDialog] = useState<null | { kind: string; gallery?: AdminGallery }>(null);
   const [choice, setChoice] = useState<any>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
   const toast = useToast();
 
   const load = useCallback(async () => {
@@ -192,7 +222,7 @@ export default function GalleriesAdmin() {
   const usedBytes = useMemo(() => galleries.reduce((a, g) => a + (g.stored_bytes || g.bytes_total || 0), 0), [galleries]);
 
   const counts = useMemo(() => {
-    const c = { all: 0, draft: 0, published: 0, expiring: 0, trash: 0 };
+    const c = { all: 0, draft: 0, published: 0, expiring: 0, trash: 0, nofolder: 0 };
     const byFolder: Record<string, number> = {};
     for (const g of galleries) {
       const st = statusOf(g);
@@ -201,6 +231,7 @@ export default function GalleriesAdmin() {
         continue;
       }
       c.all++;
+      if (!g.folder_id) c.nofolder++;
       if (g.status === 'draft') c.draft++;
       if (g.status === 'published') c.published++;
       if (st === 'expiring' || st === 'expired') c.expiring++;
@@ -215,6 +246,8 @@ export default function GalleriesAdmin() {
       .toLowerCase()
       .normalize('NFD')
       .replace(/\p{Diacritic}/gu, '');
+    // Dans un dossier, la recherche couvre aussi ses sous-dossiers
+    const subtree = view.startsWith('folder:') && needle ? folderSubtree(folders, view.slice(7)) : null;
     let l = galleries.filter((g) => {
       const st = statusOf(g);
       if (view === 'trash') return st === 'trash';
@@ -222,7 +255,10 @@ export default function GalleriesAdmin() {
       if (view === 'draft') return g.status === 'draft';
       if (view === 'published') return g.status === 'published';
       if (view === 'expiring') return st === 'expiring' || st === 'expired';
-      if (view.startsWith('folder:')) return g.folder_id === view.slice(7);
+      if (view === 'nofolder') return !g.folder_id;
+      if (view.startsWith('folder:')) return subtree ? !!g.folder_id && subtree.has(g.folder_id) : g.folder_id === view.slice(7);
+      // Racine : les galeries hors dossier (les dossiers s'affichent en cartes) ; la recherche couvre tout
+      if (view === 'all') return needle ? true : !g.folder_id;
       return true;
     });
     if (access) l = l.filter((g) => g.access_mode === access);
@@ -245,10 +281,13 @@ export default function GalleriesAdmin() {
       size: (a, b) => b.stored_bytes - a.stored_bytes,
     };
     return [...l].sort(cmp[sort]);
-  }, [galleries, view, q, access, sort]);
-
+  }, [galleries, folders, view, q, access, sort]);
   const selected = list.filter((g) => sel.has(g.id));
   const currentFolder = view.startsWith('folder:') ? folders.find((f) => f.id === view.slice(7)) : null;
+  const currentFolderId = currentFolder?.id ?? null;
+  // Dossiers affichés en cartes : ceux du niveau courant (racine ou dossier ouvert)
+  const levelFolders = view === 'all' || currentFolder ? childFolders(folders, currentFolderId) : [];
+  const showFolderCards = !!data && !q.trim() && !access && levelFolders.length > 0;
 
   const replace = (updated: AdminGallery[]) =>
     setData((d) => (d ? { ...d, galleries: d.galleries.map((g) => updated.find((u) => u.id === g.id) || g) } : d));
@@ -281,18 +320,34 @@ export default function GalleriesAdmin() {
 
   const destroy = async (ids: string[]) => {
     const n = ids.length;
-    const typed = await promptDialog({
-      title: `Supprimer définitivement ${n} galerie${n > 1 ? 's' : ''} ?`,
-      message: 'Fichiers et statistiques seront effacés. Tapez SUPPRIMER pour confirmer.',
-      placeholder: 'SUPPRIMER',
-      confirmLabel: 'Supprimer définitivement',
-      tone: 'danger',
-    });
-    if (typed?.trim().toUpperCase() !== 'SUPPRIMER') return;
-    await adminApi('/bulk', { method: 'POST', json: { ids, action: 'destroy' } });
-    setData((d) => (d ? { ...d, galleries: d.galleries.filter((g) => !ids.includes(g.id)) } : d));
-    setSel(new Set());
-    toast.show('Supprimées définitivement');
+    const label = n > 1 ? `${n} galeries` : `« ${galleries.find((g) => g.id === ids[0])?.title || 'cette galerie'} »`;
+    // Double confirmation : l'action efface aussi les fichiers du stockage, sans retour possible
+    if (
+      !(await confirmDialog({
+        title: `Supprimer définitivement ${label} ?`,
+        message: 'Les photos, vidéos, documents et statistiques seront effacés. Les liens envoyés aux clients ne fonctionneront plus.',
+        confirmLabel: 'Continuer',
+        tone: 'danger',
+      }))
+    )
+      return;
+    if (
+      !(await confirmDialog({
+        title: 'Dernière confirmation',
+        message: `${label} ${n > 1 ? 'seront supprimées' : 'sera supprimée'} définitivement. Cette action est irréversible.`,
+        confirmLabel: 'Supprimer définitivement',
+        tone: 'danger',
+      }))
+    )
+      return;
+    try {
+      await adminApi('/bulk', { method: 'POST', json: { ids, action: 'destroy' } });
+      setData((d) => (d ? { ...d, galleries: d.galleries.filter((g) => !ids.includes(g.id)) } : d));
+      setSel(new Set());
+      toast.show(n > 1 ? `${n} galeries supprimées définitivement` : 'Galerie supprimée définitivement');
+    } catch (e: any) {
+      toast.show(e.message);
+    }
   };
 
   const exportCsv = (rows: AdminGallery[]) => {
@@ -301,25 +356,97 @@ export default function GalleriesAdmin() {
     toast.show(`Export : ${rows.length} galerie${rows.length > 1 ? 's' : ''}`);
   };
 
+  const folderError = (e: any) =>
+    toast.show(
+      /parent_id|position/.test(e?.message || '')
+        ? 'Sous-dossiers indisponibles : exécutez la migration 20261102000000_client_gallery_folders_tree.sql dans Supabase'
+        : e?.message || 'Action impossible'
+    );
+
   const newFolder = async () => {
-    const name = await promptDialog({ title: 'Nouveau dossier', label: 'Nom', placeholder: 'BNP Paribas' });
+    const name = await promptDialog({
+      title: currentFolder ? `Nouveau sous-dossier dans « ${currentFolder.name} »` : 'Nouveau dossier',
+      label: 'Nom',
+      placeholder: currentFolder ? 'Portraits 2026' : 'BNP Paribas',
+    });
     if (!name?.trim()) return;
-    const j = await adminApi<{ folder: Folder }>('/folders', { method: 'POST', json: { name } });
-    setData((d) => (d ? { ...d, folders: [j.folder, ...d.folders] } : d));
-    setView(`folder:${j.folder.id}`);
+    try {
+      const j = await adminApi<{ folder: Folder }>('/folders', { method: 'POST', json: { name, parent_id: currentFolderId } });
+      setData((d) => (d ? { ...d, folders: [...d.folders, j.folder] } : d));
+      toast.show(`Dossier « ${j.folder.name} » créé`);
+    } catch (e: any) {
+      folderError(e);
+    }
   };
   const renameFolder = async (f: Folder) => {
     const name = await promptDialog({ title: 'Renommer le dossier', defaultValue: f.name });
     if (!name?.trim()) return;
-    const j = await adminApi<{ folder: Folder }>('/folders', { method: 'PATCH', json: { id: f.id, name } });
-    setData((d) => (d ? { ...d, folders: d.folders.map((x) => (x.id === f.id ? j.folder : x)) } : d));
+    try {
+      const j = await adminApi<{ folders: Folder[] }>('/folders', { method: 'PATCH', json: { id: f.id, name } });
+      setData((d) => (d ? { ...d, folders: j.folders } : d));
+    } catch (e: any) {
+      folderError(e);
+    }
   };
   const deleteFolder = async (f: Folder) => {
-    if (!(await confirmDialog({ title: `Supprimer le dossier « ${f.name} » ?`, message: 'Les galeries qu’il contient sont conservées, sans dossier.', tone: 'danger', confirmLabel: 'Supprimer le dossier' })))
+    const parent = f.parent_id ? folders.find((x) => x.id === f.parent_id) : null;
+    const dest = parent ? `dans « ${parent.name} »` : 'à la racine';
+    if (
+      !(await confirmDialog({
+        title: `Supprimer le dossier « ${f.name} » ?`,
+        message: `Ses galeries et sous-dossiers sont conservés et remontent ${dest}.`,
+        tone: 'danger',
+        confirmLabel: 'Supprimer le dossier',
+      }))
+    )
       return;
     await adminApi(`/folders?id=${f.id}`, { method: 'DELETE' });
-    setData((d) => (d ? { ...d, folders: d.folders.filter((x) => x.id !== f.id), galleries: d.galleries.map((g) => (g.folder_id === f.id ? { ...g, folder_id: null } : g)) } : d));
-    setView('all');
+    const up = f.parent_id || null;
+    setData((d) =>
+      d
+        ? {
+            ...d,
+            folders: d.folders.filter((x) => x.id !== f.id).map((x) => (x.parent_id === f.id ? { ...x, parent_id: up } : x)),
+            galleries: d.galleries.map((g) => (g.folder_id === f.id ? { ...g, folder_id: up } : g)),
+          }
+        : d
+    );
+    if (currentFolderId === f.id) setView(up ? `folder:${up}` : 'all');
+  };
+
+  /** Déplace un dossier : dedans (`into`), ou avant / après un dossier frère. */
+  const moveFolder = async (id: string, target: Folder | null, zone: 'into' | 'before' | 'after') => {
+    const moving = folders.find((f) => f.id === id);
+    if (!moving || target?.id === id) return;
+    const newParent = zone === 'into' ? target?.id ?? null : target?.parent_id ?? null;
+    if (newParent && folderSubtree(folders, id).has(newParent)) {
+      toast.show('Impossible de placer un dossier dans lui-même ou dans un de ses sous-dossiers');
+      return;
+    }
+    const siblings = childFolders(folders, newParent)
+      .filter((f) => f.id !== id)
+      .map((f) => f.id);
+    if (zone === 'into' || !target) siblings.push(id);
+    else siblings.splice(siblings.indexOf(target.id) + (zone === 'after' ? 1 : 0), 0, id);
+    // Mise à jour optimiste, puis état serveur
+    setData((d) =>
+      d
+        ? {
+            ...d,
+            folders: d.folders.map((f) =>
+              f.id === id ? { ...f, parent_id: newParent, position: siblings.indexOf(id) } : siblings.includes(f.id) ? { ...f, position: siblings.indexOf(f.id) } : f
+            ),
+          }
+        : d
+    );
+    try {
+      const j = await adminApi<{ folders: Folder[] }>('/folders', { method: 'PATCH', json: { id, parent_id: newParent, order: siblings } });
+      setData((d) => (d ? { ...d, folders: j.folders } : d));
+      if (zone === 'into') toast.show(`« ${moving.name} » déplacé ${target ? `dans « ${target.name} »` : 'à la racine'}`);
+    } catch (e: any) {
+      folderError(e);
+      load();
+    }
   };
 
   const copyPw = async (g: AdminGallery) => {
@@ -345,40 +472,127 @@ export default function GalleriesAdmin() {
     );
   }
 
-  const navBtn = (v: View, icon: React.ReactNode, label: string, n?: number) => (
-    <button className={s.nav} aria-current={view === v} onClick={() => setView(v)}>
-      {icon}
+  /** Glisser-déposer : une galerie (ou la sélection qui la contient) vers un dossier. */
+  const dragIds = (id: string) => (sel.has(id) ? Array.from(sel) : [id]);
+  const onCardDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('application/x-cg-ids', JSON.stringify(dragIds(id)));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  const moveToFolder = async (ids: string[], folderId: string | null) => {
+    try {
+      const j = await adminApi<{ galleries: AdminGallery[] }>('/bulk', { method: 'POST', json: { ids, action: 'patch', patch: { folder_id: folderId } } });
+      replace(j.galleries);
+      const name = folderId ? folders.find((f) => f.id === folderId)?.name : null;
+      toast.show(`${j.galleries.length} galerie(s) ${name ? `rangée(s) dans « ${name} »` : 'retirée(s) du dossier'}`);
+      setSel(new Set());
+    } catch (e: any) {
+      toast.show(e.message);
+    }
+  };
+  const FOLDER_MIME = 'application/x-cg-folder';
+  const GALLERY_MIME = 'application/x-cg-ids';
+
+  /** Cible « dedans » : racine, fil d'Ariane… accepte galeries et dossiers. */
+  const dropProps = (folderId: string | null) => ({
+    onDragOver: (e: React.DragEvent) => {
+      const t = e.dataTransfer.types;
+      if (!t.includes(GALLERY_MIME) && !t.includes(FOLDER_MIME)) return;
+      e.preventDefault();
+      setDropTarget(folderId ?? '__none__');
+    },
+    onDragLeave: () => setDropTarget(null),
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      setDropTarget(null);
+      const fid = e.dataTransfer.getData(FOLDER_MIME);
+      if (fid) {
+        moveFolder(fid, folderId ? folders.find((f) => f.id === folderId) || null : null, 'into');
+        return;
+      }
+      try {
+        const ids = JSON.parse(e.dataTransfer.getData(GALLERY_MIME) || '[]');
+        if (Array.isArray(ids) && ids.length) moveToFolder(ids, folderId);
+      } catch {}
+    },
+  });
+
+  /** Carte de dossier : bords = réordonner (avant / après), centre = déplacer dedans. */
+  const zoneOf = (e: React.DragEvent) => {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;
+    return x < 0.25 ? 'before' : x > 0.75 ? 'after' : 'into';
+  };
+  const folderCardProps = (f: Folder) => ({
+    draggable: true,
+    onDragStart: (e: React.DragEvent) => {
+      e.dataTransfer.setData(FOLDER_MIME, f.id);
+      e.dataTransfer.effectAllowed = 'move';
+    },
+    onDragOver: (e: React.DragEvent) => {
+      const t = e.dataTransfer.types;
+      if (t.includes(GALLERY_MIME)) {
+        e.preventDefault();
+        setDropTarget(`${f.id}:into`);
+      } else if (t.includes(FOLDER_MIME)) {
+        e.preventDefault();
+        setDropTarget(`${f.id}:${zoneOf(e)}`);
+      }
+    },
+    onDragLeave: () => setDropTarget(null),
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      setDropTarget(null);
+      const fid = e.dataTransfer.getData(FOLDER_MIME);
+      if (fid) {
+        if (fid !== f.id) moveFolder(fid, f, zoneOf(e));
+        return;
+      }
+      try {
+        const ids = JSON.parse(e.dataTransfer.getData(GALLERY_MIME) || '[]');
+        if (Array.isArray(ids) && ids.length) moveToFolder(ids, f.id);
+      } catch {}
+    },
+    'data-drop': dropTarget?.startsWith(`${f.id}:`) ? dropTarget.split(':')[1] : undefined,
+  });
+
+  const navBtn = (v: View, icon: React.ReactNode, label: string, n?: number, extra?: Record<string, any>) => (
+    <button key={v} className={s.nav} aria-current={view === v} onClick={() => setView(v)} {...extra}>
+      <span className={s.navIcon}>{icon}</span>
       <span className={s.label}>{label}</span>
       {n !== undefined ? <span className={s.n}>{n}</span> : null}
     </button>
   );
 
-  const isListView = view !== 'templates' && view !== 'watermarks';
+  const isListView = view !== 'templates' && view !== 'watermarks' && view !== 'activity';
 
   return (
     <div className={s.page}>
       <div className={s.layout}>
         <aside className={s.side}>
-          <a href="/admin" className={s.nav} style={{ textDecoration: 'none' }}>
-            <ArrowLeft size={15} /> Administration
+          <a href="/admin" className={s.back}>
+            <ArrowLeft size={14} /> Administration
           </a>
           <StorageMeter used={usedBytes} live />
-          {navBtn('all', <LayoutGrid size={15} />, 'Toutes les galeries', counts.all)}
-          {navBtn('published', <Globe size={15} />, 'Publiées', counts.published)}
-          {navBtn('draft', <EyeOff size={15} />, 'Brouillons', counts.draft)}
-          {navBtn('expiring', <CalendarClock size={15} />, 'Expirent / expirées', counts.expiring)}
-          <div className={s.sideTitle}>
-            Dossiers & séances
-            <button onClick={newFolder} title="Nouveau dossier">
-              <FolderPlus size={14} />
-            </button>
+
+          <div className={s.sideGroup}>
+            <div className={s.sideTitle}>Galeries</div>
+            {navBtn('all', <LayoutGrid size={15} />, 'Galeries clients', counts.all, { ...dropProps(null), 'data-drop': dropTarget === '__none__', title: 'Racine : dossiers et galeries hors dossier' })}
+            {navBtn('published', <Globe size={15} />, 'Publiées', counts.published)}
+            {navBtn('draft', <EyeOff size={15} />, 'Brouillons', counts.draft)}
+            {navBtn('expiring', <CalendarClock size={15} />, 'Expirent / expirées', counts.expiring)}
           </div>
-          {folders.map((f) => navBtn(`folder:${f.id}`, <FolderIcon size={15} />, f.name, counts.byFolder[f.id] || 0))}
-          {!folders.length ? <p className={s.muted} style={{ padding: '0 10px', margin: 0 }}>Aucun dossier</p> : null}
-          <div className={s.sideTitle}>Réglages</div>
-          {navBtn('templates', <Layers size={15} />, 'Modèles', data?.templates.length)}
-          {navBtn('watermarks', <Droplets size={15} />, 'Filigranes', data?.watermarks.length)}
-          {navBtn('trash', <Trash2 size={15} />, 'Corbeille', counts.trash)}
+
+          <div className={s.sideGroup}>
+            <div className={s.sideTitle}>Suivi</div>
+            {navBtn('activity', <ActivityIcon size={15} />, 'Activité')}
+          </div>
+
+          <div className={s.sideGroup}>
+            <div className={s.sideTitle}>Réglages</div>
+            {navBtn('templates', <Layers size={15} />, 'Modèles', data?.templates.length)}
+            {navBtn('watermarks', <Droplets size={15} />, 'Filigranes', data?.watermarks.length)}
+            {navBtn('trash', <Trash2 size={15} />, 'Corbeille', counts.trash)}
+          </div>
         </aside>
 
         <main style={{ minWidth: 0 }}>
@@ -417,6 +631,10 @@ export default function GalleriesAdmin() {
             </>
           ) : null}
 
+          {view === 'activity' && data ? (
+            <ActivityOverview galleries={data.galleries} folders={folders} onOpenGallery={(id) => router.push(`/admin/galeries/${id}`)} />
+          ) : null}
+
           {view === 'watermarks' && data ? (
             <>
               <div className={s.top}>
@@ -428,48 +646,91 @@ export default function GalleriesAdmin() {
 
           {isListView ? (
             <>
+              {view !== 'all' ? (
+                <nav className={s.crumbs} aria-label="Fil d’Ariane">
+                  <button type="button" onClick={() => setView('all')} {...dropProps(null)} data-drop={dropTarget === '__none__'}>
+                    <ArrowLeft size={14} /> Galeries clients
+                  </button>
+                  {/* Dossiers parents : cliquables, et cibles de dépôt pour remonter une galerie ou un dossier */}
+                  {folderChain(folders, currentFolderId)
+                    .slice(0, -1)
+                    .map((f) => (
+                      <React.Fragment key={f.id}>
+                        <span aria-hidden>/</span>
+                        <button type="button" onClick={() => setView(`folder:${f.id}`)} {...dropProps(f.id)} data-drop={dropTarget === f.id}>
+                          {f.name}
+                        </button>
+                      </React.Fragment>
+                    ))}
+                  <span aria-hidden>/</span>
+                  <span>{currentFolder ? currentFolder.name : VIEW_TITLE[view as string]}</span>
+                </nav>
+              ) : null}
               <div className={s.top}>
                 <h1 className={s.h1}>
-                  {currentFolder
-                    ? currentFolder.name
-                    : { all: 'Galeries clients', published: 'Publiées', draft: 'Brouillons', expiring: 'Expirent bientôt', trash: 'Corbeille' }[view as string]}
+                  {currentFolder ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+                      <FolderOpen size={24} style={{ color: 'var(--adm-ink-muted)' }} /> {currentFolder.name}
+                    </span>
+                  ) : (
+                    VIEW_TITLE[view as string]
+                  )}
                 </h1>
                 {currentFolder ? (
-                  <>
-                    <AdminButton size="sm" variant="ghost" iconOnly aria-label="Renommer" onClick={() => renameFolder(currentFolder)}>
-                      <Pencil size={14} />
+                  <div className={s.folderActions}>
+                    <AdminButton size="sm" variant="ghost" leadingIcon={<Pencil size={14} />} onClick={() => renameFolder(currentFolder)}>
+                      Renommer
                     </AdminButton>
-                    <AdminButton size="sm" variant="ghost" iconOnly aria-label="Supprimer le dossier" onClick={() => deleteFolder(currentFolder)}>
-                      <Trash2 size={14} />
+                    <AdminButton size="sm" variant="dangerGhost" leadingIcon={<Trash2 size={14} />} onClick={() => deleteFolder(currentFolder)}>
+                      Supprimer
                     </AdminButton>
-                  </>
+                  </div>
                 ) : null}
+                <span className={s.spacer} />
+                {view !== 'trash' ? (
+                  <div className={s.toolbar}>
+                    <AdminButton
+                      size="sm"
+                      variant="ghost"
+                      leadingIcon={<FileSpreadsheet size={15} />}
+                      onClick={() => exportCsv(selected.length ? selected : list)}
+                      disabled={!list.length}
+                      title="Exporter la liste (liens, mots de passe…) en CSV / Excel"
+                    >
+                      Exporter{selected.length ? ` (${selected.length})` : ''}
+                    </AdminButton>
+                    <span className={s.toolbarSep} />
+                    <AdminButton size="sm" variant="secondary" leadingIcon={<Layers size={15} />} onClick={() => setDialog({ kind: 'bulk' })} disabled={!data?.config.r2} title="Toutes les photos d’un coup, groupées en galeries">
+                      Import en masse
+                    </AdminButton>
+                    {view === 'all' || currentFolder ? (
+                      <AdminButton
+                        size="sm"
+                        variant="secondary"
+                        leadingIcon={<FolderPlus size={15} />}
+                        onClick={newFolder}
+                        title={currentFolder ? `Créer un sous-dossier dans « ${currentFolder.name} »` : 'Créer un dossier pour ranger des galeries'}
+                      >
+                        Dossier
+                      </AdminButton>
+                    ) : null}
+                    <AdminButton size="sm" variant="primary" leadingIcon={<Plus size={15} />} onClick={() => setDialog({ kind: 'new' })} disabled={!data}>
+                      Galerie
+                    </AdminButton>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className={s.filters}>
                 <label className={s.search}>
                   <Search size={15} />
-                  <input placeholder="Titre, client, e-mail, tag…" value={q} onChange={(e) => setQ(e.target.value)} />
+                  <input placeholder="Rechercher : titre, client, e-mail, tag…" value={q} onChange={(e) => setQ(e.target.value)} />
                   {q ? (
                     <button onClick={() => setQ('')} style={{ border: 0, background: 'none', cursor: 'pointer', color: 'inherit', display: 'flex' }} aria-label="Effacer">
                       <X size={14} />
                     </button>
                   ) : null}
                 </label>
-                <span className={s.spacer} />
-                {view !== 'trash' ? (
-                  <>
-                    <AdminButton variant="secondary" leadingIcon={<FileSpreadsheet size={15} />} onClick={() => exportCsv(selected.length ? selected : list)} disabled={!list.length}>
-                      Exporter{selected.length ? ` (${selected.length})` : ''}
-                    </AdminButton>
-                    <AdminButton variant="secondary" leadingIcon={<Users size={15} />} onClick={() => setDialog({ kind: 'session' })} disabled={!data?.config.r2}>
-                      Nouvelle séance
-                    </AdminButton>
-                    <AdminButton variant="primary" leadingIcon={<Plus size={15} />} onClick={() => setDialog({ kind: 'new' })} disabled={!data}>
-                      Nouvelle galerie
-                    </AdminButton>
-                  </>
-                ) : null}
-              </div>
-
-              <div className={s.filters}>
                 <select className={s.select} value={access} onChange={(e) => setAccess(e.target.value)} aria-label="Accès">
                   <option value="">Tous les accès</option>
                   <option value="password">Mot de passe</option>
@@ -516,13 +777,81 @@ export default function GalleriesAdmin() {
                 </div>
               </div>
 
+              {/* Racine : les dossiers d'abord, en cartes */}
+              {showFolderCards ? (
+                <>
+                  <div className={s.sectionHead}>
+                    {currentFolder ? 'Sous-dossiers' : 'Dossiers'} <span>{levelFolders.length}</span>
+                    <em className={s.sectionHint}>
+                      Glissez une galerie ou un dossier dessus pour l’y ranger · sur le bord gauche / droit d’un dossier pour changer l’ordre
+                    </em>
+                  </div>
+                  <div className={s.grid} style={{ marginBottom: 28 }}>
+                    {levelFolders.map((f) => {
+                      // Contenu de tout le sous-arbre : galeries et sous-dossiers
+                      const tree = folderSubtree(folders, f.id);
+                      const inFolder = galleries.filter((g) => g.folder_id && tree.has(g.folder_id) && !g.deleted_at);
+                      const subCount = tree.size - 1;
+                      const covers = inFolder.map((g) => ({ url: g.cover_url, pos: coverPos(g) })).filter((c) => c.url).slice(0, 4);
+                      return (
+                        <article
+                          key={f.id}
+                          className={`${s.card} ${s.folderCard}`}
+                          onClick={() => setView(`folder:${f.id}`)}
+                          {...folderCardProps(f)}
+                        >
+                          <div className={s.folderMosaic} data-n={covers.length}>
+                            {covers.length ? covers.map((c, i) => <img key={i} src={c.url!} alt="" loading="lazy" style={c.pos} />) : <FolderIcon size={34} />}
+                          </div>
+                          <div className={s.quick} onClick={(e) => e.stopPropagation()}>
+                            <button onClick={() => renameFolder(f)}>
+                              <Pencil size={13} /> Renommer
+                            </button>
+                            <button onClick={() => deleteFolder(f)} aria-label="Supprimer le dossier">
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                          <div className={s.meta}>
+                            <h3 title={f.name} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                              <FolderIcon size={15} style={{ flex: 'none', color: 'var(--adm-ink-muted)' }} /> {f.name}
+                            </h3>
+                            <p>
+                              <span>
+                                {inFolder.length} galerie{inFolder.length > 1 ? 's' : ''}
+                              </span>
+                              {subCount ? (
+                                <>
+                                  <span className={s.dot} />
+                                  <span>
+                                    {subCount} sous-dossier{subCount > 1 ? 's' : ''}
+                                  </span>
+                                </>
+                              ) : null}
+                              <span className={s.dot} />
+                              <span>{formatBytes(inFolder.reduce((a, g) => a + g.stored_bytes, 0))}</span>
+                            </p>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                  {list.length ? (
+                    <div className={s.sectionHead}>
+                      {currentFolder ? 'Galeries' : 'Galeries hors dossier'} <span>{list.length}</span>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+
               {!data ? (
                 <div className={s.empty}>Chargement…</div>
               ) : !list.length ? (
+                showFolderCards ? null : (
                 <div className={s.empty}>
                   <h3>{view === 'trash' ? 'Corbeille vide' : q ? 'Aucun résultat' : 'Aucune galerie ici'}</h3>
-                  {view !== 'trash' && !q ? <p>Créez une galerie, ou une séance pour livrer plusieurs personnes d’un coup.</p> : null}
+                  {view !== 'trash' && !q ? <p>Créez une galerie, ou utilisez l’import en masse pour en créer plusieurs d’un coup.</p> : null}
                 </div>
+                )
               ) : layout === 'grid' ? (
                 <div className={`${s.grid} ${sel.size ? s.selecting : ''}`}>
                   {list.map((g) => (
@@ -530,6 +859,8 @@ export default function GalleriesAdmin() {
                       key={g.id}
                       className={s.card}
                       data-selected={sel.has(g.id)}
+                      draggable={view !== 'trash'}
+                      onDragStart={(e) => onCardDragStart(e, g.id)}
                       onClick={(e) => (sel.size || e.shiftKey || e.metaKey || e.ctrlKey ? toggle(g.id, e) : router.push(`/admin/galeries/${g.id}`))}
                     >
                       <div className={s.thumb}>
@@ -633,6 +964,8 @@ export default function GalleriesAdmin() {
                         <tr
                           key={g.id}
                           data-selected={sel.has(g.id)}
+                          draggable={view !== 'trash'}
+                          onDragStart={(e) => onCardDragStart(e, g.id)}
                           onClick={(e) => (sel.size || e.shiftKey ? toggle(g.id, e) : router.push(`/admin/galeries/${g.id}`))}
                         >
                           <td
@@ -697,73 +1030,102 @@ export default function GalleriesAdmin() {
 
       {/* ── Barre d'actions groupées ── */}
       {sel.size > 0 && isListView ? (
-        <div className={s.bulk}>
-          <span className={s.count}>
-            {sel.size} sélectionnée{sel.size > 1 ? 's' : ''}
-          </span>
+        <div className={s.bulkPanel} role="toolbar" aria-label="Actions sur la sélection">
+          <div className={s.bulkHead}>
+            <span className={s.bulkCount}>{sel.size}</span>
+            <b>
+              galerie{sel.size > 1 ? 's' : ''} sélectionnée{sel.size > 1 ? 's' : ''}
+            </b>
+            {sel.size < list.length ? (
+              <button className={s.bulkLink} onClick={() => setSel(new Set(list.map((g) => g.id)))}>
+                Tout sélectionner ({list.length})
+              </button>
+            ) : null}
+            <span className={s.spacer} />
+            <button className={s.bulkClose} onClick={() => setSel(new Set())} aria-label="Annuler la sélection">
+              <X size={16} /> Désélectionner
+            </button>
+          </div>
           {view === 'trash' ? (
-            <>
-              <button onClick={() => bulk({ deleted: false }, '{n} restaurée(s)')}>
-                <RotateCcw size={15} /> Restaurer
-              </button>
-              <button className={s.danger} onClick={() => destroy(Array.from(sel))}>
-                <Trash2 size={15} /> Supprimer définitivement
-              </button>
-            </>
+            <div className={s.bulkBody}>
+              <div className={s.bulkGroup}>
+                <button className={s.bulkBtn} onClick={() => bulk({ deleted: false }, '{n} restaurée(s)')}>
+                  <RotateCcw size={16} /> Restaurer
+                </button>
+                <button className={`${s.bulkBtn} ${s.bulkDanger}`} onClick={() => destroy(Array.from(sel))}>
+                  <Trash2 size={16} /> Supprimer définitivement
+                </button>
+              </div>
+            </div>
           ) : (
-            <>
-              <button onClick={() => bulk({ status: 'published' }, '{n} publiée(s)')}>
-                <Globe size={15} /> Publier
-              </button>
-              <button onClick={() => bulk({ status: 'draft' }, '{n} dépubliée(s)')}>
-                <EyeOff size={15} /> Dépublier
-              </button>
-              <button onClick={() => setChoice({ kind: 'access', value: 'password' })}>
-                <Lock size={15} /> Accès
-              </button>
-              <button
-                onClick={async () => {
-                  if (await confirmDialog({ title: `Nouveaux mots de passe pour ${sel.size} galerie(s) ?`, message: 'Les anciens mots de passe et liens magiques cesseront de fonctionner.', confirmLabel: 'Générer' }))
-                    bulk({ regenerate_password: true, access_mode: 'password' }, 'Nouveaux mots de passe : {n}');
-                }}
-              >
-                <KeyRound size={15} /> Mots de passe
-              </button>
-              <button onClick={() => setChoice({ kind: 'download', value: 'on' })}>
-                <Download size={15} /> Téléchargement
-              </button>
-              <button onClick={() => setChoice({ kind: 'watermark', value: data?.watermarks[0]?.id || null })}>
-                <Droplets size={15} /> Filigrane
-              </button>
-              <button onClick={() => setChoice({ kind: 'template', value: data?.templates.find((t) => t.is_default)?.id || data?.templates[0]?.id })}>
-                <Layers size={15} /> Modèle
-              </button>
-              <button onClick={() => setChoice({ kind: 'expiry', value: '' })}>
-                <CalendarClock size={15} /> Expiration
-              </button>
-              <button onClick={() => setChoice({ kind: 'folder', value: currentFolder?.id || null })}>
-                <FolderIcon size={15} /> Dossier
-              </button>
-              <button
-                onClick={async () => {
-                  const t = await promptDialog({ title: 'Ajouter un tag', placeholder: 'corporate' });
-                  if (t?.trim()) bulk({ add_tag: t.trim() }, 'Tag ajouté à {n} galerie(s)');
-                }}
-              >
-                <Tag size={15} /> Tag
-              </button>
-              <button onClick={() => exportCsv(selected)}>
-                <FileSpreadsheet size={15} /> Exporter
-              </button>
-              <span className={s.sep} />
-              <button className={s.danger} onClick={() => bulk({ deleted: true }, '{n} galerie(s) dans la corbeille')}>
-                <Trash2 size={15} /> Corbeille
-              </button>
-            </>
+            <div className={s.bulkBody}>
+              <div className={s.bulkGroup}>
+                <span className={s.bulkLabel}>Publication</span>
+                <button className={s.bulkBtn} onClick={() => bulk({ status: 'published' }, '{n} publiée(s)')}>
+                  <Globe size={16} /> Publier
+                </button>
+                <button className={s.bulkBtn} onClick={() => bulk({ status: 'draft' }, '{n} dépubliée(s)')}>
+                  <EyeOff size={16} /> Dépublier
+                </button>
+              </div>
+              <div className={s.bulkGroup}>
+                <span className={s.bulkLabel}>Accès</span>
+                <button className={s.bulkBtn} onClick={() => setChoice({ kind: 'access', value: 'password' })}>
+                  <Lock size={16} /> Mode d’accès
+                </button>
+                <button
+                  className={s.bulkBtn}
+                  onClick={async () => {
+                    if (await confirmDialog({ title: `Nouveaux mots de passe pour ${sel.size} galerie(s) ?`, message: 'Les anciens mots de passe et liens magiques cesseront de fonctionner.', confirmLabel: 'Générer' }))
+                      bulk({ regenerate_password: true, access_mode: 'password' }, 'Nouveaux mots de passe : {n}');
+                  }}
+                >
+                  <KeyRound size={16} /> Mots de passe
+                </button>
+                <button className={s.bulkBtn} onClick={() => setChoice({ kind: 'download', value: 'on' })}>
+                  <Download size={16} /> Téléchargement
+                </button>
+                <button className={s.bulkBtn} onClick={() => setChoice({ kind: 'expiry', value: '' })}>
+                  <CalendarClock size={16} /> Expiration
+                </button>
+              </div>
+              <div className={s.bulkGroup}>
+                <span className={s.bulkLabel}>Réglages</span>
+                <button className={s.bulkBtn} onClick={() => setChoice({ kind: 'template', value: data?.templates.find((t) => t.is_default)?.id || data?.templates[0]?.id })}>
+                  <Layers size={16} /> Modèle
+                </button>
+                <button className={s.bulkBtn} onClick={() => setChoice({ kind: 'watermark', value: data?.watermarks[0]?.id || null })}>
+                  <Droplets size={16} /> Filigrane
+                </button>
+              </div>
+              <div className={s.bulkGroup}>
+                <span className={s.bulkLabel}>Organisation</span>
+                <button className={s.bulkBtn} onClick={() => setChoice({ kind: 'folder', value: currentFolder?.id || null })}>
+                  <FolderIcon size={16} /> Déplacer
+                </button>
+                <button
+                  className={s.bulkBtn}
+                  onClick={async () => {
+                    const t = await promptDialog({ title: 'Ajouter un tag', placeholder: 'corporate' });
+                    if (t?.trim()) bulk({ add_tag: t.trim() }, 'Tag ajouté à {n} galerie(s)');
+                  }}
+                >
+                  <Tag size={16} /> Tag
+                </button>
+              </div>
+              <div className={`${s.bulkGroup} ${s.bulkGroupEnd}`}>
+                <button className={`${s.bulkBtn} ${s.bulkPrimary}`} onClick={() => exportCsv(selected)}>
+                  <FileSpreadsheet size={16} /> Exporter liens et mots de passe
+                </button>
+                <button className={`${s.bulkBtn} ${s.bulkDanger}`} onClick={() => bulk({ deleted: true }, '{n} galerie(s) dans la corbeille')} title="Récupérable pendant 30 jours">
+                  <Trash2 size={16} /> Corbeille
+                </button>
+                <button className={`${s.bulkBtn} ${s.bulkDangerSolid}`} onClick={() => destroy(Array.from(sel))} title="Efface aussi les fichiers, sans passer par la corbeille">
+                  <Trash2 size={16} /> Supprimer définitivement
+                </button>
+              </div>
+            </div>
           )}
-          <button onClick={() => setSel(new Set())} aria-label="Annuler la sélection" style={{ background: 'rgba(255,255,255,.1)', marginLeft: 4 }}>
-            <X size={15} />
-          </button>
         </div>
       ) : null}
 
@@ -854,14 +1216,13 @@ export default function GalleriesAdmin() {
           onCreated={(g) => router.push(`/admin/galeries/${g.id}`)}
         />
       ) : null}
-      {dialog?.kind === 'session' && data ? (
-        <SessionDialog
+      {dialog?.kind === 'bulk' && data ? (
+        <BulkImport
           templates={data.templates}
           watermarks={data.watermarks}
-          onClose={() => {
-            setDialog(null);
-            load();
-          }}
+          folders={folders}
+          defaultFolderId={currentFolder?.id || null}
+          onClose={() => setDialog(null)}
           onDone={(folderId) => {
             setDialog(null);
             load().then(() => folderId && setView(`folder:${folderId}`));

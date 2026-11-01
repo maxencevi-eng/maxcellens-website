@@ -505,13 +505,21 @@
 }
 .lbBtn:hover { background: rgba(255, 255, 255, 0.1) !important; }
 .lbBtn.faved { color: #ff6b5e !important; }
+/* La zone est de taille fixe (inset) ; l'image y est centrée en absolu, ce
+   qui rend max-width / max-height effectifs — en grille, une ligne « auto »
+   grandissait avec l'image et une photo verticale débordait de l'écran. */
 .lbStage {
   position: absolute;
   inset: 68px clamp(8px, 6vw, 88px) 76px;
-  display: grid;
-  place-items: center;
+  overflow: hidden;
 }
-.lbStage img {
+.lbStage img,
+.lbStage video {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: auto;
+  height: auto;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;

@@ -974,7 +974,11 @@ function Lightbox({
   touch: React.MutableRefObject<{ x: number; y: number } | null>;
 }) {
   const p = lb.list[lb.i];
-  const strip = lb.list.map((x, i) => ({ x, i })).filter(({ i }) => Math.abs(i - lb.i) <= 4);
+  // Fenêtre fixe de miniatures : toujours le même nombre, décalée aux extrémités
+  const STRIP = 9;
+  const n = lb.list.length;
+  const start = Math.max(0, Math.min(lb.i - Math.floor(STRIP / 2), n - STRIP));
+  const strip = lb.list.slice(start, start + STRIP).map((x, k) => ({ x, i: start + k }));
   return (
     <div
       className={styles.lb}

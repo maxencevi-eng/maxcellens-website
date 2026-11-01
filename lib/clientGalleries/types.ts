@@ -122,7 +122,16 @@ export type Watermark = {
   updated_at?: string;
 };
 
-export type Folder = { id: string; name: string; event_date: string | null; created_at: string };
+export type Folder = {
+  id: string;
+  name: string;
+  event_date: string | null;
+  created_at: string;
+  /** Dossier parent (null = racine). */
+  parent_id?: string | null;
+  /** Ordre parmi les dossiers du même parent. */
+  position?: number;
+};
 
 /** Galerie telle que vue par l'admin (mot de passe déchiffré). */
 export type AdminGallery = {
