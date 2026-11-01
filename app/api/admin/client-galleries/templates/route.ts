@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db, guardAdmin, jsonError } from '@/lib/clientGalleries/db';
-import { normalizeDesign, normalizeDownload, normalizeFavorites, type TemplateSettings } from '@/lib/clientGalleries/types';
+import { normalizeDesign, normalizeDownload, normalizeFavorites, normalizeReview, type TemplateSettings } from '@/lib/clientGalleries/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +15,7 @@ function cleanSettings(s: any): TemplateSettings {
     watermark: !s?.watermark_id && !!s?.watermark,
     download: normalizeDownload(s?.download),
     favorites: normalizeFavorites(s?.favorites),
+    review: normalizeReview(s?.review),
     design: normalizeDesign(s?.design),
     share_message: s?.share_message || null,
     intro: s?.intro || null,
@@ -39,6 +40,7 @@ async function settingsFromGallery(galleryId: string): Promise<TemplateSettings 
     watermark_id: g.watermark_id,
     download: g.download,
     favorites: g.favorites,
+    review: g.review,
     design: g.design,
     share_message: g.share_message,
     intro: g.intro,

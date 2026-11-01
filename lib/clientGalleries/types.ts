@@ -30,6 +30,8 @@ export type DesignSettings = {
   font: FontPair;
   grid: GridStyle;
   gap: number;
+  /** Afficher le nom des fichiers au-dessus des vignettes (côté client). */
+  showNames: boolean;
   /** Images par ligne sur ordinateur (2 à 6) ; réduit automatiquement sur tablette et mobile. */
   columns: number;
   focus?: { x: number; y: number };
@@ -49,6 +51,7 @@ export const DEFAULT_DESIGN: DesignSettings = {
   grid: 'justified',
   gap: 8,
   columns: 4,
+  showNames: false,
 };
 
 export function normalizeDownload(v: any): DownloadSettings {
@@ -61,6 +64,12 @@ export function normalizeDownload(v: any): DownloadSettings {
   d.pin = !!d.pin;
   return d;
 }
+/** Mode review : les vidéos s'ouvrent dans une salle de commentaires horodatés. */
+export type ReviewSettings = { enabled: boolean };
+export function normalizeReview(v: any): ReviewSettings {
+  return { enabled: !!(v && typeof v === 'object' && v.enabled) };
+}
+
 export function normalizeFavorites(v: any): FavoriteSettings {
   const f = { ...DEFAULT_FAVORITES, ...(v && typeof v === 'object' ? v : {}) };
   const limit = Number(f.limit);
@@ -74,6 +83,7 @@ export function normalizeDesign(v: any): DesignSettings {
   if (!['justified', 'masonry', 'square'].includes(d.grid)) d.grid = 'justified';
   const gap = Number(d.gap);
   d.gap = Number.isFinite(gap) ? Math.max(0, Math.min(24, Math.round(gap))) : 8;
+  d.showNames = !!d.showNames;
   const columns = Number(d.columns);
   d.columns = Number.isFinite(columns) ? Math.max(2, Math.min(6, Math.round(columns))) : 4;
   if (d.focus && (typeof d.focus.x !== 'number' || typeof d.focus.y !== 'number')) delete d.focus;
@@ -92,6 +102,7 @@ export type TemplateSettings = {
   watermark?: boolean;
   download?: Partial<DownloadSettings>;
   favorites?: Partial<FavoriteSettings>;
+  review?: Partial<ReviewSettings>;
   design?: Partial<DesignSettings>;
   share_message?: string | null;
   /** Mot d'accueil affiché sous la couverture. */
@@ -157,6 +168,7 @@ export type AdminGallery = {
   download: DownloadSettings;
   download_pin: string | null;
   favorites: FavoriteSettings;
+  review: ReviewSettings;
   design: DesignSettings;
   share_message: string | null;
   intro: string | null;
@@ -318,4 +330,42 @@ export function renderShareMessage(
 export function watermarkKey(w: Pick<Watermark, 'id' | 'updated_at'> | null | undefined): string | null {
   if (!w) return null;
   return `${w.id}:${new Date(w.updated_at || 0).getTime()}`;
+}
+
+/* ── Review vidéo ──────────────────────────────────────────────────────── */
+
+export type ReviewComment = {
+  id: string;
+  photo_id: string;
+  author_role: 'client' | 'admin';
+  author_name: string | null;
+  /** Vrai si le commentaire appartient au visiteur courant (suppression possible). */
+  mine?: boolean;
+  body: string;
+  timecode: number | null;
+  parent_id: string | null;
+  resolved: boolean;
+  created_at: string;
+};
+
+export type ReviewSubmission = {
+  id: string;
+  photo_id: string;
+  visitor_name: string | null;
+  visitor_email: string | null;
+  message: string | null;
+  comment_count: number;
+  notified: boolean;
+  seen_at: string | null;
+  created_at: string;
+};
+
+/** 75.4 → « 1:15 » ; 3725 → « 1:02:05 ». */
+export function formatTimecode(sec: number | null | undefined): string {
+  if (sec == null || !Number.isFinite(sec)) return '';
+  const s = Math.max(0, Math.floor(sec));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = String(s % 60).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${r}` : `${m}:${r}`;
 }

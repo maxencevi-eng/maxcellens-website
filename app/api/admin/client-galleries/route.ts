@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createGallery, db, guardAdmin, jsonError, rowToAdminGallery } from '@/lib/clientGalleries/db';
 import { r2Configured } from '@/lib/clientGalleries/r2';
+import { mailConfigured } from '@/lib/clientGalleries/notify';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
     folders: f.data || [],
     templates: t.data || [],
     watermarks: w.data || [],
-    config: { r2: r2Configured, secret: (process.env.GALLERY_SECRET || '').length >= 16 },
+    config: { r2: r2Configured, secret: (process.env.GALLERY_SECRET || '').length >= 16, mail: mailConfigured },
   });
 }
 

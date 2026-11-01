@@ -1010,3 +1010,23 @@
 @media (max-width: 760px) {
   .brand .brandLogo { height: 24px; }
 }
+
+/* ── Nom des fichiers au-dessus des vignettes ──────────────────────────── */
+.cell { display: flex; flex-direction: column; min-width: 0; }
+.cell .tile { flex: none; }
+.caption {
+  display: flex; align-items: center; padding: 0 2px; flex: none;
+  font-size: 12.5px; font-weight: 500; color: var(--ink-soft);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.caption { display: block; line-height: 28px; }
+.masonry .cell { margin-bottom: var(--gap); break-inside: avoid; }
+.masonry .cell .tile { margin-bottom: 0; }
+
+/* ── Badge « Review » sur les vidéos ───────────────────────────────────── */
+.reviewBadge {
+  position: absolute; top: 10px; left: 10px; z-index: 2;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 4px 9px; border-radius: 99px; background: #7fd6a4; color: #0f1211;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}

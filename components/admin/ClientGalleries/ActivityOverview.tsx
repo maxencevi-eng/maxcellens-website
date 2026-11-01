@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Eye, FileSpreadsheet, Heart, KeyRound, RefreshCw, ShieldAlert, Unlock } from 'lucide-react';
+import { CheckCircle2, Download, Eye, FileSpreadsheet, Heart, KeyRound, MessageSquare, RefreshCw, ShieldAlert, Unlock } from 'lucide-react';
 import { AdminButton } from '..';
 import type { AdminGallery, Folder } from '../../../lib/clientGalleries/types';
 import { adminApi, downloadTextFile } from './api';
@@ -35,6 +35,8 @@ const TYPE_LABEL: Record<string, string> = {
   download_photo: 'Téléchargement',
   download_zip: 'Téléchargement ZIP',
   favorite: 'Favori',
+  comment: 'Commentaire',
+  review_submitted: 'Review terminée',
 };
 const TYPE_ICON: Record<string, React.ReactNode> = {
   view: <Eye size={14} />,
@@ -43,6 +45,8 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
   download_photo: <Download size={14} />,
   download_zip: <Download size={14} />,
   favorite: <Heart size={14} />,
+  comment: <MessageSquare size={14} />,
+  review_submitted: <CheckCircle2 size={14} />,
 };
 
 function detail(e: Ev) {
@@ -99,6 +103,7 @@ export default function ActivityOverview({
     { label: 'Accès ouverts', value: c.unlock || 0, icon: <Unlock size={16} /> },
     { label: 'Téléchargements', value: (c.download_photo || 0) + (c.download_zip || 0), icon: <Download size={16} />, sub: `${c.download_zip || 0} ZIP` },
     { label: 'Favoris', value: c.favorite || 0, icon: <Heart size={16} /> },
+    { label: 'Reviews terminées', value: c.review_submitted || 0, icon: <CheckCircle2 size={16} />, sub: `${c.comment || 0} commentaires` },
     { label: 'Mots de passe erronés', value: c.unlock_fail || 0, icon: <KeyRound size={16} />, warn: (c.unlock_fail || 0) > 0 },
   ];
 
@@ -163,6 +168,7 @@ export default function ActivityOverview({
           <option value="view">Visites</option>
           <option value="favorite">Favoris</option>
           <option value="access">Accès (mot de passe)</option>
+          <option value="review">Reviews vidéo</option>
         </select>
         <select className={s.select} value={gallery} onChange={(e) => setGallery(e.target.value)} aria-label="Galerie" style={{ maxWidth: 280 }}>
           <option value="">Toutes les galeries</option>

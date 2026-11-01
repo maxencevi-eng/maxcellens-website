@@ -457,6 +457,31 @@ export function DesignFields({ value, onChange }: { value: DesignSettings; onCha
           <input type="range" min={0} max={24} value={value.gap} onChange={(e) => onChange({ ...value, gap: Number(e.target.value) })} style={{ width: '100%', accentColor: 'var(--adm-accent)' }} />
         </div>
       </div>
+      <ToggleField
+        label="Afficher le nom des fichiers"
+        hint="Le nom de chaque photo, vidéo ou document apparaît au-dessus de sa vignette (sans l’extension)."
+        checked={!!value.showNames}
+        onChange={(v) => onChange({ ...value, showNames: v })}
+      />
+    </>
+  );
+}
+
+/** Réglage du mode review (vidéos) — galerie et modèles. */
+export function ReviewFields({ value, onChange, mailReady }: { value: { enabled: boolean }; onChange: (v: { enabled: boolean }) => void; mailReady?: boolean }) {
+  return (
+    <>
+      <ToggleField
+        label="Mode review des vidéos"
+        hint="Un clic sur une vidéo ouvre une page de commentaires horodatés. Le client valide sa review quand il a fini, et vous êtes prévenu par e-mail."
+        checked={value.enabled}
+        onChange={(v) => onChange({ enabled: v })}
+      />
+      {value.enabled && mailReady === false ? (
+        <p className={s.muted} style={{ margin: 0 }}>
+          ⚠ Notifications e-mail non configurées : ajoutez <code>RESEND_API_KEY</code> et <code>NOTIFY_EMAIL</code> (voir la documentation). Les reviews restent visibles dans l’admin.
+        </p>
+      ) : null}
     </>
   );
 }

@@ -7,6 +7,7 @@ import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@d
 import { CSS } from '@dnd-kit/utilities';
 import {
   Activity,
+  MessageSquare,
   ArrowLeft,
   Copy,
   Download,
@@ -57,6 +58,7 @@ import {
   FavoritesFields,
   FolderSelect,
   ShareDialog,
+  ReviewFields,
   folderChain,
   TagInput,
   WatermarkSelect,
@@ -67,15 +69,16 @@ import {
   statusOf,
   useToast,
 } from './shared';
+import ReviewsTab from './ReviewsTab';
 import { regenerateWatermarks, uploadFiles, type UploadProgress } from './uploader';
 import s from './cg.module.css';
 
-type Tab = 'files' | 'design' | 'settings' | 'activity';
+type Tab = 'files' | 'design' | 'settings' | 'activity' | 'reviews';
 
 /** Champs modifiables par les onglets Présentation / Réglages. */
 const EDITABLE = [
   'title', 'slug', 'client_name', 'client_email', 'event_date', 'folder_id', 'tags', 'access_mode', 'magic_link_enabled',
-  'email_gate', 'expires_at', 'watermark_id', 'download', 'favorites', 'design', 'share_message', 'intro', 'password', 'download_pin',
+  'email_gate', 'expires_at', 'watermark_id', 'download', 'favorites', 'review', 'design', 'share_message', 'intro', 'password', 'download_pin',
 ] as const;
 
 function pick(g: AdminGallery) {
@@ -90,8 +93,16 @@ export default function GalleryEditor({ id }: { id: string }) {
   const [g, setG] = useState<AdminGallery | null>(null);
   const [sets, setSets] = useState<GallerySet[]>([]);
   const [photos, setPhotos] = useState<AdminPhoto[]>([]);
-  const [meta, setMeta] = useState<{ folders: Folder[]; templates: Template[]; watermarks: Watermark[]; r2: boolean; used: number } | null>(null);
+  const [meta, setMeta] = useState<{ folders: Folder[]; templates: Template[]; watermarks: Watermark[]; r2: boolean; mail: boolean; used: number } | null>(null);
+  // Onglet et vidéo ouverts depuis l'URL (lien de l'e-mail de notification : ?tab=reviews&video=…)
   const [tab, setTab] = useState<Tab>('files');
+  const [initialVideo, setInitialVideo] = useState<string | null>(null);
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const t = sp.get('tab');
+    if (t && ['files', 'design', 'settings', 'activity', 'reviews'].includes(t)) setTab(t as Tab);
+    setInitialVideo(sp.get('video'));
+  }, []);
   const [draft, setDraft] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [share, setShare] = useState(false);
@@ -110,6 +121,7 @@ export default function GalleryEditor({ id }: { id: string }) {
         templates: all.templates,
         watermarks: all.watermarks,
         r2: all.config.r2,
+        mail: !!all.config.mail,
         used: all.galleries.reduce((a: number, x: AdminGallery) => a + (x.stored_bytes || 0), 0),
       });
     } catch (e: any) {
@@ -256,6 +268,7 @@ export default function GalleryEditor({ id }: { id: string }) {
             ['design', 'Présentation', <Palette size={15} key="p" />],
             ['settings', 'Réglages', <Settings2 size={15} key="s" />],
             ['activity', 'Activité', <Activity size={15} key="a" />],
+            ['reviews', 'Reviews', <MessageSquare size={15} key="r" />],
           ] as const
         ).map(([k, label, icon]) => (
           <button key={k} className={s.tab} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
@@ -298,6 +311,7 @@ export default function GalleryEditor({ id }: { id: string }) {
           <SettingsTab g={g} draft={draft} setDraft={setDraft} meta={meta} patchNow={patchNow} toast={toast.show} onTemplates={(t) => setMeta({ ...meta, templates: t })} />
         ) : null}
         {tab === 'activity' ? <ActivityTab g={g} toast={toast.show} /> : null}
+        {tab === 'reviews' ? <ReviewsTab g={g} initialVideo={initialVideo} toast={toast.show} /> : null}
       </div>
 
       {dirtyKeys.length && (tab === 'design' || tab === 'settings') ? (
@@ -913,7 +927,7 @@ function SettingsTab({
   g: AdminGallery;
   draft: any;
   setDraft: (d: any) => void;
-  meta: { folders: Folder[]; templates: Template[]; watermarks: Watermark[] };
+  meta: { folders: Folder[]; templates: Template[]; watermarks: Watermark[]; mail?: boolean };
   patchNow: (p: any, msg?: string) => Promise<AdminGallery | undefined>;
   toast: (m: string) => void;
   onTemplates: (t: Template[]) => void;
@@ -1042,6 +1056,7 @@ function SettingsTab({
         <div className={s.stack}>
           <WatermarkSelect value={draft.watermark_id} watermarks={meta.watermarks} onChange={(v) => set({ watermark_id: v })} />
           <FavoritesFields value={draft.favorites} onChange={(v) => set({ favorites: v })} />
+          <ReviewFields value={draft.review || { enabled: false }} onChange={(v) => set({ review: v })} mailReady={meta.mail} />
         </div>
       </div>
 
@@ -1184,6 +1199,8 @@ const EVENT_LABEL: Record<string, string> = {
   download_photo: 'Téléchargement',
   download_zip: 'Téléchargement ZIP',
   favorite: 'Favori',
+  comment: 'Commentaire (review)',
+  review_submitted: 'Review terminée',
 };
 
 function ActivityTab({ g, toast }: { g: AdminGallery; toast: (m: string) => void }) {

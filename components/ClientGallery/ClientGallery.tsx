@@ -44,6 +44,8 @@ type Props = {
   favorites: FavoriteSettings;
   initialFavorites: string[];
   identified: boolean;
+  /** Mode review : les vidéos ouvrent la salle de commentaires. */
+  review?: boolean;
   /** Logo du site (en-tête) ; texte « Maxcellens » à défaut. */
   logo?: string | null;
   /** Jeton d'aperçu admin : transmis aux routes pour tout tester, brouillons compris. */
@@ -356,6 +358,11 @@ export default function ClientGallery(rawProps: Props) {
 
   /* ── Visionneuse ── */
   const open = (p: ClientPhoto) => {
+    // Mode review : la vidéo s'ouvre dans sa salle de commentaires
+    if (p.kind === 'video' && props.review) {
+      window.location.href = `/client/${slug}/review/${p.id}${previewToken ? `?preview=${previewToken}` : ''}`;
+      return;
+    }
     const i = visual.findIndex((x) => x.id === p.id);
     if (i >= 0) setLb({ list: visual, i });
   };
@@ -504,6 +511,7 @@ export default function ClientGallery(rawProps: Props) {
                 onOpen={open}
                 onFav={toggleFav}
                 onDownload={(p) => requestDownload({ scope: 'photo', photoId: p.id, size: download.sizes.includes('original') ? 'original' : 'web' })}
+                reviewMode={!!props.review}
               />
             </section>
           );
@@ -835,6 +843,7 @@ function Grid({
   onOpen,
   onFav,
   onDownload,
+  reviewMode = false,
 }: {
   items: ClientPhoto[];
   design: DesignSettings;
@@ -844,7 +853,12 @@ function Grid({
   onOpen: (p: ClientPhoto) => void;
   onFav: (id: string) => void;
   onDownload: (p: ClientPhoto) => void;
+  reviewMode?: boolean;
 }) {
+  // Nom du fichier au-dessus de la vignette (réglage Présentation)
+  const showNames = !!design.showNames;
+  const CAPTION = 28;
+  const label = (p: ClientPhoto) => p.name.replace(/\.[^.]+$/, '');
   const ref = useRef<HTMLDivElement>(null);
   const width = useWidth(ref);
   const gap = design.gap;
@@ -879,6 +893,7 @@ function Grid({
             </span>
           </div>
           {p.duration ? <span className={styles.duration}>{formatDuration(p.duration)}</span> : null}
+          {reviewMode ? <span className={styles.reviewBadge}>Review</span> : null}
         </>
       ) : null}
       {favEnabled && favs.has(p.id) ? (
@@ -903,17 +918,30 @@ function Grid({
     </div>
   );
 
+  /** Vignette, précédée de son nom si l'option est active. */
+  const cell = (p: ClientPhoto, wrapStyle: React.CSSProperties, tileStyle: React.CSSProperties, sizePx: number) =>
+    showNames ? (
+      <div key={p.id} className={styles.cell} style={wrapStyle}>
+        <div className={styles.caption} style={{ height: CAPTION }} title={p.name}>
+          {label(p)}
+        </div>
+        {tile(p, tileStyle, sizePx)}
+      </div>
+    ) : (
+      tile(p, { ...wrapStyle, ...tileStyle }, sizePx)
+    );
+
   if (design.grid === 'square') {
     return (
       <div ref={ref} className={styles.square} style={{ ['--gap' as any]: `${gap}px`, gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-        {items.map((p) => tile(p, {}, width / cols))}
+        {items.map((p) => cell(p, {}, {}, width / cols))}
       </div>
     );
   }
   if (design.grid === 'masonry') {
     return (
       <div ref={ref} className={styles.masonry} style={{ ['--gap' as any]: `${gap}px`, columnCount: cols }}>
-        {items.map((p) => tile(p, { aspectRatio: `${p.w} / ${p.h}` }, width / cols))}
+        {items.map((p) => cell(p, {}, { aspectRatio: `${p.w} / ${p.h}` }, width / cols))}
       </div>
     );
   }
@@ -921,10 +949,10 @@ function Grid({
   return (
     <div ref={ref} className={styles.justified} style={{ gap }}>
       {rows.map((r, i) => (
-        <div className={styles.row} key={i} style={{ gap, height: r.h }}>
+        <div className={styles.row} key={i} style={{ gap, height: r.h + (showNames ? CAPTION : 0) }}>
           {r.items.map((p) => {
             const w = (r.h * p.w) / p.h;
-            return tile(p, { width: w, height: r.h }, w);
+            return showNames ? cell(p, { width: w, flex: 'none' }, { width: '100%', height: r.h }, w) : tile(p, { width: w, height: r.h }, w);
           })}
         </div>
       ))}

@@ -5,7 +5,7 @@ import { db } from '@/lib/clientGalleries/db';
 import { availability, gallerySlugLookup, hasAccess, visitorId } from '@/lib/clientGalleries/public';
 import { displayUrl, objectKey, presign, r2Configured } from '@/lib/clientGalleries/r2';
 import { checkPreviewToken, decrypt } from '@/lib/clientGalleries/security';
-import { normalizeDesign, normalizeDownload, normalizeFavorites, type ClientPhoto } from '@/lib/clientGalleries/types';
+import { normalizeDesign, normalizeDownload, normalizeFavorites, normalizeReview, type ClientPhoto } from '@/lib/clientGalleries/types';
 import ClientGallery from '@/components/ClientGallery/ClientGallery';
 import ClientGate from '@/components/ClientGallery/ClientGate';
 import ClientUnavailable from '@/components/ClientGallery/ClientUnavailable';
@@ -142,6 +142,7 @@ export default async function ClientGalleryPage({ params, searchParams }: Props)
       initialFavorites={(favRes.data || []).map((f: any) => f.photo_id)}
       identified={!!vid}
       logo={logo}
+      review={normalizeReview(g.review).enabled}
       previewToken={preview ? one(sp.preview) || null : null}
       availability={av === 'draft' || av === 'expired' ? av : 'ok'}
     />

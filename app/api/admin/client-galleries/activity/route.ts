@@ -3,7 +3,7 @@ import { db, guardAdmin, jsonError } from '@/lib/clientGalleries/db';
 
 export const dynamic = 'force-dynamic';
 
-const TYPES = ['view', 'unlock', 'unlock_fail', 'download_photo', 'download_zip', 'favorite'] as const;
+const TYPES = ['view', 'unlock', 'unlock_fail', 'download_photo', 'download_zip', 'favorite', 'comment', 'review_submitted'] as const;
 
 /**
  * GET /api/admin/client-galleries/activity?days=30&type=&gallery=&limit=300
@@ -40,6 +40,7 @@ export async function GET(req: Request) {
   if (galleryId) evQ = evQ.eq('gallery_id', galleryId);
   if (type === 'download') evQ = evQ.in('type', ['download_photo', 'download_zip']);
   else if (type === 'access') evQ = evQ.in('type', ['unlock', 'unlock_fail']);
+  else if (type === 'review') evQ = evQ.in('type', ['comment', 'review_submitted']);
   else if (type) evQ = evQ.eq('type', type);
 
   const [countsArr, evRes, never] = await Promise.all([

@@ -397,3 +397,28 @@ Tous les lots sont développés en une fois. Ajouts demandés en cours de route 
 - Les photos TIFF / HEIC ne sont pas décodables par le navigateur : elles sont livrées comme documents, sans aperçu.
 - Le filigrane ne s'applique qu'aux aperçus des photos. Les originaux téléchargés restent intacts, et les vignettes de vidéos ne sont pas filigranées.
 - L'envoi d'e-mails depuis le site (rappel d'expiration automatique) n'est pas inclus : le partage passe par « Copier le message », mailto ou WhatsApp.
+
+---
+
+## 7. Mode review vidéo (2026-11-03)
+
+Réglage **« Mode review des vidéos »** (galerie → Réglages, et dans les modèles). Quand il est actif :
+
+- **Côté client** : un clic sur une vidéo ouvre `/client/<slug>/review/<vidéo>`. On y trouve le lecteur, des repères de commentaires sur la ligne de temps et un fil de commentaires horodatés. La vidéo se met en pause pendant la saisie et le commentaire est lié à l'instant (option « Sans moment » pour une remarque générale). On peut répondre en fil, et supprimer ses propres commentaires. Bouton **« J'ai terminé ma review »** avec un mot facultatif. Le client s'identifie (nom + e-mail) avant de commenter.
+- **Côté admin** : onglet **Reviews** de la galerie. Il liste les vidéos avec leurs compteurs et le badge « Nouvelle review », et ouvre la même salle pour répondre (« Maxcellens »), marquer « Traité » ou supprimer. Filtre « À traiter ». Les événements « Commentaire » et « Review terminée » apparaissent dans **Activité**.
+- **E-mail** : un seul envoi quand le client valide sa review (pas à chaque commentaire). Il contient les commentaires ajoutés depuis sa validation précédente et un lien direct vers l'onglet Reviews. Une même personne ne peut pas valider deux fois en moins de 2 minutes.
+
+### Mise en service
+1. Supabase → SQL Editor : exécuter `supabase/migrations/20261103000000_client_gallery_reviews.sql` (et `20261102000000_client_gallery_folders_tree.sql` si ce n'est pas déjà fait).
+2. Créer un compte gratuit sur **resend.com** avec l'adresse qui doit recevoir les notifications, puis **API Keys → Create API Key**.
+3. Variables (Vercel + `.env.local`) :
+   ```
+   RESEND_API_KEY=re_…
+   NOTIFY_EMAIL=adresse du compte Resend
+   # MAIL_FROM=Maxcellens <galeries@maxcellens.com>   ← seulement après avoir validé le domaine dans Resend
+   ```
+   Sans domaine validé, Resend envoie depuis `onboarding@resend.dev`, uniquement vers l'adresse du compte. C'est suffisant pour se notifier soi-même.
+
+## 8. Nom des fichiers sous forme de légende
+
+Présentation → Style → **« Afficher le nom des fichiers »** : le nom (sans l'extension) apparaît au-dessus de chaque vignette côté client. C'est un réglage de présentation, donc il fait aussi partie des modèles.

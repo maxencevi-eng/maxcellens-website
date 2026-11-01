@@ -1,7 +1,7 @@
 import { db, uniqueSlug, columnsFromTemplate } from './db';
 import { encrypt, generatePassword, generatePin } from './security';
 import { allKeysForPhoto, deleteObjects } from './r2';
-import { normalizeDesign, normalizeDownload, normalizeFavorites } from './types';
+import { normalizeDesign, normalizeDownload, normalizeFavorites, normalizeReview } from './types';
 
 /**
  * Traduit une demande de modification (admin) en colonnes à écrire.
@@ -50,6 +50,7 @@ export async function buildPatch(body: any, current: any): Promise<Record<string
   }
   if (has('download_pin')) p.download_pin_enc = body.download_pin ? encrypt(String(body.download_pin).replace(/\D/g, '').slice(0, 8)) : null;
   if (body.regenerate_pin) p.download_pin_enc = encrypt(generatePin());
+  if (has('review')) p.review = normalizeReview({ ...(current.review || {}), ...(body.review || {}) });
   if (has('favorites')) p.favorites = normalizeFavorites({ ...(current.favorites || {}), ...(body.favorites || {}) });
   if (has('design')) p.design = normalizeDesign({ ...(current.design || {}), ...(body.design || {}) });
 

@@ -14,7 +14,7 @@ import {
 } from '../../../lib/clientGalleries/types';
 import { adminApi } from './api';
 import { applyWatermark } from './renditions';
-import { AccessFields, DesignFields, DownloadFields, FavoritesFields, TagInput, WatermarkSelect } from './shared';
+import { AccessFields, DesignFields, DownloadFields, FavoritesFields, ReviewFields, TagInput, WatermarkSelect } from './shared';
 import s from './cg.module.css';
 
 /* ── Modèles ──────────────────────────────────────────────────────────── */
@@ -183,6 +183,7 @@ export function TemplatesManager({
                 onChange={(id) => set({ watermark_id: id, watermark: false })}
               />
               <FavoritesFields value={normalizeFavorites(st.favorites)} onChange={(v) => set({ favorites: v })} />
+              <ReviewFields value={{ enabled: !!st.review?.enabled }} onChange={(v) => set({ review: v })} />
             </div>
           </div>
           <div className={s.card2}>
