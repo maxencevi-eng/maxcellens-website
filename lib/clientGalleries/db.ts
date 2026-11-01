@@ -114,6 +114,7 @@ export async function columnsFromTemplate(settings: TemplateSettings | null | un
     favorites: normalizeFavorites(s.favorites),
     design: normalizeDesign(s.design),
     share_message: s.share_message || null,
+    intro: s.intro || null,
     tags: Array.isArray(s.tags) ? s.tags : [],
   };
 }

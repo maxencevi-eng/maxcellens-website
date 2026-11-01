@@ -58,8 +58,13 @@ export async function buildPatch(body: any, current: any): Promise<Record<string
     if (tpl) {
       const cols = await columnsFromTemplate(tpl.settings);
       // L'expiration d'un modèle est relative : on la recalcule seulement si demandé
-      const { expires_at, tags, download_pin_enc, ...rest } = cols;
+      const { expires_at, tags, download_pin_enc, intro, share_message, ...rest } = cols;
       Object.assign(p, rest, { template_id: tpl.id });
+      // Textes : un modèle sans texte ne vide pas celui déjà écrit pour la galerie
+      if (intro) p.intro = intro;
+      if (share_message) p.share_message = share_message;
+      // La couverture et son point d'intérêt sont propres à chaque galerie
+      if (current.design?.focus) p.design = { ...p.design, focus: current.design.focus };
       if (cols.download.pin && !current.download_pin_enc) p.download_pin_enc = download_pin_enc;
       if (tags.length) p.tags = Array.from(new Set([...(current.tags || []), ...tags]));
       if (!current.expires_at && expires_at) p.expires_at = expires_at;

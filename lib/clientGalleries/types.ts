@@ -94,6 +94,8 @@ export type TemplateSettings = {
   favorites?: Partial<FavoriteSettings>;
   design?: Partial<DesignSettings>;
   share_message?: string | null;
+  /** Mot d'accueil affiché sous la couverture. */
+  intro?: string | null;
   tags?: string[];
 };
 

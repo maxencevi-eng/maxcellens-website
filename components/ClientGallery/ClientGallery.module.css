@@ -100,7 +100,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, transparent 26%, transparent 48%, rgba(0, 0, 0, 0.62) 100%);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0.12) 16%, transparent 30%, transparent 48%, rgba(0, 0, 0, 0.62) 100%);
   pointer-events: none;
 }
 .brand {
@@ -979,5 +979,26 @@
 
 @media (max-width: 760px) {
   /* Le bandeau d'aperçu ne doit pas masquer le bouton de couverture */
-  .previewBadge { top: 12px; bottom: auto; max-width: calc(100vw - 24px); font-size: 12px; text-align: center; }
+  .previewBadge { top: 14px; bottom: auto; left: auto; right: 12px; transform: none; max-width: 150px; font-size: 11px; line-height: 1.3; padding: 6px 12px; text-align: center; }
+}
+
+/* ── Logo ──────────────────────────────────────────────────────────────── */
+.brandLogo { display: block; width: auto; height: 30px; max-width: 280px; object-fit: contain; }
+.brandLogo[data-size='sm'] { height: 22px; }
+.brandLogo[data-size='lg'] { height: 34px; margin-inline: auto; }
+/* Sur une photo : logo passé en blanc, avec une ombre légère pour la lisibilité */
+.brandLogo[data-tone='light'] { filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45)) drop-shadow(0 2px 12px rgba(0, 0, 0, 0.35)); }
+/* Ambiance Nuit : logo en clair sur fond sombre */
+.root[data-theme='night'] .brandLogo[data-tone='auto'] { filter: brightness(0) invert(1); }
+/* La porte d'accès et les dialogues restent sur carte claire */
+.gateCard .brandLogo { filter: none !important; }
+/* Couverture divisée sur ordinateur : le logo est sur le fond de page, pas sur la photo */
+@media (min-width: 761px) {
+  .cover[data-layout='split'] .brandLogo[data-tone='light'] { filter: none; }
+  .root[data-theme='night'] .cover[data-layout='split'] .brandLogo[data-tone='light'] { filter: brightness(0) invert(1); }
+}
+.editorialBrand .brandLogo { height: 26px; }
+.brand .brandLogo { height: 32px; }
+@media (max-width: 760px) {
+  .brand .brandLogo { height: 24px; }
 }

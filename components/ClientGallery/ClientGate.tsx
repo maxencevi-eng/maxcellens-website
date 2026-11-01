@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import type { Theme } from '../../lib/clientGalleries/types';
 import ClientShell from './ClientShell';
+import Brand from './Brand';
 import styles from './ClientGallery.module.css';
 
 /**
@@ -19,6 +20,7 @@ export default function ClientGate({
   date,
   cover,
   theme,
+  logo,
 }: {
   slug: string;
   mode: 'password' | 'email';
@@ -26,6 +28,7 @@ export default function ClientGate({
   date: string | null;
   cover: string | null;
   theme: Theme;
+  logo?: string | null;
 }) {
   const router = useRouter();
   const [password, setPassword] = useState('');
@@ -62,7 +65,7 @@ export default function ClientGate({
       <div className={styles.gate}>
         {cover ? <div className={styles.gateBg} style={{ backgroundImage: `url(${cover})` }} /> : null}
         <form className={`${styles.gateCard} ${styles.gateForm}`} onSubmit={submit}>
-          <div className={styles.gateBrand}>Maxcellens</div>
+          <Brand logo={logo} className={styles.gateBrand} size="lg" />
           <h1 className={styles.gateTitle}>{title}</h1>
           {date ? <div className={styles.gateDate}>{date}</div> : null}
 

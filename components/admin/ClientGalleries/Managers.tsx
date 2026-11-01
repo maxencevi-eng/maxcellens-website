@@ -186,8 +186,19 @@ export function TemplatesManager({
             </div>
           </div>
           <div className={s.card2}>
-            <h3>Présentation</h3>
+            <h3>Présentation de la page client</h3>
+            <p>Couverture, ambiance, typographie, grille et mot d’accueil appliqués aux galeries créées avec ce modèle.</p>
             <div className={s.stack}>
+              <div>
+                <span className={s.lbl}>Mot d’accueil</span>
+                <textarea
+                  className={s.textarea}
+                  style={{ minHeight: 90 }}
+                  value={st.intro || ''}
+                  placeholder="Merci pour cette séance ! Voici vos portraits, prêts à être téléchargés en haute définition."
+                  onChange={(e) => set({ intro: e.target.value })}
+                />
+              </div>
               <DesignFields value={normalizeDesign(st.design)} onChange={(v) => set({ design: v })} />
             </div>
           </div>

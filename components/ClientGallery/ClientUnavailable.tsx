@@ -1,5 +1,6 @@
 import React from 'react';
 import ClientShell from './ClientShell';
+import Brand from './Brand';
 import styles from './ClientGallery.module.css';
 
 const COPY: Record<string, { title: string; text: string }> = {
@@ -21,13 +22,13 @@ const COPY: Record<string, { title: string; text: string }> = {
   },
 };
 
-export default function ClientUnavailable({ reason }: { reason: string }) {
+export default function ClientUnavailable({ reason, logo }: { reason: string; logo?: string | null }) {
   const c = COPY[reason] || COPY.missing;
   return (
     <ClientShell>
       <div className={styles.unavailable}>
         <div>
-          <div className={styles.footBrand}>Maxcellens</div>
+          <Brand logo={logo} className={styles.footBrand} size="lg" />
           <h1>{c.title}</h1>
           <p>{c.text}</p>
           <a href="/contact">Contacter Maxcellens</a>

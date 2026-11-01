@@ -17,6 +17,7 @@ function cleanSettings(s: any): TemplateSettings {
     favorites: normalizeFavorites(s?.favorites),
     design: normalizeDesign(s?.design),
     share_message: s?.share_message || null,
+    intro: s?.intro || null,
     tags: Array.isArray(s?.tags) ? s.tags.filter(Boolean) : [],
   };
 }
@@ -40,6 +41,7 @@ async function settingsFromGallery(galleryId: string): Promise<TemplateSettings 
     favorites: g.favorites,
     design: g.design,
     share_message: g.share_message,
+    intro: g.intro,
     tags: g.tags,
   });
 }

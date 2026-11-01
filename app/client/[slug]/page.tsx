@@ -9,6 +9,7 @@ import { normalizeDesign, normalizeDownload, normalizeFavorites, type ClientPhot
 import ClientGallery from '@/components/ClientGallery/ClientGallery';
 import ClientGate from '@/components/ClientGallery/ClientGate';
 import ClientUnavailable from '@/components/ClientGallery/ClientUnavailable';
+import { siteLogoUrl } from '@/lib/clientGalleries/logo';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,11 +44,11 @@ export default async function ClientGalleryPage({ params, searchParams }: Props)
   const k = one(sp.k);
   if (k) redirect(`/api/client/${encodeURIComponent(slug)}/magic?k=${encodeURIComponent(k)}`);
 
-  const g = await gallerySlugLookup(slug);
+  const [g, logo] = await Promise.all([gallerySlugLookup(slug), siteLogoUrl()]);
   const preview = !!g && checkPreviewToken(g.id, g.access_version, one(sp.preview));
   const av = availability(g);
-  if (av !== 'ok' && !preview) return <ClientUnavailable reason={av} />;
-  if (!r2Configured) return <ClientUnavailable reason="setup" />;
+  if (av !== 'ok' && !preview) return <ClientUnavailable reason={av} logo={logo} />;
+  if (!r2Configured) return <ClientUnavailable reason="setup" logo={logo} />;
 
   const design = normalizeDesign(g.design);
   const wm = !!g.watermark_id;
@@ -57,11 +58,11 @@ export default async function ClientGalleryPage({ params, searchParams }: Props)
 
   const jar = await cookies();
   if (!preview && !hasAccess(g, jar)) {
-    return <ClientGate slug={g.slug} mode="password" title={g.title} date={eventDate} cover={coverThumb} theme={design.theme} />;
+    return <ClientGate slug={g.slug} mode="password" title={g.title} date={eventDate} cover={coverThumb} theme={design.theme} logo={logo} />;
   }
   const vid = visitorId(g, jar);
   if (!preview && g.email_gate && !vid) {
-    return <ClientGate slug={g.slug} mode="email" title={g.title} date={eventDate} cover={coverThumb} theme={design.theme} />;
+    return <ClientGate slug={g.slug} mode="email" title={g.title} date={eventDate} cover={coverThumb} theme={design.theme} logo={logo} />;
   }
 
   const [setsRes, photosRes, favRes] = await Promise.all([
@@ -140,6 +141,7 @@ export default async function ClientGalleryPage({ params, searchParams }: Props)
       favorites={normalizeFavorites(g.favorites)}
       initialFavorites={(favRes.data || []).map((f: any) => f.photo_id)}
       identified={!!vid}
+      logo={logo}
       previewToken={preview ? one(sp.preview) || null : null}
       availability={av === 'draft' || av === 'expired' ? av : 'ok'}
     />

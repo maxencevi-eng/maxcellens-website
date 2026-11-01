@@ -25,6 +25,7 @@ import {
   type GallerySet,
 } from '../../lib/clientGalleries/types';
 import ClientShell from './ClientShell';
+import Brand from './Brand';
 import styles from './ClientGallery.module.css';
 
 type Props = {
@@ -43,6 +44,8 @@ type Props = {
   favorites: FavoriteSettings;
   initialFavorites: string[];
   identified: boolean;
+  /** Logo du site (en-tête) ; texte « Maxcellens » à défaut. */
+  logo?: string | null;
   /** Jeton d'aperçu admin : transmis aux routes pour tout tester, brouillons compris. */
   previewToken: string | null;
   /** État réel de la galerie, affiché dans le bandeau d'aperçu. */
@@ -421,7 +424,7 @@ export default function ClientGallery(rawProps: Props) {
   return (
     <ObserverCtx.Provider value={io}>
       <ClientShell theme={theme} font={design.font} scrollRef={scrollRef}>
-        <Cover design={design} cover={cover} title={title} date={date} onEnter={scrollToGallery} />
+        <Cover design={design} cover={cover} title={title} date={date} logo={props.logo} onEnter={scrollToGallery} />
 
         <Intro {...props} counts={counts} />
 
@@ -539,7 +542,7 @@ export default function ClientGallery(rawProps: Props) {
         ) : null}
 
         <footer className={styles.foot}>
-          <div className={styles.footBrand}>Maxcellens</div>
+          <Brand logo={props.logo} className={styles.footBrand} size="lg" />
           <p>
             Photographe &amp; Vidéaste ·{' '}
             <a href="/" data-no-transition>
@@ -713,12 +716,14 @@ function Cover({
   title,
   date,
   onEnter,
+  logo,
 }: {
   design: DesignSettings;
   cover: ClientPhoto | null;
   title: string;
   date: string | null;
   onEnter: () => void;
+  logo?: string | null;
 }) {
   const btn = (
     <button className={styles.coverBtn} onClick={onEnter}>
@@ -728,7 +733,7 @@ function Cover({
   if (!cover || design.cover === 'minimal') {
     return (
       <header className={styles.coverMinimal}>
-        <div className={styles.brandInline}>Maxcellens</div>
+        <Brand logo={logo} className={styles.brandInline} size="lg" />
         <h1 className={styles.coverTitle}>{title}</h1>
         {date ? <div className={styles.coverDate}>{date}</div> : null}
       </header>
@@ -738,7 +743,7 @@ function Cover({
     return (
       <header className={styles.editorial}>
         <div className={styles.editorialTop}>
-          <b>Maxcellens</b>
+          <Brand logo={logo} className={styles.editorialBrand} />
           <span>{date || ''}</span>
         </div>
         <h1 className={styles.editorialTitle}>{title}</h1>
@@ -765,7 +770,7 @@ function Cover({
       <header className={styles.cover} data-layout="frame">
         <div className={styles.frameIn}>
           {coverImg(cover, design)}
-          <div className={styles.brand}>Maxcellens</div>
+          <Brand logo={logo} tone="light" className={styles.brand} />
           {text}
         </div>
       </header>
@@ -774,7 +779,7 @@ function Cover({
   return (
     <header className={styles.cover} data-layout={design.cover}>
       {coverImg(cover, design)}
-      <div className={styles.brand}>Maxcellens</div>
+      <Brand logo={logo} tone="light" className={styles.brand} />
       {text}
       <ArrowDown size={20} className={styles.scrollHint} aria-hidden />
     </header>
