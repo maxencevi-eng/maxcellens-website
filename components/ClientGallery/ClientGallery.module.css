@@ -217,9 +217,11 @@
 
 /* minimale : pas de grande image */
 .coverMinimal {
-  padding: clamp(64px, 14vh, 140px) clamp(20px, 4vw, 48px) 24px;
+  padding: clamp(36px, 7vh, 72px) clamp(20px, 4vw, 48px) 8px;
   text-align: center;
 }
+/* Sans image d'en-tête : le mot d'accueil suit de près */
+.coverMinimal + .intro { padding-top: clamp(24px, 4vh, 40px); }
 .coverMinimal .brandInline {
   font-family: var(--title-font);
   font-size: 13px;
@@ -434,7 +436,11 @@
 }
 
 /* ── Pied de page ──────────────────────────────────────────────────────── */
+/* Pied de page collé en bas quand la galerie est courte */
+.page { min-height: 100%; display: flex; flex-direction: column; }
+.pageMain { flex: 1 0 auto; }
 .foot {
+  flex-shrink: 0;
   text-align: center;
   padding: 72px 20px 80px;
   margin-top: 48px;

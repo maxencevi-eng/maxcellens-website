@@ -9,7 +9,6 @@ import {
   Download,
   ExternalLink,
   Heart,
-  Image as ImageIcon,
   Loader2,
   Pause,
   Play,
@@ -431,6 +430,8 @@ export default function ClientGallery(rawProps: Props) {
   return (
     <ObserverCtx.Provider value={io}>
       <ClientShell theme={theme} font={design.font} scrollRef={scrollRef}>
+        <div className={styles.page}>
+        <div className={styles.pageMain}>
         <Cover design={design} cover={cover} title={title} date={date} logo={props.logo} onEnter={scrollToGallery} />
 
         <Intro {...props} counts={counts} />
@@ -552,6 +553,7 @@ export default function ClientGallery(rawProps: Props) {
             </div>
           </section>
         ) : null}
+        </div>
 
         <footer className={styles.foot}>
           <Brand logo={props.logo} className={styles.footBrand} size="lg" />
@@ -567,6 +569,7 @@ export default function ClientGallery(rawProps: Props) {
             </div>
           ) : null}
         </footer>
+        </div>
 
         {preview && mounted ? (
           <div className={styles.previewBadge} data-warn={props.availability !== 'ok'}>
@@ -802,10 +805,6 @@ function Cover({
 
 function Intro(p: Props & { counts: { image: number; video: number; file: number } }) {
   const first = (p.clientName || '').trim().split(/\s+/)[0];
-  const parts: string[] = [];
-  if (p.counts.image) parts.push(`${p.counts.image} photo${p.counts.image > 1 ? 's' : ''}`);
-  if (p.counts.video) parts.push(`${p.counts.video} vidéo${p.counts.video > 1 ? 's' : ''}`);
-  if (p.counts.file) parts.push(`${p.counts.file} document${p.counts.file > 1 ? 's' : ''}`);
   return (
     <div className={styles.intro}>
       <div className={styles.introKicker}>{first ? `Bonjour ${first}` : 'Bienvenue'}</div>
@@ -814,12 +813,8 @@ function Intro(p: Props & { counts: { image: number; video: number; file: number
       ) : (
         <p className={styles.introText}>Voici votre galerie. Bonne découverte.</p>
       )}
+      {p.download.enabled || p.favorites.enabled ? (
       <div className={styles.introMeta}>
-        {parts.length ? (
-          <span>
-            <ImageIcon size={14} /> {parts.join(' · ')}
-          </span>
-        ) : null}
         {p.download.enabled ? (
           <span>
             <Download size={14} /> Téléchargement {p.download.sizes.includes('original') ? 'haute définition' : 'web'}
@@ -831,6 +826,7 @@ function Intro(p: Props & { counts: { image: number; video: number; file: number
           </span>
         ) : null}
       </div>
+      ) : null}
       <div className={styles.introRule} />
     </div>
   );
