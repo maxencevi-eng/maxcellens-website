@@ -41,6 +41,7 @@ export async function GET(req: Request, ctx: Ctx) {
     has_web: r.has_web,
     has_preview: r.has_preview,
     thumb_url: r2Configured && r.has_preview ? displayUrl(objectKey(id, r.id, 'thumb')) : '',
+    created_at: r.created_at,
   }));
 
   return NextResponse.json({ gallery: rowToAdminGallery(g.data), sets: s.data || [], photos });

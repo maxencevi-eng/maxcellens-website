@@ -367,8 +367,9 @@
 
 .justified { display: flex; flex-direction: column; }
 .row { display: flex; }
-.masonry { column-gap: var(--gap); }
-.masonry .tile { margin-bottom: var(--gap); break-inside: avoid; width: 100%; }
+.masonry { display: flex; align-items: flex-start; gap: var(--gap); }
+.masonryCol { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
+.masonry .tile { margin-bottom: var(--gap); width: 100%; }
 .square { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(46vw, 260px), 1fr)); gap: var(--gap); }
 .square .tile { aspect-ratio: 1; }
 

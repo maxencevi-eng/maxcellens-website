@@ -486,9 +486,17 @@ function FilesTab({
     await act({ action: 'reorder', ids: next.map((p) => p.id) });
   };
 
-  const sortBy = async (mode: 'name' | 'kind') => {
+  const sortBy = async (mode: 'name' | 'kind' | 'date') => {
+    // Photos, puis vidéos, puis documents (l'ordre alphabétique des types mettrait les documents en tête)
+    const KIND_ORDER: Record<string, number> = { image: 0, video: 1, file: 2 };
+    // Date d'ajout ; à date égale (même envoi), on garde l'ordre d'envoi
+    const added = (p: AdminPhoto) => Date.parse(p.created_at) || 0;
     const next = [...photos].sort((a, b) =>
-      mode === 'name' ? a.filename.localeCompare(b.filename, 'fr', { numeric: true }) : a.kind.localeCompare(b.kind) || a.position - b.position
+      mode === 'name'
+        ? a.filename.localeCompare(b.filename, 'fr', { numeric: true })
+        : mode === 'date'
+          ? added(a) - added(b) || a.position - b.position
+          : (KIND_ORDER[a.kind] ?? 9) - (KIND_ORDER[b.kind] ?? 9) || a.position - b.position
     );
     setPhotos(next);
     await act({ action: 'reorder', ids: next.map((p) => p.id) });
@@ -726,6 +734,9 @@ function FilesTab({
             <span className={s.spacer} />
             <AdminButton size="sm" variant="ghost" onClick={() => sortBy('name')}>
               Trier par nom
+            </AdminButton>
+            <AdminButton size="sm" variant="ghost" onClick={() => sortBy('date')}>
+              Trier par date d&apos;ajout
             </AdminButton>
             <AdminButton size="sm" variant="ghost" onClick={() => sortBy('kind')}>
               Photos, puis vidéos, puis documents

@@ -954,9 +954,25 @@ function Grid({
     );
   }
   if (design.grid === 'masonry') {
+    // Répartition explicite : chaque vignette va dans la colonne la plus courte (la plus à gauche
+    // en cas d'égalité). L'ordre se lit ainsi de gauche à droite puis de haut en bas, alors que
+    // les colonnes CSS (column-count) remplissent chaque colonne de haut en bas.
+    const colW = width ? (width - gap * (cols - 1)) / cols : 300;
+    const columns: ClientPhoto[][] = Array.from({ length: cols }, () => []);
+    const heights = new Array(cols).fill(0);
+    for (const p of items) {
+      let c = 0;
+      for (let i = 1; i < cols; i++) if (heights[i] < heights[c] - 0.5) c = i;
+      columns[c].push(p);
+      heights[c] += (colW * p.h) / p.w + (showNames ? CAPTION : 0) + gap;
+    }
     return (
-      <div ref={ref} className={styles.masonry} style={{ ['--gap' as any]: `${gap}px`, columnCount: cols }}>
-        {items.map((p) => cell(p, {}, { aspectRatio: `${p.w} / ${p.h}` }, width / cols))}
+      <div ref={ref} className={styles.masonry} style={{ ['--gap' as any]: `${gap}px` }}>
+        {columns.map((col, i) => (
+          <div key={i} className={styles.masonryCol}>
+            {col.map((p) => cell(p, {}, { aspectRatio: `${p.w} / ${p.h}` }, colW))}
+          </div>
+        ))}
       </div>
     );
   }

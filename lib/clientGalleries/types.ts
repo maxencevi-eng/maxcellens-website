@@ -216,6 +216,8 @@ export type AdminPhoto = {
   has_web: boolean;
   has_preview: boolean;
   thumb_url: string;
+  /** Date d'ajout dans la galerie (tri « date d'ajout »). */
+  created_at: string;
 };
 
 export type GallerySet = { id: string; name: string; position: number };
