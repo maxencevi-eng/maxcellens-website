@@ -5,7 +5,7 @@ import { db } from '@/lib/clientGalleries/db';
 import { availability, gallerySlugLookup, hasAccess, visitorId } from '@/lib/clientGalleries/public';
 import { displayUrl, objectKey, presign, r2Configured } from '@/lib/clientGalleries/r2';
 import { checkPreviewToken } from '@/lib/clientGalleries/security';
-import { normalizeReview } from '@/lib/clientGalleries/types';
+import { normalizeDownload, normalizeReview } from '@/lib/clientGalleries/types';
 import ClientReview from '@/components/ClientGallery/ClientReview';
 import ClientUnavailable from '@/components/ClientGallery/ClientUnavailable';
 import { siteLogoUrl } from '@/lib/clientGalleries/logo';
@@ -52,6 +52,10 @@ export default async function ReviewPage({ params, searchParams }: Props) {
     .maybeSingle();
   if (!photo || photo.kind !== 'video') redirect(galleryUrl);
 
+  // Même règle que la galerie : bouton visible si le téléchargement unitaire est autorisé
+  const dl = normalizeDownload(g.download);
+  const downloadSize = dl.enabled && dl.scopes.includes('photo') ? (dl.sizes.includes('original') ? 'original' : 'web') : null;
+
   return (
     <ClientReview
       slug={g.slug}
@@ -62,6 +66,7 @@ export default async function ReviewPage({ params, searchParams }: Props) {
       poster={photo.has_preview ? displayUrl(objectKey(g.id, photo.id, 'screen')) : null}
       previewToken={preview ? previewTok || null : null}
       requireEmail={normalizeReview(g.review).requireEmail}
+      downloadSize={downloadSize}
     />
   );
 }

@@ -13,6 +13,7 @@ export default function ClientReview({
   poster,
   previewToken,
   requireEmail,
+  downloadSize,
 }: {
   slug: string;
   photoId: string;
@@ -22,7 +23,22 @@ export default function ClientReview({
   poster: string | null;
   previewToken: string | null;
   requireEmail: boolean;
+  /** Taille demandée au serveur si la galerie autorise le téléchargement unitaire, sinon null. */
+  downloadSize: 'original' | 'web' | null;
 }) {
+  // Même route que la galerie : le serveur revérifie les réglages et le code
+  const download = async (pin?: string): Promise<string> => {
+    const res = await fetch(`/api/client/${slug}/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(previewToken ? { 'x-cg-preview': previewToken } : {}) },
+      body: JSON.stringify({ scope: 'photo', photoId, size: downloadSize, pin: pin || undefined }),
+    }).catch(() => null);
+    const j = res ? await res.json().catch(() => ({})) : {};
+    if (!res || !res.ok) return j.error === 'pin' ? 'pin' : j.error || 'Téléchargement impossible';
+    window.location.href = j.files[0].url;
+    return 'ok';
+  };
+
   useEffect(() => {
     // La page du site (vide) ne doit pas défiler sous la salle plein écran
     const html = document.documentElement;
@@ -61,6 +77,7 @@ export default function ClientReview({
       poster={poster}
       transport={transport}
       requireEmail={requireEmail}
+      onDownload={downloadSize ? download : undefined}
       onBack={() => {
         window.location.href = `/client/${slug}${previewToken ? `?preview=${previewToken}` : ''}`;
       }}

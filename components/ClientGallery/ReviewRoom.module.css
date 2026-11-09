@@ -241,6 +241,9 @@
 .dialogBar { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 .ghost { padding: 10px 16px !important; border-radius: 999px; color: var(--ink-soft) !important; }
 .ghost:hover { background: var(--line) !important; }
+.dl { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line) !important; font-size: 13.5px; }
+.dl:disabled { opacity: 0.5; cursor: default; }
+.dialog .input { margin-top: 14px; }
 .thanks { text-align: center; }
 .thanks svg { color: var(--accent); }
 .toast {

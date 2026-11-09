@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, CheckCircle2, Clock, CornerDownRight, Loader2, Maximize, Pause, Play, Send, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, Clock, CornerDownRight, Download, Loader2, Maximize, Pause, Play, Send, Volume2, VolumeX, X } from 'lucide-react';
 import { formatTimecode, type ReviewComment, type ReviewSubmission } from '../../lib/clientGalleries/types';
 import styles from './ReviewRoom.module.css';
 
@@ -30,6 +30,11 @@ type Props = {
   backLabel?: string;
   /** Côté client : l'e-mail est-il obligatoire pour commenter ? */
   requireEmail?: boolean;
+  /**
+   * Téléchargement de la vidéo (absent si la galerie ne l'autorise pas).
+   * Renvoie 'ok', 'pin' (code requis ou erroné) ou un message d'erreur.
+   */
+  onDownload?: (pin?: string) => Promise<string>;
 };
 
 function initials(name: string | null | undefined) {
@@ -44,7 +49,18 @@ function ago(iso: string) {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
-export default function ReviewRoom({ mode, galleryTitle, videoName, src, poster, transport, onBack, backLabel = 'Retour à la galerie', requireEmail = true }: Props) {
+export default function ReviewRoom({
+  mode,
+  galleryTitle,
+  videoName,
+  src,
+  poster,
+  transport,
+  onBack,
+  backLabel = 'Retour à la galerie',
+  requireEmail = true,
+  onDownload,
+}: Props) {
   const video = useRef<HTMLVideoElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const [comments, setComments] = useState<ReviewComment[]>([]);
@@ -271,6 +287,7 @@ export default function ReviewRoom({ mode, galleryTitle, videoName, src, poster,
         </div>
         {mode === 'client' ? (
           <>
+            {onDownload ? <DownloadButton onDownload={onDownload} /> : null}
             {lastSubmission ? (
               <span className={styles.status}>
                 <CheckCircle2 size={15} /> Review envoyée {ago(lastSubmission)}
@@ -565,6 +582,65 @@ export default function ReviewRoom({ mode, galleryTitle, videoName, src, poster,
       ) : null}
       {toast ? <div className={styles.toast}>{toast}</div> : null}
     </div>
+  );
+}
+
+/** Bouton « Télécharger » de l'en-tête, avec demande du code si la galerie en exige un. */
+function DownloadButton({ onDownload }: { onDownload: (pin?: string) => Promise<string> }) {
+  const [busy, setBusy] = useState(false);
+  const [askPin, setAskPin] = useState(false);
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const go = async (code?: string) => {
+    setBusy(true);
+    setError(null);
+    const r = await onDownload(code);
+    setBusy(false);
+    if (r === 'ok') {
+      setAskPin(false);
+      setPin('');
+    } else if (r === 'pin') {
+      if (askPin) setError('Code incorrect');
+      setAskPin(true);
+    } else {
+      setError(r);
+      if (!askPin) window.alert(r);
+    }
+  };
+
+  return (
+    <>
+      <button className={`${styles.ghost} ${styles.dl}`} onClick={() => go()} disabled={busy} title="Télécharger la vidéo" aria-label="Télécharger la vidéo">
+        {busy && !askPin ? <Loader2 size={16} /> : <Download size={16} />} <span className={styles.backLabel}>Télécharger</span>
+      </button>
+      {askPin ? (
+        <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && !busy && setAskPin(false)}>
+          <form
+            className={styles.dialog}
+            role="dialog"
+            aria-modal="true"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (pin.trim()) go(pin.trim());
+            }}
+          >
+            <h2>Code de téléchargement</h2>
+            <p>Saisissez le code communiqué par Maxcellens pour télécharger la vidéo.</p>
+            <input className={styles.input} value={pin} onChange={(e) => setPin(e.target.value)} autoFocus inputMode="numeric" autoComplete="off" />
+            {error ? <div className={styles.error}>{error}</div> : null}
+            <div className={styles.dialogBar}>
+              <button type="button" className={styles.ghost} onClick={() => setAskPin(false)} disabled={busy}>
+                Annuler
+              </button>
+              <button type="submit" className={styles.done} disabled={busy || !pin.trim()}>
+                {busy ? <Loader2 size={16} /> : <Download size={16} />} Télécharger
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+    </>
   );
 }
 
