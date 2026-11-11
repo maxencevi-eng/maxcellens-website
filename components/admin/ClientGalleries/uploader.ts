@@ -62,6 +62,8 @@ export async function uploadFiles(
   files: File[],
   opts: {
     setId?: string | null;
+    /** Section propre à chaque fichier (dossiers déposés) — prioritaire sur `setId`. */
+    setIdOf?: (f: File) => string | null;
     /** Éléments masqués (ex. couverture importée hors galerie). */
     hidden?: boolean;
     watermark?: Watermark | null;
@@ -82,8 +84,14 @@ export async function uploadFiles(
   const emit = () => opts.onProgress?.({ ...prog, errors: [...prog.errors], uploadedIds: [...prog.uploadedIds] });
   emit();
 
-  // Tri naturel par nom (IMG_2 avant IMG_10)
-  const sorted = [...files].sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true }));
+  const setOf = (f: File) => (opts.setIdOf ? opts.setIdOf(f) : opts.setId) || null;
+  // Les dossiers restent groupés, dans l'ordre où ils ont été déposés
+  const groupRank = new Map<string | null, number>();
+  for (const f of files) if (!groupRank.has(setOf(f))) groupRank.set(setOf(f), groupRank.size);
+  // Puis tri naturel par nom (IMG_2 avant IMG_10)
+  const sorted = [...files].sort(
+    (a, b) => groupRank.get(setOf(a))! - groupRank.get(setOf(b))! || a.name.localeCompare(b.name, 'fr', { numeric: true })
+  );
 
   for (let i = 0; i < sorted.length; i += BATCH) {
     if (opts.signal?.cancelled) break;
@@ -135,7 +143,7 @@ export async function uploadFiles(
             placeholder: r?.placeholder,
             hasWeb: !!r?.blobs.web,
             hasPreview: !!r,
-            setId: opts.setId || null,
+            setId: setOf(file),
             hidden: !!opts.hidden,
           })),
         },

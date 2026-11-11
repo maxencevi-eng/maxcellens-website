@@ -7,6 +7,8 @@ import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@d
 import { CSS } from '@dnd-kit/utilities';
 import {
   Activity,
+  FolderPlus,
+  Images,
   MessageSquare,
   ArrowLeft,
   Copy,
@@ -300,6 +302,7 @@ export default function GalleryEditor({ id }: { id: string }) {
             draft={draft}
             setDraft={setDraft}
             photos={photos}
+            sets={sets}
             previewKey={previewKey}
             onCover={(pid) => patchNow({ cover_photo_id: pid }, 'Couverture définie')}
             wm={wm}
@@ -422,6 +425,7 @@ function FilesTab({
   const [prog, setProg] = useState<UploadProgress | null>(null);
   const [regen, setRegen] = useState<{ done: number; total: number } | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const dirInput = useRef<HTMLInputElement>(null);
   const cancel = useRef({ cancelled: false });
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -434,12 +438,32 @@ function FilesTab({
   const wmKey = watermarkKey(wm);
   const staleWm = wm ? photos.filter((p) => p.kind === 'image' && p.has_preview && p.wm_key !== wmKey).length : 0;
 
-  const startUpload = async (files: File[]) => {
+  const startUpload = async (files: File[], folderOf?: Map<File, string>) => {
     if (!files.length) return;
     if (!r2) return toast('Stockage R2 non configuré');
     cancel.current = { cancelled: false };
+    const current = setView !== 'all' && setView !== NO_SET ? setView : null;
+    // Un dossier = une section du même nom (réutilisée si elle existe déjà)
+    let setIdOf: ((f: File) => string | null) | undefined;
+    if (folderOf?.size) {
+      const names = Array.from(new Set(folderOf.values()));
+      const byName = new Map<string, string>();
+      let all = sets;
+      for (const name of names) {
+        const found = all.find((x) => x.name.trim().toLowerCase() === name.trim().toLowerCase());
+        if (found) byName.set(name, found.id);
+        else {
+          const j = await adminApi<{ set: GallerySet }>(`/${g.id}/sets`, { method: 'POST', json: { name } });
+          all = [...all, j.set];
+          byName.set(name, j.set.id);
+        }
+      }
+      if (all !== sets) setSets(all);
+      setIdOf = (f) => (folderOf.has(f) ? byName.get(folderOf.get(f)!)! : current);
+    }
     const res = await uploadFiles(g.id, files, {
-      setId: setView !== 'all' && setView !== NO_SET ? setView : null,
+      setId: current,
+      setIdOf,
       watermark: wm,
       wmKey,
       signal: cancel.current,
@@ -454,24 +478,39 @@ function FilesTab({
     e.preventDefault();
     setOver(false);
     if (!e.dataTransfer.files?.length) return;
-    // Dossiers déposés : on parcourt leur contenu
+    // Dossiers déposés : on parcourt leur contenu en gardant le chemin
     const items = Array.from(e.dataTransfer.items || []);
-    const files: File[] = [];
-    const walk = async (entry: any): Promise<void> => {
-      if (entry.isFile) files.push(await new Promise<File>((res, rej) => entry.file(res, rej)));
+    const found: { file: File; dirs: string[] }[] = [];
+    const walk = async (entry: any, dirs: string[]): Promise<void> => {
+      if (entry.isFile) found.push({ file: await new Promise<File>((res, rej) => entry.file(res, rej)), dirs });
       else if (entry.isDirectory) {
         const r = entry.createReader();
         let batch: any[];
         do {
           batch = await new Promise((res, rej) => r.readEntries(res, rej));
-          for (const b of batch) await walk(b);
+          for (const b of batch) await walk(b, [...dirs, entry.name]);
         } while (batch.length);
       }
     };
     const entries = items.map((it) => (it as any).webkitGetAsEntry?.()).filter(Boolean);
-    if (entries.length) for (const en of entries) await walk(en);
-    else files.push(...Array.from(e.dataTransfer.files));
-    startUpload(files.filter((f) => !/^\.|^thumbs\.db$|^desktop\.ini$/i.test(f.name)));
+    if (entries.length) for (const en of entries) await walk(en, []);
+    else found.push(...Array.from(e.dataTransfer.files).map((file) => ({ file, dirs: [] })));
+    uploadFound(found);
+  };
+
+  /** Fichiers + dossiers d'origine → envoi, chaque dossier devenant une section. */
+  const uploadFound = (found: { file: File; dirs: string[] }[]) => {
+    const kept = found.filter(({ file }) => !/^\.|^thumbs\.db$|^desktop\.ini$/i.test(file.name));
+    // Un seul dossier englobant qui ne contient que des sous-dossiers
+    // (ex. « Mariage / Couleur », « Mariage / N&B ») : ce sont les sous-dossiers qui comptent
+    let depth = 0;
+    while (kept.length && kept.every((x) => x.dirs.length > depth + 1) && new Set(kept.map((x) => x.dirs[depth])).size === 1) depth++;
+    const folderOf = new Map<File, string>();
+    for (const { file, dirs } of kept) if (dirs[depth]) folderOf.set(file, dirs[depth]);
+    startUpload(
+      kept.map((x) => x.file),
+      folderOf
+    );
   };
 
   const act = async (json: any) => adminApi(`/${g.id}/photos`, { method: 'POST', json });
@@ -654,7 +693,7 @@ function FilesTab({
               </>
             ) : (
               <>
-                <b>Glissez photos, vidéos ou documents ici</b>
+                <b>Glissez photos, vidéos, documents ou dossiers ici</b>
                 <small>
                   Photos jusqu’à 40 Mo (aperçus générés automatiquement{wm ? ', filigrane inclus' : ''}) · vidéos et documents jusqu’à 2 Go
                   {setView !== 'all' && setView !== NO_SET ? ` · ajoutés à « ${sets.find((x) => x.id === setView)?.name} »` : ''}
@@ -667,10 +706,27 @@ function FilesTab({
               Arrêter
             </AdminButton>
           ) : (
-            <AdminButton size="sm" variant="secondary" leadingIcon={<Plus size={14} />} onClick={() => input.current?.click()} disabled={!r2}>
-              Ajouter
-            </AdminButton>
+            <>
+              <AdminButton size="sm" variant="secondary" leadingIcon={<Plus size={14} />} onClick={() => input.current?.click()} disabled={!r2}>
+                Ajouter
+              </AdminButton>
+              <AdminButton size="sm" variant="ghost" leadingIcon={<FolderPlus size={14} />} onClick={() => dirInput.current?.click()} disabled={!r2}>
+                Dossier
+              </AdminButton>
+            </>
           )}
+          <input
+            ref={dirInput}
+            type="file"
+            multiple
+            hidden
+            {...({ webkitdirectory: '', directory: '' } as any)}
+            onChange={(e) => {
+              const f = Array.from(e.target.files || []);
+              e.target.value = '';
+              uploadFound(f.map((file) => ({ file, dirs: (file.webkitRelativePath || '').split('/').slice(0, -1) })));
+            }}
+          />
           <input
             ref={input}
             type="file"
@@ -785,6 +841,7 @@ function DesignTab({
   draft,
   setDraft,
   photos,
+  sets,
   previewKey,
   onCover,
   wm,
@@ -796,6 +853,7 @@ function DesignTab({
   draft: any;
   setDraft: (d: any) => void;
   photos: AdminPhoto[];
+  sets: GallerySet[];
   previewKey: number;
   onCover: (id: string) => Promise<any> | void;
   wm: Watermark | null;
@@ -810,6 +868,15 @@ function DesignTab({
   const images = photos.filter((p) => p.kind === 'image');
   const cover = images.find((p) => p.id === g.cover_photo_id) || images[0];
   const focus = draft.design.focus || { x: 0.5, y: 0.5 };
+  const [picking, setPicking] = useState(false);
+  const [pickSet, setPickSet] = useState<string>('all');
+  // Photos visibles de la galerie (les couvertures importées, masquées, n'y figurent pas)
+  const pickable = images.filter((p) => !p.hidden && (pickSet === 'all' || p.set_id === pickSet));
+  const chooseCover = async (id: string) => {
+    if (id === g.cover_photo_id) return;
+    await onCover(id);
+    setDraft({ ...draft, design: { ...draft.design, focus: { x: 0.5, y: 0.5 } } });
+  };
 
   // Aperçu en direct : chaque changement est envoyé à la page dans l'iframe
   const live = useMemo(() => ({ type: 'cg-live', design: draft.design, intro: draft.intro || null }), [draft.design, draft.intro]);
@@ -863,10 +930,12 @@ function DesignTab({
         <div className={s.card2}>
           <h3>Photo de couverture</h3>
           <p>
-            Une photo de la galerie (onglet Fichiers → sélection → Couverture), ou une image importée qui n’apparaîtra pas dans la galerie. Cliquez sur
-            l’image pour placer le point d’intérêt.
+            Une photo de la galerie, ou une image importée qui n’apparaîtra pas dans la galerie. Cliquez sur l’image pour placer le point d’intérêt.
           </p>
           <div className={s.btnRow} style={{ marginTop: 10, marginBottom: 4 }}>
+            <AdminButton size="sm" variant={picking ? 'primary' : 'secondary'} leadingIcon={<Images size={14} />} onClick={() => setPicking(!picking)} disabled={!images.length}>
+              Choisir dans la galerie
+            </AdminButton>
             <AdminButton size="sm" variant="secondary" leadingIcon={<Upload size={14} />} loading={uploading} onClick={() => coverInput.current?.click()}>
               Importer une image de couverture
             </AdminButton>
@@ -882,6 +951,27 @@ function DesignTab({
               }}
             />
           </div>
+          {picking ? (
+            <div className={s.coverPicker}>
+              {sets.length ? (
+                <select className={s.select} value={pickSet} onChange={(e) => setPickSet(e.target.value)} aria-label="Section">
+                  <option value="all">Toutes les sections</option>
+                  {sets.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.name}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+              <div className={s.coverGrid}>
+                {pickable.map((p) => (
+                  <button key={p.id} type="button" aria-pressed={g.cover_photo_id === p.id} title={p.filename} onClick={() => chooseCover(p.id)}>
+                    <img src={p.thumb_url} alt={p.filename} loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {cover ? (
             <div
               className={s.focusPick}
