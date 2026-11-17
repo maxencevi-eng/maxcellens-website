@@ -49,6 +49,7 @@ import { adminApi, copyText, downloadTextFile } from './api';
 import { NewGalleryDialog } from './CreateDialogs';
 import BulkImport from './BulkImport';
 import ActivityOverview from './ActivityOverview';
+import FolderReport from './FolderReport';
 import { TemplatesManager, WatermarksManager } from './Managers';
 import {
   ACCESS_LABEL,
@@ -178,6 +179,8 @@ export default function GalleriesAdmin() {
   const [dialog, setDialog] = useState<null | { kind: string; gallery?: AdminGallery }>(null);
   const [choice, setChoice] = useState<any>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  // Dans un dossier : liste des galeries ou bilan d'activité (gardé d'un dossier à l'autre)
+  const [folderTab, setFolderTab] = useState<'galleries' | 'report'>(params.get('t') === 'bilan' ? 'report' : 'galleries');
   const toast = useToast();
 
   const load = useCallback(async () => {
@@ -213,9 +216,12 @@ export default function GalleriesAdmin() {
     const u = new URL(window.location.href);
     if (view === 'all') u.searchParams.delete('v');
     else u.searchParams.set('v', view);
+    // Le bilan reste ouvert au retour depuis une galerie
+    if (view.startsWith('folder:') && folderTab === 'report') u.searchParams.set('t', 'bilan');
+    else u.searchParams.delete('t');
     window.history.replaceState(null, '', u.toString());
     setSel(new Set());
-  }, [view]);
+  }, [view, folderTab]);
 
   const galleries = data?.galleries || [];
   const folders = data?.folders || [];
@@ -564,6 +570,7 @@ export default function GalleriesAdmin() {
   );
 
   const isListView = view !== 'templates' && view !== 'watermarks' && view !== 'activity';
+  const showReport = !!currentFolder && folderTab === 'report';
 
   return (
     <div className={s.page}>
@@ -692,6 +699,20 @@ export default function GalleriesAdmin() {
                     </AdminButton>
                   </div>
                 ) : null}
+                {currentFolder ? (
+                  <div className={s.seg} role="group" aria-label="Affichage du dossier">
+                    {(
+                      [
+                        ['galleries', 'Galeries'],
+                        ['report', 'Bilan'],
+                      ] as const
+                    ).map(([k, l]) => (
+                      <button key={k} type="button" aria-pressed={folderTab === k} onClick={() => setFolderTab(k)} style={{ padding: '5px 14px', fontSize: 13, fontWeight: 600 }}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 <span className={s.spacer} />
                 {view !== 'trash' ? (
                   <div className={s.toolbar}>
@@ -727,6 +748,21 @@ export default function GalleriesAdmin() {
                 ) : null}
               </div>
 
+              {showReport && currentFolder && data ? (
+                <FolderReport
+                  folder={currentFolder}
+                  folders={folders}
+                  galleries={galleries}
+                  toast={toast.show}
+                  onOpenGallery={(id, t) => {
+                    const qs = new URLSearchParams();
+                    if (t?.tab) qs.set('tab', t.tab);
+                    if (t?.share) qs.set('share', '1');
+                    router.push(`/admin/galeries/${id}${qs.toString() ? `?${qs}` : ''}`);
+                  }}
+                />
+              ) : (
+              <>
               <div className={s.filters}>
                 <label className={s.search}>
                   <Search size={15} />
@@ -1029,13 +1065,15 @@ export default function GalleriesAdmin() {
                   </table>
                 </div>
               )}
+              </>
+              )}
             </>
           ) : null}
         </main>
       </div>
 
       {/* ── Barre d'actions groupées ── */}
-      {sel.size > 0 && isListView ? (
+      {sel.size > 0 && isListView && !showReport ? (
         <div className={s.bulkPanel} role="toolbar" aria-label="Actions sur la sélection">
           <div className={s.bulkHead}>
             <span className={s.bulkCount}>{sel.size}</span>
