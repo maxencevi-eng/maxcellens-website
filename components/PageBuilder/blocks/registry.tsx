@@ -100,7 +100,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDefinition> = {
   }])),
   project_cards: {
     type: 'project_cards', label: 'Sélection de réalisations',
-    description: 'Vidéos YouTube ou importées avec couverture et titres superposés',
+    description: 'Vidéos YouTube, LinkedIn ou importées avec couverture et titres superposés',
     icon: ImageIcon, category: 'media', defaults: DEFAULT_PROJECT_CARDS,
     Render: ImageCardsBlock, Editor: ImageCardsEditor,
     migrate: raw => normalizeImageCards(raw, DEFAULT_PROJECT_CARDS),

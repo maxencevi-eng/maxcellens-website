@@ -1897,7 +1897,7 @@ export default function HomeBlockModal({ blockKey, initialData, onClose, onSaved
                     </label>
                   </div>
                   <div style={{ marginBottom: 8 }}>
-                    <label style={{ fontSize: 12, color: "var(--muted)" }}>Lien YouTube</label>
+                    <label style={{ fontSize: 12, color: "var(--muted)" }}>Lien YouTube ou LinkedIn</label>
                     <input
                       type="text"
                       value={vid.url}

@@ -1,5 +1,9 @@
+import { getLinkedInEmbedUrl, isLinkedInUrl } from '../../../lib/linkedinEmbed';
+
 export function parseVideoUrl(url: string): string | null {
   if (!url) return null;
+  // LinkedIn : la lightbox lit la vidéo directement (lien court lnkd.in résolu côté serveur)
+  if (isLinkedInUrl(url)) return getLinkedInEmbedUrl(url) ?? url.trim();
   try {
     const u = new URL(url);
 
@@ -40,6 +44,7 @@ export function getVideoLabel(url: string): string {
     if (u.hostname.includes('youtube.com') || u.hostname === 'youtu.be') return 'YouTube';
     if (u.hostname.includes('vimeo.com')) return 'Vimeo';
     if (u.hostname.includes('instagram.com')) return 'Instagram';
+    if (u.hostname.includes('linkedin.com') || u.hostname === 'lnkd.in') return 'LinkedIn';
   } catch (_) {}
   return '';
 }

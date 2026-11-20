@@ -55,6 +55,7 @@ import { useBlockVisibility, BlockVisibilityToggle, BlockWidthToggle, BlockOrder
 import { motion } from "framer-motion";
 import AnimateInView, { AnimateStaggerItem, variants as animVariants } from "../AnimateInView/AnimateInView";
 import type { VideoLightboxItem } from "../VideoGallery/VideoLightbox";
+import { getLinkedInPosterUrl, isLinkedInUrl } from "../../lib/linkedinEmbed";
 import { editorialPresentation } from "./editorialPresentation";
 import { toneOf, panelStyle, htmlToLines, RevealWords, CountUp, Timecode, useMagnetic, Arrow } from "./homeDesign";
 
@@ -820,7 +821,7 @@ export default function HomePageClient({ initialSettings, renderOnly, initialBlo
               })() : null}
               <AnimateInView variant="stagger" className={styles.showcase} style={{ ['--n' as string]: cadreurVisibleVideos.length } as React.CSSProperties}>
                 {cadreurVisibleVideos.map((vid, i) => {
-                  const thumb = getYouTubeThumb(getYouTubeId(vid.url));
+                  const thumb = isLinkedInUrl(vid.url) ? getLinkedInPosterUrl(vid.url) : getYouTubeThumb(getYouTubeId(vid.url));
                   return (
                     <AnimateStaggerItem key={i} className={styles.showcaseItem}>
                       <button

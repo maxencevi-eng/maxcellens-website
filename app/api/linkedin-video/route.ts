@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getLinkedInEmbedUrl } from '@/lib/linkedinEmbed';
+import { getLinkedInEmbedUrl, isLinkedInShortUrl, isLinkedInUrl } from '@/lib/linkedinEmbed';
 
 /**
  * Récupère, à partir d'une publication LinkedIn publique, le fichier MP4 et
@@ -30,22 +30,47 @@ function isLicdn(url: string) {
   }
 }
 
-async function resolve(postUrl: string): Promise<{ src: string | null; poster: string | null } | null> {
-  const embed = getLinkedInEmbedUrl(postUrl);
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
+
+/** lnkd.in → adresse linkedin.com (une seule redirection suivie, vérifiée). */
+async function expandShortUrl(url: string): Promise<string | null> {
+  if (!isLinkedInShortUrl(url)) return url;
+  try {
+    const res = await fetch(url, { redirect: 'manual', headers: { 'User-Agent': UA }, next: { revalidate: 86400 } });
+    const location = res.headers.get('location');
+    if (location && isLinkedInUrl(location) && !isLinkedInShortUrl(location)) return location;
+    // Certains liens courts passent par une page intermédiaire
+    const html = await res.text();
+    const m = html.match(/https:\/\/www\.linkedin\.com\/[^"'<>\s]+/);
+    return m ? decodeEntities(m[0]) : null;
+  } catch {
+    return null;
+  }
+}
+
+type Resolved = { src: string | null; poster: string | null; postUrl: string | null; embedUrl: string | null };
+
+async function resolve(inputUrl: string): Promise<Resolved | null> {
+  if (!isLinkedInUrl(inputUrl)) return null;
+  const postUrl = await expandShortUrl(inputUrl.trim());
+  const embed = postUrl ? getLinkedInEmbedUrl(postUrl) : null;
   if (!embed) return null;
+  // Lien public propre vers la publication (sans paramètres de suivi)
+  const cleanPostUrl = embed.replace('/embed/', '/').replace(/\?.*$/, '') + '/';
+  const empty: Resolved = { src: null, poster: null, postUrl: cleanPostUrl, embedUrl: embed };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
   try {
     const res = await fetch(embed.replace(/\?.*$/, ''), {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36',
+        'User-Agent': UA,
         Accept: 'text/html,application/xhtml+xml',
         'Accept-Language': 'fr-FR,fr;q=0.9',
       },
       next: { revalidate: 86400 },
     });
-    if (!res.ok) return { src: null, poster: null };
+    if (!res.ok) return empty;
     const html = await res.text();
 
     let src: string | null = null;
@@ -68,9 +93,9 @@ async function resolve(postUrl: string): Promise<{ src: string | null; poster: s
     }
     if (poster && !isLicdn(poster)) poster = null;
 
-    return { src, poster };
+    return { ...empty, src, poster };
   } catch {
-    return { src: null, poster: null };
+    return empty;
   } finally {
     clearTimeout(timeout);
   }

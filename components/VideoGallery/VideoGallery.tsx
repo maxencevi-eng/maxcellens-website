@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import type { VideoLightboxItem } from './VideoLightbox';
 import styles from './VideoGallery.module.css';
-import { getLinkedInEmbedUrl, getLinkedInPosterUrl, isLinkedInUrl } from '../../lib/linkedinEmbed';
+import { fetchLinkedInMedia, getLinkedInPosterUrl, isLinkedInUrl } from '../../lib/linkedinEmbed';
 
 const VideoLightbox = dynamic(() => import('./VideoLightbox').then((m) => ({ default: m.default })), { ssr: false });
 
@@ -156,37 +156,19 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
     return out;
   }, [list]);
 
-  // Vidéos LinkedIn : on récupère le MP4 à l'avance pour une lecture directe
-  // (lecture automatique + lecteur du site) ; à défaut, iframe LinkedIn.
-  const [linkedInMedia, setLinkedInMedia] = useState<Record<string, { src: string | null; poster: string | null }>>({});
+  // Vidéos LinkedIn : la lightbox les lit elle-même ; on prépare juste le MP4
+  // à l'avance pour que la lecture démarre sans attente au clic.
   const linkedInKey = list.filter((it) => isLinkedInUrl(it.url)).map((it) => it.url).join('\n');
   useEffect(() => {
-    if (!linkedInKey) return;
-    let alive = true;
-    linkedInKey.split('\n').forEach((url) => {
-      fetch(`/api/linkedin-video?url=${encodeURIComponent(url)}`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => {
-          if (alive && d) setLinkedInMedia((prev) => ({ ...prev, [url]: { src: d.src || null, poster: d.poster || null } }));
-        })
-        .catch(() => {});
-    });
-    return () => { alive = false; };
+    if (linkedInKey) linkedInKey.split('\n').forEach((url) => { void fetchLinkedInMedia(url); });
   }, [linkedInKey]);
 
   const flatList: VideoLightboxItem[] = useMemo(() => {
     return list.map((item) => {
-      const linkedIn = getLinkedInEmbedUrl(item.url);
-      if (linkedIn) {
-        const media = linkedInMedia[item.url];
-        const poster = item.cover?.url || media?.poster || undefined;
-        const source = { platform: 'linkedin' as const, url: item.url };
-        if (media?.src) return { url: media.src, kind: 'file' as const, poster, source };
-        return { url: item.url, embedUrl: linkedIn, kind: 'linkedin' as const, poster, source };
-      }
+      if (isLinkedInUrl(item.url)) return { url: item.url, kind: 'linkedin' as const, poster: item.cover?.url };
       return { url: item.url, isShort: isYouTubeShort(item.url) };
     });
-  }, [list, linkedInMedia]);
+  }, [list]);
 
   const fallbackCover = (url: string, id: string) =>
     isLinkedInUrl(url) ? getLinkedInPosterUrl(url) : id ? getYouTubeThumb(id) : getInlineThumb('Vidéo');

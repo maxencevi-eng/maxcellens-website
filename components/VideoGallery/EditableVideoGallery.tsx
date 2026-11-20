@@ -9,7 +9,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { compressImageClient } from '@/lib/compressImageClient';
 import VideoGallery from './VideoGallery';
-import { getLinkedInPosterUrl } from '@/lib/linkedinEmbed';
+import { getLinkedInPosterUrl, isLinkedInUrl } from '@/lib/linkedinEmbed';
 import type { GallerySettings } from './VideoGallery';
 import styles from './VideoGallery.module.css';
 
@@ -590,7 +590,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                           };
                           return <img src={thumb} alt="miniature" style={{ width: '100%', height: 'auto', borderRadius: 6, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.06)' }} onError={onThumbError} />;
                         }
-                        const linkedIn = /linkedin\.com\//i.test(v.url || '');
+                        const linkedIn = isLinkedInUrl(v.url || '');
                         if (linkedIn) {
                           return <img src={getLinkedInPosterUrl(v.url)} alt="miniature LinkedIn" style={{ width: '100%', height: 'auto', borderRadius: 6, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.06)' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />;
                         }

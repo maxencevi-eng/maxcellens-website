@@ -338,9 +338,9 @@ export default function ViewBlockModal({ block, onClose, onSave, onDelete }: Pro
             className={styles.input}
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder="YouTube, Vimeo…"
+            placeholder="YouTube, Vimeo, LinkedIn…"
           />
-          <div className={styles.hint}>Supporte YouTube, YouTube Shorts, Vimeo</div>
+          <div className={styles.hint}>Supporte YouTube, YouTube Shorts, Vimeo, LinkedIn</div>
         </div>
       )}
 

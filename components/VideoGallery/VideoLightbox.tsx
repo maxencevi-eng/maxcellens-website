@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { fetchLinkedInMedia, getLinkedInEmbedUrl, isLinkedInUrl, type LinkedInMedia } from '../../lib/linkedinEmbed';
 
 export type VideoLightboxItem = {
   url: string;
@@ -87,7 +88,29 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
   }, [onClose, onPrev, onNext]);
 
   const safeIndex = Math.max(0, Math.min(index, videos.length - 1));
-  const item = videos[safeIndex];
+  const rawItem = videos[safeIndex];
+
+  // Publications LinkedIn : la lightbox récupère elle-même le MP4 et la couverture,
+  // pour que toutes les galeries du site les lisent sans code supplémentaire.
+  const linkedInUrl = rawItem && rawItem.kind !== 'file' && (rawItem.kind === 'linkedin' || isLinkedInUrl(rawItem.url)) ? rawItem.url : null;
+  const [linkedIn, setLinkedIn] = useState<Record<string, LinkedInMedia | null>>({});
+  useEffect(() => {
+    if (!linkedInUrl || linkedInUrl in linkedIn) return;
+    let alive = true;
+    fetchLinkedInMedia(linkedInUrl).then((m) => { if (alive) setLinkedIn((prev) => ({ ...prev, [linkedInUrl]: m })); });
+    return () => { alive = false; };
+  }, [linkedInUrl, linkedIn]);
+  const linkedInPending = !!linkedInUrl && !(linkedInUrl in linkedIn);
+  const media = linkedInUrl ? linkedIn[linkedInUrl] : null;
+
+  const item: VideoLightboxItem | undefined = !rawItem || !linkedInUrl ? rawItem : {
+    ...rawItem,
+    ...(media?.src
+      ? { url: media.src, kind: 'file' as const }
+      : { kind: 'linkedin' as const, embedUrl: media?.embedUrl || getLinkedInEmbedUrl(linkedInUrl) || undefined }),
+    poster: rawItem.poster || media?.poster || undefined,
+    source: { platform: 'linkedin', url: media?.postUrl || rawItem.source?.url || linkedInUrl },
+  };
   const autoplay = index === initialIndex && !hasNavigated;
   // Instagram/in-app browsers block autoplay — only request it in standard browsers
   const canAutoplay = autoplay && (typeof navigator === 'undefined' || !/Instagram|FBAN|FBAV/i.test(navigator.userAgent));
@@ -104,7 +127,7 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
         v.play().catch(() => {});
       });
     }
-  }, [item?.url, item?.kind, canAutoplay]);
+  }, [item?.url, item?.kind, canAutoplay, linkedInPending]);
 
   if (videos.length === 0 || !item) return null;
 
@@ -119,7 +142,7 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
   const sep = embedBase.includes('?') ? '&' : '?';
   // Le lecteur LinkedIn ne gère ni l'autoplay ni les paramètres YouTube
   const embedSrc = isLinkedInEmbed
-    ? embedBase
+    ? item.embedUrl || 'about:blank'
     : `${embedBase}${sep}${canAutoplay ? 'autoplay=1&' : ''}playsinline=1&rel=0&modestbranding=1`;
 
   const ratio = isFile ? fileRatio : isShort ? 9 / 16 : 16 / 9;
@@ -192,7 +215,16 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
         style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '100%', maxHeight: '100%' }}
       >
         <div style={frameStyle}>
-          {isFile ? (
+          {linkedInPending ? (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {item.poster ? <img src={item.poster} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} /> : null}
+              <span
+                aria-label="Chargement"
+                style={{ position: 'relative', width: 42, height: 42, borderRadius: '50%', border: '3px solid rgba(255,255,255,0.25)', borderTopColor: '#fff', animation: 'vlbSpin 0.8s linear infinite' }}
+              />
+              <style>{'@keyframes vlbSpin{to{transform:rotate(360deg)}}'}</style>
+            </div>
+          ) : isFile ? (
             <video
               key={item.url}
               ref={videoRef}

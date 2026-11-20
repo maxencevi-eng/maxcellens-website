@@ -1,7 +1,8 @@
 import type { BlockAlign, HeadingLevel, ThemeColor } from './blockDefs';
+import { getLinkedInPosterUrl, isLinkedInUrl } from '../../../lib/linkedinEmbed';
 
 export type ImageCard = {
-  video?: { url: string; path?: string; kind: 'youtube' | 'file' } | null;
+  video?: { url: string; path?: string; kind: 'youtube' | 'linkedin' | 'file' } | null;
   image: { url: string; path?: string } | null;
   alt: string;
   title: string;
@@ -101,6 +102,8 @@ export function playableCardVideo(card: ImageCard) {
   const url = card.video?.url || card.href;
   const youtubeId = youtubeCardId(url);
   if (youtubeId) return { url, youtubeId, embedUrl: `https://www.youtube.com/embed/${youtubeId}`, kind: 'youtube' as const };
+  // Publication LinkedIn : la lightbox récupère la vidéo et sa couverture
+  if (card.video && card.video.kind !== 'file' && isLinkedInUrl(url)) return { url, kind: 'linkedin' as const, cover: getLinkedInPosterUrl(url) };
   if (card.video?.kind === 'file' && /^(https?:\/\/|\/(?!\/))/i.test(url)) return { url, kind: 'file' as const };
   return null;
 }

@@ -2,12 +2,14 @@
 import React, { useRef, useState } from 'react';
 import { AdminButton, AdminNotice, TextField } from '../../admin';
 import { youtubeCardId, type ImageCard } from './imageCardsDefs';
+import { getLinkedInPosterUrl, isLinkedInUrl } from '../../../lib/linkedinEmbed';
 
 export default function VideoCardField({ card, onChange }: { card: ImageCard; onChange: (patch: Partial<ImageCard>) => void }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const youtubeUrl = card.video?.kind === 'youtube' ? card.video.url : !card.video && youtubeCardId(card.href) ? card.href : '';
+  const youtubeUrl = card.video && card.video.kind !== 'file' ? card.video.url : !card.video && youtubeCardId(card.href) ? card.href : '';
+  const validLink = (url: string) => !!youtubeCardId(url) || isLinkedInUrl(url);
   async function upload(file?: File) {
     if (!file) return;
     setBusy(true); setError('');
@@ -21,7 +23,8 @@ export default function VideoCardField({ card, onChange }: { card: ImageCard; on
     } catch (e: any) { setError(e.message); } finally { setBusy(false); }
   }
   return <>
-    <TextField label="Lien YouTube" value={youtubeUrl} onChange={url => onChange({ video: url ? { kind: 'youtube', url } : null, href: '' })} placeholder="https://www.youtube.com/watch?v=…" disabled={busy} error={youtubeUrl && !youtubeCardId(youtubeUrl) ? 'Saisissez un lien YouTube valide.' : undefined} />
+    <TextField label="Lien YouTube ou LinkedIn" value={youtubeUrl} onChange={url => onChange({ video: url ? { kind: isLinkedInUrl(url.trim()) ? 'linkedin' : 'youtube', url } : null, href: '' })} placeholder="https://www.youtube.com/watch?v=… ou https://www.linkedin.com/…" disabled={busy} error={youtubeUrl && !validLink(youtubeUrl.trim()) ? 'Saisissez un lien YouTube ou LinkedIn valide.' : undefined} />
+    {youtubeUrl && isLinkedInUrl(youtubeUrl.trim()) && !card.image?.url && <img src={getLinkedInPosterUrl(youtubeUrl.trim())} alt="Couverture LinkedIn" style={{ width: 160, borderRadius: 6 }} onError={e => { e.currentTarget.style.display = 'none'; }} />}
     <input ref={input} hidden type="file" accept="video/mp4,video/webm,video/quicktime" onChange={e => { void upload(e.target.files?.[0]); e.target.value = ''; }} />
     <AdminButton disabled={busy} onClick={() => input.current?.click()}>{busy ? 'Import en cours…' : 'Importer une vidéo'}</AdminButton>
     {card.video?.kind === 'file' && <video src={card.video.url} controls preload="metadata" style={{ width: '100%', maxHeight: 180 }} />}

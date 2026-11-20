@@ -2,6 +2,7 @@
 import React from 'react';
 import type { ViewBlock } from '../types';
 import { parseVideoUrl, getVideoLabel } from '../utils/parseVideoUrl';
+import { getLinkedInPosterUrl, isLinkedInUrl } from '../../../lib/linkedinEmbed';
 import styles from './blocks.module.css';
 
 function getYouTubeId(url: string): string | null {
@@ -21,6 +22,10 @@ function getYouTubeId(url: string): string | null {
 }
 
 function getYouTubeThumbnail(url: string): { src: string; fallback: string } | null {
+  if (isLinkedInUrl(url)) {
+    const poster = getLinkedInPosterUrl(url);
+    return { src: poster, fallback: poster };
+  }
   const id = getYouTubeId(url);
   if (!id) return null;
   return {
@@ -74,7 +79,11 @@ export default function ViewVideoBlock({ block, onOpenLightbox }: Props) {
           src={thumbnailData.src}
           alt=""
           className={`${styles.videoThumbnailImg}${block.size === 'tall' ? ` ${styles.videoThumbnailImgZoom}` : ''}`}
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = thumbnailData.fallback; }}
+          onError={(e) => {
+            const img = e.currentTarget as HTMLImageElement;
+            if (img.src.endsWith(thumbnailData.fallback)) { img.style.display = 'none'; img.onerror = null; return; }
+            img.src = thumbnailData.fallback;
+          }}
         />
       )}
       <div className={styles.videoPlayIcon}>
