@@ -1,11 +1,12 @@
 "use client";
 
 import { variantSrcSet } from '../../lib/imageVariants';
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import type { VideoLightboxItem } from './VideoLightbox';
 import styles from './VideoGallery.module.css';
+import { getLinkedInEmbedUrl, getLinkedInPosterUrl, isLinkedInUrl } from '../../lib/linkedinEmbed';
 
 const VideoLightbox = dynamic(() => import('./VideoLightbox').then((m) => ({ default: m.default })), { ssr: false });
 
@@ -44,6 +45,7 @@ type Props = {
 function getYouTubeId(url: string) {
   try {
     if (!url) return '';
+    if (isLinkedInUrl(url)) return '';
     if (!url.includes('youtube') && !url.includes('youtu.be')) return url;
     const u = url;
     const short = u.match(/youtu\.be\/(.+)$/);
@@ -77,7 +79,7 @@ function getYouTubeThumb(id: string, quality: (typeof YOUTUBE_THUMB_QUALITIES)[n
 }
 
 function getNextThumbFallback(currentSrc: string, id: string): string {
-  if (!id) return '';
+  if (!id) return getInlineThumb('Vidéo');
   for (let i = 0; i < YOUTUBE_THUMB_QUALITIES.length - 1; i++) {
     if (currentSrc.includes(`/${YOUTUBE_THUMB_QUALITIES[i]}.jpg`))
       return getYouTubeThumb(id, YOUTUBE_THUMB_QUALITIES[i + 1]);
@@ -154,9 +156,39 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
     return out;
   }, [list]);
 
+  // Vidéos LinkedIn : on récupère le MP4 à l'avance pour une lecture directe
+  // (lecture automatique + lecteur du site) ; à défaut, iframe LinkedIn.
+  const [linkedInMedia, setLinkedInMedia] = useState<Record<string, { src: string | null; poster: string | null }>>({});
+  const linkedInKey = list.filter((it) => isLinkedInUrl(it.url)).map((it) => it.url).join('\n');
+  useEffect(() => {
+    if (!linkedInKey) return;
+    let alive = true;
+    linkedInKey.split('\n').forEach((url) => {
+      fetch(`/api/linkedin-video?url=${encodeURIComponent(url)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (alive && d) setLinkedInMedia((prev) => ({ ...prev, [url]: { src: d.src || null, poster: d.poster || null } }));
+        })
+        .catch(() => {});
+    });
+    return () => { alive = false; };
+  }, [linkedInKey]);
+
   const flatList: VideoLightboxItem[] = useMemo(() => {
-    return list.map((item) => ({ url: item.url, isShort: isYouTubeShort(item.url) }));
-  }, [list]);
+    return list.map((item) => {
+      const linkedIn = getLinkedInEmbedUrl(item.url);
+      if (linkedIn) {
+        const media = linkedInMedia[item.url];
+        const poster = item.cover?.url || media?.poster || undefined;
+        if (media?.src) return { url: media.src, kind: 'file' as const, poster };
+        return { url: item.url, embedUrl: linkedIn, kind: 'linkedin' as const, poster };
+      }
+      return { url: item.url, isShort: isYouTubeShort(item.url) };
+    });
+  }, [list, linkedInMedia]);
+
+  const fallbackCover = (url: string, id: string) =>
+    isLinkedInUrl(url) ? getLinkedInPosterUrl(url) : id ? getYouTubeThumb(id) : getInlineThumb('Vidéo');
 
   const openLightbox = (index: number) => {
     setLightboxInitialIndex(index);
@@ -282,7 +314,7 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
             const span = Math.max(1, Math.floor(gridColumns / (item.columns || 1)));
             const id = getYouTubeId(item.url);
             const isShort = isYouTubeShort(item.url);
-            const coverSrc = item.cover?.url || (id ? getYouTubeThumb(id) : getInlineThumb('Vidéo'));
+            const coverSrc = item.cover?.url || fallbackCover(item.url, id);
             const isLoaded = loadedSet.has(i);
             // For portrait videos, focus on top (faces) rather than center
             const objPosition = isShort ? 'center top' : 'center center';
@@ -372,7 +404,7 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
                 const id = getYouTubeId(item.url);
                 const isShort = isYouTubeShort(item.url);
                 const paddingTop = isShort ? '177.78%' : '56.25%';
-                const coverSrc = item.cover?.url || (id ? getYouTubeThumb(id) : getInlineThumb('Vidéo'));
+                const coverSrc = item.cover?.url || fallbackCover(item.url, id);
                 const myIndex = globalIndex++;
                 const isLoaded = loadedSet.has(myIndex);
                 if (!item.url && !item.cover?.url) return <div key={j} style={{ width: itemWidth }} />;
@@ -426,7 +458,7 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
         const id = getYouTubeId(item.url);
         const isShort = isYouTubeShort(item.url);
         const paddingTop = isShort ? '177.78%' : '56.25%';
-        const coverSrc = item.cover?.url || (id ? getYouTubeThumb(id) : getInlineThumb('Vidéo'));
+        const coverSrc = item.cover?.url || fallbackCover(item.url, id);
         const myIndex = globalIndex++;
         const isLoaded = loadedSet.has(myIndex);
 

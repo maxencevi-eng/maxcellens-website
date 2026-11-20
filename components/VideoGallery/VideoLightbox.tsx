@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-export type VideoLightboxItem = { url: string; embedUrl?: string; isShort?: boolean; kind?: 'youtube' | 'file'; poster?: string };
+export type VideoLightboxItem = { url: string; embedUrl?: string; isShort?: boolean; kind?: 'youtube' | 'file' | 'linkedin'; poster?: string };
 
 type Props = {
   videos: VideoLightboxItem[];
@@ -32,8 +32,23 @@ function getYouTubeId(url: string) {
   }
 }
 
+const ArrowIcon = ({ dir }: { dir: 'left' | 'right' }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    {dir === 'left' ? <path d="M15 6l-6 6 6 6" /> : <path d="M9 6l6 6-6 6" />}
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+);
+
 export default function VideoLightbox({ videos, index, initialIndex, onClose, onPrev, onNext }: Props) {
   const [hasNavigated, setHasNavigated] = useState(false);
+  // Proportions réelles des vidéos lues en direct (fichier / LinkedIn) : 16/9 par défaut
+  const [fileRatio, setFileRatio] = useState(16 / 9);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -42,101 +57,81 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
       if (e.key === 'ArrowRight') onNext();
     }
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [onClose, onPrev, onNext]);
 
-  const handlePrev = () => {
-    setHasNavigated(true);
-    onPrev();
-  };
-  const handleNext = () => {
-    setHasNavigated(true);
-    onNext();
-  };
-
-  if (videos.length === 0) return null;
   const safeIndex = Math.max(0, Math.min(index, videos.length - 1));
   const item = videos[safeIndex];
-  const id = getYouTubeId(item.url);
-  const isShort = item.isShort ?? false;
-  const aspectRatio = isShort ? 9 / 16 : 16 / 9;
   const autoplay = index === initialIndex && !hasNavigated;
-  const embedBase = item.embedUrl ?? `https://www.youtube.com/embed/${id}`;
-  const sep = embedBase.includes('?') ? '&' : '?';
   // Instagram/in-app browsers block autoplay — only request it in standard browsers
   const canAutoplay = autoplay && (typeof navigator === 'undefined' || !/Instagram|FBAN|FBAV/i.test(navigator.userAgent));
-  const embedSrc = `${embedBase}${sep}${canAutoplay ? 'autoplay=1&' : ''}playsinline=1&rel=0`;
-  const overlayStyle = {
-    position: 'fixed' as const,
-    inset: 0,
-    zIndex: 50000,
-    background: 'rgba(0,0,0,0.92)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '0.5rem',
-    boxSizing: 'border-box' as const,
-  };
 
-  const columnStyle = {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    maxWidth: '100%',
-    maxHeight: '100%',
-  };
+  // Lecture directe : si le navigateur refuse le son, on relance en muet plutôt que de rester figé
+  useEffect(() => {
+    setFileRatio(16 / 9);
+    const v = videoRef.current;
+    if (!v || !canAutoplay) return;
+    const p = v.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(() => {
+        v.muted = true;
+        v.play().catch(() => {});
+      });
+    }
+  }, [item?.url, item?.kind, canAutoplay]);
 
-  // Portrait (Shorts / blocs tall) : contraindre par hauteur pour tenir dans l'écran
-  // Paysage : contraindre par largeur comme avant
-  const videoScrollStyle = isShort ? {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-  } : {
-    maxHeight: '85vh',
-    overflowY: 'auto' as const,
-    display: 'flex',
-    justifyContent: 'center',
-  };
+  if (videos.length === 0 || !item) return null;
 
-  const videoWrapStyle = isShort ? {
-    height: '80vh',
-    maxHeight: '80vh',
-    aspectRatio: '9 / 16',
-    position: 'relative' as const,
+  const handlePrev = () => { setHasNavigated(true); onPrev(); };
+  const handleNext = () => { setHasNavigated(true); onNext(); };
+
+  const isFile = item.kind === 'file';
+  const isLinkedInEmbed = item.kind === 'linkedin';
+  const isShort = item.isShort ?? false;
+  const id = getYouTubeId(item.url);
+  const embedBase = item.embedUrl ?? `https://www.youtube.com/embed/${id}`;
+  const sep = embedBase.includes('?') ? '&' : '?';
+  // Le lecteur LinkedIn ne gère ni l'autoplay ni les paramètres YouTube
+  const embedSrc = isLinkedInEmbed
+    ? embedBase
+    : `${embedBase}${sep}${canAutoplay ? 'autoplay=1&' : ''}playsinline=1&rel=0&modestbranding=1`;
+
+  const ratio = isFile ? fileRatio : isShort ? 9 / 16 : 16 / 9;
+  // La vidéo tient toujours dans l'écran, en largeur comme en hauteur
+  const frameStyle: React.CSSProperties = {
+    position: 'relative',
+    width: `min(94vw, calc(78vh * ${ratio}))`,
+    aspectRatio: String(ratio),
     background: '#000',
-    flexShrink: 0,
-  } : {
-    width: '95vw',
-    maxWidth: '95vw',
-    aspectRatio: '16 / 9',
-    position: 'relative' as const,
-    background: '#000',
-    flexShrink: 0,
+    borderRadius: 14,
+    overflow: 'hidden',
+    boxShadow: '0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08)',
+    transition: 'width 0.25s ease',
   };
 
-  const navStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 24,
-    marginTop: 16,
-  };
-
-  const btnStyle = {
-    background: 'rgba(255,255,255,0.12)',
-    border: '1px solid rgba(255,255,255,0.3)',
+  const roundBtn: React.CSSProperties = {
+    background: 'rgba(255,255,255,0.08)',
+    border: '1px solid rgba(255,255,255,0.18)',
     color: '#fff',
-    width: 44,
-    height: 44,
+    width: 46,
+    height: 46,
     borderRadius: '50%',
-    cursor: 'pointer' as const,
+    cursor: 'pointer',
     padding: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: 20,
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    transition: 'background 0.2s ease, transform 0.2s ease',
   };
+  const hoverOn = (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; };
+  const hoverOff = (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; };
 
   if (typeof document === 'undefined') return null;
   return createPortal(
@@ -144,56 +139,76 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
       role="dialog"
       aria-modal="true"
       aria-label="Visionneuse vidéo"
-      style={overlayStyle}
       onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50000,
+        background: 'radial-gradient(ellipse at center, rgba(20,20,20,0.94) 0%, rgba(0,0,0,0.97) 70%)',
+        backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0.75rem',
+        boxSizing: 'border-box',
+      }}
     >
       <button
         type="button"
         aria-label="Fermer"
         onClick={(e) => { e.stopPropagation(); onClose(); }}
-        style={{
-          position: 'absolute',
-          right: 20,
-          top: 20,
-          background: 'transparent',
-          border: 'none',
-          color: '#fff',
-          fontSize: 28,
-          cursor: 'pointer',
-          padding: 8,
-          zIndex: 2,
-        }}
+        onMouseEnter={hoverOn}
+        onMouseLeave={hoverOff}
+        style={{ ...roundBtn, position: 'absolute', right: 18, top: 18, zIndex: 2 }}
       >
-        {'\u2715'}
+        <CloseIcon />
       </button>
 
-      <div style={columnStyle} onClick={(e) => e.stopPropagation()}>
-        <div style={videoScrollStyle}>
-          <div style={videoWrapStyle}>
-          {item.kind === "file" ? <video key={item.url} src={item.url} poster={item.poster} controls autoPlay={canAutoplay} playsInline style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }} /> : (
-          <iframe
-            src={embedSrc}
-            title={'Vidéo ' + (safeIndex + 1)}
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '100%', maxHeight: '100%' }}
+      >
+        <div style={frameStyle}>
+          {isFile ? (
+            <video
+              key={item.url}
+              ref={videoRef}
+              src={item.url}
+              poster={item.poster}
+              controls
+              autoPlay={canAutoplay}
+              playsInline
+              preload="auto"
+              controlsList="nodownload"
+              onLoadedMetadata={(e) => {
+                const v = e.currentTarget;
+                if (v.videoWidth && v.videoHeight) setFileRatio(v.videoWidth / v.videoHeight);
+              }}
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
+            />
+          ) : (
+            <iframe
+              key={embedSrc}
+              src={embedSrc}
+              title={'Vidéo ' + (safeIndex + 1)}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           )}
-          </div>
         </div>
 
         {videos.length > 1 ? (
-          <div style={navStyle}>
-            <button type="button" aria-label="Vidéo précédente" onClick={(e) => { e.stopPropagation(); handlePrev(); }} style={btnStyle}>
-              {'\u2190'}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 18 }}>
+            <button type="button" aria-label="Vidéo précédente" onClick={handlePrev} onMouseEnter={hoverOn} onMouseLeave={hoverOff} style={roundBtn}>
+              <ArrowIcon dir="left" />
             </button>
-            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14, minWidth: 48, textAlign: 'center' }}>
-              {safeIndex + 1}
-              {' / '}
-              {videos.length}
+            <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, letterSpacing: '0.12em', minWidth: 56, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}>
+              {safeIndex + 1} / {videos.length}
             </span>
-            <button type="button" aria-label="Vidéo suivante" onClick={(e) => { e.stopPropagation(); handleNext(); }} style={btnStyle}>
-              {'\u2192'}
+            <button type="button" aria-label="Vidéo suivante" onClick={handleNext} onMouseEnter={hoverOn} onMouseLeave={hoverOff} style={roundBtn}>
+              <ArrowIcon dir="right" />
             </button>
           </div>
         ) : null}

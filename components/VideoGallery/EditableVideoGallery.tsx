@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { compressImageClient } from '@/lib/compressImageClient';
 import VideoGallery from './VideoGallery';
+import { getLinkedInPosterUrl } from '@/lib/linkedinEmbed';
 import type { GallerySettings } from './VideoGallery';
 import styles from './VideoGallery.module.css';
 
@@ -238,7 +239,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
       {editing ? (
         <AdminModal
           title={`Galerie vidéo — ${keyName}`}
-          subtitle="Une URL YouTube par élément. Collez une adresse puis cliquez sur Ajouter."
+          subtitle="Une URL YouTube ou LinkedIn (publication publique) par élément. Collez une adresse puis cliquez sur Ajouter."
           size="lg"
           onClose={() => setEditing(false)}
           footer={null}
@@ -589,7 +590,11 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                           };
                           return <img src={thumb} alt="miniature" style={{ width: '100%', height: 'auto', borderRadius: 6, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.06)' }} onError={onThumbError} />;
                         }
-                        return <div style={{ width: '100%', height: 33, background: '#f0f0f0', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', fontSize: 10 }}>Aperçu</div>;
+                        const linkedIn = /linkedin\.com\//i.test(v.url || '');
+                        if (linkedIn) {
+                          return <img src={getLinkedInPosterUrl(v.url)} alt="miniature LinkedIn" style={{ width: '100%', height: 'auto', borderRadius: 6, objectFit: 'cover', border: '1px solid rgba(0,0,0,0.06)' }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />;
+                        }
+                        return <div style={{ width: '100%', height: 33, background: linkedIn ? '#0a66c2' : '#f0f0f0', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', color: linkedIn ? '#fff' : '#999', fontSize: 10, fontWeight: linkedIn ? 600 : 400 }}>{linkedIn ? 'LinkedIn' : 'Aperçu'}</div>;
                       })()}
                     </div>
 
@@ -621,7 +626,7 @@ export default function EditableVideoGallery({ keyName, initial = [], className 
                     <div className={styles.modalItemContent} style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {editIndex === i ? (
                         <div className={styles.modalItemEditRow} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                          <input value={editValue} onChange={(e) => setEditValue(e.target.value)} placeholder="URL YouTube" style={{ flex: '1 1 200px', minWidth: 0, padding: 6, borderRadius: 6, border: '1px solid #ddd' }} />
+                          <input value={editValue} onChange={(e) => setEditValue(e.target.value)} placeholder="URL YouTube ou LinkedIn"style={{ flex: '1 1 200px', minWidth: 0, padding: 6, borderRadius: 6, border: '1px solid #ddd' }} />
                           <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Titre (optionnel)" style={{ flex: '1 1 140px', minWidth: 0, padding: 6, borderRadius: 6, border: '1px solid #ddd' }} />
                           <select value={editColumns} onChange={(e) => setEditColumns(Number(e.target.value) as 1 | 2 | 3 | 4)} style={{ padding: 6, borderRadius: 6 }}>
                             <option value={1}>1 colonne</option>
