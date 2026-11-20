@@ -180,8 +180,9 @@ export default function VideoGallery({ videos, className, gallerySettings }: Pro
       if (linkedIn) {
         const media = linkedInMedia[item.url];
         const poster = item.cover?.url || media?.poster || undefined;
-        if (media?.src) return { url: media.src, kind: 'file' as const, poster };
-        return { url: item.url, embedUrl: linkedIn, kind: 'linkedin' as const, poster };
+        const source = { platform: 'linkedin' as const, url: item.url };
+        if (media?.src) return { url: media.src, kind: 'file' as const, poster, source };
+        return { url: item.url, embedUrl: linkedIn, kind: 'linkedin' as const, poster, source };
       }
       return { url: item.url, isShort: isYouTubeShort(item.url) };
     });

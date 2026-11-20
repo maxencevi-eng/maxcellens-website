@@ -3,7 +3,28 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-export type VideoLightboxItem = { url: string; embedUrl?: string; isShort?: boolean; kind?: 'youtube' | 'file' | 'linkedin'; poster?: string };
+export type VideoLightboxItem = {
+  url: string;
+  embedUrl?: string;
+  isShort?: boolean;
+  kind?: 'youtube' | 'file' | 'linkedin';
+  poster?: string;
+  /** Plateforme d'origine, affichée sous la vidéo avec un lien vers la publication */
+  source?: { platform: 'linkedin'; url: string };
+};
+
+const LinkedInLogo = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+    <rect width="24" height="24" rx="4" fill="#0A66C2" />
+    <path fill="#fff" d="M7.1 9.6h-2.6V19h2.6V9.6zM5.8 5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM19.5 13.7c0-2.6-1.4-4.3-3.7-4.3-1.3 0-2.2.7-2.6 1.4V9.6h-2.5V19h2.6v-4.9c0-1.3.6-2.2 1.7-2.2 1.1 0 1.6.8 1.6 2.2V19h2.6l.3-5.3z" />
+  </svg>
+);
+
+const ExternalIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+  </svg>
+);
 
 type Props = {
   videos: VideoLightboxItem[];
@@ -103,9 +124,10 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
 
   const ratio = isFile ? fileRatio : isShort ? 9 / 16 : 16 / 9;
   // La vidéo tient toujours dans l'écran, en largeur comme en hauteur
+  const frameWidth = `min(94vw, calc(${item.source ? 72 : 78}vh * ${ratio}))`;
   const frameStyle: React.CSSProperties = {
     position: 'relative',
-    width: `min(94vw, calc(78vh * ${ratio}))`,
+    width: frameWidth,
     aspectRatio: String(ratio),
     background: '#000',
     borderRadius: 14,
@@ -198,6 +220,52 @@ export default function VideoLightbox({ videos, index, initialIndex, onClose, on
             />
           )}
         </div>
+
+        {item.source?.platform === 'linkedin' ? (
+          <div
+            style={{
+              width: frameWidth,
+              minWidth: 'min(94vw, 300px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginTop: 12,
+              padding: '0 2px',
+              boxSizing: 'border-box',
+            }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>
+              <LinkedInLogo />
+              Publiée sur LinkedIn
+            </span>
+            <a
+              href={item.source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => videoRef.current?.pause()}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '7px 14px',
+                borderRadius: 999,
+                background: '#0A66C2',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 600,
+                textDecoration: 'none',
+                whiteSpace: 'nowrap',
+                transition: 'background 0.2s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#004182'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#0A66C2'; }}
+            >
+              Voir sur LinkedIn
+              <ExternalIcon />
+            </a>
+          </div>
+        ) : null}
 
         {videos.length > 1 ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 18 }}>
