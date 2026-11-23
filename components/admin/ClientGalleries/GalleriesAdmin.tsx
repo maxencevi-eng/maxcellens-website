@@ -58,6 +58,7 @@ import {
   folderChain,
   FolderSelect,
   folderSubtree,
+  FolderShareDialog,
   galleriesCsv,
   ShareDialog,
   statusLabel,
@@ -176,7 +177,7 @@ export default function GalleriesAdmin() {
   const [layout, setLayout] = useState<'grid' | 'table'>('grid');
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [lastClicked, setLastClicked] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<null | { kind: string; gallery?: AdminGallery }>(null);
+  const [dialog, setDialog] = useState<null | { kind: string; gallery?: AdminGallery; folder?: Folder }>(null);
   const [choice, setChoice] = useState<any>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   // Dans un dossier : liste des galeries ou bilan d'activité (gardé d'un dossier à l'autre)
@@ -691,6 +692,15 @@ export default function GalleriesAdmin() {
                 </h1>
                 {currentFolder ? (
                   <div className={s.folderActions}>
+                    <AdminButton
+                      size="sm"
+                      variant={currentFolder.share_enabled ? 'secondary' : 'ghost'}
+                      leadingIcon={<Share2 size={14} />}
+                      onClick={() => setDialog({ kind: 'folderShare', folder: currentFolder })}
+                      title={currentFolder.share_enabled ? 'Dossier partagé' : 'Partager tout le dossier'}
+                    >
+                      {currentFolder.share_enabled ? 'Partagé' : 'Partager'}
+                    </AdminButton>
                     <AdminButton size="sm" variant="ghost" leadingIcon={<Pencil size={14} />} onClick={() => renameFolder(currentFolder)}>
                       Renommer
                     </AdminButton>
@@ -1275,6 +1285,15 @@ export default function GalleriesAdmin() {
       ) : null}
       {dialog?.kind === 'share' && dialog.gallery ? (
         <ShareDialog gallery={dialog.gallery} onClose={() => setDialog(null)} onChange={(g) => replace([g])} />
+      ) : null}
+      {dialog?.kind === 'folderShare' && dialog.folder ? (
+        <FolderShareDialog
+          folder={dialog.folder}
+          folders={folders}
+          galleries={galleries}
+          onClose={() => setDialog(null)}
+          onChange={(next) => setData((d) => (d ? { ...d, folders: next } : d))}
+        />
       ) : null}
       {toast.node}
     </div>

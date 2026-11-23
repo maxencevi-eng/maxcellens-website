@@ -3,7 +3,7 @@
 import React, { useCallback, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Check, Copy, Download, Mail, MessageCircle, RefreshCw } from 'lucide-react';
-import { AdminButton, AdminModal, SegmentedField, SelectField, TextField, ToggleField } from '..';
+import { AdminButton, AdminModal, SegmentedField, SelectField, TextField, ToggleField, confirmDialog } from '..';
 import {
   clientUrl,
   formatBytes,
@@ -233,6 +233,162 @@ export function ShareDialog({ gallery, onClose, onChange }: { gallery: AdminGall
           WhatsApp
         </AdminButton>
       </div>
+    </AdminModal>
+  );
+}
+
+/* ── Partage d'un dossier ── */
+export function folderShareLink(f: Folder) {
+  return `${siteOrigin().replace(/\/$/, '')}/partage/${f.share_slug}`;
+}
+
+export function FolderShareDialog({
+  folder,
+  folders,
+  galleries,
+  onClose,
+  onChange,
+}: {
+  folder: Folder;
+  folders: Folder[];
+  galleries: AdminGallery[];
+  onClose: () => void;
+  onChange: (folders: Folder[]) => void;
+}) {
+  const [f, setF] = useState(folder);
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const ids = folderSubtree(folders, folder.id);
+  const inside = galleries.filter((g) => g.folder_id && ids.has(g.folder_id) && !g.deleted_at);
+  const now = Date.now();
+  const live = inside.filter((g) => g.status === 'published' && !(g.expires_at && new Date(g.expires_at).getTime() < now));
+  const notLive = inside.length - live.length;
+  const noDl = live.filter((g) => !g.download.enabled || g.download.pin).length;
+  const photos = live.reduce((a, g) => a + g.photo_count, 0);
+  const bytes = live.reduce((a, g) => a + g.bytes_total, 0);
+
+  const on = !!f.share_enabled && !!f.share_slug;
+  const link = on ? folderShareLink(f) : '';
+  const msg = on
+    ? `Bonjour,\n\nToutes les photos « ${f.name} » sont disponibles ici, avec un téléchargement groupé :\n${link}\n${f.share_password ? `Mot de passe : ${f.share_password}\n` : ''}\nBelle journée,\nMaxcellens — Photographe & Vidéaste`
+    : '';
+
+  const send = async (share: Record<string, any>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const j = await adminApi<{ folders: Folder[] }>('/folders', { method: 'PATCH', json: { id: f.id, share } });
+      const next = j.folders.find((x) => x.id === f.id);
+      if (next) setF(next);
+      onChange(j.folders);
+    } catch (e: any) {
+      setError(e.message);
+    }
+    setBusy(false);
+  };
+  const copy = async (k: string, t: string) => {
+    if (await copyText(t)) {
+      setCopied(k);
+      setTimeout(() => setCopied(null), 1600);
+    }
+  };
+  const CopyBtn = ({ k, text }: { k: string; text: string }) => (
+    <AdminButton size="sm" variant="secondary" onClick={() => copy(k, text)} leadingIcon={copied === k ? <Check size={14} /> : <Copy size={14} />}>
+      {copied === k ? 'Copié' : 'Copier'}
+    </AdminButton>
+  );
+
+  return (
+    <AdminModal title="Partager le dossier" subtitle={f.name} size="lg" onClose={onClose} footer={null}>
+      <ToggleField
+        label="Partager tout le dossier"
+        hint="Le client ouvre une seule page avec toutes les galeries publiées du dossier (sous-dossiers compris) et peut tout télécharger en une archive."
+        checked={on}
+        onChange={(v) => send({ enabled: v })}
+      />
+      {error ? <div className={s.notice}>{error}</div> : null}
+      <p className={s.muted} style={{ margin: '10px 0 0', fontSize: 13 }}>
+        {live.length} galerie{live.length > 1 ? 's' : ''} incluse{live.length > 1 ? 's' : ''} · {photos} élément{photos > 1 ? 's' : ''} · {formatBytes(bytes)}
+        {notLive ? ` — ${notLive} brouillon(s) ou expirée(s) non visible(s)` : ''}
+        {noDl ? ` — ${noDl} sans téléchargement (désactivé ou PIN), exclue(s) de l’archive` : ''}
+      </p>
+
+      {on ? (
+        <>
+          <div className={s.shareGrid} style={{ marginTop: 16 }}>
+            <div className={s.stack} style={{ marginTop: 0 }}>
+              <div>
+                <span className={s.lbl}>Lien du dossier</span>
+                <div className={s.field}>
+                  <input readOnly value={link} onFocus={(e) => e.target.select()} />
+                  <AdminButton
+                    size="sm"
+                    variant="ghost"
+                    iconOnly
+                    aria-label="Nouveau lien"
+                    title="Nouveau lien (l’ancien ne fonctionnera plus)"
+                    disabled={busy}
+                    onClick={async () => {
+                      if (await confirmDialog({ title: 'Changer le lien du dossier ?', message: 'L’ancien lien ne fonctionnera plus.', confirmLabel: 'Nouveau lien' })) send({ regenerate_link: true });
+                    }}
+                  >
+                    <RefreshCw size={14} />
+                  </AdminButton>
+                  <CopyBtn k="link" text={link} />
+                </div>
+              </div>
+              <ToggleField
+                label="Protéger par un mot de passe"
+                hint="Une fois saisi, il ouvre aussi chaque galerie du dossier, sans redemander leur propre mot de passe."
+                checked={!!f.share_password}
+                onChange={(v) => send(v ? { regenerate_password: true } : { password: null })}
+              />
+              {f.share_password ? (
+                <div>
+                  <span className={s.lbl}>Mot de passe du dossier</span>
+                  <div className={s.field}>
+                    <input readOnly value={f.share_password} data-mono="true" onFocus={(e) => e.target.select()} />
+                    <AdminButton size="sm" variant="ghost" iconOnly aria-label="Nouveau mot de passe" title="Nouveau mot de passe (révoque les accès ouverts)" disabled={busy} onClick={() => send({ regenerate_password: true })}>
+                      <RefreshCw size={14} />
+                    </AdminButton>
+                    <CopyBtn k="pw" text={f.share_password} />
+                  </div>
+                </div>
+              ) : (
+                <div className={s.notice}>Sans mot de passe, toute personne qui a le lien voit et télécharge toutes les galeries du dossier.</div>
+              )}
+            </div>
+            <div className={s.qr}>
+              <QRCodeSVG value={link} size={256} level="M" marginSize={0} />
+              Scanner pour ouvrir
+            </div>
+          </div>
+          <div style={{ marginTop: 18 }}>
+            <span className={s.lbl}>Message prêt à envoyer</span>
+            <textarea className={s.textarea} defaultValue={msg} key={msg} rows={8} id="cg-folder-msg" />
+          </div>
+          <div className={s.btnRow}>
+            <AdminButton
+              variant="primary"
+              onClick={() => copy('msg', (document.getElementById('cg-folder-msg') as HTMLTextAreaElement)?.value || msg)}
+              leadingIcon={copied === 'msg' ? <Check size={15} /> : <Copy size={15} />}
+            >
+              {copied === 'msg' ? 'Message copié' : 'Copier le message'}
+            </AdminButton>
+            <AdminButton variant="secondary" leadingIcon={<Mail size={15} />} onClick={() => {
+              const body = (document.getElementById('cg-folder-msg') as HTMLTextAreaElement)?.value || msg;
+              window.location.href = `mailto:?subject=${encodeURIComponent(`Vos photos — ${f.name}`)}&body=${encodeURIComponent(body)}`;
+            }}>
+              E-mail
+            </AdminButton>
+            <AdminButton variant="ghost" onClick={() => window.open(link, '_blank', 'noopener')}>
+              Ouvrir la page
+            </AdminButton>
+          </div>
+        </>
+      ) : null}
     </AdminModal>
   );
 }

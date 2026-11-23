@@ -101,6 +101,17 @@ export function checkAccessCookie(value: string | undefined, galleryId: string, 
   return g === galleryId && Number(v) === accessVersion && Number(exp) > Date.now() / 1000;
 }
 
+/* Dossier partagé : même jeton que l'accès galerie, sur un identifiant préfixé. */
+export function folderCookieName(folderId: string) {
+  return `cgf_${folderId.replace(/-/g, '').slice(0, 16)}`;
+}
+export function makeFolderCookie(folderId: string, accessVersion: number): string {
+  return makeAccessCookie(`folder:${folderId}`, accessVersion);
+}
+export function checkFolderCookie(value: string | undefined, folderId: string, accessVersion: number): boolean {
+  return checkAccessCookie(value, `folder:${folderId}`, accessVersion);
+}
+
 export function makeVisitorCookie(galleryId: string, visitorId: string): string {
   const body = `${galleryId}|${visitorId}`;
   return `${Buffer.from(body).toString('base64url')}.${sign(body, 'visitor')}`;

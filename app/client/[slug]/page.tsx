@@ -57,7 +57,7 @@ export default async function ClientGalleryPage({ params, searchParams }: Props)
   const eventDate = formatDate(g.event_date);
 
   const jar = await cookies();
-  if (!preview && !hasAccess(g, jar)) {
+  if (!preview && !(await hasAccess(g, jar))) {
     return <ClientGate slug={g.slug} mode="password" title={g.title} date={eventDate} cover={coverThumb} theme={design.theme} logo={logo} />;
   }
   const vid = visitorId(g, jar);

@@ -73,6 +73,17 @@ export function rowToAdminGallery(row: any): AdminGallery {
   };
 }
 
+/** Dossier tel que vu par l'admin : mot de passe de partage déchiffré. */
+export function rowToAdminFolder(row: any) {
+  const { share_password_enc, ...rest } = row || {};
+  return {
+    ...rest,
+    share_enabled: !!row?.share_enabled,
+    share_slug: row?.share_slug ?? null,
+    share_password: decrypt(share_password_enc),
+  };
+}
+
 /** Slug libre : ajoute -2, -3… si besoin. `exceptId` pour un renommage. */
 export async function uniqueSlug(base: string, exceptId?: string): Promise<string> {
   const root = slugify(base);

@@ -1,0 +1,78 @@
+/* Dossier partagé (/partage/<slug>) — s'appuie sur les variables de ClientGallery.module.css (.root). */
+
+.head {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 56px 16px 28px;
+  text-align: center;
+}
+.brand { display: flex; justify-content: center; font-family: var(--title-font); letter-spacing: 0.32em; text-transform: uppercase; font-size: 14px; color: var(--ink-soft); }
+.title {
+  margin: 34px 0 8px;
+  font-family: var(--title-font);
+  font-weight: var(--title-weight);
+  letter-spacing: var(--title-tracking);
+  font-size: clamp(30px, 5vw, 48px);
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 18px;
+  font-size: 11.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.actions { margin-top: 28px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.primary,
+.secondary {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 22px !important;
+  border-radius: 999px;
+  font-weight: 500;
+  transition: filter 0.2s, background 0.2s;
+}
+.primary { background: var(--accent) !important; color: var(--accent-ink) !important; }
+.primary small { opacity: 0.7; font-size: 12.5px; }
+.primary:hover { filter: brightness(1.15); }
+.secondary { border: 1.5px solid var(--line) !important; color: var(--ink) !important; }
+.secondary:hover { background: var(--bg-soft) !important; }
+.primary:disabled,
+.secondary:disabled { opacity: 0.5; cursor: default; }
+.note { margin: 14px auto 0; max-width: 520px; font-size: 12.5px; color: var(--ink-soft); }
+
+.grid {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 8px 16px 72px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+}
+.card {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bg-soft);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1); }
+.thumb { aspect-ratio: 4 / 3; background: var(--tile); display: grid; place-items: center; color: var(--ink-soft); overflow: hidden; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.cardBody { padding: 12px 14px 14px; display: grid; gap: 2px; }
+.cardBody b { font-weight: 500; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cardBody span { font-size: 12.5px; color: var(--ink-soft); }
+.empty { grid-column: 1 / -1; text-align: center; color: var(--ink-soft); }
+
+@media (max-width: 560px) {
+  .head { padding-top: 40px; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .actions > button { width: 100%; justify-content: center; }
+}

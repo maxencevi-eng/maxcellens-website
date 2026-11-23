@@ -21,6 +21,7 @@ export default function ClientGate({
   cover,
   theme,
   logo,
+  unlockUrl,
 }: {
   slug: string;
   mode: 'password' | 'email';
@@ -29,6 +30,8 @@ export default function ClientGate({
   cover: string | null;
   theme: Theme;
   logo?: string | null;
+  /** Adresse de déverrouillage (dossier partagé) ; par défaut celle de la galerie. */
+  unlockUrl?: string;
 }) {
   const router = useRouter();
   const [password, setPassword] = useState('');
@@ -42,7 +45,7 @@ export default function ClientGate({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/client/${slug}/${mode === 'password' ? 'unlock' : 'visitor'}`, {
+      const res = await fetch(unlockUrl || `/api/client/${slug}/${mode === 'password' ? 'unlock' : 'visitor'}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mode === 'password' ? { password } : { name, email }),

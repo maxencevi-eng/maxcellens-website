@@ -421,3 +421,15 @@ Réglage **« Mode review des vidéos »** (galerie → Réglages, et dans les m
 ## 8. Nom des fichiers sous forme de légende
 
 Présentation → Style → **« Afficher le nom des fichiers »** : le nom (sans l'extension) apparaît au-dessus de chaque vignette côté client. C'est un réglage de présentation, donc il fait aussi partie des modèles.
+
+## 9. Dossiers partagés (2026-11-23)
+
+Dans un dossier, bouton **« Partager »** → « Partager tout le dossier ». Le client reçoit un lien `/partage/<slug>` (suffixe aléatoire, non devinable) et, si on le souhaite, un mot de passe propre au dossier.
+
+- **Page client** : toutes les galeries **publiées et non expirées** du dossier et de ses sous-dossiers, avec un bouton **« Tout télécharger en HD »** (et « Version web » si permis). L'archive ZIP contient un dossier par galerie.
+- **Accès** : le mot de passe du dossier ouvre aussi chaque galerie du dossier sans redemander son mot de passe (cookie `cgf_…`, 30 jours). Changer le mot de passe ou le lien révoque les accès ouverts.
+- **Réglages de chaque galerie respectés** : téléchargement désactivé ou protégé par PIN → galerie exclue de l'archive ; taille non autorisée → l'autre taille permise est utilisée. L'inscription par e-mail (si activée) reste demandée à l'ouverture de la galerie.
+- **Gros volumes** : au-delà de ~1,8 Go, l'archive n'est possible que sur Chrome / Edge ordinateur (écriture directe sur le disque).
+
+### Mise en service
+Supabase → SQL Editor : exécuter `supabase/migrations/20261123000000_client_gallery_folder_share.sql`.

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { db, guardAdmin, jsonError } from '@/lib/clientGalleries/db';
+import crypto from 'crypto';
+import { db, guardAdmin, jsonError, rowToAdminFolder } from '@/lib/clientGalleries/db';
+import { encrypt, generatePassword } from '@/lib/clientGalleries/security';
+import { slugify } from '@/lib/clientGalleries/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +47,7 @@ export async function POST(req: Request) {
     .select('*')
     .single();
   if (error) return jsonError(error.message, 500);
-  return NextResponse.json({ folder: data });
+  return NextResponse.json({ folder: rowToAdminFolder(data) });
 }
 
 /**
@@ -72,6 +75,41 @@ export async function PATCH(req: Request) {
     }
     patch.parent_id = parent;
   }
+  // Partage du dossier : { share: { enabled?, password?: string|null, regenerate_password?, regenerate_link? } }
+  if (body.share && typeof body.share === 'object') {
+    const sh = body.share;
+    const { data: cur, error: e0 } = await db
+      .from('client_gallery_folders')
+      .select('name, share_slug, share_password_enc, share_access_version')
+      .eq('id', body.id)
+      .maybeSingle();
+    if (e0) {
+      const missing = /column .* does not exist|Could not find the .* column/i.test(e0.message);
+      return jsonError(missing ? 'Appliquez la migration 20261123000000_client_gallery_folder_share.sql' : e0.message, missing ? 503 : 500);
+    }
+    if (!cur) return jsonError('Dossier introuvable', 404);
+    let revoke = false;
+    if ('enabled' in sh) {
+      patch.share_enabled = !!sh.enabled;
+      // Première activation : lien non devinable et mot de passe généré
+      if (sh.enabled && !cur.share_slug) patch.share_slug = shareSlug(patch.name || cur.name);
+      if (sh.enabled && !cur.share_slug && !cur.share_password_enc && !('password' in sh)) patch.share_password_enc = encrypt(generatePassword());
+    }
+    if (sh.regenerate_link) {
+      patch.share_slug = shareSlug(patch.name || cur.name);
+      revoke = true;
+    }
+    if ('password' in sh) {
+      const pw = sh.password == null ? '' : String(sh.password).trim();
+      patch.share_password_enc = pw ? encrypt(pw) : null;
+      revoke = true;
+    }
+    if (sh.regenerate_password) {
+      patch.share_password_enc = encrypt(generatePassword());
+      revoke = true;
+    }
+    if (revoke) patch.share_access_version = (cur.share_access_version || 1) + 1;
+  }
   if (Object.keys(patch).length) {
     const { error } = await db.from('client_gallery_folders').update(patch).eq('id', body.id);
     if (error) return jsonError(error.message, 500);
@@ -83,7 +121,12 @@ export async function PATCH(req: Request) {
   }
   // Tri par date seulement : l'ordre « position » est appliqué côté navigateur (et reste valable sans la migration)
   const { data } = await db.from('client_gallery_folders').select('*').order('created_at');
-  return NextResponse.json({ folders: data || [] });
+  return NextResponse.json({ folders: (data || []).map(rowToAdminFolder) });
+}
+
+/** Lien de partage : nom lisible + suffixe aléatoire (un lien sans mot de passe ne doit pas se deviner). */
+function shareSlug(name: string) {
+  return `${slugify(name).slice(0, 60)}-${crypto.randomBytes(5).toString('hex')}`;
 }
 
 /**

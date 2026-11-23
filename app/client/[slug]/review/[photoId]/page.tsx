@@ -39,7 +39,7 @@ export default async function ReviewPage({ params, searchParams }: Props) {
 
   // Accès, inscription e-mail : la galerie s'en charge (porte d'accès), on y renvoie
   const jar = await cookies();
-  if (!preview && (!hasAccess(g, jar) || (g.email_gate && !visitorId(g, jar)))) redirect(galleryUrl);
+  if (!preview && (!(await hasAccess(g, jar)) ||(g.email_gate && !visitorId(g, jar)))) redirect(galleryUrl);
   if (!normalizeReview(g.review).enabled && !preview) redirect(galleryUrl);
 
   const { data: photo } = await db

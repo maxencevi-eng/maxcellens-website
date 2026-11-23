@@ -148,6 +148,11 @@ export type Folder = {
   parent_id?: string | null;
   /** Ordre parmi les dossiers du même parent. */
   position?: number;
+  /** Partage du dossier entier (lien /partage/<share_slug>). */
+  share_enabled?: boolean;
+  share_slug?: string | null;
+  /** Mot de passe du dossier partagé (déchiffré, admin) ; null = lien seul. */
+  share_password?: string | null;
 };
 
 /** Galerie telle que vue par l'admin (mot de passe déchiffré). */
