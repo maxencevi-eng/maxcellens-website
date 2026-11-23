@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Download, Images } from 'lucide-react';
 import { formatBytes } from '../../lib/clientGalleries/types';
 import ClientShell from './ClientShell';
@@ -41,6 +41,7 @@ export default function FolderShare({
   logo?: string | null;
 }) {
   const [zip, setZip] = useState<{ done: number; total: number; label: string } | null>(null);
+  const zipAbort = useRef<AbortController | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const say = (t: string) => {
     setToast(t);
@@ -70,30 +71,35 @@ export default function FolderShare({
       }
     }
 
+    const ctrl = new AbortController();
+    zipAbort.current = ctrl;
     setZip({ done: 0, total: 0, label: 'Préparation…' });
     const res = await fetch(`/api/partage/${encodeURIComponent(slug)}/download`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ size }),
+      signal: ctrl.signal,
     }).catch(() => null);
     const j = res ? await res.json().catch(() => ({})) : {};
-    if (!res || !res.ok) {
+    if (!res || !res.ok || ctrl.signal.aborted) {
       try {
         await writable?.abort();
       } catch {}
       setZip(null);
-      say(j.error || 'Téléchargement impossible');
+      zipAbort.current = null;
+      say(ctrl.signal.aborted ? 'Téléchargement arrêté' : j.error || 'Téléchargement impossible');
       return;
     }
-    await runZip(j.files as ZipFile[], writable);
-    if (j.skipped?.length) say(`${j.skipped.length} galerie(s) non incluse(s) : téléchargement non autorisé.`);
+    await runZip(j.files as ZipFile[], writable, ctrl);
+    if (j.skipped?.length && !ctrl.signal.aborted) say(`${j.skipped.length} galerie(s) non incluse(s) : téléchargement non autorisé.`);
   }
 
-  async function runZip(list: ZipFile[], writable: any) {
+  async function runZip(list: ZipFile[], writable: any, ctrl: AbortController) {
     const total = list.length;
     const totalBytes = list.reduce((a, f) => a + (f.size || 0), 0);
     if (!writable && totalBytes > 1.8e9) {
       setZip(null);
+      zipAbort.current = null;
       say('Archive trop lourde pour ce navigateur : utilisez Chrome ou Edge sur ordinateur, ou téléchargez galerie par galerie.');
       return;
     }
@@ -103,7 +109,7 @@ export default function FolderShare({
       let done = 0;
       async function* entries() {
         for (const f of list) {
-          const r = await fetch(f.url);
+          const r = await fetch(f.url, { signal: ctrl.signal });
           if (!r.ok) throw new Error(`${f.name} : ${r.status}`);
           yield { name: f.name, input: r, ...(f.size ? { size: f.size } : {}) };
           done++;
@@ -112,9 +118,11 @@ export default function FolderShare({
       }
       const zipRes = downloadZip(entries());
       if (writable) {
-        await zipRes.body!.pipeTo(writable);
+        // Arrêt : le fichier en cours d'écriture est abandonné (pas d'archive incomplète)
+        await zipRes.body!.pipeTo(writable, { signal: ctrl.signal });
       } else {
         const blob = await zipRes.blob();
+        if (ctrl.signal.aborted) throw new DOMException('Annulé', 'AbortError');
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = zipName;
@@ -127,7 +135,10 @@ export default function FolderShare({
       setTimeout(() => setZip(null), 2500);
     } catch (e: any) {
       setZip(null);
-      say(`Le téléchargement a échoué${e?.message ? ` (${e.message})` : ''}. Réessayez.`);
+      if (ctrl.signal.aborted) say('Téléchargement arrêté');
+      else say(`Le téléchargement a échoué${e?.message ? ` (${e.message})` : ''}. Réessayez.`);
+    } finally {
+      zipAbort.current = null;
     }
   }
 
@@ -206,6 +217,11 @@ export default function FolderShare({
                 <i style={{ width: `${Math.round((zip.done / Math.max(1, zip.total)) * 100)}%` }} />
               </div>
             </div>
+            {!zip.total || zip.done < zip.total ? (
+              <button type="button" className={styles.zipStop} onClick={() => zipAbort.current?.abort()}>
+                Arrêter le téléchargement
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}

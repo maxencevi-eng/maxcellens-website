@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db, guardAdmin, jsonError, rowToAdminGallery } from '@/lib/clientGalleries/db';
 import { buildPatch, destroyGallery } from '@/lib/clientGalleries/mutations';
+import { compareFilenames } from '@/lib/clientGalleries/types';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -25,6 +26,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ destroyed: ids.length });
   }
 
+  if (body.action === 'sort_by_name') return sortByName(ids);
+
   if (body.action !== 'patch' || !body.patch || typeof body.patch !== 'object') return jsonError('Action inconnue');
 
   const { data: rows, error } = await db.from('client_galleries').select('*').in('id', ids);
@@ -37,6 +40,39 @@ export async function POST(req: Request) {
     if (!Object.keys(patch).length) continue;
     const { data, error: e } = await db.from('client_galleries').update(patch).eq('id', row.id).select('*').single();
     if (!e && data) updated.push(rowToAdminGallery(data));
+  }
+  return NextResponse.json({ galleries: updated });
+}
+
+/**
+ * Trie les éléments de chaque galerie par nom de fichier (tri naturel) et
+ * prend la première photo comme couverture. Une couverture importée hors
+ * galerie (élément masqué) est conservée.
+ */
+async function sortByName(ids: string[]) {
+  const { data: rows, error } = await db.from('client_galleries').select('id, cover_photo_id').in('id', ids);
+  if (error) return jsonError(error.message, 500);
+
+  const updated = [];
+  for (const row of rows || []) {
+    const { data: photos } = await db
+      .from('client_gallery_photos')
+      .select('id, filename, kind, hidden, ready, position')
+      .eq('gallery_id', row.id);
+    if (!photos?.length) continue;
+    const sorted = [...photos].sort((a: any, b: any) => compareFilenames(a.filename, b.filename));
+    await Promise.all(
+      sorted.map((p: any, i: number) =>
+        p.position === i ? null : db.from('client_gallery_photos').update({ position: i }).eq('gallery_id', row.id).eq('id', p.id)
+      )
+    );
+    const current = photos.find((p: any) => p.id === row.cover_photo_id);
+    const keepImported = current?.hidden;
+    const first = sorted.find((p: any) => p.kind === 'image' && p.ready && !p.hidden);
+    const patch: Record<string, any> = { updated_at: new Date().toISOString() };
+    if (!keepImported && first) patch.cover_photo_id = first.id;
+    const { data } = await db.from('client_galleries').update(patch).eq('id', row.id).select('*').single();
+    if (data) updated.push(rowToAdminGallery(data));
   }
   return NextResponse.json({ galleries: updated });
 }

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Activity as ActivityIcon,
+  ArrowDownAZ,
   ArrowLeft,
   Check,
   CloudOff,
@@ -484,6 +485,31 @@ export default function GalleriesAdmin() {
   const onCardDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData('application/x-cg-ids', JSON.stringify(dragIds(id)));
     e.dataTransfer.effectAllowed = 'move';
+  };
+  const sortSelectedByName = async () => {
+    const ids = Array.from(sel);
+    if (
+      !(await confirmDialog({
+        title: `Trier les photos de ${ids.length} galerie${ids.length > 1 ? 's' : ''} par nom ?`,
+        message:
+          'Les éléments de chaque galerie sont classés par nom de fichier (MXL00511 avant MXL00511-2, IMG_2 avant IMG_10), et la première photo devient la couverture. Une couverture importée hors galerie est conservée.',
+        confirmLabel: 'Trier',
+      }))
+    )
+      return;
+    // Par paquets : une seule requête pour 80 galeries dépasserait le temps alloué au serveur
+    let n = 0;
+    try {
+      for (let i = 0; i < ids.length; i += 15) {
+        toast.show(`Tri en cours… ${i}/${ids.length}`);
+        const j = await adminApi<{ galleries: AdminGallery[] }>('/bulk', { method: 'POST', json: { ids: ids.slice(i, i + 15), action: 'sort_by_name' } });
+        replace(j.galleries);
+        n += j.galleries.length;
+      }
+      toast.show(`${n} galerie(s) triée(s) par nom`);
+    } catch (e: any) {
+      toast.show(`${n} galerie(s) triée(s) — erreur : ${e.message}`);
+    }
   };
   const moveToFolder = async (ids: string[], folderId: string | null) => {
     try {
@@ -1156,6 +1182,9 @@ export default function GalleriesAdmin() {
                 <span className={s.bulkLabel}>Organisation</span>
                 <button className={s.bulkBtn} onClick={() => setChoice({ kind: 'folder', value: currentFolder?.id || null })}>
                   <FolderIcon size={16} /> Déplacer
+                </button>
+                <button className={s.bulkBtn} onClick={sortSelectedByName} title="Trier les photos par nom de fichier et prendre la première comme couverture">
+                  <ArrowDownAZ size={16} /> Trier par nom
                 </button>
                 <button
                   className={s.bulkBtn}

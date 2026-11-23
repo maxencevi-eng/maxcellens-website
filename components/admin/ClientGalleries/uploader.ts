@@ -1,6 +1,6 @@
 "use client";
 
-import { mediaKindOf, MAX_FILE_BYTES, MAX_IMAGE_BYTES, type Watermark } from '../../../lib/clientGalleries/types';
+import { compareFilenames, mediaKindOf, MAX_FILE_BYTES, MAX_IMAGE_BYTES, type Watermark } from '../../../lib/clientGalleries/types';
 import { adminApi } from './api';
 import { renderImage, renderVideo, watermarkFromUrl, type Rendered } from './renditions';
 
@@ -90,7 +90,7 @@ export async function uploadFiles(
   for (const f of files) if (!groupRank.has(setOf(f))) groupRank.set(setOf(f), groupRank.size);
   // Puis tri naturel par nom (IMG_2 avant IMG_10)
   const sorted = [...files].sort(
-    (a, b) => groupRank.get(setOf(a))! - groupRank.get(setOf(b))! || a.name.localeCompare(b.name, 'fr', { numeric: true })
+    (a, b) => groupRank.get(setOf(a))! - groupRank.get(setOf(b))! || compareFilenames(a.name, b.name)
   );
 
   for (let i = 0; i < sorted.length; i += BATCH) {

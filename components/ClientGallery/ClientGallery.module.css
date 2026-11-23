@@ -678,6 +678,18 @@
 .progressBar { height: 6px; background: #e8e5dd; border-radius: 9px; overflow: hidden; margin-top: 8px; }
 .progressBar i { display: block; height: 100%; background: #213431; transition: width 0.25s; }
 .note { font-size: 12.5px; color: #7b8783; margin-top: 12px; line-height: 1.5; }
+.zipStop {
+  display: block;
+  margin: 20px auto 0;
+  padding: 10px 20px !important;
+  border-radius: 999px;
+  border: 1.5px solid #d9d4c8 !important;
+  color: #1b1f1d !important;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.zipStop:hover { background: #efece5 !important; }
 
 .toast {
   position: fixed;

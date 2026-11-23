@@ -12,6 +12,7 @@ import {
   type Template,
   type Folder,
   type Watermark,
+  compareFilenames,
 } from '../../../lib/clientGalleries/types';
 import { adminApi, copyTable, copyText, downloadTextFile } from './api';
 import { exifDate } from './exif';
@@ -132,7 +133,7 @@ export default function BulkImport({
   const addFiles = useCallback(async (input: { file: File; dir: string }[]) => {
     const fresh: Item[] = input
       .filter(({ file }) => !/^\.|^thumbs\.db$|^desktop\.ini$/i.test(file.name))
-      .sort((a, b) => a.dir.localeCompare(b.dir, 'fr', { numeric: true }) || a.file.name.localeCompare(b.file.name, 'fr', { numeric: true }))
+      .sort((a, b) => a.dir.localeCompare(b.dir, 'fr', { numeric: true }) || compareFilenames(a.file.name, b.file.name))
       .map(({ file, dir }) => ({ id: uid(), file, dir, kind: mediaKindOf(file.type, file.name), thumb: null, date: null, group: null }));
     if (!fresh.length) return;
     setItems((cur) => [...cur, ...fresh]);
@@ -237,7 +238,7 @@ export default function BulkImport({
       });
       if (!withDate.length) return;
     }
-    const sorted = [...items].sort((a, b) => (a.date ?? Infinity) - (b.date ?? Infinity) || a.file.name.localeCompare(b.file.name, 'fr', { numeric: true }));
+    const sorted = [...items].sort((a, b) => (a.date ?? Infinity) - (b.date ?? Infinity) || compareFilenames(a.file.name, b.file.name));
     const gs: Group[] = [];
     const assign = new Map<string, string>();
     let prev: number | null = null;
@@ -260,7 +261,7 @@ export default function BulkImport({
     if (!(await confirmRegroup())) return;
     const n = Math.max(1, perGroup);
     const sorted = [...items].sort(
-      (a, b) => (a.date ?? Infinity) - (b.date ?? Infinity) || a.file.name.localeCompare(b.file.name, 'fr', { numeric: true })
+      (a, b) => (a.date ?? Infinity) - (b.date ?? Infinity) || compareFilenames(a.file.name, b.file.name)
     );
     const gs: Group[] = [];
     const next = sorted.map((it, i) => {

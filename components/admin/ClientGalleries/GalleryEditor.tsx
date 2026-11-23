@@ -50,6 +50,7 @@ import {
   type GallerySet,
   type Template,
   type Watermark,
+  compareFilenames,
 } from '../../../lib/clientGalleries/types';
 import { adminApi, copyText } from './api';
 import { StorageMeter } from './GalleriesAdmin';
@@ -532,7 +533,7 @@ function FilesTab({
     const added = (p: AdminPhoto) => Date.parse(p.created_at) || 0;
     const next = [...photos].sort((a, b) =>
       mode === 'name'
-        ? a.filename.localeCompare(b.filename, 'fr', { numeric: true })
+        ? compareFilenames(a.filename, b.filename)
         : mode === 'date'
           ? added(a) - added(b) || a.position - b.position
           : (KIND_ORDER[a.kind] ?? 9) - (KIND_ORDER[b.kind] ?? 9) || a.position - b.position

@@ -187,6 +187,7 @@ export default function ClientGallery(rawProps: Props) {
   const [pin, setPin] = useState<string>('');
   const [toast, setToast] = useState<string | null>(null);
   const [zip, setZip] = useState<{ done: number; total: number; label: string } | null>(null);
+  const zipAbort = useRef<AbortController | null>(null);
 
   const say = useCallback((t: string) => {
     setToast(t);
@@ -322,12 +323,14 @@ export default function ClientGallery(rawProps: Props) {
     }
     setDlOpen(false);
     setZip({ done: 0, total, label: 'Préparation…' });
+    const ctrl = new AbortController();
+    zipAbort.current = ctrl;
     try {
       const { downloadZip } = await import('client-zip');
       let done = 0;
       async function* entries() {
         for (const f of list) {
-          const r = await fetch(f.url);
+          const r = await fetch(f.url, { signal: ctrl.signal });
           if (!r.ok) throw new Error(`${f.name} : ${r.status}`);
           yield { name: f.name, input: r, ...(f.size ? { size: f.size } : {}) };
           done++;
@@ -336,9 +339,11 @@ export default function ClientGallery(rawProps: Props) {
       }
       const zipRes = downloadZip(entries());
       if (writable) {
-        await zipRes.body!.pipeTo(writable);
+        // Arrêt : le fichier en cours d'écriture est abandonné (pas d'archive incomplète)
+        await zipRes.body!.pipeTo(writable, { signal: ctrl.signal });
       } else {
         const blob = await zipRes.blob();
+        if (ctrl.signal.aborted) throw new DOMException('Annulé', 'AbortError');
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = `${title.replace(/[\\/:*?"<>|]/g, '')}.zip`;
@@ -351,7 +356,10 @@ export default function ClientGallery(rawProps: Props) {
       setTimeout(() => setZip(null), 2500);
     } catch (e: any) {
       setZip(null);
-      say(`Le téléchargement a échoué${e?.message ? ` (${e.message})` : ''}. Réessayez.`);
+      if (ctrl.signal.aborted) say('Téléchargement arrêté');
+      else say(`Le téléchargement a échoué${e?.message ? ` (${e.message})` : ''}. Réessayez.`);
+    } finally {
+      zipAbort.current = null;
     }
   }
 
@@ -674,6 +682,11 @@ export default function ClientGallery(rawProps: Props) {
                   <i style={{ width: `${Math.round((zip.done / Math.max(1, zip.total)) * 100)}%` }} />
                 </div>
               </div>
+              {zip.done < zip.total ? (
+                <button type="button" className={styles.zipStop} onClick={() => zipAbort.current?.abort()}>
+                  Arrêter le téléchargement
+                </button>
+              ) : null}
             </div>
           </div>
         ) : null}

@@ -291,6 +291,16 @@ export function formatDuration(sec: number | null | undefined): string {
   return h ? `${h}:${String(m).padStart(2, '0')}:${r}` : `${m}:${r}`;
 }
 
+/**
+ * Tri naturel des noms de fichiers : IMG_2 avant IMG_10, et MXL00511 avant
+ * MXL00511-2 (on compare d'abord le nom sans l'extension, sinon « - » passe
+ * avant « . » et MXL00511-2.jpg précède MXL00511.jpg).
+ */
+export function compareFilenames(a: string, b: string): number {
+  const base = (s: string) => s.replace(/\.[^.]+$/, '');
+  return base(a).localeCompare(base(b), 'fr', { numeric: true }) || a.localeCompare(b, 'fr', { numeric: true });
+}
+
 export function slugify(s: string): string {
   return (
     String(s || '')
