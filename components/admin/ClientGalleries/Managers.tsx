@@ -47,6 +47,18 @@ export function TemplatesManager({
 
   const save = async () => {
     if (!draft) return;
+    const settingsChanged = JSON.stringify(draft.settings) !== JSON.stringify(sel?.settings);
+    // Proposer d'appliquer les nouveaux réglages aux galeries déjà créées avec ce modèle
+    const alsoApply =
+      settingsChanged &&
+      users.length > 0 &&
+      (await confirmDialog({
+        title: `Mettre aussi à jour les ${users.length} galerie${users.length > 1 ? 's' : ''} de ce modèle ?`,
+        message:
+          'Accès, téléchargement, filigrane, favoris et présentation de ces galeries seront remplacés par ceux du modèle. Titres, mots de passe, fichiers et dates ne changent pas.',
+        confirmLabel: `Enregistrer et appliquer à ${users.length} galerie${users.length > 1 ? 's' : ''}`,
+        cancelLabel: 'Seulement le modèle',
+      }));
     setSaving(true);
     try {
       const j = await adminApi<{ template: Template }>('/templates', {
@@ -55,7 +67,8 @@ export function TemplatesManager({
       });
       onChange(templates.map((t) => (t.id === j.template.id ? j.template : t)));
       setDraft(j.template);
-      toast('Modèle enregistré');
+      if (alsoApply) await applyToUsers(j.template);
+      else toast('Modèle enregistré');
     } catch (e: any) {
       toast(e.message);
     }
@@ -72,6 +85,16 @@ export function TemplatesManager({
     toast('Modèle par défaut');
   };
   const users = draft ? galleries.filter((g) => g.template_id === draft.id && !g.deleted_at) : [];
+  // Couverture d'une galerie du modèle : sert d'exemple pour placer le point d'intérêt
+  const sampleCover = users.find((g) => g.cover_url)?.cover_url || null;
+  const applyToUsers = async (tpl: Template) => {
+    const j = await adminApi<{ galleries: AdminGallery[] }>('/bulk', {
+      method: 'POST',
+      json: { ids: users.map((g) => g.id), action: 'patch', patch: { apply_template: tpl.id } },
+    });
+    onGalleries(j.galleries);
+    toast(`Modèle enregistré et appliqué à ${j.galleries.length} galerie(s)`);
+  };
   const propagate = async () => {
     if (!draft || !users.length) return;
     if (
@@ -84,12 +107,7 @@ export function TemplatesManager({
     )
       return;
     try {
-      const j = await adminApi<{ galleries: AdminGallery[] }>('/bulk', {
-        method: 'POST',
-        json: { ids: users.map((g) => g.id), action: 'patch', patch: { apply_template: draft.id } },
-      });
-      onGalleries(j.galleries);
-      toast(`Modèle appliqué à ${j.galleries.length} galerie(s)`);
+      await applyToUsers(draft);
     } catch (e: any) {
       toast(e.message);
     }
@@ -201,6 +219,43 @@ export function TemplatesManager({
                 />
               </div>
               <DesignFields value={normalizeDesign(st.design)} onChange={(v) => set({ design: v })} />
+              <div>
+                <span className={s.lbl}>Point d’intérêt de la couverture</span>
+                <p className={s.muted} style={{ margin: '0 0 6px', fontSize: 12 }}>
+                  {st.design?.focus
+                    ? 'Appliqué à toutes les galeries de ce modèle (remplace celui choisi galerie par galerie).'
+                    : 'Non défini : chaque galerie garde son propre point d’intérêt. Cliquez sur l’image pour en imposer un.'}
+                </p>
+                <div
+                  className={s.focusPick}
+                  style={sampleCover ? undefined : { aspectRatio: '3 / 2', background: 'repeating-linear-gradient(45deg, #ece9e2 0 10px, #f4f2ed 10px 20px)' }}
+                  onClick={(e) => {
+                    const r = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                    const x = Math.round(((e.clientX - r.left) / r.width) * 100) / 100;
+                    const y = Math.round(((e.clientY - r.top) / r.height) * 100) / 100;
+                    set({ design: { ...normalizeDesign(st.design), focus: { x, y } } });
+                  }}
+                >
+                  {sampleCover ? <img src={sampleCover} alt="" /> : null}
+                  {st.design?.focus ? (
+                    <span className={s.focusDot} style={{ left: `${st.design.focus.x * 100}%`, top: `${st.design.focus.y * 100}%` }} />
+                  ) : null}
+                </div>
+                {st.design?.focus ? (
+                  <div style={{ marginTop: 8 }}>
+                    <AdminButton
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        const { focus, ...rest } = normalizeDesign(st.design);
+                        set({ design: rest });
+                      }}
+                    >
+                      Laisser chaque galerie choisir
+                    </AdminButton>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
           <div className={s.card2}>

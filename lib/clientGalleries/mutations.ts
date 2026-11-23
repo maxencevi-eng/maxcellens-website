@@ -64,8 +64,8 @@ export async function buildPatch(body: any, current: any): Promise<Record<string
       // Textes : un modèle sans texte ne vide pas celui déjà écrit pour la galerie
       if (intro) p.intro = intro;
       if (share_message) p.share_message = share_message;
-      // La couverture et son point d'intérêt sont propres à chaque galerie
-      if (current.design?.focus) p.design = { ...p.design, focus: current.design.focus };
+      // Point d'intérêt : celui du modèle s'il en définit un, sinon celui propre à la galerie
+      if (!p.design?.focus && current.design?.focus) p.design = { ...p.design, focus: current.design.focus };
       if (cols.download.pin && !current.download_pin_enc) p.download_pin_enc = download_pin_enc;
       if (tags.length) p.tags = Array.from(new Set([...(current.tags || []), ...tags]));
       if (!current.expires_at && expires_at) p.expires_at = expires_at;
