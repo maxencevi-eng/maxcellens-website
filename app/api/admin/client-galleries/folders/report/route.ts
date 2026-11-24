@@ -175,6 +175,9 @@ export async function GET(req: Request) {
     for (const e of downloads) {
       const r = rows[e.gallery_id];
       const m = e.meta || {};
+      // Téléchargement global depuis le dossier partagé : pas un téléchargement
+      // de la galerie elle-même, on ne le compte nulle part dans le bilan
+      if (m.scope === 'folder') continue;
       const done = got.get(e.gallery_id) || got.set(e.gallery_id, new Set()).get(e.gallery_id)!;
       if (e.type === 'download_photo') {
         r.photoDownloads++;
