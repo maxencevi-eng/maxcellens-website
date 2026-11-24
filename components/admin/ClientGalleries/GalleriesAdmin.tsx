@@ -26,6 +26,7 @@ import {
   Lock,
   Pencil,
   Plus,
+  Replace,
   RotateCcw,
   Search,
   Share2,
@@ -49,6 +50,7 @@ import {
 import { adminApi, copyText, downloadTextFile } from './api';
 import { NewGalleryDialog } from './CreateDialogs';
 import BulkImport from './BulkImport';
+import ReplaceFiles from './ReplaceFiles';
 import ActivityOverview from './ActivityOverview';
 import FolderReport from './FolderReport';
 import { TemplatesManager, WatermarksManager } from './Managers';
@@ -766,6 +768,18 @@ export default function GalleriesAdmin() {
                     <AdminButton size="sm" variant="secondary" leadingIcon={<Layers size={15} />} onClick={() => setDialog({ kind: 'bulk' })} disabled={!data?.config.r2} title="Toutes les photos d’un coup, groupées en galeries">
                       Import en masse
                     </AdminButton>
+                    {currentFolder || selected.length ? (
+                      <AdminButton
+                        size="sm"
+                        variant="secondary"
+                        leadingIcon={<Replace size={15} />}
+                        onClick={() => setDialog({ kind: 'replace' })}
+                        disabled={!data?.config.r2}
+                        title="Nouvelles versions : chaque fichier remplace la photo du même nom, dans toutes les galeries"
+                      >
+                        Remplacer{selected.length ? ` (${selected.length})` : ''}
+                      </AdminButton>
+                    ) : null}
                     {view === 'all' || currentFolder ? (
                       <AdminButton
                         size="sm"
@@ -1297,6 +1311,21 @@ export default function GalleriesAdmin() {
           defaultFolder={currentFolder?.id}
           onClose={() => setDialog(null)}
           onCreated={(g) => router.push(`/admin/galeries/${g.id}`)}
+        />
+      ) : null}
+      {dialog?.kind === 'replace' && data ? (
+        <ReplaceFiles
+          galleries={
+            selected.length
+              ? selected
+              : currentFolder
+                ? galleries.filter((g) => !g.deleted_at && g.folder_id && folderSubtree(folders, currentFolder.id).has(g.folder_id))
+                : []
+          }
+          scopeLabel={selected.length ? `${selected.length} galerie(s) sélectionnée(s)` : currentFolder?.name || ''}
+          watermarks={data.watermarks}
+          onClose={() => setDialog(null)}
+          onDone={load}
         />
       ) : null}
       {dialog?.kind === 'bulk' && data ? (

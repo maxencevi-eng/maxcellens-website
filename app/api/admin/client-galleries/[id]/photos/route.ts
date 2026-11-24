@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db, guardAdmin, jsonError, refreshCounts } from '@/lib/clientGalleries/db';
 import { allKeysForPhoto, deleteObjects, objectKey, presign, r2Configured, uploadUrl } from '@/lib/clientGalleries/r2';
-import { MAX_FILE_BYTES, MAX_IMAGE_BYTES, mediaKindOf, type RenditionKind } from '@/lib/clientGalleries/types';
+import { MAX_FILE_BYTES, MAX_IMAGE_BYTES, mediaKindOf, sameName, type RenditionKind } from '@/lib/clientGalleries/types';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -192,6 +192,37 @@ export async function POST(req: Request, ctx: Ctx) {
         ids.map((pid, i) => db.from('client_gallery_photos').update({ position: i }).eq('gallery_id', id).eq('id', pid))
       );
       return NextResponse.json({ ok: true });
+    }
+
+    case 'replace': {
+      // Les nouveaux éléments (déjà envoyés) prennent la place des anciens du même nom :
+      // position, section, masquage, couverture, favoris et commentaires. Les anciens sont supprimés.
+      const newIds: string[] = Array.isArray(body.newIds) ? body.newIds : [];
+      if (!newIds.length) return NextResponse.json({ replaced: 0 });
+      const { data: all } = await db.from('client_gallery_photos').select('id, filename, ext, position, set_id, hidden').eq('gallery_id', id);
+      const fresh = new Set(newIds);
+      const olds = new Map<string, any>();
+      for (const p of all || []) if (!fresh.has(p.id)) olds.set(sameName(p.filename), p);
+      const removed: any[] = [];
+      for (const p of (all || []).filter((x: any) => fresh.has(x.id))) {
+        const old = olds.get(sameName(p.filename));
+        if (!old) continue;
+        olds.delete(sameName(p.filename));
+        await db.from('client_gallery_photos').update({ position: old.position, set_id: old.set_id, hidden: old.hidden }).eq('id', p.id);
+        await Promise.all([
+          db.from('client_gallery_favorites').update({ photo_id: p.id }).eq('photo_id', old.id),
+          db.from('client_gallery_comments').update({ photo_id: p.id }).eq('photo_id', old.id),
+          db.from('client_gallery_review_submissions').update({ photo_id: p.id }).eq('photo_id', old.id),
+        ]);
+        if (gallery.cover_photo_id === old.id) await db.from('client_galleries').update({ cover_photo_id: p.id }).eq('id', id);
+        removed.push(old);
+      }
+      if (removed.length) {
+        await deleteObjects(removed.flatMap((p) => allKeysForPhoto(id, p)));
+        await db.from('client_gallery_photos').delete().eq('gallery_id', id).in('id', removed.map((p) => p.id));
+      }
+      await refreshCounts(id);
+      return NextResponse.json({ replaced: removed.length });
     }
 
     case 'delete': {

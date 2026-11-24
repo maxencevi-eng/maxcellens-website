@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db, guardAdmin, jsonError, rowToAdminGallery } from '@/lib/clientGalleries/db';
 import { buildPatch, destroyGallery } from '@/lib/clientGalleries/mutations';
-import { compareFilenames } from '@/lib/clientGalleries/types';
+import { compareFilenames, sameName } from '@/lib/clientGalleries/types';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -27,6 +27,30 @@ export async function POST(req: Request) {
   }
 
   if (body.action === 'sort_by_name') return sortByName(ids);
+
+  // Remplacement groupé : où se trouvent les éléments portant ces noms ?
+  if (body.action === 'find_by_names') {
+    const names: string[] = Array.isArray(body.names) ? body.names.map((n: any) => sameName(String(n))).filter(Boolean) : [];
+    const wanted = new Set(names);
+    const matches: { galleryId: string; photoId: string; filename: string; key: string }[] = [];
+    const PAGE = 1000;
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await db
+        .from('client_gallery_photos')
+        .select('id, gallery_id, filename')
+        .in('gallery_id', ids)
+        .eq('ready', true)
+        .order('id')
+        .range(from, from + PAGE - 1);
+      if (error) return jsonError(error.message, 500);
+      for (const p of data || []) {
+        const key = sameName(p.filename);
+        if (wanted.has(key)) matches.push({ galleryId: p.gallery_id, photoId: p.id, filename: p.filename, key });
+      }
+      if (!data || data.length < PAGE) break;
+    }
+    return NextResponse.json({ matches });
+  }
 
   if (body.action !== 'patch' || !body.patch || typeof body.patch !== 'object') return jsonError('Action inconnue');
 

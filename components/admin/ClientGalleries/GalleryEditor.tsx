@@ -37,7 +37,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { AdminButton, SelectField, TextField, confirmDialog, promptDialog } from '..';
+import { AdminButton, AdminModal, SelectField, TextField, confirmDialog, promptDialog } from '..';
 import {
   DEFAULT_SHARE_MESSAGE,
   formatBytes,
@@ -51,6 +51,7 @@ import {
   type Template,
   type Watermark,
   compareFilenames,
+  sameName,
 } from '../../../lib/clientGalleries/types';
 import { adminApi, copyText } from './api';
 import { StorageMeter } from './GalleriesAdmin';
@@ -428,7 +429,8 @@ function FilesTab({
   const input = useRef<HTMLInputElement>(null);
   const dirInput = useRef<HTMLInputElement>(null);
   const cancel = useRef({ cancelled: false });
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const [dupAsk, setDupAsk] = useState<{ names: string[]; resolve: (v: 'replace' | 'keep' | null) => void } | null>(null);
+  const sensors =useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const visible = useMemo(() => {
     if (setView === 'all') return photos;
@@ -442,6 +444,33 @@ function FilesTab({
   const startUpload = async (files: File[], folderOf?: Map<File, string>) => {
     if (!files.length) return;
     if (!r2) return toast('Stockage R2 non configuré');
+
+    // Fichiers déjà présents (même nom, extension et casse ignorées) : remplacer ou garder les deux ?
+    const existing = new Set(photos.map((p) => sameName(p.filename)));
+    const dupes = files.filter((f) => existing.has(sameName(f.name)));
+    let replaceDupes = false;
+    if (dupes.length) {
+      const choice = await new Promise<'replace' | 'keep' | null>((resolve) => setDupAsk({ names: dupes.map((f) => f.name), resolve }));
+      setDupAsk(null);
+      if (!choice) return;
+      if (choice === 'replace') replaceDupes = true;
+      else {
+        // Garder les deux : le nouveau fichier est renommé « nom (2).ext », « nom (3).ext »…
+        const taken = new Set([...existing, ...files.map((f) => sameName(f.name))]);
+        files = files.map((f) => {
+          if (!existing.has(sameName(f.name))) return f;
+          const m = /^(.*?)(\.[^.]+)?$/.exec(f.name)!;
+          let n = 2;
+          while (taken.has(sameName(`${m[1]} (${n})`))) n++;
+          const name = `${m[1]} (${n})${m[2] || ''}`;
+          taken.add(sameName(name));
+          const renamed = new File([f], name, { type: f.type, lastModified: f.lastModified });
+          if (folderOf?.has(f)) folderOf.set(renamed, folderOf.get(f)!);
+          return renamed;
+        });
+      }
+    }
+
     cancel.current = { cancelled: false };
     const current = setView !== 'all' && setView !== NO_SET ? setView : null;
     // Un dossier = une section du même nom (réutilisée si elle existe déjà)
@@ -470,8 +499,21 @@ function FilesTab({
       signal: cancel.current,
       onProgress: setProg,
     });
+    let replaced = 0;
+    if (replaceDupes && res.uploadedIds.length) {
+      try {
+        const j = await adminApi<{ replaced: number }>(`/${g.id}/photos`, { method: 'POST', json: { action: 'replace', newIds: res.uploadedIds } });
+        replaced = j.replaced;
+      } catch (e: any) {
+        res.errors.push({ name: 'remplacement', error: e.message });
+      }
+    }
     await onChanged();
-    toast(res.errors.length ? `${res.done - res.errors.length} envoyé(s), ${res.errors.length} erreur(s)` : `${res.done} fichier(s) envoyé(s)`);
+    toast(
+      res.errors.length
+        ? `${res.done - res.errors.length} envoyé(s), ${res.errors.length} erreur(s)`
+        : `${res.done} fichier(s) envoyé(s)${replaced ? `, dont ${replaced} remplacé(s)` : ''}`
+    );
     if (!res.errors.length) setTimeout(() => setProg(null), 1500);
   };
 
@@ -831,6 +873,35 @@ function FilesTab({
           </div>
         ) : null}
       </div>
+      {dupAsk ? (
+        <AdminModal
+          title={`${dupAsk.names.length} fichier${dupAsk.names.length > 1 ? 's' : ''} déjà présent${dupAsk.names.length > 1 ? 's' : ''}`}
+          size="sm"
+          onClose={() => dupAsk.resolve(null)}
+          footer={
+            <>
+              <AdminButton variant="ghost" onClick={() => dupAsk.resolve(null)}>
+                Annuler
+              </AdminButton>
+              <AdminButton variant="secondary" onClick={() => dupAsk.resolve('keep')}>
+                Garder les deux
+              </AdminButton>
+              <AdminButton variant="primary" onClick={() => dupAsk.resolve('replace')}>
+                Remplacer
+              </AdminButton>
+            </>
+          }
+        >
+          <p style={{ marginTop: 0 }}>
+            <b>Remplacer</b> : la nouvelle version prend la place de l’ancienne (position, section, couverture, favoris).
+            <br />
+            <b>Garder les deux</b> : la nouvelle est ajoutée sous un autre nom, par exemple « MXL00511 (2).jpg ».
+          </p>
+          <div className={s.errors} style={{ color: 'var(--adm-ink-muted)' }}>
+            {dupAsk.names.join(', ')}
+          </div>
+        </AdminModal>
+      ) : null}
     </div>
   );
 }

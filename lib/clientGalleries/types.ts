@@ -301,6 +301,11 @@ export function compareFilenames(a: string, b: string): number {
   return base(a).localeCompare(base(b), 'fr', { numeric: true }) || a.localeCompare(b, 'fr', { numeric: true });
 }
 
+/** Clé de correspondance pour un remplacement : nom sans extension, sans casse (MXL00511.JPG = mxl00511.tif). */
+export function sameName(filename: string): string {
+  return String(filename || '').replace(/\.[^.]+$/, '').trim().toLowerCase();
+}
+
 export function slugify(s: string): string {
   return (
     String(s || '')
