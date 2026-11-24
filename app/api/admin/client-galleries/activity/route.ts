@@ -31,6 +31,19 @@ export async function GET(req: Request) {
     return [t, count || 0] as const;
   };
 
+  // Téléchargements globaux depuis un dossier partagé (inclus dans download_zip)
+  const countFolder = async () => {
+    let q = db
+      .from('client_gallery_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('type', 'download_zip')
+      .eq('meta->>scope', 'folder');
+    if (since) q = q.gte('created_at', since);
+    if (galleryId) q = q.eq('gallery_id', galleryId);
+    const { count } = await q;
+    return ['download_folder', count || 0] as const;
+  };
+
   let evQ = db
     .from('client_gallery_events')
     .select('id, gallery_id, type, photo_id, visitor_id, meta, created_at')
@@ -44,7 +57,7 @@ export async function GET(req: Request) {
   else if (type) evQ = evQ.eq('type', type);
 
   const [countsArr, evRes, never] = await Promise.all([
-    Promise.all(TYPES.map(countFor)),
+    Promise.all([...TYPES.map(countFor), countFolder()]),
     evQ,
     db
       .from('client_galleries')
@@ -73,7 +86,8 @@ export async function GET(req: Request) {
   for (const e of events as any[]) {
     const c = perGallery.get(e.gallery_id) || { views: 0, downloads: 0, favorites: 0 };
     if (e.type === 'view') c.views++;
-    if (e.type === 'download_photo' || e.type === 'download_zip') c.downloads++;
+    // Le téléchargement global du dossier partagé ne compte pas pour la galerie
+    if ((e.type === 'download_photo' || e.type === 'download_zip') && e.meta?.scope !== 'folder') c.downloads++;
     if (e.type === 'favorite') c.favorites++;
     perGallery.set(e.gallery_id, c);
   }

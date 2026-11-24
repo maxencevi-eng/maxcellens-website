@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { bump, db, logEvent } from '@/lib/clientGalleries/db';
+import { db, logEvent } from '@/lib/clientGalleries/db';
 import { hasFolderAccess, requestCookies, sharedFolderGalleries, sharedFolderLookup } from '@/lib/clientGalleries/public';
 import { objectKey, presign, r2Configured } from '@/lib/clientGalleries/r2';
 import { ipHash } from '@/lib/clientGalleries/security';
@@ -93,14 +93,12 @@ export async function POST(req: Request, ctx: Ctx) {
   }
   if (!files.length) return NextResponse.json({ error: 'Aucune photo' }, { status: 404 });
 
+  // Trace dans le journal de chaque galerie (scope « folder »), mais sans
+  // toucher au compteur de téléchargements : le lien du dossier sert au
+  // responsable pour une sauvegarde globale, pas au client de la galerie.
   const ip = ipHash(req);
   await Promise.all(
-    plan.map((p) =>
-      Promise.all([
-        logEvent(p.g.id, 'download_zip', { ip_hash: ip, meta: { scope: 'folder', folder: f.id, size: p.size } }),
-        bump(p.g.id, 0, 1),
-      ])
-    )
+    plan.map((p) => logEvent(p.g.id, 'download_zip', { ip_hash: ip, meta: { scope: 'folder', folder: f.id, size: p.size } }))
   );
 
   return NextResponse.json({ files, skipped });

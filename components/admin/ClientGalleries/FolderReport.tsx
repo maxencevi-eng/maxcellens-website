@@ -476,7 +476,7 @@ export default function FolderReport({
         </div>
       )}
       <p className={s.muted} style={{ marginTop: 10 }}>
-        Sur toute la durée de vie des galeries. Les aperçus faits depuis l’administration ne sont pas comptés. « Éléments téléchargés » compte chaque photo ou vidéo récupérée au moins une fois, à l’unité ou dans un ZIP.
+        Sur toute la durée de vie des galeries. Les aperçus faits depuis l’administration ne sont pas comptés. « Éléments téléchargés » compte chaque photo ou vidéo récupérée au moins une fois, à l’unité ou dans un ZIP. Seuls les téléchargements faits depuis la galerie elle-même comptent : un téléchargement global depuis le lien du dossier partagé n’est pas pris en compte (il reste visible dans l’Activité).
       </p>
     </div>
   );

@@ -1467,7 +1467,8 @@ function ActivityTab({ g, toast }: { g: AdminGallery; toast: (m: string) => void
               <li key={e.id}>
                 <time>{fmtDate(e.created_at, true)}</time>
                 <span>
-                  <b>{EVENT_LABEL[e.type] || e.type}</b>
+                  <b>{e.type === 'download_zip' && e.meta?.scope === 'folder' ? 'Téléchargement via le dossier partagé' : EVENT_LABEL[e.type] || e.type}</b>
+                  {e.type === 'download_zip' && e.meta?.scope === 'folder' ? ' · téléchargement global du dossier, non compté pour la galerie' : ''}
                   {e.filename ? ` · ${e.filename}` : ''}
                   {e.meta?.count ? ` · ${e.meta.count} fichier(s)` : ''}
                   {e.meta?.size ? ` · ${e.meta.size === 'original' ? 'HD' : 'web'}` : ''}

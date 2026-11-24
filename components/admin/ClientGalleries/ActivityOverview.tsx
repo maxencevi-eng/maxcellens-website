@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Download, Eye, FileSpreadsheet, Heart, KeyRound, MessageSquare, RefreshCw, ShieldAlert, Unlock } from 'lucide-react';
+import { CheckCircle2, Download, Eye, FileSpreadsheet, FolderDown, Heart, KeyRound, MessageSquare, RefreshCw, ShieldAlert, Unlock } from 'lucide-react';
 import { AdminButton } from '..';
 import type { AdminGallery, Folder } from '../../../lib/clientGalleries/types';
 import { adminApi, downloadTextFile } from './api';
@@ -49,11 +49,17 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
   review_submitted: <CheckCircle2 size={14} />,
 };
 
+/** Téléchargement global fait depuis le lien du dossier partagé (sauvegarde du responsable). */
+const isFolderDl = (e: Ev) => e.type === 'download_zip' && e.meta?.scope === 'folder';
+const evKey = (e: Ev) => (isFolderDl(e) ? 'download_folder' : e.type);
+const evLabel = (e: Ev) => (isFolderDl(e) ? 'Via le dossier partagé' : TYPE_LABEL[e.type] || e.type);
+
 function detail(e: Ev) {
   const m = e.meta || {};
   const bits: string[] = [];
   if (e.filename) bits.push(e.filename);
-  if (e.type === 'download_zip') {
+  if (isFolderDl(e)) bits.push('téléchargement global du dossier, non compté pour la galerie');
+  else if (e.type === 'download_zip') {
     bits.push(`${m.count ?? '?'} fichier${(m.count ?? 0) > 1 ? 's' : ''}`);
     if (m.scope === 'set') bits.push('une section');
     if (m.scope === 'favorites') bits.push('favoris');
@@ -99,10 +105,18 @@ export default function ActivityOverview({
   }, [load]);
 
   const c = data?.counts || {};
+  // Les téléchargements globaux du dossier partagé sont mis à part
+  const viaFolder = c.download_folder || 0;
+  const zips = Math.max(0, (c.download_zip || 0) - viaFolder);
   const kpis = [
     { label: 'Visites', value: c.view || 0, icon: <Eye size={16} /> },
     { label: 'Accès ouverts', value: c.unlock || 0, icon: <Unlock size={16} /> },
-    { label: 'Téléchargements', value: (c.download_photo || 0) + (c.download_zip || 0), icon: <Download size={16} />, sub: `${c.download_zip || 0} ZIP` },
+    {
+      label: 'Téléchargements',
+      value: (c.download_photo || 0) + zips,
+      icon: <Download size={16} />,
+      sub: `${zips} ZIP${viaFolder ? ` (+ ${viaFolder} via le dossier partagé, non comptés)` : ''}`,
+    },
     { label: 'Favoris', value: c.favorite || 0, icon: <Heart size={16} /> },
     { label: 'Reviews terminées', value: c.review_submitted || 0, icon: <CheckCircle2 size={16} />, sub: `${c.comment || 0} commentaires` },
     { label: 'Mots de passe erronés', value: c.unlock_fail || 0, icon: <KeyRound size={16} />, warn: (c.unlock_fail || 0) > 0 },
@@ -126,7 +140,7 @@ export default function ActivityOverview({
         new Date(e.created_at).toLocaleString('fr-FR'),
         galleryName(e.gallery_id),
         galleryFolder(e.gallery_id),
-        TYPE_LABEL[e.type] || e.type,
+        evLabel(e),
         detail(e),
         e.visitor?.name || '',
         e.visitor?.email || '',
@@ -231,8 +245,8 @@ export default function ActivityOverview({
                         </div>
                       </td>
                       <td>
-                        <span className={s.evType} data-type={e.type}>
-                          {TYPE_ICON[e.type]} {TYPE_LABEL[e.type] || e.type}
+                        <span className={s.evType} data-type={evKey(e)}>
+                          {isFolderDl(e) ? <FolderDown size={14} /> : TYPE_ICON[e.type]} {evLabel(e)}
                         </span>
                       </td>
                       <td style={{ whiteSpace: 'normal', maxWidth: 260 }}>{detail(e) || <span className={s.muted}>—</span>}</td>
